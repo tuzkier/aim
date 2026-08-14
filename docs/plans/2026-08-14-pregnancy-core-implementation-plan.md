@@ -49,7 +49,7 @@
 
 - 已有 Python 3.13.2、Node.js 23.9.0、Swift 6.2.3 Command Line Tools、Docker 29.4 与 Compose 5.1；
 - 当前没有 `/Applications/Xcode.app`，`xcodebuild` 不可用；
-- Task 1–9 可以先推进；进入 Task 10 前必须安装完整 Xcode、接受许可并验证 iOS Simulator；
+- Task 1–9 可以先推进；当前已建立 SwiftUI 源码与 Xcode 工程骨架，但完整 Xcode、许可和 iOS Simulator 尚未安装，故 Simulator 编译验收仍是后续门槛；
 - Node 23 不是长期基线，Task 2 应依据 Eve 当前支持矩阵选择并锁定 Node LTS。
 
 ---
