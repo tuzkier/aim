@@ -2,9 +2,9 @@
 
 ## 结论
 
-当前 Gate：**PASS（允许继续实现 FastAPI 业务边界和 Tool Contract）**。
+当前 Gate：**PASS（Eve Runtime、FastAPI Tool Contract 与真实本地联调已落地）**。
 
-本结论只覆盖 Eve Runtime 的运行机制和安全边界，不代表已经完成真实模型、生产 Workflow Store、FastAPI Internal Tool API 或 iOS 客户端验收。这些工作仍按实施计划继续完成；任一生产前门槛失败，都应重新打开 ADR-0011 的 Runtime 选型。
+本结论覆盖 Eve Runtime 的运行机制、安全边界、FastAPI Internal Tool API 契约和一次真实本地写入联调；不代表已经完成真实模型、生产 Workflow Store 或 iOS 客户端验收。任一生产前门槛失败，都应重新打开 ADR-0011 的 Runtime 选型。
 
 ## 验证范围
 
@@ -36,7 +36,9 @@
 | Workflow Callback | PASS | `eve start` 生成并监听 `POST /.well-known/workflow/v1/flow`，无必需请求头时返回 400，而非 404 |
 | Eve Eval | PASS | `EVE_EVAL_AUTH_TOKEN=runtime-gate-token npm run eval -- --url http://127.0.0.1:2100 --strict --skip-report`，`runtime-gate` 4/4 gates |
 | 真实模型供应商 | 未完成 | 当前环境没有 AI Gateway/供应商凭证；需要在候选中国大陆模型确定后单独做 Tool Calling 和结构化输出验证 |
-| FastAPI Tool API | 未完成 | 下一阶段实现；Eve 只保留受控 Tool 适配层，不直连 PostgreSQL |
+| FastAPI Tool API | PASS | 7 个受控 Tool 路由、作用域重校验、审批门、版本冲突、幂等和审计调用记录；`services/api/tests/integration/agent_access/` 全部通过 |
+| Eve 业务 Tool 适配层 | PASS | `npm run typecheck`、`npm run build`、`npm test`；工具从 Session Context 取作用域，不接受模型传入的身份 ID |
+| Eve→FastAPI→PostgreSQL 真实联调 | PASS | `plan-change` 集成 eval：读取任务 → 生成变更预览 → Eve 持久化审批 → `update_task` 写入 PostgreSQL；审批恢复携带同一 Session Scope，重复调用复用同一 operation id |
 
 ## 当前运行时骨架
 
@@ -44,9 +46,14 @@
 HTTP Channel
   └─ aimSessionAuth
        └─ ctx.session.auth.current
-            ├─ echo_context              (read)
-            ├─ preview_task_change        (non-mutating preview)
-            └─ pregnancy-expert           (read-only Subagent)
+       ├─ get_pregnancy_context      (read)
+       ├─ list_tasks                 (read)
+       ├─ get_guidance               (read)
+       ├─ preview_task_change        (non-mutating preview)
+       ├─ update_task / assign_task  (approval-gated writes)
+       ├─ record_pregnancy_fact      (approval-gated write)
+       ├─ undo_operation             (approval-gated write)
+       └─ pregnancy-expert           (read-only Subagent)
 ```
 
 鉴权当前使用三个显式请求头作为本地契约占位：
@@ -64,8 +71,8 @@ HTTP Channel
 1. 选择并实测符合中国大陆数据边界的真实模型与凭证路径。
 2. 为 Eve Workflow Store 选择持久化部署方案；当前本地默认 world 依赖 `.eve/.workflow-data`，容器必须挂载持久卷或切换兼容的 Workflow world。
 3. 将 header 占位鉴权替换为 FastAPI 签发/验证的短期 Agent Session 凭证。
-4. 实现 FastAPI Internal Tool API、幂等键、超时、审计和业务权限校验。
-5. 在 iOS 客户端实现 NDJSON decoder、cursor 恢复和会话状态映射。
+4. 将当前本地 Agent Scope Header 替换为 FastAPI 签发/验证的短期 Agent Session 凭证，并验证跨服务超时和重试策略。
+5. 补 iOS 客户端的 NDJSON decoder、cursor 恢复、会话状态映射和审批交互；再用真实模型与生产 Workflow Store 做部署验收。
 
 ## 可复现命令
 
@@ -76,6 +83,16 @@ PATH=/usr/local/bin:/opt/homebrew/bin:$PATH npm run typecheck
 PATH=/usr/local/bin:/opt/homebrew/bin:$PATH npm run build
 PATH=/usr/local/bin:/opt/homebrew/bin:$PATH EVE_USE_MOCK_MODEL=1 npm exec -- eve start --host 127.0.0.1 --port 2100
 PATH=/usr/local/bin:/opt/homebrew/bin:$PATH EVE_RUNTIME_URL=http://127.0.0.1:2100 npm test
+
+# 在 FastAPI 已以 8100 端口启动、并设置 AIM_API_INTERNAL_URL 与
+# AGENT_SERVICE_SECRET 后，运行真实业务写入联调：
+PATH=/usr/local/bin:/opt/homebrew/bin:$PATH \
+EVE_EVAL_AUTH_TOKEN=runtime-gate-token \
+AIM_RUN_INTEGRATION_EVAL=1 \
+AIM_EVAL_ACCOUNT_ID=<account-id> \
+AIM_EVAL_FAMILY_ID=<family-id> \
+AIM_EVAL_PREGNANCY_ID=<pregnancy-id> \
+npm exec -- eve eval plan-change --url http://127.0.0.1:2210 --strict --skip-report --timeout 30000 --json
 ```
 
 ## 参考

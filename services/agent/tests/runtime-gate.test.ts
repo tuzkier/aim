@@ -76,9 +76,23 @@ test("compiled runtime exposes only the intended root and specialist tools", asy
     }>;
   };
 
+  const summary = JSON.parse(await readFile(".eve/agent-summary.json", "utf8")) as {
+    tools: Array<{ name: string }>;
+  };
+
   assert.deepEqual(
-    manifest.tools.map((tool) => tool.name).sort(),
-    ["echo_context", "preview_task_change"],
+    summary.tools.map((tool) => tool.name).sort(),
+    [
+      "assign_task",
+      "echo_context",
+      "get_guidance",
+      "get_pregnancy_context",
+      "list_tasks",
+      "preview_task_change",
+      "record_pregnancy_fact",
+      "undo_operation",
+      "update_task",
+    ],
   );
   assert.deepEqual(
     manifest.disabledFrameworkTools.sort(),

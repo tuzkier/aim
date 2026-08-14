@@ -36,7 +36,7 @@ Eve 当前仍处于 Beta，因此采用前必须验证其自托管、模型、�
 6. 默认高权限工具能够被关闭，未经授权的 Tool 调用会被拒绝；
 7. Eve 升级或替换时不影响 FastAPI 的领域模型和 Tool 契约。
 
-当前已通过的运行机制包括自托管启动、受保护 Session、Session Context、NDJSON Cursor、进程重启恢复、Subagent 隔离、默认高权限工具禁用和 Workflow Callback 路由。真实模型、生产 Workflow Store、FastAPI Tool API 和 iOS 客户端仍是后续门槛，不在本次 Gate 结论中提前宣称完成。
+当前已通过的运行机制包括自托管启动、受保护 Session、Session Context、NDJSON Cursor、进程重启恢复、Subagent 隔离、默认高权限工具禁用和 Workflow Callback 路由；FastAPI Tool API、Eve 侧受控工具适配层，以及一次“读取任务 → 预览 → 人工审批 → 写入 PostgreSQL”的真实本地联调也已通过。真实模型、生产 Workflow Store 和 iOS 客户端仍是后续门槛，不在本次 Gate 结论中提前宣称完成。
 
 若关键验证不通过，重新打开 Agent Runtime 选型；FastAPI 业务服务与 Tool API 边界保持不变。
 

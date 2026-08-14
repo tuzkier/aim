@@ -13,7 +13,7 @@
     "start": "eve start",
     "typecheck": "tsc",
     "lint": "tsc --noEmit",
-    "test": "node --test tests/runtime-gate.test.ts",
+    "test": "node --test tests/runtime-gate.test.ts tests/tools/idempotency.test.ts tests/plan-change-flow.test.ts",
     "eval": "eve eval"
   },
   "dependencies": {

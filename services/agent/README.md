@@ -27,3 +27,19 @@ The runtime requires `x-aim-account-id`, `x-aim-family-id`, and
 `x-aim-pregnancy-id` on every protected route until the FastAPI auth exchange
 is wired in. Evals may additionally set `EVE_EVAL_AUTH_TOKEN`; that explicit
 bearer is mapped to a fixed non-production fixture scope.
+
+## FastAPI business boundary
+
+Eve never connects to PostgreSQL. The business tools call the FastAPI internal
+tool API with these environment variables:
+
+```bash
+AIM_API_INTERNAL_URL=http://127.0.0.1:8000
+AGENT_SERVICE_SECRET=aim-agent-development-secret
+```
+
+Read tools (`get_pregnancy_context`, `list_tasks`, `get_guidance`) use the
+authenticated Eve Session Context. Plan and fact mutations are gated by Eve's
+durable human approval and send `approved=true` only after approval. FastAPI
+re-checks family membership and pregnancy ownership, applies optimistic
+versioning, and uses the Eve tool `callId` as its idempotency key.

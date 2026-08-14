@@ -10,6 +10,21 @@ export const aimSessionAuth: AuthFn<Request> = async (request) => {
   const evalToken = process.env.EVE_EVAL_AUTH_TOKEN?.trim();
   const authorization = request.headers.get("authorization")?.trim();
   if (evalToken && authorization === `Bearer ${evalToken}`) {
+    const scopedHeaders = Object.fromEntries(
+      requiredHeaders.map((header) => [header, request.headers.get(header)?.trim() ?? ""]),
+    );
+    if (requiredHeaders.every((header) => scopedHeaders[header].length > 0)) {
+      const accountId = scopedHeaders["x-aim-account-id"];
+      const familyId = scopedHeaders["x-aim-family-id"];
+      const pregnancyId = scopedHeaders["x-aim-pregnancy-id"];
+      return {
+        attributes: { accountId, familyId, pregnancyId },
+        authenticator: "eve-eval-token-with-scope",
+        issuer: "aim-api",
+        principalId: accountId,
+        principalType: "user",
+      };
+    }
     return {
       attributes: {
         accountId: "eval_account",
