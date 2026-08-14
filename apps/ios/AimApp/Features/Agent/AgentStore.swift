@@ -9,6 +9,7 @@ final class AgentStore {
     var draft = ""
     var sessionID: String?
     var streamIndex = 0
+    var continuationToken: String?
 
     private var client: EveClient?
     private var activeTask: Task<Void, Never>?
@@ -79,7 +80,10 @@ final class AgentStore {
             if let message = try? JSONDecoder().decode(EveMessageCompleted.self, from: event.data), let text = message.message, !text.isEmpty {
                 messages.append(AgentMessage(text: text, isUser: false))
             }
-        case .sessionWaiting, .turnCompleted:
+        case .sessionWaiting:
+            continuationToken = event.continuationToken
+            if case .streaming = state { state = .idle }
+        case .turnCompleted:
             if case .streaming = state { state = .idle }
         default:
             break
