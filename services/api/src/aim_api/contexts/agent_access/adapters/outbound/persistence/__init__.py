@@ -1,0 +1,1 @@
+"""Agent Access persistence adapter."""

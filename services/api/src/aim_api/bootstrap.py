@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from fastapi import FastAPI
 
 from aim_api.composition.today.router import router as today_router
+from aim_api.contexts.agent_access.adapters.inbound.http.router import router as agent_tools_router
 from aim_api.contexts.family.adapters.inbound.http.router import router as family_router
 from aim_api.contexts.guidance.adapters.inbound.http.router import router as guidance_router
 from aim_api.contexts.planning.adapters.inbound.http.router import router as planning_router
@@ -69,5 +70,6 @@ def create_app(*, settings: Settings | None = None, database: Database | None = 
     app.include_router(planning_router)
     app.include_router(guidance_router)
     app.include_router(today_router)
+    app.include_router(agent_tools_router)
     _configure_observability(app, resolved_database, resolved_settings)
     return app

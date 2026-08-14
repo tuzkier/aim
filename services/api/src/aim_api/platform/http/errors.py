@@ -37,6 +37,14 @@ class VersionConflictError(ConflictError):
     code = "task.version_conflict"
 
 
+class ApprovalRequiredError(ConflictError):
+    code = "approval_required"
+
+
+class IdempotencyConflictError(ConflictError):
+    code = "agent.idempotency_conflict"
+
+
 def register_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(ApiError)
     async def handle_api_error(_: Request, error: ApiError) -> JSONResponse:
