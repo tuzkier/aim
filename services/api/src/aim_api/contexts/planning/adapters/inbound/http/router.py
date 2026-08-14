@@ -1,0 +1,252 @@
+from __future__ import annotations
+
+from datetime import datetime
+from uuid import UUID
+
+from fastapi import APIRouter, Request
+from pydantic import BaseModel, Field
+
+from aim_api.contexts.planning.adapters.outbound.persistence.repositories import (
+    SqlAlchemyPlanningUnitOfWork,
+)
+from aim_api.contexts.planning.application.commands import (
+    assign_task,
+    complete_task,
+    delay_task,
+    schedule_task,
+    undo_change,
+)
+from aim_api.contexts.planning.application.commands.assign_task import AssignTaskCommand
+from aim_api.contexts.planning.application.commands.complete_task import CompleteTaskCommand
+from aim_api.contexts.planning.application.commands.delay_task import DelayTaskCommand
+from aim_api.contexts.planning.application.commands.schedule_task import ScheduleTaskCommand
+from aim_api.contexts.planning.application.commands.undo_change import UndoChangeCommand
+from aim_api.contexts.planning.application.queries import get_plan
+from aim_api.contexts.planning.application.queries.get_plan import GetPlanQuery
+from aim_api.contexts.planning.domain.errors import (
+    PlanningAccessDenied,
+    PlanningDomainError,
+    PlanNotFound,
+    TaskChangeNotFound,
+    TaskNotFound,
+)
+from aim_api.contexts.planning.domain.task import Task
+from aim_api.contexts.planning.domain.task_status import (
+    InvalidTaskTransition,
+    TaskAssignmentError,
+    TaskVersionConflict,
+)
+from aim_api.platform.auth.context import ActorContext, authenticate
+from aim_api.platform.http.errors import (
+    ConflictError,
+    ForbiddenError,
+    NotFoundError,
+    VersionConflictError,
+)
+
+router = APIRouter(tags=["planning"])
+
+
+class TaskResponse(BaseModel):
+    id: UUID
+    plan_id: UUID
+    pregnancy_id: UUID
+    title: str
+    description: str | None
+    status: str
+    source_type: str
+    source_id: str | None
+    changed_by_actor_type: str
+    changed_by_actor_id: UUID | None
+    version: int
+    scheduled_for: datetime | None
+    due_at: datetime | None
+    assigned_member_id: UUID | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class PlanResponse(BaseModel):
+    id: UUID
+    pregnancy_id: UUID
+    version: int
+    created_at: datetime
+    updated_at: datetime
+    tasks: list[TaskResponse]
+
+
+class ExpectedVersionRequest(BaseModel):
+    expected_version: int = Field(ge=1)
+
+
+class ScheduleTaskRequest(ExpectedVersionRequest):
+    scheduled_for: datetime
+
+
+class DelayTaskRequest(ExpectedVersionRequest):
+    due_at: datetime
+
+
+class AssignTaskRequest(ExpectedVersionRequest):
+    assigned_member_id: UUID | None
+
+
+def _task_response(task: Task) -> TaskResponse:
+    return TaskResponse(
+        id=task.id,
+        plan_id=task.plan_id,
+        pregnancy_id=task.pregnancy_id,
+        title=task.title,
+        description=task.description,
+        status=task.status.value,
+        source_type=task.source_type.value,
+        source_id=task.source_id,
+        changed_by_actor_type=task.changed_by_actor_type.value,
+        changed_by_actor_id=task.changed_by_actor_id,
+        version=task.version,
+        scheduled_for=task.scheduled_for,
+        due_at=task.due_at,
+        assigned_member_id=task.assigned_member_id,
+        created_at=task.created_at,
+        updated_at=task.updated_at,
+    )
+
+
+def _plan_response(plan) -> PlanResponse:
+    return PlanResponse(
+        id=plan.id,
+        pregnancy_id=plan.pregnancy_id,
+        version=plan.version,
+        created_at=plan.created_at,
+        updated_at=plan.updated_at,
+        tasks=[_task_response(task) for task in plan.tasks],
+    )
+
+
+def _translate(error: Exception) -> None:
+    if isinstance(error, PlanningAccessDenied):
+        raise ForbiddenError(str(error)) from error
+    if isinstance(error, (PlanNotFound, TaskNotFound, TaskChangeNotFound)):
+        raise NotFoundError(str(error)) from error
+    if isinstance(error, TaskVersionConflict):
+        raise VersionConflictError(str(error)) from error
+    if isinstance(error, (InvalidTaskTransition, TaskAssignmentError)):
+        raise ConflictError(str(error)) from error
+    if isinstance(error, PlanningDomainError):
+        raise ConflictError(str(error)) from error
+    raise error
+
+
+def _actor(request: Request) -> ActorContext:
+    return authenticate(request)
+
+
+@router.get("/api/v1/pregnancies/{pregnancy_id}/plan", response_model=PlanResponse)
+async def get_plan_endpoint(pregnancy_id: UUID, request: Request) -> PlanResponse:
+    actor = _actor(request)
+    database = request.app.state.database
+    async with database.session() as session:
+        uow = SqlAlchemyPlanningUnitOfWork(session)
+        try:
+            plan = await get_plan.execute(
+                GetPlanQuery(pregnancy_id=pregnancy_id, account_id=actor.account_id), uow
+            )
+        except Exception as error:
+            await uow.rollback()
+            _translate(error)
+        return _plan_response(plan)
+
+
+async def _run_task_command(request: Request, command_fn, command):
+    database = request.app.state.database
+    async with database.session() as session:
+        uow = SqlAlchemyPlanningUnitOfWork(session)
+        try:
+            task = await command_fn(command, uow)
+        except Exception as error:
+            await uow.rollback()
+            _translate(error)
+        return _task_response(task)
+
+
+@router.post("/api/v1/tasks/{task_id}/schedule", response_model=TaskResponse)
+async def schedule_task_endpoint(
+    task_id: UUID, payload: ScheduleTaskRequest, request: Request
+) -> TaskResponse:
+    actor = _actor(request)
+    return await _run_task_command(
+        request,
+        schedule_task.execute,
+        ScheduleTaskCommand(
+            task_id=task_id,
+            account_id=actor.account_id,
+            expected_version=payload.expected_version,
+            scheduled_for=payload.scheduled_for,
+        ),
+    )
+
+
+@router.post("/api/v1/tasks/{task_id}/complete", response_model=TaskResponse)
+async def complete_task_endpoint(
+    task_id: UUID, payload: ExpectedVersionRequest, request: Request
+) -> TaskResponse:
+    actor = _actor(request)
+    return await _run_task_command(
+        request,
+        complete_task.execute,
+        CompleteTaskCommand(
+            task_id=task_id,
+            account_id=actor.account_id,
+            expected_version=payload.expected_version,
+        ),
+    )
+
+
+@router.post("/api/v1/tasks/{task_id}/delay", response_model=TaskResponse)
+async def delay_task_endpoint(
+    task_id: UUID, payload: DelayTaskRequest, request: Request
+) -> TaskResponse:
+    actor = _actor(request)
+    return await _run_task_command(
+        request,
+        delay_task.execute,
+        DelayTaskCommand(
+            task_id=task_id,
+            account_id=actor.account_id,
+            expected_version=payload.expected_version,
+            due_at=payload.due_at,
+        ),
+    )
+
+
+@router.post("/api/v1/tasks/{task_id}/assign", response_model=TaskResponse)
+async def assign_task_endpoint(
+    task_id: UUID, payload: AssignTaskRequest, request: Request
+) -> TaskResponse:
+    actor = _actor(request)
+    return await _run_task_command(
+        request,
+        assign_task.execute,
+        AssignTaskCommand(
+            task_id=task_id,
+            account_id=actor.account_id,
+            assigned_member_id=payload.assigned_member_id,
+            expected_version=payload.expected_version,
+        ),
+    )
+
+
+@router.post("/api/v1/task-changes/{change_id}/undo", response_model=TaskResponse)
+async def undo_change_endpoint(
+    change_id: UUID, payload: ExpectedVersionRequest, request: Request
+) -> TaskResponse:
+    actor = _actor(request)
+    return await _run_task_command(
+        request,
+        undo_change.execute,
+        UndoChangeCommand(
+            change_id=change_id,
+            account_id=actor.account_id,
+            expected_version=payload.expected_version,
+        ),
+    )

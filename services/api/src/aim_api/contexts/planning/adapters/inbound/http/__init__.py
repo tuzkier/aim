@@ -1,0 +1,1 @@
+"""Planning HTTP adapter."""

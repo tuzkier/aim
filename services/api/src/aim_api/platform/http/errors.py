@@ -33,6 +33,10 @@ class ConflictError(ApiError):
     code = "conflict"
 
 
+class VersionConflictError(ConflictError):
+    code = "task.version_conflict"
+
+
 def register_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(ApiError)
     async def handle_api_error(_: Request, error: ApiError) -> JSONResponse:
