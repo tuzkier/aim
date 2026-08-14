@@ -12,6 +12,7 @@ sys.path.insert(0, str(SERVICE_ROOT / "src"))
 
 from aim_api.platform.config.settings import get_settings  # noqa: E402
 from aim_api.platform.database.session import Base  # noqa: E402
+from aim_api.contexts.family.adapters.outbound.persistence import models as _family_models  # noqa: E402,F401
 
 config = context.config
 if config.config_file_name:

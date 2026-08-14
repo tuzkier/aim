@@ -1,0 +1,1 @@
+"""Family persistence adapter."""

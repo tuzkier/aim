@@ -1,0 +1,1 @@
+"""Pure Identity domain objects."""

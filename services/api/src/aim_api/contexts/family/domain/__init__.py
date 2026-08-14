@@ -1,0 +1,1 @@
+"""Pure Family domain objects."""

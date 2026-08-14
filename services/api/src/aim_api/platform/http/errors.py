@@ -18,6 +18,21 @@ class DatabaseUnavailable(ApiError):
     code = "database_unavailable"
 
 
+class ForbiddenError(ApiError):
+    status_code = 403
+    code = "forbidden"
+
+
+class NotFoundError(ApiError):
+    status_code = 404
+    code = "not_found"
+
+
+class ConflictError(ApiError):
+    status_code = 409
+    code = "conflict"
+
+
 def register_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(ApiError)
     async def handle_api_error(_: Request, error: ApiError) -> JSONResponse:
