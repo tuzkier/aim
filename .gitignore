@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
+venv/
+
+# Node / Eve
+node_modules/
+.npm/
+.eve/
+.output/
+dist/
+coverage/
+
+# macOS / Xcode
+.DS_Store
+DerivedData/
+*.xcuserstate
+xcuserdata/
+build/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+*.key
+
+# Local runtime data
+infrastructure/compose/.data/
+services/agent/.workflow-data/
+services/agent/.sandbox/
+
+# IDE
+.idea/
+.vscode/
+
