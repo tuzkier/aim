@@ -8,7 +8,7 @@
 - 产品方案：`docs/plans/`
 - 系统架构与 ADR：`docs/architecture/`
 - Coding Agent 实施计划：`docs/plans/2026-08-14-pregnancy-core-implementation-plan.md`
-- 当前第一阶段：Monorepo 基线与 Eve Runtime 技术验证
+- 当前第一阶段：FastAPI 业务闭环、Eve 受控工具联调与 SwiftUI 核心客户端骨架已完成；Simulator 验收待完整 Xcode 环境
 
 ## 目录边界
 
@@ -30,4 +30,3 @@ make verify
 ```
 
 第一阶段不要求 Xcode 才能运行 FastAPI、PostgreSQL 和 Eve；进入 iOS Task 之前需要安装完整 Xcode。
-
