@@ -10,7 +10,7 @@
 
 项目接受 Agent Runtime 使用独立语言和独立服务。Eve 提供文件化 Agent 定义、Skills、Tools、Subagents、持久化会话、可重连流式事件和 Schedules，与产品设想的成长规划 Agent、专业 Agent、Skill 和 Tool 结构一致。
 
-Eve 当前仍处于 Beta，因此采用前必须验证其自托管、模型、鉴权、持久化和安全边界。
+Eve 当前仍处于 Beta，因此采用前必须验证其自托管、模型、鉴权、持久化和安全边界。第一轮 Runtime Gate 已完成，证据见 [Eve Runtime 技术验证记录](../eve-runtime-validation.md)。
 
 ## 决策
 
@@ -35,6 +35,8 @@ Eve 当前仍处于 Beta，因此采用前必须验证其自托管、模型、�
 5. 成长规划 Agent 可以调用一个孕产专业 Subagent，并只形成一份最终方案；
 6. 默认高权限工具能够被关闭，未经授权的 Tool 调用会被拒绝；
 7. Eve 升级或替换时不影响 FastAPI 的领域模型和 Tool 契约。
+
+当前已通过的运行机制包括自托管启动、受保护 Session、Session Context、NDJSON Cursor、进程重启恢复、Subagent 隔离、默认高权限工具禁用和 Workflow Callback 路由。真实模型、生产 Workflow Store、FastAPI Tool API 和 iOS 客户端仍是后续门槛，不在本次 Gate 结论中提前宣称完成。
 
 若关键验证不通过，重新打开 Agent Runtime 选型；FastAPI 业务服务与 Tool API 边界保持不变。
 
@@ -73,4 +75,3 @@ Eve 当前仍处于 Beta，因此采用前必须验证其自托管、模型、�
 - https://github.com/vercel/eve/blob/main/docs/concepts/sessions-runs-and-streaming.md
 - https://github.com/vercel/eve/blob/main/docs/guides/deployment/self-hosting.md
 - https://github.com/vercel/eve/blob/main/docs/subagents.mdx
-
