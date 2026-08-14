@@ -11,13 +11,15 @@ final class AppSessionStore {
     var isOffline = false
 
     private let defaults: UserDefaults
+    private let keychain: KeychainStore
 
-    init(defaults: UserDefaults = .standard) {
+    init(defaults: UserDefaults = .standard, keychain: KeychainStore = KeychainStore()) {
         self.defaults = defaults
+        self.keychain = keychain
         accountID = UUID(uuidString: defaults.string(forKey: Keys.accountID) ?? "")
         familyID = UUID(uuidString: defaults.string(forKey: Keys.familyID) ?? "")
         pregnancyID = UUID(uuidString: defaults.string(forKey: Keys.pregnancyID) ?? "")
-        bearerToken = defaults.string(forKey: Keys.bearerToken)
+        bearerToken = keychain.read(Keys.bearerToken)
     }
 
     var isConfigured: Bool {
@@ -43,7 +45,7 @@ final class AppSessionStore {
         defaults.set(accountID.uuidString, forKey: Keys.accountID)
         defaults.set(familyID.uuidString, forKey: Keys.familyID)
         defaults.set(pregnancyID.uuidString, forKey: Keys.pregnancyID)
-        defaults.set(bearerToken, forKey: Keys.bearerToken)
+        try? keychain.write(bearerToken, for: Keys.bearerToken)
     }
 
     func clear() {
@@ -51,7 +53,10 @@ final class AppSessionStore {
         familyID = nil
         pregnancyID = nil
         bearerToken = nil
-        Keys.all.forEach { defaults.removeObject(forKey: $0) }
+        defaults.removeObject(forKey: Keys.accountID)
+        defaults.removeObject(forKey: Keys.familyID)
+        defaults.removeObject(forKey: Keys.pregnancyID)
+        keychain.delete(Keys.bearerToken)
     }
 
     private enum Keys {
@@ -61,6 +66,5 @@ final class AppSessionStore {
         static let bearerToken = "aim.bearerToken"
         static let apiBaseURL = "aim.apiBaseURL"
         static let eveBaseURL = "aim.eveBaseURL"
-        static let all = [accountID, familyID, pregnancyID, bearerToken]
     }
 }
