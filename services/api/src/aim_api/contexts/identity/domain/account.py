@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import StrEnum
 from uuid import UUID
 
@@ -35,7 +35,7 @@ class Account:
         return cls(
             id=account_id,
             phone=normalize_phone(phone),
-            created_at=now or datetime.now(timezone.utc),
+            created_at=now or datetime.now(UTC),
         )
 
     def ensure_active(self) -> None:

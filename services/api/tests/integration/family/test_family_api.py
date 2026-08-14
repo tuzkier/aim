@@ -32,9 +32,12 @@ def test_family_is_only_readable_by_active_members() -> None:
         assert created.status_code == 201, created.text
         family_id = created.json()["id"]
 
-        assert client.get(
-            f"/api/v1/families/{family_id}", headers=_headers(creator_id, creator_phone)
-        ).status_code == 200
+        assert (
+            client.get(
+                f"/api/v1/families/{family_id}", headers=_headers(creator_id, creator_phone)
+            ).status_code
+            == 200
+        )
         forbidden = client.get(
             f"/api/v1/families/{family_id}", headers=_headers(stranger_id, stranger_phone)
         )

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from uuid import UUID
 
@@ -73,7 +73,7 @@ class Invitation:
         token_hash: str,
         created_at: datetime | None = None,
     ) -> Invitation:
-        created = created_at or datetime.now(timezone.utc)
+        created = created_at or datetime.now(UTC)
         return cls(
             id=invitation_id,
             family_id=family_id,
@@ -94,8 +94,10 @@ class Invitation:
             expires_at=self.expires_at,
         )
 
-    def accept(self, account_id: UUID, account_phone: str, now: datetime | None = None) -> FamilyMemberJoined:
-        accepted_at = now or datetime.now(timezone.utc)
+    def accept(
+        self, account_id: UUID, account_phone: str, now: datetime | None = None
+    ) -> FamilyMemberJoined:
+        accepted_at = now or datetime.now(UTC)
         if self.status is not InvitationStatus.pending:
             if self.status is InvitationStatus.accepted:
                 raise InvitationUsed("invitation can only be accepted once")

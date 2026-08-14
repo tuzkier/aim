@@ -204,6 +204,155 @@
           }
         }
       }
+    },
+    "/api/v1/families/{family_id}/pregnancies": {
+      "post": {
+        "tags": [
+          "pregnancy"
+        ],
+        "summary": "Create Pregnancy Endpoint",
+        "operationId": "create_pregnancy_endpoint_api_v1_families__family_id__pregnancies_post",
+        "parameters": [
+          {
+            "name": "family_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Family Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePregnancyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PregnancyResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pregnancies/{pregnancy_id}": {
+      "get": {
+        "tags": [
+          "pregnancy"
+        ],
+        "summary": "Get Pregnancy Endpoint",
+        "operationId": "get_pregnancy_endpoint_api_v1_pregnancies__pregnancy_id__get",
+        "parameters": [
+          {
+            "name": "pregnancy_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Pregnancy Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PregnancyResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pregnancies/{pregnancy_id}/facts": {
+      "post": {
+        "tags": [
+          "pregnancy"
+        ],
+        "summary": "Record Fact Endpoint",
+        "operationId": "record_fact_endpoint_api_v1_pregnancies__pregnancy_id__facts_post",
+        "parameters": [
+          {
+            "name": "pregnancy_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Pregnancy Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecordFactRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FactResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -226,6 +375,80 @@
           "role"
         ],
         "title": "CreateFamilyRequest"
+      },
+      "CreatePregnancyRequest": {
+        "properties": {
+          "due_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Due Date"
+          }
+        },
+        "type": "object",
+        "required": [
+          "due_date"
+        ],
+        "title": "CreatePregnancyRequest"
+      },
+      "FactResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "value": {
+            "title": "Value"
+          },
+          "source": {
+            "$ref": "#/components/schemas/FactSource"
+          },
+          "priority": {
+            "type": "integer",
+            "title": "Priority"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "observed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Observed At"
+          },
+          "recorded_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Recorded At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "key",
+          "value",
+          "source",
+          "priority",
+          "status",
+          "observed_at",
+          "recorded_at"
+        ],
+        "title": "FactResponse"
+      },
+      "FactSource": {
+        "type": "string",
+        "enum": [
+          "doctor_confirmed",
+          "user_confirmed",
+          "machine_extracted",
+          "agent_inferred",
+          "general_knowledge"
+        ],
+        "title": "FactSource"
       },
       "FamilyMemberResponse": {
         "properties": {
@@ -324,6 +547,24 @@
         ],
         "title": "FamilyResponse"
       },
+      "GestationalAgeResponse": {
+        "properties": {
+          "weeks": {
+            "type": "integer",
+            "title": "Weeks"
+          },
+          "days": {
+            "type": "integer",
+            "title": "Days"
+          }
+        },
+        "type": "object",
+        "required": [
+          "weeks",
+          "days"
+        ],
+        "title": "GestationalAgeResponse"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -408,6 +649,102 @@
           "role"
         ],
         "title": "InviteMemberRequest"
+      },
+      "PregnancyResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "family_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Family Id"
+          },
+          "due_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Due Date"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "created_by": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Created By"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "gestational_age": {
+            "$ref": "#/components/schemas/GestationalAgeResponse"
+          },
+          "facts": {
+            "items": {
+              "$ref": "#/components/schemas/FactResponse"
+            },
+            "type": "array",
+            "title": "Facts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "family_id",
+          "due_date",
+          "status",
+          "created_by",
+          "created_at",
+          "updated_at",
+          "gestational_age",
+          "facts"
+        ],
+        "title": "PregnancyResponse"
+      },
+      "RecordFactRequest": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Key"
+          },
+          "value": {
+            "title": "Value"
+          },
+          "source": {
+            "$ref": "#/components/schemas/FactSource"
+          },
+          "observed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observed At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "value",
+          "source"
+        ],
+        "title": "RecordFactRequest"
       },
       "ValidationError": {
         "properties": {

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import StrEnum
 from uuid import UUID
 
@@ -43,7 +43,7 @@ class FamilyMember:
             account_id=account_id,
             role=role,
             status=FamilyMemberStatus.active,
-            joined_at=joined_at or datetime.now(timezone.utc),
+            joined_at=joined_at or datetime.now(UTC),
         )
 
     @classmethod
@@ -58,7 +58,7 @@ class FamilyMember:
             account_id=account_id,
             role=role,
             status=FamilyMemberStatus.pending,
-            invited_at=invited_at or datetime.now(timezone.utc),
+            invited_at=invited_at or datetime.now(UTC),
         )
 
 
@@ -85,7 +85,7 @@ class Family:
             id=family_id,
             name=cleaned_name,
             created_by=created_by,
-            created_at=created_at or datetime.now(timezone.utc),
+            created_at=created_at or datetime.now(UTC),
         )
 
     def add_member(self, member: FamilyMember) -> None:
@@ -110,5 +110,5 @@ class Family:
         if member.status is FamilyMemberStatus.active:
             raise DuplicateFamilyMember("account already belongs to this family")
         member.status = FamilyMemberStatus.active
-        member.joined_at = now or datetime.now(timezone.utc)
+        member.joined_at = now or datetime.now(UTC)
         return member

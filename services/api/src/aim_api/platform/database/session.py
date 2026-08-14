@@ -49,4 +49,6 @@ def create_database(database_url: str) -> Database:
         _async_database_url(database_url),
         pool_pre_ping=True,
     )
-    return Database(engine=engine, session_factory=async_sessionmaker(engine, expire_on_commit=False))
+    return Database(
+        engine=engine, session_factory=async_sessionmaker(engine, expire_on_commit=False)
+    )

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Request
 from pydantic import BaseModel
+
 from aim_api.platform.database.session import Database
 from aim_api.platform.http.errors import DatabaseUnavailable
 

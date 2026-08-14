@@ -7,6 +7,12 @@ from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from aim_api.contexts.family.adapters.outbound.persistence.models import (
+    AccountModel,
+    FamilyInvitationModel,
+    FamilyMemberModel,
+    FamilyModel,
+)
 from aim_api.contexts.family.application.ports import PersistenceConflict
 from aim_api.contexts.family.domain.family import (
     Family,
@@ -15,12 +21,6 @@ from aim_api.contexts.family.domain.family import (
     FamilyMemberStatus,
 )
 from aim_api.contexts.family.domain.invitation import Invitation, InvitationStatus
-from aim_api.contexts.family.adapters.outbound.persistence.models import (
-    AccountModel,
-    FamilyInvitationModel,
-    FamilyMemberModel,
-    FamilyModel,
-)
 from aim_api.contexts.identity.domain.account import Account, AccountStatus
 
 
@@ -51,6 +51,16 @@ class SqlAlchemyFamilyRepository:
     async def get_account_by_phone(self, phone: str) -> Account | None:
         model = await self.session.scalar(select(AccountModel).where(AccountModel.phone == phone))
         return _to_account(model) if model else None
+
+    async def is_active_member(self, family_id: UUID, account_id: UUID) -> bool:
+        member = await self.session.scalar(
+            select(FamilyMemberModel).where(
+                FamilyMemberModel.family_id == family_id,
+                FamilyMemberModel.account_id == account_id,
+                FamilyMemberModel.status == FamilyMemberStatus.active.value,
+            )
+        )
+        return member is not None
 
     async def add_family(self, family: Family) -> None:
         self.session.add(

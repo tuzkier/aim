@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 import pytest
@@ -34,7 +34,7 @@ def test_account_does_not_carry_family_role() -> None:
 
 def test_same_account_cannot_join_family_twice() -> None:
     account_id = uuid4()
-    family = Family.create(uuid4(), "我们的家", account_id, datetime.now(timezone.utc))
+    family = Family.create(uuid4(), "我们的家", account_id, datetime.now(UTC))
     family.add_member(FamilyMember.active(account_id, FamilyMemberRole.mother))
 
     with pytest.raises(DuplicateFamilyMember):
@@ -42,7 +42,7 @@ def test_same_account_cannot_join_family_twice() -> None:
 
 
 def test_invitation_expires_after_24_hours_and_can_only_be_used_once() -> None:
-    now = datetime(2026, 8, 14, 10, tzinfo=timezone.utc)
+    now = datetime(2026, 8, 14, 10, tzinfo=UTC)
     invitation = Invitation.create(
         invitation_id=uuid4(),
         family_id=uuid4(),
@@ -75,7 +75,7 @@ def test_invitation_expires_after_24_hours_and_can_only_be_used_once() -> None:
 
 
 def test_invitation_requires_the_invited_phone_and_activates_pending_member() -> None:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     invitation = Invitation.create(
         invitation_id=uuid4(),
         family_id=uuid4(),

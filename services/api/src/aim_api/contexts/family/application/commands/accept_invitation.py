@@ -40,7 +40,9 @@ async def execute(command: AcceptInvitationCommand, uow: FamilyUnitOfWork):
 
     joined = invitation.accept(command.account_id, command.phone, command.now)
     if existing is None:
-        family.add_member(FamilyMember.active(command.account_id, joined.role, joined_at=joined.joined_at))
+        family.add_member(
+            FamilyMember.active(command.account_id, joined.role, joined_at=joined.joined_at)
+        )
         await uow.repository.add_member(family.id, family.members[command.account_id])
     else:
         family.activate_member(command.account_id, joined.joined_at)

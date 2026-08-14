@@ -32,7 +32,9 @@ class ActorContext:
     expires_at: int
 
 
-def issue_session_token(account_id: UUID, phone: str, secret: str, *, now: int | None = None) -> str:
+def issue_session_token(
+    account_id: UUID, phone: str, secret: str, *, now: int | None = None
+) -> str:
     issued_at = int(time.time()) if now is None else now
     payload = {"account_id": str(account_id), "phone": phone, "exp": issued_at + 3600}
     encoded = _encode(payload)
@@ -43,12 +45,16 @@ def issue_session_token(account_id: UUID, phone: str, secret: str, *, now: int |
 def authenticate(request: Request) -> ActorContext:
     authorization = request.headers.get("authorization", "")
     if not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="missing session token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="missing session token"
+        )
 
     token = authorization.removeprefix("Bearer ")
     parts = token.split(".")
     if len(parts) != 4 or parts[0:2] != ["aim", "v1"]:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid session token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid session token"
+        )
 
     settings = request.app.state.settings
     encoded, provided_signature = parts[2], parts[3]
@@ -56,7 +62,9 @@ def authenticate(request: Request) -> ActorContext:
         settings.auth_secret.encode(), encoded.encode(), hashlib.sha256
     ).hexdigest()
     if not hmac.compare_digest(provided_signature, expected_signature):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid session token")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid session token"
+        )
 
     try:
         payload = _decode(encoded)
@@ -64,7 +72,11 @@ def authenticate(request: Request) -> ActorContext:
         phone = str(payload["phone"])
         expires_at = int(payload["exp"])
     except (KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid session token") from error
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid session token"
+        ) from error
     if expires_at <= int(time.time()):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="session token expired")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="session token expired"
+        )
     return ActorContext(account_id=account_id, phone=phone, expires_at=expires_at)

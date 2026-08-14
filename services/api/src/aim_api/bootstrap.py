@@ -7,11 +7,12 @@ from typing import TYPE_CHECKING
 
 from fastapi import FastAPI
 
+from aim_api.contexts.family.adapters.inbound.http.router import router as family_router
+from aim_api.contexts.pregnancy.adapters.inbound.http.router import router as pregnancy_router
 from aim_api.platform.config.settings import Settings, get_settings
 from aim_api.platform.database.session import Database, create_database
 from aim_api.platform.http.errors import register_error_handlers
 from aim_api.platform.http.health import router as health_router
-from aim_api.contexts.family.adapters.inbound.http.router import router as family_router
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator
@@ -61,5 +62,6 @@ def create_app(*, settings: Settings | None = None, database: Database | None = 
     register_error_handlers(app)
     app.include_router(health_router)
     app.include_router(family_router)
+    app.include_router(pregnancy_router)
     _configure_observability(app, resolved_database, resolved_settings)
     return app

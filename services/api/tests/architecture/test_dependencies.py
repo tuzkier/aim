@@ -5,7 +5,6 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
-
 SERVICE_ROOT = Path(__file__).resolve().parents[2]
 SOURCE_ROOT = SERVICE_ROOT / "src" / "aim_api"
 CONTEXTS_ROOT = SOURCE_ROOT / "contexts"
