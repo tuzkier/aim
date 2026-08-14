@@ -1,0 +1,33 @@
+id: pregnancy-week-18
+version: 1.0.0
+source: Aim 孕期任务基线
+source_url: https://www.gov.cn/
+reviewed_at: "2026-08-14"
+applicability:
+  region: [CN, CN-ZJ, CN-ZJ-HZ]
+  gestational_weeks: [18, 19]
+items:
+  - id: ultrasound
+    title: 预约下周的系统超声检查
+    summary: 确认检查时间窗口、预约入口和就诊地点。
+    due_in_days: 0
+    source_type: template
+    priority: 100
+  - id: materials
+    title: 核对检查所需材料
+    summary: 提前整理就诊卡、既往报告和需要向医生确认的问题。
+    due_in_days: 1
+    source_type: template
+    priority: 90
+  - id: records
+    title: 整理最近一次产检记录
+    summary: 把检查结果、医生建议和下次复诊时间放到家庭记录中。
+    due_in_days: 7
+    source_type: template
+    priority: 70
+  - id: benefits
+    title: 确认杭州生育待遇材料
+    summary: 先核对适用条件和材料清单，不确定的信息以官方渠道为准。
+    due_in_days: 14
+    source_type: template
+    priority: 50

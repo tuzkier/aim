@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, date, datetime, time, timedelta
 from uuid import UUID
 
 from fastapi import APIRouter, Request
 from pydantic import BaseModel, Field
 
+from aim_api.contexts.guidance.application.queries.get_guidance import initial_plan_items
 from aim_api.contexts.planning.adapters.outbound.persistence.repositories import (
     SqlAlchemyPlanningUnitOfWork,
 )
@@ -19,6 +20,10 @@ from aim_api.contexts.planning.application.commands import (
 from aim_api.contexts.planning.application.commands.assign_task import AssignTaskCommand
 from aim_api.contexts.planning.application.commands.complete_task import CompleteTaskCommand
 from aim_api.contexts.planning.application.commands.delay_task import DelayTaskCommand
+from aim_api.contexts.planning.application.commands.generate_initial_plan import (
+    GenerateInitialPlanCommand,
+    TaskSeed,
+)
 from aim_api.contexts.planning.application.commands.schedule_task import ScheduleTaskCommand
 from aim_api.contexts.planning.application.commands.undo_change import UndoChangeCommand
 from aim_api.contexts.planning.application.queries import get_plan
@@ -30,7 +35,7 @@ from aim_api.contexts.planning.domain.errors import (
     TaskChangeNotFound,
     TaskNotFound,
 )
-from aim_api.contexts.planning.domain.task import Task
+from aim_api.contexts.planning.domain.task import ActorType, Task, TaskSourceType
 from aim_api.contexts.planning.domain.task_status import (
     InvalidTaskTransition,
     TaskAssignmentError,
@@ -89,6 +94,10 @@ class DelayTaskRequest(ExpectedVersionRequest):
 
 class AssignTaskRequest(ExpectedVersionRequest):
     assigned_member_id: UUID | None
+
+
+class GeneratePlanRequest(BaseModel):
+    as_of: date | None = None
 
 
 def _task_response(task: Task) -> TaskResponse:
@@ -150,6 +159,56 @@ async def get_plan_endpoint(pregnancy_id: UUID, request: Request) -> PlanRespons
         try:
             plan = await get_plan.execute(
                 GetPlanQuery(pregnancy_id=pregnancy_id, account_id=actor.account_id), uow
+            )
+        except Exception as error:
+            await uow.rollback()
+            _translate(error)
+        return _plan_response(plan)
+
+
+@router.post(
+    "/api/v1/pregnancies/{pregnancy_id}/plan",
+    response_model=PlanResponse,
+    status_code=201,
+)
+async def generate_plan_endpoint(
+    pregnancy_id: UUID, payload: GeneratePlanRequest, request: Request
+) -> PlanResponse:
+    actor = _actor(request)
+    as_of = payload.as_of or date.today()
+    database = request.app.state.database
+    async with database.session() as session:
+        uow = SqlAlchemyPlanningUnitOfWork(session)
+        try:
+            pregnancy = await uow.pregnancy_ownership.get_pregnancy(pregnancy_id)
+            if pregnancy is None:
+                raise PlanNotFound("pregnancy does not exist")
+            age = pregnancy.gestational_age(as_of)
+            seeds = tuple(
+                TaskSeed(
+                    title=item.title,
+                    description=item.summary,
+                    source_type=TaskSourceType.template,
+                    source_id=item.id,
+                    changed_by_actor_type=ActorType.system,
+                    changed_by_actor_id=None,
+                    due_at=datetime.combine(
+                        as_of + timedelta(days=item.due_in_days), time(9, 0), tzinfo=UTC
+                    ),
+                )
+                for item in initial_plan_items(age.weeks)
+            )
+            from aim_api.contexts.planning.application.commands import generate_initial_plan
+
+            plan = await generate_initial_plan.execute(
+                GenerateInitialPlanCommand(
+                    pregnancy_id=pregnancy_id,
+                    family_id=pregnancy.family_id,
+                    account_id=actor.account_id,
+                    tasks=seeds,
+                    now=datetime.combine(as_of, time(0), tzinfo=UTC),
+                ),
+                uow,
             )
         except Exception as error:
             await uow.rollback()

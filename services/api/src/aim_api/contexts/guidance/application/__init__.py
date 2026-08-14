@@ -1,0 +1,1 @@
+"""Guidance application queries."""

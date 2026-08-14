@@ -1,0 +1,16 @@
+id: pregnancy-red-flags
+version: 1.0.0
+source: Aim 安全升级规则基线
+source_url: https://www.nhc.gov.cn/
+reviewed_at: "2026-08-14"
+applicability:
+  region: [CN]
+items:
+  - id: urgent-bleeding
+    condition: 出血量明显增加或伴随明显腹痛
+    action: 立即联系产检医院或急救服务，不等待 Agent 继续判断
+    severity: urgent
+  - id: high-fever
+    condition: 高热、意识异常或呼吸困难
+    action: 立即寻求线下医疗帮助
+    severity: urgent

@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["id", "version", "source", "source_url", "reviewed_at", "applicability", "items"],
+  "properties": {
+    "id": {"type": "string"},
+    "version": {"type": "string"},
+    "source": {"type": "string"},
+    "source_url": {"type": "string", "format": "uri"},
+    "reviewed_at": {"type": "string", "format": "date"},
+    "applicability": {
+      "type": "object",
+      "required": ["region", "valid_from"],
+      "properties": {"region": {"const": "CN-ZJ-HZ"}, "valid_from": {"type": "string", "format": "date"}},
+      "additionalProperties": true
+    },
+    "items": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "summary", "verification_url"],
+        "properties": {
+          "id": {"type": "string"},
+          "title": {"type": "string"},
+          "summary": {"type": "string"},
+          "verification_url": {"type": "string", "format": "uri"}
+        }
+      }
+    }
+  }
+}

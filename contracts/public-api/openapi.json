@@ -395,6 +395,57 @@
             }
           }
         }
+      },
+      "post": {
+        "tags": [
+          "planning"
+        ],
+        "summary": "Generate Plan Endpoint",
+        "operationId": "generate_plan_endpoint_api_v1_pregnancies__pregnancy_id__plan_post",
+        "parameters": [
+          {
+            "name": "pregnancy_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Pregnancy Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GeneratePlanRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/tasks/{task_id}/schedule": {
@@ -645,6 +696,117 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TaskResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/guidance": {
+      "get": {
+        "tags": [
+          "guidance"
+        ],
+        "summary": "Get Guidance Endpoint",
+        "operationId": "get_guidance_endpoint_api_v1_guidance_get",
+        "parameters": [
+          {
+            "name": "week",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "title": "Week"
+            }
+          },
+          {
+            "name": "region",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "CN-ZJ-HZ",
+              "title": "Region"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pregnancies/{pregnancy_id}/today": {
+      "get": {
+        "tags": [
+          "today"
+        ],
+        "summary": "Get Today Endpoint",
+        "operationId": "get_today_endpoint_api_v1_pregnancies__pregnancy_id__today_get",
+        "parameters": [
+          {
+            "name": "pregnancy_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Pregnancy Id"
+            }
+          },
+          {
+            "name": "as_of",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "As Of"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TodayResponse"
                 }
               }
             }
@@ -916,6 +1078,50 @@
         ],
         "title": "FamilyResponse"
       },
+      "FamilyTaskCountResponse": {
+        "properties": {
+          "assigned_member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assigned Member Id"
+          },
+          "open_count": {
+            "type": "integer",
+            "title": "Open Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "assigned_member_id",
+          "open_count"
+        ],
+        "title": "FamilyTaskCountResponse"
+      },
+      "GeneratePlanRequest": {
+        "properties": {
+          "as_of": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "As Of"
+          }
+        },
+        "type": "object",
+        "title": "GeneratePlanRequest"
+      },
       "GestationalAgeResponse": {
         "properties": {
           "weeks": {
@@ -933,6 +1139,24 @@
           "days"
         ],
         "title": "GestationalAgeResponse"
+      },
+      "GestationalAgeTodayResponse": {
+        "properties": {
+          "weeks": {
+            "type": "integer",
+            "title": "Weeks"
+          },
+          "days": {
+            "type": "integer",
+            "title": "Days"
+          }
+        },
+        "type": "object",
+        "required": [
+          "weeks",
+          "days"
+        ],
+        "title": "GestationalAgeTodayResponse"
       },
       "HTTPValidationError": {
         "properties": {
@@ -1318,6 +1542,63 @@
           "updated_at"
         ],
         "title": "TaskResponse"
+      },
+      "TodayResponse": {
+        "properties": {
+          "pregnancy_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Pregnancy Id"
+          },
+          "as_of": {
+            "type": "string",
+            "format": "date",
+            "title": "As Of"
+          },
+          "gestational_age": {
+            "$ref": "#/components/schemas/GestationalAgeTodayResponse"
+          },
+          "priority_task": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TaskResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "upcoming_tasks": {
+            "items": {
+              "$ref": "#/components/schemas/TaskResponse"
+            },
+            "type": "array",
+            "title": "Upcoming Tasks"
+          },
+          "agent_status": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Agent Status"
+          },
+          "family_task_counts": {
+            "items": {
+              "$ref": "#/components/schemas/FamilyTaskCountResponse"
+            },
+            "type": "array",
+            "title": "Family Task Counts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pregnancy_id",
+          "as_of",
+          "gestational_age",
+          "priority_task",
+          "upcoming_tasks",
+          "agent_status",
+          "family_task_counts"
+        ],
+        "title": "TodayResponse"
       },
       "ValidationError": {
         "properties": {

@@ -1,0 +1,14 @@
+id: hangzhou-pregnancy-benefits
+version: 1.0.0
+source: 杭州市人力资源和社会保障局公开信息
+source_url: https://hrss.hangzhou.gov.cn/
+reviewed_at: "2026-08-14"
+applicability:
+  region: CN-ZJ-HZ
+  valid_from: "2026-01-01"
+  audience: 以官方最新口径和个人参保情况为准
+items:
+  - id: maternity-benefits-materials
+    title: 核对杭州生育待遇材料
+    summary: 仅提供核对入口，不把政策结论替代为个人资格判断。
+    verification_url: https://hrss.hangzhou.gov.cn/
