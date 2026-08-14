@@ -25,6 +25,14 @@ actor EveClient {
         return stream(sessionID: sessionID, from: index)
     }
 
+    func send(sessionID: String, message: String, from index: Int) async throws -> AsyncThrowingStream<EveEvent, Error> {
+        let body = try JSONEncoder().encode(["message": message])
+        let request = environment.eveRequest(path: "/eve/v1/session/\(sessionID)", method: "POST", body: body)
+        _ = try await session.aimData(for: request)
+        currentSessionID = sessionID
+        return stream(sessionID: sessionID, from: index)
+    }
+
     func respondToApproval(sessionID: String, approvalID: String, approved: Bool) async throws {
         let response = EveInputResponse(requestID: approvalID, optionID: approved ? "approve" : "cancel", text: nil)
         let body = try JSONEncoder().encode(["inputResponses": [response]])

@@ -26,7 +26,7 @@ final class AgentStore {
             do {
                 let events: AsyncThrowingStream<EveEvent, Error>
                 if let sessionID = self?.sessionID {
-                    events = await client.resume(sessionID: sessionID, from: self?.streamIndex ?? 0)
+                    events = try await client.send(sessionID: sessionID, message: text, from: self?.streamIndex ?? 0)
                 } else {
                     events = try await client.start(message: text)
                     self?.sessionID = await client.currentSessionID
