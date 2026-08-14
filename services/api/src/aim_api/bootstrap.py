@@ -1,0 +1,63 @@
+"""Composition root for the FastAPI business service."""
+
+from __future__ import annotations
+
+from contextlib import asynccontextmanager
+from typing import TYPE_CHECKING
+
+from fastapi import FastAPI
+
+from aim_api.platform.config.settings import Settings, get_settings
+from aim_api.platform.database.session import Database, create_database
+from aim_api.platform.http.errors import register_error_handlers
+from aim_api.platform.http.health import router as health_router
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
+
+
+def _configure_observability(app: FastAPI, database: Database, settings: Settings) -> None:
+    """Attach optional OpenTelemetry instrumentation at the composition root."""
+
+    if not settings.otel_enabled:
+        return
+
+    try:
+        from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+        from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+    except ImportError:
+        # Instrumentation packages are optional at runtime; the hook remains explicit so
+        # production can enable them without leaking observability concerns into domain code.
+        return
+
+    FastAPIInstrumentor.instrument_app(app)
+    SQLAlchemyInstrumentor().instrument(engine=database.engine.sync_engine)
+
+
+def create_app(*, settings: Settings | None = None, database: Database | None = None) -> FastAPI:
+    """Build an app with explicit infrastructure dependencies."""
+
+    resolved_settings = settings or get_settings()
+    resolved_database = database or create_database(resolved_settings.database_url)
+
+    @asynccontextmanager
+    async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+        try:
+            yield
+        finally:
+            if database is None:
+                await resolved_database.dispose()
+
+    app = FastAPI(
+        title="Aim Business API",
+        version="0.1.0",
+        docs_url="/api/docs",
+        openapi_url="/api/openapi.json",
+        lifespan=lifespan,
+    )
+    app.state.settings = resolved_settings
+    app.state.database = resolved_database
+    register_error_handlers(app)
+    app.include_router(health_router)
+    _configure_observability(app, resolved_database, resolved_settings)
+    return app
