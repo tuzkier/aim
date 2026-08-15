@@ -21,7 +21,7 @@ from aim_api.contexts.planning.application.commands.generate_initial_plan import
     GenerateInitialPlanCommand,
     TaskSeed,
 )
-from aim_api.contexts.planning.domain.task import ActorType, TaskSourceType
+from aim_api.contexts.planning.domain.task import ActorType, Task, TaskSourceType
 from aim_api.contexts.pregnancy.adapters.outbound.persistence.repositories import (
     SqlAlchemyPregnancyUnitOfWork,
 )
@@ -100,28 +100,34 @@ async def _ensure_initial_plan(
     as_of = date.today()
     async with database.session() as session:
         uow = SqlAlchemyPlanningUnitOfWork(session)
-        if await uow.repository.get_plan(pregnancy_id) is not None:
-            return
         pregnancy = await uow.pregnancy_ownership.get_pregnancy(pregnancy_id)
         if pregnancy is None:
             return
         age = pregnancy.gestational_age(as_of)
-        seeds = tuple(
-            TaskSeed(
-                title=item.title,
-                description=item.summary,
-                source_type=TaskSourceType.template,
-                source_id=item.id,
-                changed_by_actor_type=ActorType.system,
-                changed_by_actor_id=None,
-                due_at=datetime.combine(
-                    as_of + timedelta(days=item.due_in_days),
-                    time(9, 0),
-                    tzinfo=UTC,
-                ),
-            )
-            for item in initial_plan_items(age.weeks)
-        )
+        seeds = _initial_task_seeds(age.weeks, as_of)
+        existing_plan = await uow.repository.get_plan(pregnancy_id)
+        if existing_plan is not None:
+            if existing_plan.tasks or not seeds:
+                return
+            for seed in seeds:
+                task = Task.create(
+                    task_id=uuid4(),
+                    plan_id=existing_plan.id,
+                    pregnancy_id=pregnancy_id,
+                    title=seed.title,
+                    description=seed.description,
+                    source_type=seed.source_type,
+                    source_id=seed.source_id,
+                    changed_by_actor_type=seed.changed_by_actor_type,
+                    changed_by_actor_id=seed.changed_by_actor_id,
+                    due_at=seed.due_at,
+                    assigned_member_id=seed.assigned_member_id,
+                    now=datetime.combine(as_of, time(0), tzinfo=UTC),
+                )
+                existing_plan.add_task(task)
+                await uow.repository.add_task(task)
+            await uow.commit()
+            return
         await generate_initial_plan.execute(
             GenerateInitialPlanCommand(
                 pregnancy_id=pregnancy_id,
@@ -132,6 +138,25 @@ async def _ensure_initial_plan(
             ),
             uow,
         )
+
+
+def _initial_task_seeds(gestational_week: int, as_of: date) -> tuple[TaskSeed, ...]:
+    return tuple(
+        TaskSeed(
+            title=item.title,
+            description=item.summary,
+            source_type=TaskSourceType.template,
+            source_id=item.id,
+            changed_by_actor_type=ActorType.system,
+            changed_by_actor_id=None,
+            due_at=datetime.combine(
+                as_of + timedelta(days=item.due_in_days),
+                time(9, 0),
+                tzinfo=UTC,
+            ),
+        )
+        for item in initial_plan_items(gestational_week)
+    )
 
 
 @router.post(

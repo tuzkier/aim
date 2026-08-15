@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date, timedelta
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
@@ -72,3 +73,25 @@ def test_demo_session_can_enter_without_a_due_date() -> None:
     body = response.json()
     assert body["phone"] == phone
     assert body["pregnancy_id"] is None
+
+
+def test_demo_session_seeds_tasks_for_an_early_pregnancy() -> None:
+    phone = "137" + str(int(uuid4()) % 10**8).zfill(8)
+    settings = get_settings().model_copy(update={"dev_auth_enabled": True})
+    due_date = date.today() + timedelta(days=243)
+
+    with TestClient(create_app(settings=settings)) as client:
+        session = client.post(
+            "/api/v1/auth/demo-session",
+            json={"phone": phone, "due_date": due_date.isoformat()},
+        )
+        assert session.status_code == 201, session.text
+        body = session.json()
+
+        plan = client.get(
+            f"/api/v1/pregnancies/{body['pregnancy_id']}/plan",
+            headers={"Authorization": f"Bearer {body['token']}"},
+        )
+
+    assert plan.status_code == 200, plan.text
+    assert plan.json()["tasks"]

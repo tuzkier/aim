@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
 import yaml
 from jsonschema import Draft202012Validator
 
@@ -18,10 +19,15 @@ def _validate(schema_path: Path, document_path: Path) -> None:
     assert errors == [], "\n".join(error.message for error in errors)
 
 
-def test_pregnancy_task_content_has_version_and_applicability() -> None:
+@pytest.mark.parametrize(
+    "document_path",
+    sorted((Path(__file__).resolve().parents[5] / "content/pregnancy-tasks").glob("*.yaml")),
+)
+def test_pregnancy_task_content_has_version_and_applicability(document_path: Path) -> None:
+    root = Path(__file__).resolve().parents[5]
     _validate(
-        ROOT / "content/pregnancy-tasks/schema.json",
-        ROOT / "content/pregnancy-tasks/week-18.yaml",
+        root / "content/pregnancy-tasks/schema.json",
+        document_path,
     )
 
 

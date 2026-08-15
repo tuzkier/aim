@@ -28,19 +28,21 @@ class GetGuidanceQuery:
     region: str = "CN-ZJ-HZ"
 
 
-def _load_week_document() -> dict:
-    path = CONTENT_ROOT / "pregnancy-tasks/week-18.yaml"
-    return yaml.safe_load(path.read_text(encoding="utf-8"))
+def _load_week_documents() -> tuple[dict, ...]:
+    content_dir = CONTENT_ROOT / "pregnancy-tasks"
+    paths = sorted(content_dir.glob("*.yaml"))
+    return tuple(yaml.safe_load(path.read_text(encoding="utf-8")) for path in paths)
 
 
 def execute(query: GetGuidanceQuery) -> tuple[GuidanceItem, ...]:
-    document = _load_week_document()
-    applicability = document["applicability"]
-    if query.gestational_week not in applicability["gestational_weeks"]:
-        return ()
-    if query.region not in applicability["region"] and "CN" not in applicability["region"]:
-        return ()
-    items = [GuidanceItem.from_document(document, item) for item in document["items"]]
+    items: list[GuidanceItem] = []
+    for document in _load_week_documents():
+        applicability = document["applicability"]
+        if query.gestational_week not in applicability["gestational_weeks"]:
+            continue
+        if query.region not in applicability["region"] and "CN" not in applicability["region"]:
+            continue
+        items.extend(GuidanceItem.from_document(document, item) for item in document["items"])
     return tuple(sorted(items, key=lambda item: (-item.priority, item.due_in_days, item.id)))
 
 

@@ -1,0 +1,39 @@
+id: pregnancy-week-05-12
+version: 1.0.0
+source: Aim 孕早期任务基线
+source_url: https://www.gov.cn/
+reviewed_at: "2026-08-15"
+applicability:
+  region: [CN, CN-ZJ, CN-ZJ-HZ]
+  gestational_weeks: [5, 6, 7, 8, 9, 10, 11, 12]
+items:
+  - id: early-first-visit
+    title: 确认第一次产检和建档时间
+    summary: 结合自己的情况确认就诊医院、预约入口和下次就诊时间，具体安排以医院官方信息为准。
+    due_in_days: 0
+    source_type: template
+    priority: 100
+  - id: early-medication-review
+    title: 整理正在使用的药物和补充剂
+    summary: 把正在使用的药物、保健品和既往检查记录整理好，下次就诊时交给医生核对。
+    due_in_days: 1
+    source_type: template
+    priority: 90
+  - id: early-symptom-record
+    title: 记录这周的身体变化
+    summary: 简单记录恶心、乏力、出血或腹痛等变化；如果出现让你担心的情况，及时联系医疗机构。
+    due_in_days: 2
+    source_type: template
+    priority: 80
+  - id: early-family-support
+    title: 和家庭成员约定一项支持任务
+    summary: 选一件这周可以由家人分担的事情，例如陪诊、准备餐食或整理就诊资料。
+    due_in_days: 5
+    source_type: template
+    priority: 60
+  - id: early-hangzhou-services
+    title: 收藏杭州产检服务入口
+    summary: 先收藏常用医院和官方公共服务入口，办理事项以医院和政府官方最新信息为准。
+    due_in_days: 7
+    source_type: template
+    priority: 50
