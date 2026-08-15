@@ -11,6 +11,7 @@ from aim_api.composition.today.router import router as today_router
 from aim_api.contexts.agent_access.adapters.inbound.http.router import router as agent_tools_router
 from aim_api.contexts.family.adapters.inbound.http.router import router as family_router
 from aim_api.contexts.guidance.adapters.inbound.http.router import router as guidance_router
+from aim_api.contexts.identity.adapters.inbound.http.router import router as identity_router
 from aim_api.contexts.planning.adapters.inbound.http.router import router as planning_router
 from aim_api.contexts.pregnancy.adapters.inbound.http.router import router as pregnancy_router
 from aim_api.platform.config.settings import Settings, get_settings
@@ -65,6 +66,7 @@ def create_app(*, settings: Settings | None = None, database: Database | None = 
     app.state.database = resolved_database
     register_error_handlers(app)
     app.include_router(health_router)
+    app.include_router(identity_router)
     app.include_router(family_router)
     app.include_router(pregnancy_router)
     app.include_router(planning_router)

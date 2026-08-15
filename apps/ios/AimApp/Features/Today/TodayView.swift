@@ -2,11 +2,15 @@ import SwiftUI
 
 struct TodayView: View {
     @Bindable var store: TodayStore
+    @Environment(AppSessionStore.self) private var session
+    @State private var showingPregnancySetup = false
 
     var body: some View {
         NavigationStack {
             Group {
-                if case .failed(let message) = store.state, store.snapshot == nil {
+                if session.pregnancyID == nil {
+                    pregnancySetupContent
+                } else if case .failed(let message) = store.state, store.snapshot == nil {
                     ContentUnavailableView {
                         Label("今天还没加载", systemImage: "wifi.exclamationmark")
                     } description: {
@@ -25,7 +29,28 @@ struct TodayView: View {
             .task {
                 if store.snapshot == nil { await store.load() }
             }
+            .sheet(isPresented: $showingPregnancySetup) {
+                PregnancySetupView()
+            }
         }
+    }
+
+    private var pregnancySetupContent: some View {
+        VStack(spacing: 18) {
+            Image(systemName: "calendar.badge.plus")
+                .font(.system(size: 42))
+                .foregroundStyle(Color.aimAccent)
+            Text("先逛逛 Aim")
+                .font(.title2.weight(.semibold))
+            Text("补充预产期后，我们才能把孕周、产检提醒和每个阶段的待办安排准确。现在不填也可以。")
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.secondary)
+            Button("补充预产期") { showingPregnancySetup = true }
+                .buttonStyle(.borderedProminent)
+        }
+        .padding(28)
+        .aimWarmCard()
+        .padding(20)
     }
 
     @ViewBuilder
@@ -91,6 +116,70 @@ struct TodayView: View {
                 .tint(.aimAccent)
         }
         .aimWarmCard()
+    }
+}
+
+private struct PregnancySetupView: View {
+    @Environment(AppSessionStore.self) private var session
+    @Environment(\.dismiss) private var dismiss
+    @State private var dueDate = Calendar.current.date(byAdding: .day, value: 154, to: .now) ?? .now
+    @State private var isSubmitting = false
+    @State private var errorMessage: String?
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    DatePicker("预产期", selection: $dueDate, in: Date()..., displayedComponents: .date)
+                } footer: {
+                    Text("预产期用于计算孕周和生成阶段性待办，之后也可以在孕期档案里调整。")
+                }
+
+                if let errorMessage {
+                    Section { Text(errorMessage).foregroundStyle(.red) }
+                }
+
+                Section {
+                    Button {
+                        Task { await save() }
+                    } label: {
+                        if isSubmitting {
+                            ProgressView().frame(maxWidth: .infinity)
+                        } else {
+                            Text("保存并生成计划").frame(maxWidth: .infinity)
+                        }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(isSubmitting)
+                }
+            }
+            .navigationTitle("补充孕期信息")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("稍后") { dismiss() }
+                }
+            }
+        }
+        .presentationDetents([.medium])
+    }
+
+    private func save() async {
+        guard session.familyID != nil else {
+            errorMessage = "家庭信息还没有准备好，请稍后重试。"
+            return
+        }
+        isSubmitting = true
+        errorMessage = nil
+        defer { isSubmitting = false }
+
+        do {
+            let repository = BusinessRepository(environment: session.environment)
+            let pregnancyID = try await repository.createPregnancy(dueDate: dueDate)
+            session.setPregnancyID(pregnancyID)
+            dismiss()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 }
 

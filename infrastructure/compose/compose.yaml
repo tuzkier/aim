@@ -26,6 +26,7 @@ services:
       API_HOST: 0.0.0.0
       API_PORT: 8000
       AUTH_SECRET: ${AUTH_SECRET:-aim-development-secret}
+      DEV_AUTH_ENABLED: ${DEV_AUTH_ENABLED:-true}
       AGENT_SERVICE_SECRET: ${AGENT_SERVICE_SECRET:-aim-agent-development-secret}
       AIM_CONTENT_ROOT: /app/content
       OTEL_ENABLED: ${OTEL_ENABLED:-false}

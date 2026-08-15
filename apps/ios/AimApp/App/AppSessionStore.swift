@@ -23,12 +23,12 @@ final class AppSessionStore {
     }
 
     var isConfigured: Bool {
-        accountID != nil && familyID != nil && pregnancyID != nil && bearerToken != nil
+        accountID != nil && familyID != nil && bearerToken != nil
     }
 
     var environment: APIEnvironment {
         APIEnvironment(
-            baseURL: URL(string: defaults.string(forKey: Keys.apiBaseURL) ?? "http://127.0.0.1:8000")!,
+            baseURL: URL(string: defaults.string(forKey: Keys.apiBaseURL) ?? "http://127.0.0.1:8100")!,
             eveBaseURL: URL(string: defaults.string(forKey: Keys.eveBaseURL) ?? "http://127.0.0.1:2210")!,
             bearerToken: bearerToken,
             accountID: accountID,
@@ -37,15 +37,24 @@ final class AppSessionStore {
         )
     }
 
-    func configure(accountID: UUID, familyID: UUID, pregnancyID: UUID, bearerToken: String) {
+    func configure(accountID: UUID, familyID: UUID, pregnancyID: UUID?, bearerToken: String) {
         self.accountID = accountID
         self.familyID = familyID
         self.pregnancyID = pregnancyID
         self.bearerToken = bearerToken
         defaults.set(accountID.uuidString, forKey: Keys.accountID)
         defaults.set(familyID.uuidString, forKey: Keys.familyID)
-        defaults.set(pregnancyID.uuidString, forKey: Keys.pregnancyID)
+        if let pregnancyID {
+            defaults.set(pregnancyID.uuidString, forKey: Keys.pregnancyID)
+        } else {
+            defaults.removeObject(forKey: Keys.pregnancyID)
+        }
         try? keychain.write(bearerToken, for: Keys.bearerToken)
+    }
+
+    func setPregnancyID(_ pregnancyID: UUID) {
+        self.pregnancyID = pregnancyID
+        defaults.set(pregnancyID.uuidString, forKey: Keys.pregnancyID)
     }
 
     func clear() {

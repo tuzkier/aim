@@ -62,6 +62,15 @@ class SqlAlchemyPregnancyRepository:
             facts=facts,
         )
 
+    async def get_first_pregnancy_for_family(self, family_id: UUID) -> Pregnancy | None:
+        model = await self.session.scalar(
+            select(PregnancyModel)
+            .where(PregnancyModel.family_id == family_id)
+            .order_by(PregnancyModel.created_at, PregnancyModel.id)
+            .limit(1)
+        )
+        return await self.get_pregnancy(model.id) if model else None
+
     async def save_fact_result(
         self, pregnancy_id: UUID, result: FactRecordResult, recorded_by: UUID
     ) -> None:

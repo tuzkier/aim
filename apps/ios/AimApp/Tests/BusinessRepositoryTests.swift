@@ -13,4 +13,40 @@ final class BusinessRepositoryTests: XCTestCase {
         XCTAssertEqual(member.id, accountID)
         XCTAssertEqual(member.role, .father)
     }
+
+    func testDemoSessionResponseDecodesWithoutExposingInternalWiring() throws {
+        let payload = """
+        {
+          "account_id": "11111111-1111-1111-1111-111111111111",
+          "phone": "13800000001",
+          "family_id": "22222222-2222-2222-2222-222222222222",
+          "pregnancy_id": "33333333-3333-3333-3333-333333333333",
+          "role": "mother",
+          "token": "aim.v1.demo"
+        }
+        """.data(using: .utf8)!
+
+        let response = try JSONDecoder().decode(DemoSessionResponse.self, from: payload)
+
+        XCTAssertEqual(response.phone, "13800000001")
+        XCTAssertEqual(response.role, .mother)
+        XCTAssertEqual(response.accountID.uuidString, "11111111-1111-1111-1111-111111111111")
+    }
+
+    func testDemoSessionResponseAllowsPregnancySetupToBeDeferred() throws {
+        let payload = """
+        {
+          "account_id": "11111111-1111-1111-1111-111111111111",
+          "phone": "13900000001",
+          "family_id": "22222222-2222-2222-2222-222222222222",
+          "pregnancy_id": null,
+          "role": "mother",
+          "token": "aim.v1.demo"
+        }
+        """.data(using: .utf8)!
+
+        let response = try JSONDecoder().decode(DemoSessionResponse.self, from: payload)
+
+        XCTAssertNil(response.pregnancyID)
+    }
 }

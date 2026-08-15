@@ -364,6 +364,80 @@
         ],
         "title": "DelayTaskRequest"
       },
+      "DemoSessionRequest": {
+        "properties": {
+          "phone": {
+            "type": "string",
+            "maxLength": 20,
+            "minLength": 6,
+            "title": "Phone"
+          },
+          "due_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due Date"
+          }
+        },
+        "type": "object",
+        "required": [
+          "phone"
+        ],
+        "title": "DemoSessionRequest"
+      },
+      "DemoSessionResponse": {
+        "properties": {
+          "account_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Account Id"
+          },
+          "phone": {
+            "type": "string",
+            "title": "Phone"
+          },
+          "family_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Family Id"
+          },
+          "pregnancy_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pregnancy Id"
+          },
+          "role": {
+            "$ref": "#/components/schemas/FamilyMemberRole"
+          },
+          "token": {
+            "type": "string",
+            "title": "Token"
+          }
+        },
+        "type": "object",
+        "required": [
+          "account_id",
+          "phone",
+          "family_id",
+          "pregnancy_id",
+          "role",
+          "token"
+        ],
+        "title": "DemoSessionResponse"
+      },
       "ExpectedVersionRequest": {
         "properties": {
           "expected_version": {

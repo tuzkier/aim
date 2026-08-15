@@ -53,16 +53,23 @@ private struct MainTabView: View {
             .tabItem { Label("Agent", systemImage: "sparkles") }
         }
         .task {
-            let repository = BusinessRepository(environment: session.environment)
-            todayStore.repository = repository
-            planStore.repository = repository
-            familyStore.repository = repository
-            await todayStore.load()
-            await planStore.load()
-            await familyStore.load()
+            await reloadRepositories()
+        }
+        .onChange(of: session.pregnancyID) { _, _ in
+            Task { await reloadRepositories() }
         }
         .sheet(isPresented: $showingAgent) {
             AgentSheet()
         }
+    }
+
+    private func reloadRepositories() async {
+        let repository = BusinessRepository(environment: session.environment)
+        todayStore.repository = repository
+        planStore.repository = repository
+        familyStore.repository = repository
+        await todayStore.load()
+        await planStore.load()
+        await familyStore.load()
     }
 }

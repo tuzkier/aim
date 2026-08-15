@@ -52,6 +52,18 @@ class SqlAlchemyFamilyRepository:
         model = await self.session.scalar(select(AccountModel).where(AccountModel.phone == phone))
         return _to_account(model) if model else None
 
+    async def get_first_family_for_account(self, account_id: UUID) -> Family | None:
+        family_id = await self.session.scalar(
+            select(FamilyMemberModel.family_id)
+            .where(
+                FamilyMemberModel.account_id == account_id,
+                FamilyMemberModel.status == FamilyMemberStatus.active.value,
+            )
+            .order_by(FamilyMemberModel.joined_at, FamilyMemberModel.family_id)
+            .limit(1)
+        )
+        return await self.get_family(family_id) if family_id else None
+
     async def is_active_member(self, family_id: UUID, account_id: UUID) -> bool:
         member = await self.session.scalar(
             select(FamilyMemberModel).where(

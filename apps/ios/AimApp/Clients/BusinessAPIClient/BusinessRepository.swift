@@ -80,6 +80,7 @@ protocol BusinessRepositoryProtocol: Sendable {
     func fetchToday() async throws -> TodaySnapshot
     func fetchPlan() async throws -> PlanSnapshot
     func fetchFamily() async throws -> FamilySnapshot
+    func createPregnancy(dueDate: Date) async throws -> UUID
     func complete(task: TaskItem) async throws -> TaskItem
     func delay(task: TaskItem, until: Date) async throws -> TaskItem
     func schedule(task: TaskItem, at: Date) async throws -> TaskItem
@@ -119,6 +120,20 @@ actor BusinessRepository: BusinessRepositoryProtocol {
         let request = environment.businessRequest(path: "/api/v1/families/\(familyID.uuidString)")
         let (data, _) = try await session.aimData(for: request)
         return map(try decoder.decode(APIFamilyDTO.self, from: data))
+    }
+
+    func createPregnancy(dueDate: Date) async throws -> UUID {
+        let familyID = try requiredFamilyID()
+        let body = try encoder.encode(
+            CreatePregnancyBody(dueDate: Self.dateOnlyFormatter.string(from: dueDate))
+        )
+        let request = environment.businessRequest(
+            path: "/api/v1/families/\(familyID.uuidString)/pregnancies",
+            method: "POST",
+            body: body,
+        )
+        let (data, _) = try await session.aimData(for: request)
+        return try decoder.decode(CreatePregnancyResponse.self, from: data).id
     }
 
     func complete(task: TaskItem) async throws -> TaskItem {
@@ -179,6 +194,26 @@ actor BusinessRepository: BusinessRepositoryProtocol {
             FamilyMember(accountID: member.accountID, role: FamilyRole(rawValue: member.role) ?? .otherCaregiver, status: member.status, joinedAt: member.joinedAt)
         })
     }
+
+    private static let dateOnlyFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }()
+}
+
+private struct CreatePregnancyBody: Encodable {
+    let dueDate: String
+
+    enum CodingKeys: String, CodingKey {
+        case dueDate = "due_date"
+    }
+}
+
+private struct CreatePregnancyResponse: Decodable {
+    let id: UUID
 }
 
 extension JSONDecoder {

@@ -25,4 +25,4 @@ make ios-build
 make ios-test
 ```
 
-App 启动后先配置有效的会话 Token 和三个 scope ID。当前工程已通过 iOS Simulator 编译，并在 iPhone 17 Pro（iOS 26.5）上通过 7 个 XCTest；后端和 Eve Runtime 的真实集成验收仍按仓库根目录的验证命令执行。
+本地 Docker 环境启动后，App 首屏只使用手机号进入演示账号；预产期可以进入后再补充，不会发送短信，也不会要求用户填写内部 ID 或 Token。演示账号接口只在 Compose 的 `DEV_AUTH_ENABLED=true` 下开启，正式短信登录接入后替换该适配器即可。当前工程已通过 iOS Simulator 编译，并在 iPhone 17 Pro（iOS 26.5）上通过 XCTest；后端和 Eve Runtime 的真实集成验收仍按仓库根目录的验证命令执行。
