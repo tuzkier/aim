@@ -31,4 +31,4 @@ make verify
 
 `make dev` 会在 Docker 中启动 PostgreSQL、FastAPI 和 Eve。默认入口为：FastAPI `http://127.0.0.1:8100`、Eve `http://127.0.0.1:2210`、PostgreSQL `127.0.0.1:55434`。Eve 默认使用确定性 Mock Model；接入真实模型前请通过环境变量覆盖，不要把凭证写入 Compose 文件。
 
-本地 iOS 首屏只使用手机号进入演示账号，后端会自动创建账号和家庭；预产期可以进入后再补充，不会连接短信，也不会把内部 ID 或 Token 暴露给用户。该演示入口由 `DEV_AUTH_ENABLED` 控制，仅用于本地验收。
+本地 iOS 首屏只使用手机号进入演示账号，后端会自动创建账号和家庭；进入后可选择录入预产期或末次月经，Aim 会按 280 天互相换算，再生成孕期计划。不会连接短信，也不会把内部 ID 或 Token 暴露给用户。该演示入口由 `DEV_AUTH_ENABLED` 控制，仅用于本地验收。

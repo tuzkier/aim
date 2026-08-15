@@ -25,4 +25,4 @@ make ios-build
 make ios-test
 ```
 
-本地 Docker 环境启动后，App 首屏只使用手机号进入演示账号；预产期可以进入后再补充，不会发送短信，也不会要求用户填写内部 ID 或 Token。演示账号接口只在 Compose 的 `DEV_AUTH_ENABLED=true` 下开启，正式短信登录接入后替换该适配器即可。当前工程已通过 iOS Simulator 编译，并在 iPhone 17 Pro（iOS 26.5）上通过 XCTest；后端和 Eve Runtime 的真实集成验收仍按仓库根目录的验证命令执行。
+本地 Docker 环境启动后，App 首屏只使用手机号进入演示账号；进入后可以选择录入预产期或末次月经，Aim 会按 280 天互相换算，不会发送短信，也不会要求用户填写内部 ID 或 Token。演示账号接口只在 Compose 的 `DEV_AUTH_ENABLED=true` 下开启，正式短信登录接入后替换该适配器即可。当前工程已通过 iOS Simulator 编译，并在 iPhone 17 Pro（iOS 26.5）上通过 XCTest；后端和 Eve Runtime 的真实集成验收仍按仓库根目录的验证命令执行。

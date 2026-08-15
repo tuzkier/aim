@@ -61,6 +61,47 @@ def test_pregnancy_requires_family_membership_and_returns_dynamic_week() -> None
         assert fetched.json()["gestational_age"]["weeks"] >= 0
 
 
+def test_pregnancy_can_be_created_from_last_menstrual_period() -> None:
+    account_id = str(uuid4())
+    phone = _phone(account_id)
+    headers = _headers(account_id, phone)
+
+    with TestClient(create_app()) as client:
+        family = client.post(
+            "/api/v1/families", headers=headers, json={"name": "末次月经家庭", "role": "mother"}
+        ).json()
+        pregnancy = client.post(
+            f"/api/v1/families/{family['id']}/pregnancies",
+            headers=headers,
+            json={"last_menstrual_period": "2026-04-11"},
+        )
+
+    assert pregnancy.status_code == 201, pregnancy.text
+    assert pregnancy.json()["due_date"] == "2027-01-16"
+    assert pregnancy.json()["last_menstrual_period"] == "2026-04-11"
+
+
+def test_pregnancy_date_input_requires_exactly_one_date() -> None:
+    account_id = str(uuid4())
+    phone = _phone(account_id)
+    headers = _headers(account_id, phone)
+
+    with TestClient(create_app()) as client:
+        family = client.post(
+            "/api/v1/families", headers=headers, json={"name": "日期校验家庭", "role": "mother"}
+        ).json()
+        base = f"/api/v1/families/{family['id']}/pregnancies"
+        neither = client.post(base, headers=headers, json={})
+        both = client.post(
+            base,
+            headers=headers,
+            json={"due_date": "2027-01-16", "last_menstrual_period": "2026-04-11"},
+        )
+
+    assert neither.status_code == 422
+    assert both.status_code == 422
+
+
 def test_fact_conflict_is_explicit_and_does_not_change_active_value() -> None:
     account_id = str(uuid4())
     phone = _phone(account_id)

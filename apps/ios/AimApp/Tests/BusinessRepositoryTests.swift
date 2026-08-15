@@ -49,4 +49,13 @@ final class BusinessRepositoryTests: XCTestCase {
 
         XCTAssertNil(response.pregnancyID)
     }
+
+    func testPregnancyDateCalculatorConvertsLastMenstrualPeriodToDueDate() {
+        let lmp = DateComponents(calendar: .init(identifier: .gregorian), year: 2026, month: 4, day: 11).date!
+
+        XCTAssertEqual(
+            PregnancyDateCalculator.dueDate(fromLastMenstrualPeriod: lmp),
+            DateComponents(calendar: .init(identifier: .gregorian), year: 2027, month: 1, day: 16).date!
+        )
+    }
 }

@@ -5,7 +5,7 @@ from typing import Any
 from uuid import UUID
 
 from fastapi import APIRouter, Request
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from aim_api.contexts.pregnancy.adapters.outbound.persistence.repositories import (
     SqlAlchemyPregnancyUnitOfWork,
@@ -22,6 +22,10 @@ from aim_api.contexts.pregnancy.domain.errors import (
 )
 from aim_api.contexts.pregnancy.domain.fact import FactSource, PregnancyFact
 from aim_api.contexts.pregnancy.domain.pregnancy import Pregnancy
+from aim_api.contexts.pregnancy.domain.pregnancy_dates import (
+    due_date_from_last_menstrual_period,
+    last_menstrual_period_from_due_date,
+)
 from aim_api.platform.auth.context import ActorContext, authenticate
 from aim_api.platform.http.errors import ConflictError, ForbiddenError, NotFoundError
 
@@ -29,7 +33,20 @@ router = APIRouter(tags=["pregnancy"])
 
 
 class CreatePregnancyRequest(BaseModel):
-    due_date: date
+    due_date: date | None = None
+    last_menstrual_period: date | None = None
+
+    @model_validator(mode="after")
+    def validate_date_input(self) -> CreatePregnancyRequest:
+        if (self.due_date is None) == (self.last_menstrual_period is None):
+            raise ValueError("provide exactly one of due_date or last_menstrual_period")
+        return self
+
+    def canonical_due_date(self) -> date:
+        if self.due_date is not None:
+            return self.due_date
+        assert self.last_menstrual_period is not None
+        return due_date_from_last_menstrual_period(self.last_menstrual_period)
 
 
 class RecordFactRequest(BaseModel):
@@ -59,6 +76,7 @@ class PregnancyResponse(BaseModel):
     id: UUID
     family_id: UUID
     due_date: date
+    last_menstrual_period: date
     status: str
     created_by: UUID
     created_at: datetime
@@ -73,6 +91,7 @@ def _response(pregnancy: Pregnancy) -> PregnancyResponse:
         id=pregnancy.id,
         family_id=pregnancy.family_id,
         due_date=pregnancy.due_date,
+        last_menstrual_period=last_menstrual_period_from_due_date(pregnancy.due_date),
         status=pregnancy.status.value,
         created_by=pregnancy.created_by,
         created_at=pregnancy.created_at,
@@ -126,7 +145,7 @@ async def create_pregnancy_endpoint(
                 CreatePregnancyCommand(
                     family_id=family_id,
                     account_id=actor.account_id,
-                    due_date=payload.due_date,
+                    due_date=payload.canonical_due_date(),
                 ),
                 uow,
             )

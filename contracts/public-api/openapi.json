@@ -927,15 +927,31 @@
       "CreatePregnancyRequest": {
         "properties": {
           "due_date": {
-            "type": "string",
-            "format": "date",
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Due Date"
+          },
+          "last_menstrual_period": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Menstrual Period"
           }
         },
         "type": "object",
-        "required": [
-          "due_date"
-        ],
         "title": "CreatePregnancyRequest"
       },
       "DelayTaskRequest": {
@@ -1430,6 +1446,11 @@
             "format": "date",
             "title": "Due Date"
           },
+          "last_menstrual_period": {
+            "type": "string",
+            "format": "date",
+            "title": "Last Menstrual Period"
+          },
           "status": {
             "type": "string",
             "title": "Status"
@@ -1465,6 +1486,7 @@
           "id",
           "family_id",
           "due_date",
+          "last_menstrual_period",
           "status",
           "created_by",
           "created_at",

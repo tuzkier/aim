@@ -1,7 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, timedelta
+from datetime import date
+
+from aim_api.contexts.pregnancy.domain.pregnancy_dates import (
+    last_menstrual_period_from_due_date,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -15,7 +19,7 @@ class GestationalAge:
 
 
 def gestational_age(due_date: date, on_date: date) -> GestationalAge:
-    estimated_lmp = due_date - timedelta(days=280)
+    estimated_lmp = last_menstrual_period_from_due_date(due_date)
     elapsed_days = max((on_date - estimated_lmp).days, 0)
     weeks, days = divmod(elapsed_days, 7)
     return GestationalAge(weeks=weeks, days=days)
