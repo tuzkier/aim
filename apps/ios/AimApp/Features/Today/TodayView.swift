@@ -122,7 +122,7 @@ private struct PriorityTaskRow: View {
             HStack {
                 Label("优先事项", systemImage: "sparkles")
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(.aimAccent)
+                    .foregroundStyle(Color.aimAccent)
                 Spacer()
                 Image(systemName: "chevron.right")
                     .font(.caption.weight(.semibold))

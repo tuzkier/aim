@@ -1,4 +1,5 @@
 import XCTest
+@testable import AimApp
 
 final class BusinessRepositoryTests: XCTestCase {
     func testTaskStatusMappingFailsClosedToUnknown() {

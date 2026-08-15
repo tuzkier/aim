@@ -35,10 +35,10 @@ struct OnboardingView: View {
 #endif
                         .autocorrectionDisabled()
                     SecureField("会话 Token", text: $store.bearerToken)
-                } footer: {
-                    Text("当前后端仍使用受控会话 Token。正式登录与邀请入口接入后，这些字段会由登录流程填充。")
                 } header: {
                     Text("连接当前家庭")
+                } footer: {
+                    Text("当前后端仍使用受控会话 Token。正式登录与邀请入口接入后，这些字段会由登录流程填充。")
                 }
 
                 if let errorMessage = store.errorMessage {

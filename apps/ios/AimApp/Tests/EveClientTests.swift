@@ -1,5 +1,6 @@
 import Foundation
 import XCTest
+@testable import AimApp
 
 final class EveClientTests: XCTestCase {
     func testDecoderHandlesSplitLinesAndDeduplicatesEvents() throws {

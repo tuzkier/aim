@@ -10,4 +10,19 @@
 - SwiftData 的 Today 缓存、Eve cursor 与普通待办离线操作模型；
 - 由 `contracts/public-api/openapi.json` 对齐的 DTO 边界。
 
-当前环境只有 Command Line Tools，没有完整 Xcode 或 iOS Simulator，因此本轮不能声称已完成 Simulator 编译验收。安装 Xcode 后打开 `AimApp.xcodeproj`，运行 `AimApp` scheme，并先配置有效的会话 Token 和三个 scope ID。
+## 本地运行与验证
+
+工程需要 Xcode 26.6 或更高版本、iOS 17 以上 SDK。若 Xcode 尚未设为当前开发者目录，可先设置：
+
+```bash
+export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+```
+
+在 Xcode 中打开 `AimApp.xcodeproj`，选择 `AimApp` scheme 和任一 iOS Simulator；或直接运行：
+
+```bash
+make ios-build
+make ios-test
+```
+
+App 启动后先配置有效的会话 Token 和三个 scope ID。当前工程已通过 iOS Simulator 编译，并在 iPhone 17 Pro（iOS 26.5）上通过 7 个 XCTest；后端和 Eve Runtime 的真实集成验收仍按仓库根目录的验证命令执行。

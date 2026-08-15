@@ -45,11 +45,11 @@
 7. iOS 断开 Eve Stream 后按游标恢复，不重复执行 Tool；
 8. Eve 或模型不可用时，Today、计划和家庭功能仍然可用。
 
-### 当前开发环境预检（2026-08-14）
+### 当前开发环境预检（2026-08-15）
 
-- 已有 Python 3.13.2、Node.js 23.9.0、Swift 6.2.3 Command Line Tools、Docker 29.4 与 Compose 5.1；
-- 当前没有 `/Applications/Xcode.app`，`xcodebuild` 不可用；
-- Task 1–9 可以先推进；当前已建立 SwiftUI 源码与 Xcode 工程骨架，但完整 Xcode、许可和 iOS Simulator 尚未安装，故 Simulator 编译验收仍是后续门槛；
+- 已有 Python 3.13.2、Node.js 23.9.0、Docker 29.4 与 Compose 5.1；
+- Xcode 26.6（Build 17F113）与 iOS 26.5 Simulator 已安装；本机 Xcode 位于 `/Users/hanbin/Downloads/Xcode.app`，命令行可通过 `DEVELOPER_DIR` 指向其 Developer 目录；
+- `AimApp` 已在 iPhone 17 Pro Simulator 上完成编译，并通过 7 个 XCTest；端到端业务验收仍需按 Task 13 启动真实 FastAPI、PostgreSQL 与 Eve Runtime；
 - Node 23 不是长期基线，Task 2 应依据 Eve 当前支持矩阵选择并锁定 Node LTS。
 
 ---
