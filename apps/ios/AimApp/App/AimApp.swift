@@ -29,9 +29,9 @@ private struct RootView: View {
 
 private struct MainTabView: View {
     @Environment(AppSessionStore.self) private var session
-    @State private var todayStore = TodayStore.preview()
-    @State private var planStore = PlanStore.preview()
-    @State private var familyStore = FamilyStore.preview()
+    @State private var todayStore = TodayStore()
+    @State private var planStore = PlanStore()
+    @State private var familyStore = FamilyStore()
     @State private var showingAgent = false
 
     var body: some View {

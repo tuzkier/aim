@@ -133,7 +133,15 @@ actor BusinessRepository: BusinessRepositoryProtocol {
             body: body,
         )
         let (data, _) = try await session.aimData(for: request)
-        return try decoder.decode(CreatePregnancyResponse.self, from: data).id
+        let pregnancyID = try decoder.decode(CreatePregnancyResponse.self, from: data).id
+
+        let planRequest = environment.businessRequest(
+            path: "/api/v1/pregnancies/\(pregnancyID.uuidString)/plan",
+            method: "POST",
+            body: try encoder.encode(EmptyPlanRequest()),
+        )
+        _ = try await session.aimData(for: planRequest)
+        return pregnancyID
     }
 
     func complete(task: TaskItem) async throws -> TaskItem {
@@ -214,6 +222,14 @@ private struct CreatePregnancyBody: Encodable {
 
 private struct CreatePregnancyResponse: Decodable {
     let id: UUID
+}
+
+private struct EmptyPlanRequest: Encodable {
+    let asOf: String? = nil
+
+    enum CodingKeys: String, CodingKey {
+        case asOf = "as_of"
+    }
 }
 
 extension JSONDecoder {
