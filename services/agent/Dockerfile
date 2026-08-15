@@ -16,6 +16,8 @@ ENV PORT=2000
 
 COPY --from=build /app/package.json /app/package-lock.json ./
 COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/agent ./agent
+COPY --from=build /app/tsconfig.json ./tsconfig.json
 COPY --from=build /app/.output ./.output
 
 EXPOSE 2000

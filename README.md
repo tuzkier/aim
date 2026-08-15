@@ -8,7 +8,7 @@
 - 产品方案：`docs/plans/`
 - 系统架构与 ADR：`docs/architecture/`
 - Coding Agent 实施计划：`docs/plans/2026-08-14-pregnancy-core-implementation-plan.md`
-- 当前第一阶段：FastAPI 业务闭环、Eve 受控工具联调与 SwiftUI 核心客户端骨架已完成；Simulator 验收待完整 Xcode 环境
+- 当前第一阶段：FastAPI 业务闭环、Eve 受控工具联调与 SwiftUI 核心客户端骨架已完成；iOS Simulator 与 Docker 本地栈均已具备可复现验证入口
 
 ## 目录边界
 
@@ -29,4 +29,4 @@ make lint
 make verify
 ```
 
-第一阶段不要求 Xcode 才能运行 FastAPI、PostgreSQL 和 Eve；进入 iOS Task 之前需要安装完整 Xcode。
+`make dev` 会在 Docker 中启动 PostgreSQL、FastAPI 和 Eve。默认入口为：FastAPI `http://127.0.0.1:8100`、Eve `http://127.0.0.1:2210`、PostgreSQL `127.0.0.1:55434`。Eve 默认使用确定性 Mock Model；接入真实模型前请通过环境变量覆盖，不要把凭证写入 Compose 文件。

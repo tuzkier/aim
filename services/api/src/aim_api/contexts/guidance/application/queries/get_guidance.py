@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -7,7 +8,18 @@ import yaml
 
 from aim_api.contexts.guidance.domain.guidance_item import GuidanceItem
 
-WORKSPACE_ROOT = Path(__file__).resolve().parents[8]
+
+def _default_content_root() -> Path:
+    """Find the repository content directory without assuming a fixed install depth."""
+
+    for parent in Path(__file__).resolve().parents:
+        candidate = parent / "content"
+        if (candidate / "pregnancy-tasks").is_dir():
+            return candidate
+    return Path(__file__).resolve().parent
+
+
+CONTENT_ROOT = Path(os.environ.get("AIM_CONTENT_ROOT", _default_content_root()))
 
 
 @dataclass(frozen=True, slots=True)
@@ -17,7 +29,7 @@ class GetGuidanceQuery:
 
 
 def _load_week_document() -> dict:
-    path = WORKSPACE_ROOT / "content/pregnancy-tasks/week-18.yaml"
+    path = CONTENT_ROOT / "pregnancy-tasks/week-18.yaml"
     return yaml.safe_load(path.read_text(encoding="utf-8"))
 
 

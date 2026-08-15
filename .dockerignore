@@ -1,0 +1,14 @@
+.git
+.gitignore
+.env*
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+**/.venv
+**/node_modules
+**/.eve
+**/.output
+**/coverage
+apps/ios/DerivedData
+prototype/node_modules
+infrastructure/compose/.data
