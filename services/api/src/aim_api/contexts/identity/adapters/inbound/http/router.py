@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import UTC, date, datetime, time, timedelta
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, HTTPException, Request, Response
@@ -12,6 +12,16 @@ from aim_api.contexts.family.adapters.outbound.persistence.repositories import (
 from aim_api.contexts.family.application.commands import create_family
 from aim_api.contexts.family.application.commands.create_family import CreateFamilyCommand
 from aim_api.contexts.family.domain.family import FamilyMemberRole
+from aim_api.contexts.guidance.application.queries.get_guidance import initial_plan_items
+from aim_api.contexts.planning.adapters.outbound.persistence.repositories import (
+    SqlAlchemyPlanningUnitOfWork,
+)
+from aim_api.contexts.planning.application.commands import generate_initial_plan
+from aim_api.contexts.planning.application.commands.generate_initial_plan import (
+    GenerateInitialPlanCommand,
+    TaskSeed,
+)
+from aim_api.contexts.planning.domain.task import ActorType, TaskSourceType
 from aim_api.contexts.pregnancy.adapters.outbound.persistence.repositories import (
     SqlAlchemyPregnancyUnitOfWork,
 )
@@ -82,6 +92,48 @@ async def _ensure_family_and_pregnancy(
         return family.id, pregnancy.id if pregnancy is not None else None, created
 
 
+async def _ensure_initial_plan(
+    pregnancy_id: UUID,
+    account_id: UUID,
+    database: Database,
+) -> None:
+    as_of = date.today()
+    async with database.session() as session:
+        uow = SqlAlchemyPlanningUnitOfWork(session)
+        if await uow.repository.get_plan(pregnancy_id) is not None:
+            return
+        pregnancy = await uow.pregnancy_ownership.get_pregnancy(pregnancy_id)
+        if pregnancy is None:
+            return
+        age = pregnancy.gestational_age(as_of)
+        seeds = tuple(
+            TaskSeed(
+                title=item.title,
+                description=item.summary,
+                source_type=TaskSourceType.template,
+                source_id=item.id,
+                changed_by_actor_type=ActorType.system,
+                changed_by_actor_id=None,
+                due_at=datetime.combine(
+                    as_of + timedelta(days=item.due_in_days),
+                    time(9, 0),
+                    tzinfo=UTC,
+                ),
+            )
+            for item in initial_plan_items(age.weeks)
+        )
+        await generate_initial_plan.execute(
+            GenerateInitialPlanCommand(
+                pregnancy_id=pregnancy_id,
+                family_id=pregnancy.family_id,
+                account_id=account_id,
+                tasks=seeds,
+                now=datetime.combine(as_of, time(0), tzinfo=UTC),
+            ),
+            uow,
+        )
+
+
 @router.post(
     "/api/v1/auth/demo-session",
     response_model=DemoSessionResponse,
@@ -108,6 +160,8 @@ async def create_demo_session(
         account_id,
         database,
     )
+    if pregnancy_id is not None:
+        await _ensure_initial_plan(pregnancy_id, account_id, database)
 
     body = DemoSessionResponse(
         account_id=account_id,

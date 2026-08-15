@@ -39,6 +39,12 @@ def test_demo_session_creates_and_reuses_a_human_facing_account() -> None:
         )
         assert family.status_code == 200, family.text
 
+        plan = client.get(
+            f"/api/v1/pregnancies/{first_body['pregnancy_id']}/plan",
+            headers={"Authorization": f"Bearer {first_body['token']}"},
+        )
+        assert plan.status_code == 200, plan.text
+
 
 def test_demo_session_is_not_available_when_disabled() -> None:
     settings = get_settings().model_copy(update={"dev_auth_enabled": False})
