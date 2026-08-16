@@ -1,0 +1,1 @@
+"""Records persistence adapters."""

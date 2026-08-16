@@ -1,0 +1,48 @@
+from __future__ import annotations
+
+from datetime import datetime
+from typing import Protocol
+from uuid import UUID
+
+from aim_api.contexts.records.domain.record import Record, RecordType
+
+
+class RecordsRepositoryPort(Protocol):
+    async def add_record(self, record: Record) -> None: ...
+
+    async def get_visible_record(
+        self, record_id: UUID, family_id: UUID, account_id: UUID
+    ) -> Record | None: ...
+
+    async def list_visible_records(
+        self,
+        family_id: UUID,
+        account_id: UUID,
+        *,
+        pregnancy_id: UUID | None = None,
+        record_type: RecordType | None = None,
+        occurred_from: datetime | None = None,
+        occurred_until: datetime | None = None,
+    ) -> list[Record]: ...
+
+    async def save_record(self, record: Record) -> None: ...
+
+    async def soft_delete(self, record: Record) -> None: ...
+
+
+class FamilyMembershipPort(Protocol):
+    async def is_active_member(self, family_id: UUID, account_id: UUID) -> bool: ...
+
+
+class PregnancyOwnershipPort(Protocol):
+    async def get_pregnancy(self, pregnancy_id: UUID): ...
+
+
+class RecordsUnitOfWork(Protocol):
+    repository: RecordsRepositoryPort
+    family_membership: FamilyMembershipPort
+    pregnancy_ownership: PregnancyOwnershipPort
+
+    async def commit(self) -> None: ...
+
+    async def rollback(self) -> None: ...

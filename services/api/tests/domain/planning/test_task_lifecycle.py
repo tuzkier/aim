@@ -63,3 +63,7 @@ def test_task_keeps_source_and_actor_provenance() -> None:
     assert task.source_id == "week-18-ultrasound"
     assert task.changed_by_actor_type is ActorType.account
     assert task.changed_by_actor_id is not None
+
+
+def test_task_can_be_sourced_from_a_record() -> None:
+    assert TaskSourceType.record.value == "record"

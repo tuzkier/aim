@@ -20,6 +20,7 @@ class TaskSourceType(StrEnum):
     agent = "agent"
     doctor_requirement = "doctor_requirement"
     family_member = "family_member"
+    record = "record"
 
 
 class ActorType(StrEnum):
