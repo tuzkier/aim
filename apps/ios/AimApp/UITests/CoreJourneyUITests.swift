@@ -46,7 +46,9 @@ final class CoreJourneyUITests: XCTestCase {
         let symptomRecord = app.buttons["record-row-symptom"].firstMatch
         XCTAssertTrue(symptomRecord.waitForExistence(timeout: 5))
         symptomRecord.tap()
-        XCTAssertTrue(app.buttons["转为待办"].waitForExistence(timeout: 3))
+        let turnIntoTask = app.buttons["转为待办"]
+        reveal(turnIntoTask, in: app)
+        XCTAssertTrue(turnIntoTask.exists)
     }
 
     private func reveal(_ element: XCUIElement, in app: XCUIApplication) {
