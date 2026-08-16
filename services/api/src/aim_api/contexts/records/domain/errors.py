@@ -8,3 +8,7 @@ class RecordValidationError(RecordsDomainError):
 
 class RecordAccessDenied(RecordsDomainError):
     """Raised when a non-author attempts to mutate a record."""
+
+
+class RecordNotFound(RecordsDomainError):
+    """Raised when a visible record cannot be found."""

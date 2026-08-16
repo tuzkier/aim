@@ -15,6 +15,7 @@ from aim_api.contexts.pregnancy.adapters.outbound.persistence.repositories impor
     SqlAlchemyPregnancyRepository,
 )
 from aim_api.contexts.records.adapters.outbound.persistence.models import RecordModel
+from aim_api.contexts.records.domain.errors import RecordAccessDenied, RecordValidationError
 from aim_api.contexts.records.domain.record import Record, RecordType, RecordVisibility
 
 
@@ -70,10 +71,18 @@ class SqlAlchemyRecordsRepository:
         ).all()
         return [_to_record(model) for model in models]
 
-    async def save_record(self, record: Record) -> None:
-        await self.session.execute(
+    async def save_record(self, record: Record, account_id: UUID) -> None:
+        record.assert_can_mutate(account_id)
+        record.assert_attachment_refs_reserved()
+        if record.deleted_at is not None:
+            raise RecordValidationError("soft-deleted records cannot be saved")
+        result = await self.session.execute(
             update(RecordModel)
-            .where(RecordModel.id == record.id)
+            .where(
+                RecordModel.id == record.id,
+                RecordModel.author_account_id == account_id,
+                RecordModel.deleted_at.is_(None),
+            )
             .values(
                 occurred_at=record.occurred_at,
                 visibility=record.visibility.value,
@@ -82,16 +91,24 @@ class SqlAlchemyRecordsRepository:
                 structured_data=record.structured_data,
                 attachment_refs=record.attachment_refs,
                 updated_at=record.updated_at,
-                deleted_at=record.deleted_at,
             )
         )
+        if result.rowcount != 1:
+            raise RecordAccessDenied("record cannot be updated by this account")
 
-    async def soft_delete(self, record: Record) -> None:
-        await self.session.execute(
+    async def soft_delete(self, record: Record, account_id: UUID) -> None:
+        record.assert_can_mutate(account_id)
+        result = await self.session.execute(
             update(RecordModel)
-            .where(RecordModel.id == record.id)
+            .where(
+                RecordModel.id == record.id,
+                RecordModel.author_account_id == account_id,
+                RecordModel.deleted_at.is_(None),
+            )
             .values(deleted_at=record.deleted_at, updated_at=record.updated_at)
         )
+        if result.rowcount != 1:
+            raise RecordAccessDenied("record cannot be deleted by this account")
 
 
 class SqlAlchemyRecordsUnitOfWork:
@@ -120,6 +137,7 @@ def _visibility_clause(account_id: UUID):
 
 
 def _to_model(record: Record) -> RecordModel:
+    record.assert_attachment_refs_reserved()
     return RecordModel(
         id=record.id,
         pregnancy_id=record.pregnancy_id,

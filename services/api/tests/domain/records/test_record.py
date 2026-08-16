@@ -36,6 +36,11 @@ def test_record_creation_keeps_user_entered_symptom_payload() -> None:
     assert record.attachment_refs == []
 
 
+def test_record_rejects_external_attachment_references() -> None:
+    with pytest.raises(RecordValidationError):
+        make_record(attachment_refs=["uploads/symptom.jpg"])
+
+
 def test_record_rejects_invalid_symptom_severity() -> None:
     with pytest.raises(RecordValidationError):
         make_record(structured_data={"symptoms": ["nausea"], "severity": 6})
@@ -62,6 +67,23 @@ def test_only_author_can_edit_or_soft_delete_record() -> None:
 
     record.soft_delete(author_id, now=NOW)
     assert record.deleted_at == NOW
+
+
+def test_private_record_is_visible_only_to_its_author() -> None:
+    author_id = UUID("00000000-0000-0000-0000-000000000004")
+    record = make_record(author_account_id=author_id, visibility=RecordVisibility.private)
+
+    assert record.is_visible_to(author_id) is True
+    assert record.is_visible_to(uuid4()) is False
+
+
+def test_family_record_is_visible_to_other_family_members_until_deleted() -> None:
+    record = make_record(visibility=RecordVisibility.family)
+    other_member_id = uuid4()
+
+    assert record.is_visible_to(other_member_id) is True
+    record.soft_delete(record.author_account_id, now=NOW)
+    assert record.is_visible_to(other_member_id) is False
 
 
 def test_record_task_source_type_is_supported() -> None:

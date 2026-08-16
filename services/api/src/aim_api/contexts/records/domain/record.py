@@ -56,6 +56,8 @@ class Record:
     ) -> Record:
         if not isinstance(structured_data, dict):
             raise RecordValidationError("structured_data must be a JSON object")
+        if attachment_refs:
+            raise RecordValidationError("attachment references are reserved until uploads are supported")
         cls._validate_payload(record_type, structured_data, content)
         created_at = now or datetime.now(UTC)
         return cls(
@@ -78,6 +80,15 @@ class Record:
     def assert_can_mutate(self, account_id: UUID) -> None:
         if self.author_account_id != account_id:
             raise RecordAccessDenied("only the record author can mutate it")
+
+    def assert_attachment_refs_reserved(self) -> None:
+        if self.attachment_refs:
+            raise RecordValidationError("attachment references are reserved until uploads are supported")
+
+    def is_visible_to(self, account_id: UUID) -> bool:
+        return self.deleted_at is None and (
+            self.visibility is RecordVisibility.family or self.author_account_id == account_id
+        )
 
     def soft_delete(self, account_id: UUID, *, now: datetime | None = None) -> None:
         self.assert_can_mutate(account_id)
