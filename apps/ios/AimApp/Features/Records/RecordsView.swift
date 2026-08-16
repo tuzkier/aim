@@ -17,6 +17,15 @@ struct RecordsView: View {
                     recordsList(snapshot.records)
                 } else if store.isLoading {
                     ProgressView("正在加载记录")
+                } else if let errorMessage = store.errorMessage {
+                    ContentUnavailableView {
+                        Label("记录加载失败", systemImage: "wifi.exclamationmark")
+                    } description: {
+                        Text(errorMessage)
+                    } actions: {
+                        Button("重试") { Task { await store.load(type: selectedType) } }
+                            .buttonStyle(.borderedProminent)
+                    }
                 } else {
                     ContentUnavailableView {
                         Label("还没有记录", systemImage: "note.text")

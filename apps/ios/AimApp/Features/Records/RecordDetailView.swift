@@ -9,17 +9,22 @@ struct RecordDetailView: View {
     @State private var showingEditor = false
     @State private var showingDeleteConfirmation = false
     @State private var showingTaskSheet = false
+    @State private var showingAgent = false
 
-    private var canEdit: Bool { session.accountID == record.authorAccountID }
+    private var currentRecord: RecordItem {
+        store.snapshot?.records.first(where: { $0.id == record.id }) ?? record
+    }
+
+    private var canEdit: Bool { session.accountID == currentRecord.authorAccountID }
 
     var body: some View {
         List {
             Section {
                 VStack(alignment: .leading, spacing: 12) {
-                    Label(record.type.displayName, systemImage: record.type.symbolName)
+                    Label(currentRecord.type.displayName, systemImage: currentRecord.type.symbolName)
                         .foregroundStyle(Color.aimAccent)
-                    Text(record.displayTitle).font(.title2.weight(.semibold))
-                    Text(record.occurredAt, format: .dateTime.year().month().day().hour().minute())
+                    Text(currentRecord.displayTitle).font(.title2.weight(.semibold))
+                    Text(currentRecord.occurredAt, format: .dateTime.year().month().day().hour().minute())
                         .font(.subheadline).foregroundStyle(.secondary)
                 }
                 .aimWarmCard()
@@ -27,9 +32,13 @@ struct RecordDetailView: View {
             .listRowBackground(Color.clear)
 
             contentSection
-            Section("可见范围") { Label(record.visibility.displayName, systemImage: record.visibility == .family ? "person.2" : "lock") }
+            Section("记录信息") {
+                LabeledContent("记录人", value: canEdit ? "我" : "家庭成员")
+                Label(currentRecord.visibility.displayName, systemImage: currentRecord.visibility == .family ? "person.2" : "lock")
+            }
             Section {
                 Button("转为待办") { showingTaskSheet = true }
+                Button("让 Agent 分析当前记录") { showingAgent = true }
                 if canEdit {
                     Button("编辑记录") { showingEditor = true }
                     Button("删除记录", role: .destructive) { showingDeleteConfirmation = true }
@@ -42,16 +51,19 @@ struct RecordDetailView: View {
             Button("删除", role: .destructive) { Task { await delete() } }
         } message: { Text("删除后无法恢复。") }
         .sheet(isPresented: $showingEditor) {
-            RecordComposerView(store: store, record: record) { showingEditor = false }
+            RecordComposerView(store: store, record: currentRecord) { showingEditor = false }
         }
         .sheet(isPresented: $showingTaskSheet) {
-            RecordTaskSheet(record: record, store: store, planStore: planStore) { showingTaskSheet = false }
+            RecordTaskSheet(record: currentRecord, store: store, planStore: planStore) { showingTaskSheet = false }
+        }
+        .sheet(isPresented: $showingAgent) {
+            AgentSheet(initialDraft: analysisPrompt(for: currentRecord))
         }
     }
 
     @ViewBuilder
     private var contentSection: some View {
-        switch record.structuredData {
+        switch currentRecord.structuredData {
         case let .symptom(data):
             Section("身体感受") {
                 LabeledContent("症状", value: data.symptoms.joined(separator: "、"))
@@ -70,6 +82,10 @@ struct RecordDetailView: View {
         case .unknown:
             Section { Text("这类记录暂不支持完整展示。") }
         }
+    }
+
+    private func analysisPrompt(for record: RecordItem) -> String {
+        "请帮我理解这条孕期记录，并告诉我接下来需要留意什么：\n\n类型：\(record.type.displayName)\n发生时间：\(record.occurredAt.formatted(date: .abbreviated, time: .shortened))\n内容：\(record.displayTitle)\n\(record.displaySummary)"
     }
 
     private func delete() async {

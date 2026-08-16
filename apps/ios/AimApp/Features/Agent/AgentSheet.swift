@@ -5,6 +5,12 @@ struct AgentSheet: View {
     @Environment(AppSessionStore.self) private var session
     @State private var store = AgentStore()
 
+    init(initialDraft: String = "") {
+        let store = AgentStore()
+        store.draft = initialDraft
+        _store = State(initialValue: store)
+    }
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {

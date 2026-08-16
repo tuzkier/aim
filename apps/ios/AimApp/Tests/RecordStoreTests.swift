@@ -25,6 +25,16 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertEqual(store.draft, draft)
         XCTAssertNotNil(store.errorMessage)
     }
+
+    func testLoadExposesErrorInsteadOfAnEmptySnapshot() async {
+        let store = RecordStore(repository: FailingRecordRepository())
+
+        await store.load()
+
+        XCTAssertNil(store.snapshot)
+        XCTAssertNotNil(store.errorMessage)
+        XCTAssertFalse(store.isLoading)
+    }
 }
 
 private actor FailingRecordRepository: BusinessRepositoryProtocol {
