@@ -4,7 +4,7 @@ from datetime import UTC, date, datetime, time, timedelta
 from uuid import UUID
 
 from fastapi import APIRouter, Request
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from aim_api.contexts.guidance.application.queries.get_guidance import initial_plan_items
 from aim_api.contexts.planning.adapters.outbound.persistence.repositories import (
@@ -13,12 +13,14 @@ from aim_api.contexts.planning.adapters.outbound.persistence.repositories import
 from aim_api.contexts.planning.application.commands import (
     assign_task,
     complete_task,
+    create_task,
     delay_task,
     schedule_task,
     undo_change,
 )
 from aim_api.contexts.planning.application.commands.assign_task import AssignTaskCommand
 from aim_api.contexts.planning.application.commands.complete_task import CompleteTaskCommand
+from aim_api.contexts.planning.application.commands.create_task import CreateTaskCommand
 from aim_api.contexts.planning.application.commands.delay_task import DelayTaskCommand
 from aim_api.contexts.planning.application.commands.generate_initial_plan import (
     GenerateInitialPlanCommand,
@@ -41,6 +43,12 @@ from aim_api.contexts.planning.domain.task_status import (
     TaskAssignmentError,
     TaskVersionConflict,
 )
+from aim_api.contexts.records.adapters.outbound.persistence.repositories import (
+    SqlAlchemyRecordsUnitOfWork,
+)
+from aim_api.contexts.records.application.queries import get_record
+from aim_api.contexts.records.application.queries.get_record import GetRecordQuery
+from aim_api.contexts.records.domain.errors import RecordAccessDenied, RecordNotFound
 from aim_api.platform.auth.context import ActorContext, authenticate
 from aim_api.platform.http.errors import (
     ConflictError,
@@ -98,6 +106,35 @@ class AssignTaskRequest(ExpectedVersionRequest):
 
 class GeneratePlanRequest(BaseModel):
     as_of: date | None = None
+
+
+class CreateTaskRequest(BaseModel):
+    title: str = Field(min_length=1, max_length=200)
+    description: str | None = Field(default=None, max_length=5000)
+    due_at: datetime | None = None
+    assigned_member_id: UUID | None = None
+    record_id: UUID | None = None
+    source_type: TaskSourceType = TaskSourceType.user
+    source_id: str | None = Field(default=None, max_length=200)
+
+    @field_validator("title")
+    @classmethod
+    def title_must_not_be_blank(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("title cannot be blank")
+        return value
+
+    @model_validator(mode="after")
+    def validate_source(self) -> CreateTaskRequest:
+        if self.record_id is not None:
+            if self.source_type not in (TaskSourceType.user, TaskSourceType.record):
+                raise ValueError("record_id can only be used with record source")
+            if self.source_id is not None and self.source_id != str(self.record_id):
+                raise ValueError("source_id must match record_id")
+            return self
+        if self.source_type is not TaskSourceType.user:
+            raise ValueError("only user or validated record task sources can be created")
+        return self
 
 
 def _task_response(task: Task) -> TaskResponse:
@@ -226,6 +263,72 @@ async def _run_task_command(request: Request, command_fn, command):
             await uow.rollback()
             _translate(error)
         return _task_response(task)
+
+
+async def _validated_record_source(
+    request: Request, pregnancy_id: UUID, record_id: UUID, actor: ActorContext
+) -> str:
+    database = request.app.state.database
+    async with database.session() as session:
+        uow = SqlAlchemyRecordsUnitOfWork(session)
+        try:
+            pregnancy = await uow.pregnancy_ownership.get_pregnancy(pregnancy_id)
+            if pregnancy is None:
+                raise PlanNotFound("pregnancy does not exist")
+            await get_record.execute(
+                GetRecordQuery(
+                    record_id=record_id,
+                    family_id=pregnancy.family_id,
+                    account_id=actor.account_id,
+                    pregnancy_id=pregnancy_id,
+                ),
+                uow,
+            )
+        except RecordAccessDenied as error:
+            await uow.rollback()
+            raise PlanningAccessDenied("account cannot use this record") from error
+        except RecordNotFound as error:
+            await uow.rollback()
+            raise TaskNotFound("record does not exist or is not visible") from error
+        except Exception:
+            await uow.rollback()
+            raise
+    return str(record_id)
+
+
+@router.post(
+    "/api/v1/pregnancies/{pregnancy_id}/tasks",
+    response_model=TaskResponse,
+    status_code=201,
+)
+async def create_task_endpoint(
+    pregnancy_id: UUID, payload: CreateTaskRequest, request: Request
+) -> TaskResponse:
+    actor = _actor(request)
+    source_type = payload.source_type
+    source_id = payload.source_id
+    try:
+        if payload.record_id is not None:
+            source_type = TaskSourceType.record
+            source_id = await _validated_record_source(
+                request, pregnancy_id, payload.record_id, actor
+            )
+        return await _run_task_command(
+            request,
+            create_task.execute,
+            CreateTaskCommand(
+                pregnancy_id=pregnancy_id,
+                account_id=actor.account_id,
+                title=payload.title,
+                description=payload.description,
+                due_at=payload.due_at,
+                source_type=source_type,
+                source_id=source_id,
+                assigned_member_id=payload.assigned_member_id,
+            ),
+        )
+    except Exception as error:
+        _translate(error)
 
 
 @router.post("/api/v1/tasks/{task_id}/schedule", response_model=TaskResponse)

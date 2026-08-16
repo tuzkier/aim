@@ -360,6 +360,137 @@
         "type": "object",
         "title": "CreatePregnancyRequest"
       },
+      "CreateRecordRequest": {
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/RecordType"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Occurred At"
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/RecordVisibility"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 5000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content"
+          },
+          "structured_data": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Structured Data"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "occurred_at",
+          "visibility",
+          "structured_data"
+        ],
+        "title": "CreateRecordRequest"
+      },
+      "CreateTaskRequest": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 5000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "due_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          },
+          "assigned_member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assigned Member Id"
+          },
+          "record_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Record Id"
+          },
+          "source_type": {
+            "$ref": "#/components/schemas/TaskSourceType",
+            "default": "user"
+          },
+          "source_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title"
+        ],
+        "title": "CreateTaskRequest"
+      },
       "DelayTaskRequest": {
         "properties": {
           "expected_version": {
@@ -921,6 +1052,135 @@
         ],
         "title": "PregnancyResponse"
       },
+      "RecordListResponse": {
+        "properties": {
+          "records": {
+            "items": {
+              "$ref": "#/components/schemas/RecordResponse"
+            },
+            "type": "array",
+            "title": "Records"
+          }
+        },
+        "type": "object",
+        "required": [
+          "records"
+        ],
+        "title": "RecordListResponse"
+      },
+      "RecordResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "pregnancy_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Pregnancy Id"
+          },
+          "family_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Family Id"
+          },
+          "author_account_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Author Account Id"
+          },
+          "type": {
+            "$ref": "#/components/schemas/RecordType"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Occurred At"
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/RecordVisibility"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content"
+          },
+          "structured_data": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Structured Data"
+          },
+          "attachment_refs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Attachment Refs"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "pregnancy_id",
+          "family_id",
+          "author_account_id",
+          "type",
+          "occurred_at",
+          "visibility",
+          "title",
+          "content",
+          "structured_data",
+          "attachment_refs",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "RecordResponse"
+      },
+      "RecordType": {
+        "type": "string",
+        "enum": [
+          "symptom",
+          "checkup",
+          "note"
+        ],
+        "title": "RecordType"
+      },
+      "RecordVisibility": {
+        "type": "string",
+        "enum": [
+          "family",
+          "private"
+        ],
+        "title": "RecordVisibility"
+      },
       "ScheduleTaskRequest": {
         "properties": {
           "expected_version": {
@@ -1080,6 +1340,18 @@
         ],
         "title": "TaskResponse"
       },
+      "TaskSourceType": {
+        "type": "string",
+        "enum": [
+          "template",
+          "user",
+          "agent",
+          "doctor_requirement",
+          "family_member",
+          "record"
+        ],
+        "title": "TaskSourceType"
+      },
       "TodayResponse": {
         "properties": {
           "pregnancy_id": {
@@ -1194,6 +1466,70 @@
           "expected_version"
         ],
         "title": "UndoOperationRequest"
+      },
+      "UpdateRecordRequest": {
+        "properties": {
+          "occurred_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Occurred At"
+          },
+          "visibility": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RecordVisibility"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 5000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content"
+          },
+          "structured_data": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Structured Data"
+          }
+        },
+        "type": "object",
+        "title": "UpdateRecordRequest"
       },
       "UpdateTaskRequest": {
         "properties": {

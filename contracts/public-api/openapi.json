@@ -767,6 +767,59 @@
         }
       }
     },
+    "/api/v1/pregnancies/{pregnancy_id}/tasks": {
+      "post": {
+        "tags": [
+          "planning"
+        ],
+        "summary": "Create Task Endpoint",
+        "operationId": "create_task_endpoint_api_v1_pregnancies__pregnancy_id__tasks_post",
+        "parameters": [
+          {
+            "name": "pregnancy_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Pregnancy Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTaskRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/tasks/{task_id}/schedule": {
       "post": {
         "tags": [
@@ -1273,6 +1326,85 @@
           "structured_data"
         ],
         "title": "CreateRecordRequest"
+      },
+      "CreateTaskRequest": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 5000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "due_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          },
+          "assigned_member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assigned Member Id"
+          },
+          "record_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Record Id"
+          },
+          "source_type": {
+            "$ref": "#/components/schemas/TaskSourceType",
+            "default": "user"
+          },
+          "source_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title"
+        ],
+        "title": "CreateTaskRequest"
       },
       "DelayTaskRequest": {
         "properties": {
@@ -2138,6 +2270,18 @@
           "updated_at"
         ],
         "title": "TaskResponse"
+      },
+      "TaskSourceType": {
+        "type": "string",
+        "enum": [
+          "template",
+          "user",
+          "agent",
+          "doctor_requirement",
+          "family_member",
+          "record"
+        ],
+        "title": "TaskSourceType"
       },
       "TodayResponse": {
         "properties": {

@@ -11,6 +11,10 @@ from aim_api.contexts.planning.application.commands.complete_task import (
 from aim_api.contexts.planning.application.commands.complete_task import (
     execute as complete_task,
 )
+from aim_api.contexts.planning.application.commands.create_task import (
+    CreateTaskCommand,
+)
+from aim_api.contexts.planning.application.commands.create_task import execute as create_task
 from aim_api.contexts.planning.application.commands.schedule_task import (
     ScheduleTaskCommand,
 )
@@ -25,6 +29,7 @@ class FakeRepository:
     def __init__(self, task: Task) -> None:
         self.task = task
         self.changes = []
+        self.created_tasks = []
 
     async def get_task(self, task_id):
         return self.task if task_id == self.task.id else None
@@ -33,6 +38,12 @@ class FakeRepository:
         if task.version != expected_version + 1:
             raise TaskVersionConflict("stale task version")
         self.changes.append(change)
+
+    async def add_task(self, task):
+        self.created_tasks.append(task)
+
+    async def get_plan(self, pregnancy_id):
+        return type("PlanRef", (), {"id": self.task.plan_id})()
 
 
 class FakeMembership:
@@ -103,3 +114,33 @@ async def test_complete_command_rejects_stale_version() -> None:
             ),
             uow,
         )
+
+
+@pytest.mark.asyncio
+async def test_create_task_links_record_source_and_commits() -> None:
+    uow = FakeUow(_task())
+    account_id = uuid4()
+    record_id = uuid4()
+
+    created = await create_task(
+        CreateTaskCommand(
+            pregnancy_id=uow.repository.task.pregnancy_id,
+            account_id=account_id,
+            title="根据产检结果复查",
+            description="两周后带报告复诊",
+            due_at=datetime(2026, 8, 30, 9, 0, tzinfo=UTC),
+            source_type=TaskSourceType.record,
+            source_id=str(record_id),
+        ),
+        uow,
+    )
+
+    assert uow.committed is True
+    assert uow.repository.created_tasks == [created]
+    assert created.plan_id == uow.repository.task.plan_id
+    assert created.pregnancy_id == uow.repository.task.pregnancy_id
+    assert created.source_type is TaskSourceType.record
+    assert created.source_id == str(record_id)
+    assert created.changed_by_actor_type is ActorType.account
+    assert created.changed_by_actor_id == account_id
+    assert created.due_at == datetime(2026, 8, 30, 9, 0, tzinfo=UTC)

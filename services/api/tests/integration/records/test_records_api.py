@@ -66,8 +66,14 @@ def test_record_endpoints_require_authentication() -> None:
         )
         update = client.patch(f"/api/v1/pregnancies/{pregnancy_id}/records/{record_id}", json={})
         delete = client.delete(f"/api/v1/pregnancies/{pregnancy_id}/records/{record_id}")
+        create_task = client.post(
+            f"/api/v1/pregnancies/{pregnancy_id}/tasks", json={"title": "未认证待办"}
+        )
 
-    assert all(response.status_code == 401 for response in (collection, item, create, update, delete))
+    assert all(
+        response.status_code == 401
+        for response in (collection, item, create, update, delete, create_task)
+    )
 
 
 def test_records_create_all_types_and_validate_payloads() -> None:
@@ -220,4 +226,48 @@ def test_records_enforce_visibility_author_mutation_and_family_boundary() -> Non
     assert [record["id"] for record in member_list.json()["records"]] == [family_id_record]
     assert member_private.status_code == 404
     assert non_author_edit.status_code == 403
+    assert cross_family.status_code == 403
+
+
+def test_record_can_be_explicitly_converted_to_task_without_cross_family_leakage() -> None:
+    author_id = str(uuid4())
+    stranger_id = str(uuid4())
+    author_phone = _phone(author_id)
+    stranger_phone = _phone(stranger_id, "137")
+    author_headers = _headers(author_id, author_phone)
+    stranger_headers = _headers(stranger_id, stranger_phone)
+
+    with TestClient(create_app()) as client:
+        _, pregnancy_id = _create_pregnancy(client, author_id, author_phone)
+        created_record = _create_record(client, pregnancy_id, author_headers)
+        generated_plan = client.post(
+            f"/api/v1/pregnancies/{pregnancy_id}/plan", headers=author_headers, json={}
+        )
+        task = client.post(
+            f"/api/v1/pregnancies/{pregnancy_id}/tasks",
+            headers=author_headers,
+            json={
+                "record_id": created_record.json()["id"],
+                "title": "跟进晨吐情况",
+                "description": "下次产检时咨询医生",
+                "due_at": "2026-08-30T09:00:00+08:00",
+            },
+        )
+        cross_family = client.post(
+            f"/api/v1/pregnancies/{pregnancy_id}/tasks",
+            headers=stranger_headers,
+            json={
+                "record_id": created_record.json()["id"],
+                "title": "不应越权创建",
+            },
+        )
+
+    assert created_record.status_code == 201, created_record.text
+    assert generated_plan.status_code == 201, generated_plan.text
+    assert task.status_code == 201, task.text
+    assert task.json()["source_type"] == "record"
+    assert task.json()["source_id"] == created_record.json()["id"]
+    assert task.json()["changed_by_actor_type"] == "account"
+    assert task.json()["changed_by_actor_id"] == author_id
+    assert task.json()["due_at"] == "2026-08-30T09:00:00+08:00"
     assert cross_family.status_code == 403
