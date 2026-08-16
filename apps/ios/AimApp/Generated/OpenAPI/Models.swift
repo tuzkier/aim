@@ -159,6 +159,147 @@ struct APIAssignTaskDTO: Codable, Sendable {
     }
 }
 
+struct APIRecordDTO: Codable, Sendable {
+    let id: UUID
+    let pregnancyID: UUID
+    let familyID: UUID
+    let authorAccountID: UUID
+    let type: RecordType
+    let occurredAt: Date
+    let visibility: RecordVisibility
+    let title: String?
+    let content: String?
+    let structuredData: APIRecordStructuredDataDTO
+    let attachmentRefs: [String]
+    let createdAt: Date
+    let updatedAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case pregnancyID = "pregnancy_id"
+        case familyID = "family_id"
+        case authorAccountID = "author_account_id"
+        case type
+        case occurredAt = "occurred_at"
+        case visibility, title, content
+        case structuredData = "structured_data"
+        case attachmentRefs = "attachment_refs"
+        case createdAt = "created_at"
+        case updatedAt = "updated_at"
+    }
+}
+
+struct APIRecordListDTO: Codable, Sendable {
+    let records: [APIRecordDTO]
+}
+
+struct APIRecordStructuredDataDTO: Codable, Sendable {
+    let symptoms: [String]?
+    let severity: Int?
+    let note: String?
+    let hospital: String?
+    let examItems: String?
+    let result: String?
+    let doctorAdvice: String?
+
+    init(
+        symptoms: [String]? = nil,
+        severity: Int? = nil,
+        note: String? = nil,
+        hospital: String? = nil,
+        examItems: String? = nil,
+        result: String? = nil,
+        doctorAdvice: String? = nil
+    ) {
+        self.symptoms = symptoms
+        self.severity = severity
+        self.note = note
+        self.hospital = hospital
+        self.examItems = examItems
+        self.result = result
+        self.doctorAdvice = doctorAdvice
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case symptoms, severity, note, hospital, result
+        case examItems = "exam_items"
+        case doctorAdvice = "doctor_advice"
+    }
+
+    func recordData(for type: RecordType) -> RecordStructuredData {
+        switch type {
+        case .symptom:
+            guard let symptoms, let severity else { return .unknown }
+            return .symptom(SymptomRecordData(symptoms: symptoms, severity: severity, note: note))
+        case .checkup:
+            guard let hospital, let examItems, let result, let doctorAdvice else { return .unknown }
+            return .checkup(CheckupRecordData(hospital: hospital, examItems: examItems, result: result, doctorAdvice: doctorAdvice))
+        case .note:
+            return .note
+        case .unknown:
+            return .unknown
+        }
+    }
+
+    init(recordData: RecordStructuredData) {
+        switch recordData {
+        case let .symptom(data):
+            self.init(symptoms: data.symptoms, severity: data.severity, note: data.note)
+        case let .checkup(data):
+            self.init(hospital: data.hospital, examItems: data.examItems, result: data.result, doctorAdvice: data.doctorAdvice)
+        case .note, .unknown:
+            self.init()
+        }
+    }
+}
+
+struct APICreateRecordDTO: Encodable, Sendable {
+    let type: RecordType
+    let occurredAt: Date
+    let visibility: RecordVisibility
+    let title: String?
+    let content: String?
+    let structuredData: APIRecordStructuredDataDTO
+
+    init(draft: RecordDraft) {
+        type = draft.type
+        occurredAt = draft.occurredAt
+        visibility = draft.visibility
+        title = draft.title
+        content = draft.content
+        structuredData = APIRecordStructuredDataDTO(recordData: draft.structuredData)
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case type
+        case occurredAt = "occurred_at"
+        case visibility, title, content
+        case structuredData = "structured_data"
+    }
+}
+
+struct APIUpdateRecordDTO: Encodable, Sendable {
+    let occurredAt: Date
+    let visibility: RecordVisibility
+    let title: String?
+    let content: String?
+    let structuredData: APIRecordStructuredDataDTO
+
+    init(draft: RecordDraft) {
+        occurredAt = draft.occurredAt
+        visibility = draft.visibility
+        title = draft.title
+        content = draft.content
+        structuredData = APIRecordStructuredDataDTO(recordData: draft.structuredData)
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case occurredAt = "occurred_at"
+        case visibility, title, content
+        case structuredData = "structured_data"
+    }
+}
+
 struct AnyCodable: Codable, Sendable, Equatable {
     let value: String
 

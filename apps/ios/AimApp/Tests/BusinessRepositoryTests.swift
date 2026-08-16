@@ -58,4 +58,50 @@ final class BusinessRepositoryTests: XCTestCase {
             DateComponents(calendar: .init(identifier: .gregorian), year: 2027, month: 1, day: 16).date!
         )
     }
+
+    func testRecordDecoderMapsTypedSymptomStructuredData() throws {
+        let record = try JSONDecoder.aim.decode(APIRecordDTO.self, from: recordPayload(
+            type: "symptom",
+            structuredData: #"{"symptoms":["恶心","乏力"],"severity":3,"note":"下午明显","future_field":"ignored"}"#
+        ))
+
+        XCTAssertEqual(RecordItem(dto: record).type, .symptom)
+        XCTAssertEqual(RecordItem(dto: record).structuredData, .symptom(SymptomRecordData(symptoms: ["恶心", "乏力"], severity: 3, note: "下午明显")))
+    }
+
+    func testRecordDecoderMapsTypedCheckupStructuredData() throws {
+        let record = try JSONDecoder.aim.decode(APIRecordDTO.self, from: recordPayload(
+            type: "checkup",
+            structuredData: #"{"hospital":"杭州市妇产科医院","exam_items":"NT","result":"正常","doctor_advice":"按时复诊","ignored":true}"#
+        ))
+
+        XCTAssertEqual(RecordItem(dto: record).structuredData, .checkup(CheckupRecordData(hospital: "杭州市妇产科医院", examItems: "NT", result: "正常", doctorAdvice: "按时复诊")))
+    }
+
+    func testRecordDecoderMapsUnknownTypeToUnknown() throws {
+        let record = try JSONDecoder.aim.decode(APIRecordDTO.self, from: recordPayload(type: "future_type", structuredData: "{}"))
+
+        XCTAssertEqual(RecordItem(dto: record).type, .unknown)
+        XCTAssertEqual(RecordItem(dto: record).structuredData, .unknown)
+    }
+
+    private func recordPayload(type: String, structuredData: String) -> Data {
+        Data("""
+        {
+          "id": "11111111-1111-1111-1111-111111111111",
+          "pregnancy_id": "22222222-2222-2222-2222-222222222222",
+          "family_id": "33333333-3333-3333-3333-333333333333",
+          "author_account_id": "44444444-4444-4444-4444-444444444444",
+          "type": "\(type)",
+          "occurred_at": "2026-08-16T08:30:00Z",
+          "visibility": "family",
+          "title": null,
+          "content": null,
+          "structured_data": \(structuredData),
+          "attachment_refs": [],
+          "created_at": "2026-08-16T08:30:00Z",
+          "updated_at": "2026-08-16T08:30:00Z"
+        }
+        """.utf8)
+    }
 }

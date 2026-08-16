@@ -80,7 +80,12 @@ protocol BusinessRepositoryProtocol: Sendable {
     func fetchToday() async throws -> TodaySnapshot
     func fetchPlan() async throws -> PlanSnapshot
     func fetchFamily() async throws -> FamilySnapshot
+    func fetchRecords(type: RecordType?) async throws -> RecordSnapshot
     func createPregnancy(dueDate: Date) async throws -> UUID
+    func createRecord(draft: RecordDraft) async throws -> RecordItem
+    func updateRecord(recordID: UUID, draft: RecordDraft) async throws -> RecordItem
+    func deleteRecord(recordID: UUID) async throws
+    func createTaskFromRecord(record: RecordItem, title: String, description: String?, dueAt: Date?) async throws -> TaskItem
     func complete(task: TaskItem) async throws -> TaskItem
     func delay(task: TaskItem, until: Date) async throws -> TaskItem
     func schedule(task: TaskItem, at: Date) async throws -> TaskItem
@@ -122,6 +127,14 @@ actor BusinessRepository: BusinessRepositoryProtocol {
         return map(try decoder.decode(APIFamilyDTO.self, from: data))
     }
 
+    func fetchRecords(type: RecordType? = nil) async throws -> RecordSnapshot {
+        let pregnancyID = try requiredPregnancyID()
+        let filter = type.map { "?type=\($0.rawValue)" } ?? ""
+        let request = environment.businessRequest(path: "/api/v1/pregnancies/\(pregnancyID.uuidString)/records\(filter)")
+        let (data, _) = try await session.aimData(for: request)
+        return RecordSnapshot(records: try decoder.decode(APIRecordListDTO.self, from: data).records.map(RecordItem.init(dto:)))
+    }
+
     func createPregnancy(dueDate: Date) async throws -> UUID {
         let familyID = try requiredFamilyID()
         let body = try encoder.encode(
@@ -142,6 +155,51 @@ actor BusinessRepository: BusinessRepositoryProtocol {
         )
         _ = try await session.aimData(for: planRequest)
         return pregnancyID
+    }
+
+    func createRecord(draft: RecordDraft) async throws -> RecordItem {
+        try validate(draft)
+        let pregnancyID = try requiredPregnancyID()
+        let request = environment.businessRequest(
+            path: "/api/v1/pregnancies/\(pregnancyID.uuidString)/records",
+            method: "POST",
+            body: try encoder.encode(APICreateRecordDTO(draft: draft))
+        )
+        let (data, _) = try await session.aimData(for: request)
+        return RecordItem(dto: try decoder.decode(APIRecordDTO.self, from: data))
+    }
+
+    func updateRecord(recordID: UUID, draft: RecordDraft) async throws -> RecordItem {
+        try validate(draft)
+        let pregnancyID = try requiredPregnancyID()
+        let request = environment.businessRequest(
+            path: "/api/v1/pregnancies/\(pregnancyID.uuidString)/records/\(recordID.uuidString)",
+            method: "PATCH",
+            body: try encoder.encode(APIUpdateRecordDTO(draft: draft))
+        )
+        let (data, _) = try await session.aimData(for: request)
+        return RecordItem(dto: try decoder.decode(APIRecordDTO.self, from: data))
+    }
+
+    func deleteRecord(recordID: UUID) async throws {
+        let pregnancyID = try requiredPregnancyID()
+        let request = environment.businessRequest(
+            path: "/api/v1/pregnancies/\(pregnancyID.uuidString)/records/\(recordID.uuidString)",
+            method: "DELETE"
+        )
+        _ = try await session.aimData(for: request)
+    }
+
+    func createTaskFromRecord(record: RecordItem, title: String, description: String?, dueAt: Date?) async throws -> TaskItem {
+        let pregnancyID = try requiredPregnancyID()
+        guard record.pregnancyID == pregnancyID else { throw APIError.invalidResponse }
+        let request = environment.businessRequest(
+            path: "/api/v1/pregnancies/\(pregnancyID.uuidString)/tasks",
+            method: "POST",
+            body: try encoder.encode(CreateTaskFromRecordBody(title: title, description: description, dueAt: dueAt, recordID: record.id))
+        )
+        let (data, _) = try await session.aimData(for: request)
+        return map(try decoder.decode(APITaskDTO.self, from: data))
     }
 
     func complete(task: TaskItem) async throws -> TaskItem {
@@ -203,6 +261,16 @@ actor BusinessRepository: BusinessRepositoryProtocol {
         })
     }
 
+    private func validate(_ draft: RecordDraft) throws {
+        guard draft.visibility != .unknown else { throw APIError.invalidResponse }
+        switch (draft.type, draft.structuredData) {
+        case (.symptom, .symptom), (.checkup, .checkup), (.note, .note):
+            return
+        default:
+            throw APIError.invalidResponse
+        }
+    }
+
     private static let dateOnlyFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.calendar = Calendar(identifier: .gregorian)
@@ -229,6 +297,21 @@ private struct EmptyPlanRequest: Encodable {
 
     enum CodingKeys: String, CodingKey {
         case asOf = "as_of"
+    }
+}
+
+private struct CreateTaskFromRecordBody: Encodable {
+    let title: String
+    let description: String?
+    let dueAt: Date?
+    let recordID: UUID
+    let sourceType = "record"
+
+    enum CodingKeys: String, CodingKey {
+        case title, description
+        case dueAt = "due_at"
+        case recordID = "record_id"
+        case sourceType = "source_type"
     }
 }
 
