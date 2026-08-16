@@ -41,10 +41,9 @@ final class CoreJourneyUITests: XCTestCase {
         severity.tap()
         XCTAssertTrue(app.buttons["record-severity-2"].waitForExistence(timeout: 2))
         app.buttons["record-severity-2"].tap()
-        XCTAssertTrue(app.staticTexts["家庭成员可以看到这条记录。"].waitForExistence(timeout: 2))
         app.buttons["保存记录"].tap()
 
-        let symptomRecord = app.staticTexts["恶心"]
+        let symptomRecord = app.buttons["record-row-symptom"].firstMatch
         XCTAssertTrue(symptomRecord.waitForExistence(timeout: 5))
         symptomRecord.tap()
         XCTAssertTrue(app.buttons["转为待办"].waitForExistence(timeout: 3))

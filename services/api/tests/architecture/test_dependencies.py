@@ -30,6 +30,7 @@ def test_context_domains_exist_and_remain_framework_free() -> None:
         "identity",
         "planning",
         "pregnancy",
+        "records",
     }
 
     violations: list[str] = []

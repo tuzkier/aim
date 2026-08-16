@@ -120,6 +120,7 @@ struct RecordsView: View {
                         } label: {
                             RecordRow(record: record)
                         }
+                        .accessibilityIdentifier("record-row-\(record.type.rawValue)")
                     }
                 }
             }
@@ -152,7 +153,6 @@ struct RecordRow: View {
                 .foregroundStyle(.tertiary)
             }
         }
-        .accessibilityElement(children: .combine)
     }
 }
 
