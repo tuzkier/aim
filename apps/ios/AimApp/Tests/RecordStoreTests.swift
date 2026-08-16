@@ -35,6 +35,18 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertNotNil(store.errorMessage)
         XCTAssertFalse(store.isLoading)
     }
+
+    func testFailedRefreshPreservesPreviouslyLoadedSnapshot() async {
+        let store = RecordStore.preview()
+        let previousSnapshot = store.snapshot
+        store.repository = FailingRecordRepository()
+
+        await store.load()
+
+        XCTAssertEqual(store.snapshot, previousSnapshot)
+        XCTAssertNotNil(store.errorMessage)
+        XCTAssertFalse(store.isLoading)
+    }
 }
 
 private actor FailingRecordRepository: BusinessRepositoryProtocol {

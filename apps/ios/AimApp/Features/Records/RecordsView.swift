@@ -91,6 +91,21 @@ struct RecordsView: View {
             }
             .listRowBackground(Color.clear)
 
+            if let errorMessage = store.errorMessage {
+                Section {
+                    HStack(alignment: .firstTextBaseline, spacing: 12) {
+                        Label("刷新记录失败", systemImage: "wifi.exclamationmark")
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Button("重试") { Task { await store.load(type: selectedType) } }
+                            .buttonStyle(.bordered)
+                    }
+                    Text(errorMessage)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
             if records.isEmpty {
                 Section {
                     ContentUnavailableView("这一类还没有记录", systemImage: "note.text", description: Text("可以先记下一次身体感受或产检结果。"))

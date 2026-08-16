@@ -78,7 +78,7 @@ struct RecordDetailView: View {
                 LabeledContent("医生建议", value: data.doctorAdvice)
             }
         case .note:
-            Section("内容") { Text(record.content ?? "没有补充内容") }
+            Section("内容") { Text(currentRecord.content ?? "没有补充内容") }
         case .unknown:
             Section { Text("这类记录暂不支持完整展示。") }
         }
