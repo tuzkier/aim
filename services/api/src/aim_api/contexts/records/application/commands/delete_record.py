@@ -13,6 +13,7 @@ class DeleteRecordCommand:
     record_id: UUID
     family_id: UUID
     account_id: UUID
+    pregnancy_id: UUID | None = None
     deleted_at: datetime | None = None
 
 
@@ -22,7 +23,9 @@ async def execute(command: DeleteRecordCommand, uow: RecordsUnitOfWork):
     record = await uow.repository.get_visible_record(
         command.record_id, command.family_id, command.account_id
     )
-    if record is None:
+    if record is None or (
+        command.pregnancy_id is not None and record.pregnancy_id != command.pregnancy_id
+    ):
         raise RecordNotFound("record does not exist or is not visible")
     record.soft_delete(command.account_id, now=command.deleted_at)
     await uow.repository.soft_delete(record, command.account_id)

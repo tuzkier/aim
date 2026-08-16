@@ -1,0 +1,1 @@
+"""HTTP record adapter."""

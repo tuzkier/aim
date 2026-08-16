@@ -12,6 +12,7 @@ class GetRecordQuery:
     record_id: UUID
     family_id: UUID
     account_id: UUID
+    pregnancy_id: UUID | None = None
 
 
 async def execute(query: GetRecordQuery, uow: RecordsUnitOfWork):
@@ -20,6 +21,8 @@ async def execute(query: GetRecordQuery, uow: RecordsUnitOfWork):
     record = await uow.repository.get_visible_record(
         query.record_id, query.family_id, query.account_id
     )
-    if record is None:
+    if record is None or (
+        query.pregnancy_id is not None and record.pregnancy_id != query.pregnancy_id
+    ):
         raise RecordNotFound("record does not exist or is not visible")
     return record

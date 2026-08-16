@@ -14,6 +14,7 @@ from aim_api.contexts.guidance.adapters.inbound.http.router import router as gui
 from aim_api.contexts.identity.adapters.inbound.http.router import router as identity_router
 from aim_api.contexts.planning.adapters.inbound.http.router import router as planning_router
 from aim_api.contexts.pregnancy.adapters.inbound.http.router import router as pregnancy_router
+from aim_api.contexts.records.adapters.inbound.http.router import router as records_router
 from aim_api.platform.config.settings import Settings, get_settings
 from aim_api.platform.database.session import Database, create_database
 from aim_api.platform.http.errors import register_error_handlers
@@ -69,6 +70,7 @@ def create_app(*, settings: Settings | None = None, database: Database | None = 
     app.include_router(identity_router)
     app.include_router(family_router)
     app.include_router(pregnancy_router)
+    app.include_router(records_router)
     app.include_router(planning_router)
     app.include_router(guidance_router)
     app.include_router(today_router)
