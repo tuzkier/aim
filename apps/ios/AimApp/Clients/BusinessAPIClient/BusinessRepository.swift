@@ -321,6 +321,7 @@ extension JSONDecoder {
         decoder.dateDecodingStrategy = .custom { decoder in
             let container = try decoder.singleValueContainer()
             let value = try container.decode(String.self)
+            if let date = fractionalISO8601Formatter.date(from: value) { return date }
             if let date = ISO8601DateFormatter().date(from: value) { return date }
             let dateOnly = DateFormatter()
             dateOnly.calendar = Calendar(identifier: .gregorian)
@@ -331,6 +332,12 @@ extension JSONDecoder {
         }
         return decoder
     }
+
+    private static let fractionalISO8601Formatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
 }
 
 extension JSONEncoder {

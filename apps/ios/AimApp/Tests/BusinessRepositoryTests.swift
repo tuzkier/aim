@@ -85,6 +85,31 @@ final class BusinessRepositoryTests: XCTestCase {
         XCTAssertEqual(RecordItem(dto: record).structuredData, .unknown)
     }
 
+    func testRecordDecoderAcceptsFractionalSecondTimestamps() throws {
+        let payload = Data("""
+        {
+          "id": "11111111-1111-1111-1111-111111111111",
+          "pregnancy_id": "22222222-2222-2222-2222-222222222222",
+          "family_id": "33333333-3333-3333-3333-333333333333",
+          "author_account_id": "44444444-4444-4444-4444-444444444444",
+          "type": "note",
+          "occurred_at": "2026-08-16T08:30:00.123456Z",
+          "visibility": "family",
+          "title": "复诊后记录",
+          "content": "一切顺利",
+          "structured_data": {},
+          "attachment_refs": [],
+          "created_at": "2026-08-16T08:30:00.123456Z",
+          "updated_at": "2026-08-16T08:30:00.654321Z"
+        }
+        """.utf8)
+
+        let record = try JSONDecoder.aim.decode(APIRecordDTO.self, from: payload)
+
+        XCTAssertEqual(record.type, .note)
+        XCTAssertEqual(record.title, "复诊后记录")
+    }
+
     private func recordPayload(type: String, structuredData: String) -> Data {
         Data("""
         {
