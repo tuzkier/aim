@@ -1,0 +1,130 @@
+import SwiftUI
+
+struct RecordDetailView: View {
+    @Environment(\.dismiss) private var dismiss
+    @Environment(AppSessionStore.self) private var session
+    let record: RecordItem
+    @Bindable var store: RecordStore
+    let planStore: PlanStore
+    @State private var showingEditor = false
+    @State private var showingDeleteConfirmation = false
+    @State private var showingTaskSheet = false
+
+    private var canEdit: Bool { session.accountID == record.authorAccountID }
+
+    var body: some View {
+        List {
+            Section {
+                VStack(alignment: .leading, spacing: 12) {
+                    Label(record.type.displayName, systemImage: record.type.symbolName)
+                        .foregroundStyle(Color.aimAccent)
+                    Text(record.displayTitle).font(.title2.weight(.semibold))
+                    Text(record.occurredAt, format: .dateTime.year().month().day().hour().minute())
+                        .font(.subheadline).foregroundStyle(.secondary)
+                }
+                .aimWarmCard()
+            }
+            .listRowBackground(Color.clear)
+
+            contentSection
+            Section("可见范围") { Label(record.visibility.displayName, systemImage: record.visibility == .family ? "person.2" : "lock") }
+            Section {
+                Button("转为待办") { showingTaskSheet = true }
+                if canEdit {
+                    Button("编辑记录") { showingEditor = true }
+                    Button("删除记录", role: .destructive) { showingDeleteConfirmation = true }
+                }
+            }
+        }
+        .listStyle(.insetGrouped)
+        .navigationTitle("记录详情")
+        .confirmationDialog("删除这条记录？", isPresented: $showingDeleteConfirmation, titleVisibility: .visible) {
+            Button("删除", role: .destructive) { Task { await delete() } }
+        } message: { Text("删除后无法恢复。") }
+        .sheet(isPresented: $showingEditor) {
+            RecordComposerView(store: store, record: record) { showingEditor = false }
+        }
+        .sheet(isPresented: $showingTaskSheet) {
+            RecordTaskSheet(record: record, store: store, planStore: planStore) { showingTaskSheet = false }
+        }
+    }
+
+    @ViewBuilder
+    private var contentSection: some View {
+        switch record.structuredData {
+        case let .symptom(data):
+            Section("身体感受") {
+                LabeledContent("症状", value: data.symptoms.joined(separator: "、"))
+                LabeledContent("程度", value: "\(data.severity) / 5")
+                if let note = data.note, !note.isEmpty { Text(note) }
+            }
+        case let .checkup(data):
+            Section("产检信息") {
+                LabeledContent("医院", value: data.hospital)
+                LabeledContent("检查项目", value: data.examItems)
+                LabeledContent("检查结果", value: data.result)
+                LabeledContent("医生建议", value: data.doctorAdvice)
+            }
+        case .note:
+            Section("内容") { Text(record.content ?? "没有补充内容") }
+        case .unknown:
+            Section { Text("这类记录暂不支持完整展示。") }
+        }
+    }
+
+    private func delete() async {
+        if await store.delete(recordID: record.id) { dismiss() }
+    }
+}
+
+private struct RecordTaskSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let record: RecordItem
+    @Bindable var store: RecordStore
+    let planStore: PlanStore
+    let onCreated: () -> Void
+    @State private var title: String
+    @State private var description: String = ""
+    @State private var hasDueDate = false
+    @State private var dueAt = Date.now
+
+    init(record: RecordItem, store: RecordStore, planStore: PlanStore, onCreated: @escaping () -> Void) {
+        self.record = record
+        self.store = store
+        self.planStore = planStore
+        self.onCreated = onCreated
+        _title = State(initialValue: "跟进：\(record.displayTitle)")
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("待办内容") {
+                    TextField("待办标题", text: $title)
+                    TextField("补充说明（可选）", text: $description, axis: .vertical)
+                }
+                Section {
+                    Toggle("设置截止时间", isOn: $hasDueDate)
+                    if hasDueDate { DatePicker("截止时间", selection: $dueAt, displayedComponents: [.date, .hourAndMinute]) }
+                }
+                if let error = store.errorMessage { Section { Text(error).foregroundStyle(.red) } }
+            }
+            .navigationTitle("转为待办")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("确认创建") { Task { await create() } }
+                        .disabled(title.trimmed.isEmpty || store.isSaving)
+                }
+            }
+        }
+    }
+
+    private func create() async {
+        if await store.createTask(from: record, title: title.trimmed, description: description.trimmed.nilIfEmpty, dueAt: hasDueDate ? dueAt : nil) != nil {
+            await planStore.load()
+            onCreated()
+            dismiss()
+        }
+    }
+}

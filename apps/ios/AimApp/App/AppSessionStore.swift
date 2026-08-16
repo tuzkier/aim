@@ -20,6 +20,9 @@ final class AppSessionStore {
         familyID = UUID(uuidString: defaults.string(forKey: Keys.familyID) ?? "")
         pregnancyID = UUID(uuidString: defaults.string(forKey: Keys.pregnancyID) ?? "")
         bearerToken = keychain.read(Keys.bearerToken)
+        if ProcessInfo.processInfo.arguments.contains("-reset-session") {
+            clear()
+        }
     }
 
     var isConfigured: Bool {

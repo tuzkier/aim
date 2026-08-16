@@ -76,6 +76,25 @@ final class RecordStore {
         }
     }
 
+    func createTask(from record: RecordItem, title: String, description: String?, dueAt: Date?) async -> TaskItem? {
+        guard let repository else { errorMessage = APIError.notConfigured.localizedDescription; return nil }
+        isSaving = true
+        defer { isSaving = false }
+        do {
+            let task = try await repository.createTaskFromRecord(
+                record: record,
+                title: title,
+                description: description,
+                dueAt: dueAt
+            )
+            errorMessage = nil
+            return task
+        } catch {
+            errorMessage = error.localizedDescription
+            return nil
+        }
+    }
+
     private func merge(_ item: RecordItem) {
         snapshot = RecordSnapshot(records: [item] + (snapshot?.records ?? []).filter { $0.id != item.id })
     }

@@ -119,7 +119,7 @@ struct TodayView: View {
     }
 }
 
-private struct PregnancySetupView: View {
+struct PregnancySetupView: View {
     @Environment(AppSessionStore.self) private var session
     @Environment(\.dismiss) private var dismiss
     @State private var dateMode: PregnancyDateMode = .dueDate

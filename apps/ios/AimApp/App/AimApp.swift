@@ -31,6 +31,7 @@ private struct MainTabView: View {
     @Environment(AppSessionStore.self) private var session
     @State private var todayStore = TodayStore()
     @State private var planStore = PlanStore()
+    @State private var recordStore = RecordStore()
     @State private var familyStore = FamilyStore()
     @State private var showingAgent = false
 
@@ -41,6 +42,9 @@ private struct MainTabView: View {
 
             PlanView(store: planStore)
                 .tabItem { Label("计划", systemImage: "calendar") }
+
+            RecordsView(store: recordStore, planStore: planStore)
+                .tabItem { Label("记录", systemImage: "note.text") }
 
             FamilyView(store: familyStore)
                 .tabItem { Label("家庭", systemImage: "person.2") }
@@ -67,9 +71,11 @@ private struct MainTabView: View {
         let repository = BusinessRepository(environment: session.environment)
         todayStore.repository = repository
         planStore.repository = repository
+        recordStore.repository = repository
         familyStore.repository = repository
         await todayStore.load()
         await planStore.load()
+        await recordStore.load()
         await familyStore.load()
     }
 }
