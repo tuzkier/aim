@@ -87,6 +87,7 @@ test("compiled runtime exposes only the intended root and specialist tools", asy
       "echo_context",
       "get_guidance",
       "get_pregnancy_context",
+      "list_records",
       "list_tasks",
       "preview_task_change",
       "record_pregnancy_fact",

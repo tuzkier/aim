@@ -50,6 +50,12 @@ from aim_api.contexts.pregnancy.adapters.outbound.persistence.repositories impor
 from aim_api.contexts.pregnancy.application.commands import record_fact
 from aim_api.contexts.pregnancy.application.commands.record_fact import RecordFactCommand
 from aim_api.contexts.pregnancy.domain.fact import FactSource
+from aim_api.contexts.records.adapters.outbound.persistence.repositories import (
+    SqlAlchemyRecordsUnitOfWork,
+)
+from aim_api.contexts.records.application.queries import list_records
+from aim_api.contexts.records.application.queries.list_records import ListRecordsQuery
+from aim_api.contexts.records.domain.record import RecordType
 from aim_api.platform.http.errors import (
     ApprovalRequiredError,
     ConflictError,
@@ -102,6 +108,12 @@ class UndoOperationRequest(BaseModel):
     change_id: UUID
     expected_version: int = Field(ge=1)
     approved: bool = False
+
+
+class ListRecordsRequest(BaseModel):
+    type: RecordType | None = None
+    occurred_from: datetime | None = Field(default=None, alias="from")
+    occurred_until: datetime | None = Field(default=None, alias="to")
 
 
 def _context(request: Request) -> AgentToolContext:
@@ -233,6 +245,34 @@ async def _list_tasks(session, context: AgentToolContext, body: dict[str, Any]):
         ]
     )
     return ({"tasks": tasks}, f"已读取 {len(tasks)} 项家庭任务")
+
+
+async def _list_records(session, context: AgentToolContext, body: dict[str, Any]):
+    records = await list_records.execute(
+        ListRecordsQuery(
+            family_id=context.family_id,
+            account_id=context.account_id,
+            pregnancy_id=context.pregnancy_id,
+            record_type=RecordType(body["type"]) if body.get("type") else None,
+            occurred_from=body.get("occurred_from"),
+            occurred_until=body.get("occurred_until"),
+        ),
+        SqlAlchemyRecordsUnitOfWork(session),
+    )
+    normalized = [
+        {
+            "id": str(record.id),
+            "type": record.record_type.value,
+            "occurred_at": record.occurred_at.isoformat(),
+            "visibility": record.visibility.value,
+            "title": record.title,
+            "content": record.content,
+            "structured_data": record.structured_data,
+            "attachment_refs": record.attachment_refs,
+        }
+        for record in records
+    ]
+    return ({"records": normalized, "count": len(normalized)}, f"已读取 {len(normalized)} 条孕期记录")
 
 
 async def _update_task(session, context: AgentToolContext, body: dict[str, Any]):
@@ -367,6 +407,11 @@ async def get_pregnancy_context(request: Request, payload: dict[str, Any] | None
 @router.post("/list-tasks", response_model=ToolResult, include_in_schema=False)
 async def list_tasks(request: Request, payload: dict[str, Any] | None = None):
     return await _run(request, "list_tasks", _Payload(payload=payload or {}), _list_tasks)
+
+
+@router.post("/list-records", response_model=ToolResult, include_in_schema=False)
+async def list_records_endpoint(request: Request, payload: ListRecordsRequest):
+    return await _run(request, "list_records", payload, _list_records)
 
 
 @router.post("/update-task", response_model=ToolResult, include_in_schema=False)

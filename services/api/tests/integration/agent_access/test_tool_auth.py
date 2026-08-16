@@ -90,3 +90,75 @@ def test_service_credential_cannot_replace_family_membership() -> None:
             json={},
         )
         assert forbidden.status_code == 403
+
+
+def test_list_records_returns_only_records_visible_to_scoped_account() -> None:
+    author_id, member_id = str(uuid4()), str(uuid4())
+    author_phone, member_phone = _phone(author_id), _phone(member_id, "139")
+    author_headers = _public_headers(author_id, author_phone)
+    member_headers = _public_headers(member_id, member_phone)
+
+    with TestClient(create_app()) as client:
+        family = client.post(
+            "/api/v1/families",
+            headers=author_headers,
+            json={"name": "记录权限家庭", "role": "mother"},
+        ).json()
+        pregnancy = client.post(
+            f"/api/v1/families/{family['id']}/pregnancies",
+            headers=author_headers,
+            json={"due_date": "2027-01-12"},
+        ).json()
+        invitation = client.post(
+            f"/api/v1/families/{family['id']}/invitations",
+            headers=author_headers,
+            json={"invitee_phone": member_phone, "role": "father"},
+        ).json()
+        accepted = client.post(
+            f"/api/v1/family-invitations/{invitation['token']}/accept", headers=member_headers
+        )
+        assert accepted.status_code == 200, accepted.text
+
+        family_record = client.post(
+            f"/api/v1/pregnancies/{pregnancy['id']}/records",
+            headers=author_headers,
+            json={
+                "type": "note",
+                "occurred_at": "2026-08-16T09:00:00+08:00",
+                "visibility": "family",
+                "content": "全家可见",
+                "structured_data": {},
+            },
+        )
+        private_record = client.post(
+            f"/api/v1/pregnancies/{pregnancy['id']}/records",
+            headers=author_headers,
+            json={
+                "type": "symptom",
+                "occurred_at": "2026-08-16T10:00:00+08:00",
+                "visibility": "private",
+                "structured_data": {"symptoms": ["nausea"], "severity": 3},
+            },
+        )
+        response = client.post(
+            "/internal/agent-tools/list-records",
+            headers=_agent_headers(member_id, family["id"], pregnancy["id"], call_id="records-1"),
+            json={"type": "note"},
+        )
+
+    assert family_record.status_code == 201, family_record.text
+    assert private_record.status_code == 201, private_record.text
+    assert response.status_code == 200, response.text
+    assert response.json()["data"]["count"] == 1
+    assert response.json()["data"]["records"] == [
+        {
+            "id": family_record.json()["id"],
+            "type": "note",
+            "occurred_at": "2026-08-16T01:00:00+00:00",
+            "visibility": "family",
+            "title": None,
+            "content": "全家可见",
+            "structured_data": {},
+            "attachment_refs": [],
+        }
+    ]
