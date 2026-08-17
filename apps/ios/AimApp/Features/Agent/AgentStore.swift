@@ -11,14 +11,26 @@ final class AgentStore {
     var streamIndex = 0
     var continuationToken: String?
 
+    let context: AgentContext?
+
     private var client: EveClient?
     private var activeTask: Task<Void, Never>?
+
+    init(context: AgentContext? = nil) {
+        self.context = context
+    }
+
+    func requestMessage(for text: String) -> String {
+        guard let context else { return text }
+        return "\(context.prompt)\n\n用户问题：\(text)"
+    }
 
     func send(environment: APIEnvironment) {
         let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
         draft = ""
         messages.append(AgentMessage(text: text, isUser: true))
+        let requestText = requestMessage(for: text)
         state = .streaming
         let client = EveClient(environment: environment)
         self.client = client
@@ -27,9 +39,9 @@ final class AgentStore {
             do {
                 let events: AsyncThrowingStream<EveEvent, Error>
                 if let sessionID = self?.sessionID {
-                    events = try await client.send(sessionID: sessionID, message: text, from: self?.streamIndex ?? 0)
+                    events = try await client.send(sessionID: sessionID, message: requestText, from: self?.streamIndex ?? 0)
                 } else {
-                    events = try await client.start(message: text)
+                    events = try await client.start(message: requestText)
                     self?.sessionID = await client.currentSessionID
                 }
                 for try await event in events { self?.consume(event) }

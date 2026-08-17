@@ -1,6 +1,32 @@
 import XCTest
 
 final class CoreJourneyUITests: XCTestCase {
+    func testGlobalAgentButtonShowsCurrentTabContext() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-reset-session"]
+        app.launch()
+
+        if app.textFields["手机号"].waitForExistence(timeout: 2) {
+            let phone = app.textFields["手机号"]
+            phone.tap()
+            phone.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 20))
+            phone.typeText("13800000002")
+            app.buttons["开始体验"].tap()
+        }
+
+        let todayTab = app.tabBars.buttons["今天"]
+        XCTAssertTrue(todayTab.waitForExistence(timeout: 8))
+        todayTab.tap()
+
+        let agentButton = app.buttons["global-agent-button"]
+        XCTAssertTrue(agentButton.waitForExistence(timeout: 5))
+        agentButton.tap()
+
+        XCTAssertTrue(app.navigationBars["问一问"].waitForExistence(timeout: 3))
+        let contextCard = app.descendants(matching: .any).matching(identifier: "agent-current-context").firstMatch
+        XCTAssertTrue(contextCard.waitForExistence(timeout: 3))
+    }
+
     func testRecordsJourneyCreatesSymptomAndOffersTaskAction() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-reset-session"]
