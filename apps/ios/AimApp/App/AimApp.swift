@@ -76,7 +76,7 @@ private struct MainTabView: View {
         .onChange(of: session.pregnancyID) { _, _ in
             Task { await reloadRepositories() }
         }
-        .sheet(isPresented: $showingAgent) {
+        .fullScreenCover(isPresented: $showingAgent) {
             AgentSheet(context: currentAgentContext)
         }
     }

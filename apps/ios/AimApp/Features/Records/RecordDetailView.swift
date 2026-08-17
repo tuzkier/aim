@@ -56,7 +56,7 @@ struct RecordDetailView: View {
         .sheet(isPresented: $showingTaskSheet) {
             RecordTaskSheet(record: currentRecord, store: store, planStore: planStore) { showingTaskSheet = false }
         }
-        .sheet(isPresented: $showingAgent) {
+        .fullScreenCover(isPresented: $showingAgent) {
             AgentSheet(initialDraft: analysisPrompt(for: currentRecord))
         }
     }
