@@ -89,8 +89,9 @@ final class AgentStore {
         case .actionResult:
             state = .applied
         case .messageCompleted:
-            if let message = try? JSONDecoder().decode(EveMessageCompleted.self, from: event.data), let text = message.message, !text.isEmpty {
-                messages.append(AgentMessage(text: text, isUser: false))
+            if let message = try? JSONDecoder().decode(EveMessageCompleted.self, from: event.data), let text = message.message {
+                let cleaned = AgentResponseText.clean(text)
+                if !cleaned.isEmpty { messages.append(AgentMessage(text: cleaned, isUser: false)) }
             }
         case .sessionWaiting:
             continuationToken = event.continuationToken

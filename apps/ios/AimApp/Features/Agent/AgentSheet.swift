@@ -1,16 +1,10 @@
+import ExyteChat
 import SwiftUI
 
 struct AgentSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(AppSessionStore.self) private var session
     @State private var store: AgentStore
-    @FocusState private var inputFocused
-
-    private let quickPrompts = [
-        "这周还有什么要准备？",
-        "帮我看看最近的记录",
-        "我现在有点不舒服"
-    ]
 
     init(initialDraft: String = "", context: AgentContext? = nil) {
         let store = AgentStore(context: context)
@@ -21,54 +15,32 @@ struct AgentSheet: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                ScrollViewReader { proxy in
-                    ScrollView {
-                        LazyVStack(alignment: .leading, spacing: 14) {
-                            if let context = store.context {
-                                AgentContextCard(context: context)
-                                    .id("context")
-                            }
-
-                            if store.messages.isEmpty {
-                                welcomeContent
-                            } else {
-                                ForEach(store.messages) { message in
-                                    AgentMessageBubble(message: message)
-                                        .id(message.id)
-                                }
-                            }
-
-                            if case .streaming = store.state {
-                                TypingIndicator()
-                                    .id("typing")
-                            }
-
-                            if case let .failed(message) = store.state {
-                                AgentErrorCard(message: message)
-                            }
-
-                            Color.clear
-                                .frame(height: 1)
-                                .id("bottom")
-                        }
+                if let context = store.context {
+                    AgentContextCard(context: context)
                         .padding(.horizontal, 16)
-                        .padding(.top, 16)
-                        .padding(.bottom, 12)
-                    }
-                    .scrollDismissesKeyboard(.interactively)
-                    .onChange(of: store.messages.count) { _, _ in scrollToBottom(proxy) }
-                    .onChange(of: store.state) { _, _ in scrollToBottom(proxy) }
+                        .padding(.top, 12)
+                        .padding(.bottom, 4)
                 }
 
-                if case .awaitingApproval(let request) = store.state {
-                    ApprovalBar(request: request) {
-                        store.approve(request, environment: session.environment)
-                    } onCancel: {
-                        store.cancelApproval(request, environment: session.environment)
-                    }
+                if store.messages.isEmpty {
+                    welcomeContent
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
                 }
 
-                inputBar
+                ChatView(messages: AgentChatAdapter.messages(from: store.messages)) { draft in
+                    store.draft = draft.text
+                    store.send(environment: session.environment)
+                }
+                .setAvailableInputs([.text])
+                .localization(chatLocalization)
+                .showDateHeaders(false)
+                .showMessageMenuOnLongPress(false)
+                .keyboardDismissMode(UIScrollView.KeyboardDismissMode.interactive)
+                .betweenListAndInputViewBuilder {
+                    statusView
+                }
+                .chatTheme(chatTheme)
             }
             .navigationTitle("问一问")
 #if os(iOS)
@@ -86,92 +58,73 @@ struct AgentSheet: View {
     }
 
     private var welcomeContent: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 10) {
-                    Image(systemName: "sparkles")
-                        .foregroundStyle(Color.aimAccent)
-                    Text("我在这里陪你一起理清")
-                        .font(.headline)
-                }
-                Text("可以问孕期变化、最近记录或接下来要做的事。涉及计划变更时，我会先让你确认。")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .aimWarmCard()
-
-            VStack(alignment: .leading, spacing: 9) {
-                Text("你可以这样问")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        ForEach(quickPrompts, id: \.self) { prompt in
-                            Button(prompt) {
-                                store.draft = prompt
-                                inputFocused = true
-                            }
-                            .font(.subheadline)
-                            .foregroundStyle(Color.aimAccent)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 9)
-                            .background(Color.aimWarmSurface, in: Capsule())
-                            .overlay { Capsule().stroke(Color.aimAccent.opacity(0.2), lineWidth: 1) }
-                            .accessibilityIdentifier("agent-quick-prompt")
-                        }
-                    }
-                }
-            }
+        VStack(alignment: .leading, spacing: 12) {
+            Label("我在这里陪你一起理清", systemImage: "sparkles")
+                .font(.headline)
+                .foregroundStyle(Color.aimAccent)
+            Text("可以问孕期变化、最近记录或接下来要做的事。涉及计划变更时，我会先让你确认。")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
+        .aimWarmCard()
     }
 
-    private var inputBar: some View {
-        HStack(alignment: .bottom, spacing: 10) {
-            TextField("告诉我你现在在担心什么", text: $store.draft, axis: .vertical)
-                .textFieldStyle(.plain)
-                .lineLimit(1...5)
-                .focused($inputFocused)
-                .submitLabel(.send)
-                .onSubmit(submit)
-                .accessibilityIdentifier("agent-input")
+    private var chatLocalization: ChatLocalization {
+        ChatLocalization(
+            inputPlaceholder: "告诉我你现在在担心什么",
+            signatureText: "补充说明",
+            cancelButtonText: "取消",
+            recentToggleText: "最近",
+            waitingForNetwork: "等待网络",
+            recordingText: "录音中",
+            replyToText: "回复"
+        )
+    }
 
-            if case .streaming = store.state {
-                Button { store.stop() } label: {
-                    Image(systemName: "stop.circle.fill")
-                        .font(.title2)
-                        .foregroundStyle(.secondary)
-                }
-                .accessibilityLabel("停止回答")
-            } else {
-                Button(action: submit) {
-                    Image(systemName: "arrow.up.circle.fill")
-                        .font(.title2)
-                        .foregroundStyle(Color.aimAccent)
-                }
-                .disabled(store.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                .accessibilityLabel("发送")
-                .accessibilityIdentifier("agent-send")
+    private var chatTheme: ChatTheme {
+        ChatTheme(colors: .init(
+            mainBG: Color.aimWarmBackground,
+            mainTint: Color.aimAccent,
+            mainText: .primary,
+            mainCaptionText: .secondary,
+            messageMyBG: Color.aimAccent,
+            messageMyText: .white,
+            messageFriendBG: Color.aimWarmSurface,
+            messageFriendText: .primary,
+            inputBG: Color.aimWarmSurface,
+            inputText: .primary,
+            inputPlaceholderText: .secondary,
+            sendButtonBackground: Color.aimAccent
+        ))
+    }
+
+    @ViewBuilder
+    private var statusView: some View {
+        switch store.state {
+        case .awaitingApproval(let request):
+            ApprovalBar(request: request) {
+                store.approve(request, environment: session.environment)
+            } onCancel: {
+                store.cancelApproval(request, environment: session.environment)
             }
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(.ultraThinMaterial)
-        .overlay(alignment: .top) { Divider() }
-    }
-
-    private func submit() {
-        guard !store.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-        inputFocused = false
-        store.send(environment: session.environment)
-    }
-
-    private func scrollToBottom(_ proxy: ScrollViewProxy) {
-        Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(80))
-            withAnimation(.easeOut(duration: 0.2)) {
-                proxy.scrollTo("bottom", anchor: .bottom)
-            }
+        case .streaming:
+            Label("正在整理回答…", systemImage: "ellipsis")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+        case .failed(let message):
+            Label(message, systemImage: "exclamationmark.triangle")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(Color.aimSoftRose)
+        default:
+            EmptyView()
         }
     }
 }
@@ -199,71 +152,6 @@ private struct AgentContextCard: View {
         .background(Color.aimSoftSand.opacity(0.62), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier("agent-current-context")
-    }
-}
-
-private struct AgentMessageBubble: View {
-    let message: AgentMessage
-
-    var body: some View {
-        HStack(alignment: .bottom, spacing: 8) {
-            if message.isUser { Spacer(minLength: 44) }
-            if !message.isUser {
-                Image(systemName: "sparkles")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Color.aimAccent)
-                    .frame(width: 24, height: 24)
-                    .background(Color.aimSoftSand, in: Circle())
-            }
-            Text(message.text)
-                .font(.body)
-                .foregroundStyle(message.isUser ? .white : .primary)
-                .textSelection(.enabled)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 11)
-                .background(message.isUser ? Color.aimAccent : Color.aimWarmSurface, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                .overlay {
-                    if !message.isUser {
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .stroke(Color.black.opacity(0.05), lineWidth: 0.5)
-                    }
-                }
-            if !message.isUser { Spacer(minLength: 36) }
-        }
-        .frame(maxWidth: .infinity, alignment: message.isUser ? .trailing : .leading)
-    }
-}
-
-private struct TypingIndicator: View {
-    var body: some View {
-        HStack(spacing: 8) {
-            ProgressView().controlSize(.small)
-            Text("正在理解你的问题…")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-            Spacer()
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background(Color.aimWarmSurface, in: Capsule())
-        .accessibilityLabel("Agent 正在回答")
-    }
-}
-
-private struct AgentErrorCard: View {
-    let message: String
-
-    var body: some View {
-        Label {
-            Text(message)
-                .font(.footnote)
-        } icon: {
-            Image(systemName: "exclamationmark.triangle")
-        }
-        .foregroundStyle(.secondary)
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.aimSoftRose, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 }
 

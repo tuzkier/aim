@@ -12,6 +12,17 @@ final class AgentStoreTests: XCTestCase {
         )
     }
 
+    func testAssistantTextRemovesHiddenReasoningBlocks() {
+        XCTAssertEqual(
+            AgentResponseText.clean("<think>内部推理</think>给你的建议"),
+            "给你的建议"
+        )
+        XCTAssertEqual(
+            AgentResponseText.clean("<analysis>工具参数</analysis>最终结果"),
+            "最终结果"
+        )
+    }
+
     func testApprovalIsAFirstClassState() {
         let request = EveInputRequest(
             requestID: "approval-1",

@@ -1,0 +1,69 @@
+{
+  "originHash" : "63c66b7d07a196da0ef53da4a39ea59d7fba4f0690a90b79ac7ec5feaf6dfccc",
+  "pins" : [
+    {
+      "identity" : "activityindicatorview",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/exyte/ActivityIndicatorView.git",
+      "state" : {
+        "revision" : "aef7fc3234cc2b17e16dac608e5bd8104e603b55",
+        "version" : "2.0.1"
+      }
+    },
+    {
+      "identity" : "anchoredpopup",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/exyte/AnchoredPopup.git",
+      "state" : {
+        "revision" : "dfa61fd6e4e4a3bf8a918d44c69bf66f2ccd9bb7",
+        "version" : "1.2.1"
+      }
+    },
+    {
+      "identity" : "chat",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/exyte/Chat.git",
+      "state" : {
+        "revision" : "e3a9986597f9e42b4abd3a935cbd741f2d15b2f5",
+        "version" : "3.2.8"
+      }
+    },
+    {
+      "identity" : "giphy-ios-sdk",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Giphy/giphy-ios-sdk",
+      "state" : {
+        "revision" : "37f5b1ff6cf8bc4a78c0bc5eb1b814381bac9580",
+        "version" : "2.2.16"
+      }
+    },
+    {
+      "identity" : "kingfisher",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/onevcat/Kingfisher",
+      "state" : {
+        "revision" : "410984bf301f4fa224fe56277b3f8672cc465c79",
+        "version" : "8.11.0"
+      }
+    },
+    {
+      "identity" : "libwebp-xcode",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/SDWebImage/libwebp-Xcode",
+      "state" : {
+        "revision" : "2b5256c29ff4e20f2a0d5ee863b62b1a22144434",
+        "version" : "1.6.0"
+      }
+    },
+    {
+      "identity" : "mediapicker",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/exyte/MediaPicker.git",
+      "state" : {
+        "revision" : "1fd33c380a0338064c6021fb3971e6411bd3a465",
+        "version" : "3.4.4"
+      }
+    }
+  ],
+  "version" : 3
+}

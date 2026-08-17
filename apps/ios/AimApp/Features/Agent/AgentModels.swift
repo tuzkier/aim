@@ -22,3 +22,14 @@ struct AgentMessage: Identifiable, Equatable {
     let text: String
     let isUser: Bool
 }
+
+enum AgentResponseText {
+    static func clean(_ text: String) -> String {
+        var cleaned = text
+        for tag in ["think", "analysis", "reasoning"] {
+            let pattern = "(?is)<" + tag + "\\b[^>]*>.*?</" + tag + ">"
+            cleaned = cleaned.replacingOccurrences(of: pattern, with: "", options: .regularExpression)
+        }
+        return cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+}
