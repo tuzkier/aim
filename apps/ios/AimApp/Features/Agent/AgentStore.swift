@@ -89,7 +89,9 @@ final class AgentStore {
         case .actionResult:
             state = .applied
         case .messageCompleted:
-            if let message = try? JSONDecoder().decode(EveMessageCompleted.self, from: event.data), let text = message.message {
+            if let message = try? JSONDecoder().decode(EveMessageCompleted.self, from: event.data),
+               AgentResponseText.shouldDisplay(finishReason: message.finishReason),
+               let text = message.message {
                 let cleaned = AgentResponseText.clean(text)
                 if !cleaned.isEmpty { messages.append(AgentMessage(text: cleaned, isUser: false)) }
             }
@@ -109,5 +111,6 @@ final class AgentStore {
 }
 
 private struct EveMessageCompleted: Decodable {
+    let finishReason: String?
     let message: String?
 }

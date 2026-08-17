@@ -23,6 +23,11 @@ final class AgentStoreTests: XCTestCase {
         )
     }
 
+    func testToolCallPreludeIsNotPresentedAsAnAssistantAnswer() {
+        XCTAssertFalse(AgentResponseText.shouldDisplay(finishReason: "tool-calls"))
+        XCTAssertTrue(AgentResponseText.shouldDisplay(finishReason: "stop"))
+    }
+
     func testApprovalIsAFirstClassState() {
         let request = EveInputRequest(
             requestID: "approval-1",

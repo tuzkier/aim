@@ -24,6 +24,10 @@ struct AgentMessage: Identifiable, Equatable {
 }
 
 enum AgentResponseText {
+    static func shouldDisplay(finishReason: String?) -> Bool {
+        finishReason == nil || finishReason == "stop" || finishReason == "length"
+    }
+
     static func clean(_ text: String) -> String {
         var cleaned = text
         for tag in ["think", "analysis", "reasoning"] {
