@@ -4,9 +4,11 @@ IOS_PROJECT ?= apps/ios/AimApp.xcodeproj
 IOS_SCHEME ?= AimApp
 IOS_DESTINATION ?= platform=iOS Simulator,name=iPhone 17 Pro
 IOS_DERIVED_DATA ?= /tmp/aim-derived-data
+COMPOSE_ENV_FILE := $(if $(wildcard .env),--env-file .env,)
+COMPOSE := docker compose $(COMPOSE_ENV_FILE) -f infrastructure/compose/compose.yaml
 
 dev:
-	docker compose -f infrastructure/compose/compose.yaml up --build
+	$(COMPOSE) up --build
 
 test:
 	$(MAKE) -C services/api test

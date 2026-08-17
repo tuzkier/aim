@@ -28,6 +28,13 @@ DEEPSEEK_API_KEY= # keep this in a local .env or secret manager
 The API key is injected into the Eve container only. It is never sent to iOS,
 committed to the repository, or included in logs.
 
+From the repository root, start Compose with the local env file so the live
+provider selection is applied:
+
+```bash
+docker compose --env-file .env -f infrastructure/compose/compose.yaml up -d api eve
+```
+
 ```bash
 npm run typecheck
 npm run build
