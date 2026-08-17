@@ -1,4 +1,6 @@
+import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { mockModel } from "eve/evals";
+import { resolveAgentModelConfig } from "./model-config";
 
 export const gateModel = mockModel({
   modelId: "glm-5.2",
@@ -86,3 +88,16 @@ export const gateModel = mockModel({
     return "Aim agent runtime is ready.";
   },
 });
+
+export function createConfiguredModel() {
+  const config = resolveAgentModelConfig();
+  if (config.kind === "mock") {
+    return gateModel;
+  }
+
+  return createOpenAICompatible({
+    name: "deepseek",
+    apiKey: config.apiKey,
+    baseURL: config.baseURL,
+  }).chatModel(config.model);
+}

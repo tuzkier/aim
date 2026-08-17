@@ -1,5 +1,5 @@
 import { defineAgent, defineDynamic } from "eve";
-import { gateModel } from "../../lib/model";
+import { createConfiguredModel } from "../../lib/model";
 
 export default defineAgent({
   description: "Provide read-only pregnancy-stage context without changing user data.",
@@ -7,7 +7,7 @@ export default defineAgent({
   model: defineDynamic({
     events: {
       "step.started": () => ({
-        model: process.env.EVE_USE_MOCK_MODEL === "1" ? gateModel : "zai/glm-5.2",
+        model: createConfiguredModel(),
         modelContextWindowTokens: 128_000,
       }),
     },

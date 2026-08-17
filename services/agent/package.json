@@ -13,10 +13,11 @@
     "start": "eve start",
     "typecheck": "tsc",
     "lint": "tsc --noEmit",
-    "test": "node --test tests/runtime-gate.test.ts tests/tools/idempotency.test.ts tests/tools/records.test.ts tests/plan-change-flow.test.ts",
+    "test": "node --test tests/runtime-gate.test.ts tests/tools/idempotency.test.ts tests/tools/records.test.ts tests/plan-change-flow.test.ts tests/model-config.test.ts",
     "eval": "eve eval"
   },
   "dependencies": {
+    "@ai-sdk/openai-compatible": "3.0.30",
     "@vercel/connect": "0.4.3",
     "ai": "7.0.58",
     "eve": "0.37.1",

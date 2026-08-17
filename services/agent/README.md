@@ -15,7 +15,18 @@ EVE_USE_MOCK_MODEL=1 npm run dev
 
 The local gate model is deterministic and exists only to exercise auth,
 streaming, tool calls, and Subagent boundaries without credentials. Production
-removes `EVE_USE_MOCK_MODEL` and supplies the configured model credentials.
+sets `EVE_USE_MOCK_MODEL=0` and supplies the configured model credentials. The
+current server-side provider is DeepSeek through its OpenAI-compatible API:
+
+```bash
+EVE_USE_MOCK_MODEL=0
+AIM_AGENT_MODEL=deepseek-chat
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+DEEPSEEK_API_KEY= # keep this in a local .env or secret manager
+```
+
+The API key is injected into the Eve container only. It is never sent to iOS,
+committed to the repository, or included in logs.
 
 ```bash
 npm run typecheck
@@ -38,7 +49,7 @@ AIM_API_INTERNAL_URL=http://127.0.0.1:8000
 AGENT_SERVICE_SECRET=aim-agent-development-secret
 ```
 
-Read tools (`get_pregnancy_context`, `list_tasks`, `get_guidance`) use the
+Read tools (`get_pregnancy_context`, `list_tasks`, `list_records`, `get_guidance`) use the
 authenticated Eve Session Context. Plan and fact mutations are gated by Eve's
 durable human approval and send `approved=true` only after approval. FastAPI
 re-checks family membership and pregnancy ownership, applies optimistic
