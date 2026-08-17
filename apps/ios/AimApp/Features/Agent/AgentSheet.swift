@@ -53,7 +53,7 @@ struct AgentSheet: View {
             }
             .background(Color.aimWarmBackground)
         }
-        .presentationDetents([.medium, .large])
+        .presentationDetents([.large])
         .presentationDragIndicator(.visible)
     }
 
