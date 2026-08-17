@@ -5,11 +5,13 @@ struct AgentSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(AppSessionStore.self) private var session
     @State private var store: AgentStore
+    private let onClose: (() -> Void)?
 
-    init(initialDraft: String = "", context: AgentContext? = nil) {
+    init(initialDraft: String = "", context: AgentContext? = nil, onClose: (() -> Void)? = nil) {
         let store = AgentStore(context: context)
         store.draft = initialDraft
         _store = State(initialValue: store)
+        self.onClose = onClose
     }
 
     var body: some View {
@@ -48,11 +50,15 @@ struct AgentSheet: View {
 #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("关闭") { dismiss() }
+                    Button("关闭") {
+                        if let onClose { onClose() } else { dismiss() }
+                    }
                 }
             }
             .background(Color.aimWarmBackground)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .ignoresSafeArea()
     }
 
     private var welcomeContent: some View {

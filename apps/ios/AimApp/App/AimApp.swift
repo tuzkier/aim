@@ -37,47 +37,55 @@ private struct MainTabView: View {
     @State private var showingAgent = false
 
     var body: some View {
-        TabView(selection: $selectedTab) {
-            TodayView(store: todayStore)
-                .tabItem { Label("今天", systemImage: "sun.max") }
-                .tag(AimTab.today)
+        ZStack {
+            TabView(selection: $selectedTab) {
+                TodayView(store: todayStore)
+                    .tabItem { Label("今天", systemImage: "sun.max") }
+                    .tag(AimTab.today)
 
-            PlanView(store: planStore)
-                .tabItem { Label("计划", systemImage: "calendar") }
-                .tag(AimTab.plan)
+                PlanView(store: planStore)
+                    .tabItem { Label("计划", systemImage: "calendar") }
+                    .tag(AimTab.plan)
 
-            RecordsView(store: recordStore, planStore: planStore)
-                .tabItem { Label("记录", systemImage: "note.text") }
-                .tag(AimTab.records)
+                RecordsView(store: recordStore, planStore: planStore)
+                    .tabItem { Label("记录", systemImage: "note.text") }
+                    .tag(AimTab.records)
 
-            FamilyView(store: familyStore)
-                .tabItem { Label("家庭", systemImage: "person.2") }
-                .tag(AimTab.family)
-        }
-        .overlay(alignment: .bottomTrailing) {
-            Button { showingAgent = true } label: {
-                Image(systemName: "sparkles")
-                    .font(.title3.weight(.semibold))
-                    .foregroundStyle(.white)
-                    .frame(width: 56, height: 56)
-                    .background(Color.aimAccent, in: Circle())
-                    .overlay { Circle().stroke(.white.opacity(0.75), lineWidth: 2) }
-                    .shadow(color: Color.black.opacity(0.18), radius: 12, y: 6)
+                FamilyView(store: familyStore)
+                    .tabItem { Label("家庭", systemImage: "person.2") }
+                    .tag(AimTab.family)
             }
-            .accessibilityLabel("问一问")
-            .accessibilityHint("打开 Agent，并带入当前页面内容")
-            .accessibilityIdentifier("global-agent-button")
-            .padding(.trailing, 18)
-            .padding(.bottom, 76)
+            .overlay(alignment: .bottomTrailing) {
+                if !showingAgent {
+                    Button { showingAgent = true } label: {
+                        Image(systemName: "sparkles")
+                            .font(.title3.weight(.semibold))
+                            .foregroundStyle(.white)
+                            .frame(width: 56, height: 56)
+                            .background(Color.aimAccent, in: Circle())
+                            .overlay { Circle().stroke(.white.opacity(0.75), lineWidth: 2) }
+                            .shadow(color: Color.black.opacity(0.18), radius: 12, y: 6)
+                    }
+                    .accessibilityLabel("问一问")
+                    .accessibilityHint("打开 Agent，并带入当前页面内容")
+                    .accessibilityIdentifier("global-agent-button")
+                    .padding(.trailing, 18)
+                    .padding(.bottom, 76)
+                }
+            }
+
+            if showingAgent {
+                AgentSheet(context: currentAgentContext) {
+                    showingAgent = false
+                }
+                .zIndex(10)
+            }
         }
         .task {
             await reloadRepositories()
         }
         .onChange(of: session.pregnancyID) { _, _ in
             Task { await reloadRepositories() }
-        }
-        .fullScreenCover(isPresented: $showingAgent) {
-            AgentSheet(context: currentAgentContext)
         }
     }
 
