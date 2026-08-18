@@ -34,7 +34,7 @@ struct TaskDetailView: View {
             }
 
             if let errorMessage = store.errorMessage {
-                Section { Text(errorMessage).foregroundStyle(.red) }
+                Section { Text(errorMessage).foregroundStyle(Color.aimDanger) }
             }
 
             Section {
@@ -55,21 +55,58 @@ struct TaskDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
 #endif
         .sheet(isPresented: $showingDelay) {
-            NavigationStack {
-                Form { DatePicker("新的截止日期", selection: $dueDate, displayedComponents: [.date, .hourAndMinute]) }
-                    .navigationTitle("延期事项")
-                    .toolbar {
-                        ToolbarItem(placement: .cancellationAction) { Button("取消") { showingDelay = false } }
-                        ToolbarItem(placement: .confirmationAction) {
-                            Button("保存") {
-                                Task {
-                                    if await store.delay(until: dueDate) { showingDelay = false }
+            TaskDelaySheet(task: store.task, repository: store.repository) { updated in
+                store.task = updated
+            }
+        }
+    }
+}
+
+struct TaskDelaySheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var store: TaskDetailStore
+    @State private var dueDate: Date
+    @State private var errorMessage: String?
+    let onSaved: (TaskItem) -> Void
+
+    init(task: TaskItem, repository: BusinessRepositoryProtocol?, onSaved: @escaping (TaskItem) -> Void) {
+        _store = State(initialValue: TaskDetailStore(task: task, repository: repository))
+        _dueDate = State(initialValue: task.dueAt ?? .now.addingTimeInterval(86_400))
+        self.onSaved = onSaved
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                DatePicker("新的截止日期", selection: $dueDate, displayedComponents: [.date, .hourAndMinute])
+                if let errorMessage {
+                    Text(errorMessage).foregroundStyle(Color.aimDanger)
+                }
+            }
+            .navigationTitle("延期事项")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消") { dismiss() }.disabled(store.isSaving)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    if store.isSaving {
+                        ProgressView()
+                    } else {
+                        Button("保存") {
+                            Task {
+                                errorMessage = nil
+                                if await store.delay(until: dueDate) {
+                                    onSaved(store.task)
+                                    dismiss()
+                                } else {
+                                    errorMessage = store.errorMessage ?? "没能保存新的日期，稍后再试。"
                                 }
                             }
                         }
                     }
+                }
             }
-            .presentationDetents([.medium])
         }
+        .presentationDetents([.medium])
     }
 }

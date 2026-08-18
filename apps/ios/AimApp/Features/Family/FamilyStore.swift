@@ -8,13 +8,26 @@ final class FamilyStore {
     var isLoading = false
     var errorMessage: String?
     var repository: BusinessRepositoryProtocol?
+    var openTaskCounts: [UUID: Int] = [:]
+
+    func openTaskCount(for accountID: UUID) -> Int? { openTaskCounts[accountID] }
 
     func load() async {
         guard let repository else { errorMessage = APIError.notConfigured.localizedDescription; return }
         isLoading = true
         defer { isLoading = false }
-        do { snapshot = try await repository.fetchFamily(); errorMessage = nil }
-        catch { errorMessage = error.localizedDescription }
+        do {
+            snapshot = try await repository.fetchFamily()
+            errorMessage = nil
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        if let plan = try? await repository.fetchPlan() {
+            openTaskCounts = Dictionary(
+                grouping: plan.tasks.filter(\.isOpen).compactMap(\.assignedMemberID),
+                by: { $0 }
+            ).mapValues(\.count)
+        }
     }
 
     func invite(phone: String, role: FamilyRole) async -> Bool {

@@ -27,6 +27,8 @@ struct FamilyView: View {
                 familyMembers(family)
                 inviteSection
             }
+            .scrollContentBackground(.hidden)
+            .background(Color.aimCanvas)
 #if os(iOS)
             .listStyle(.insetGrouped)
 #else
@@ -34,8 +36,10 @@ struct FamilyView: View {
 #endif
         } else if store.isLoading {
             ProgressView("正在加载家庭")
+        } else if let errorMessage = store.errorMessage {
+            AimErrorState(message: errorMessage) { Task { await store.load() } }
         } else {
-            ContentUnavailableView("还没有家庭", systemImage: "person.2", description: Text(store.errorMessage ?? "连接家庭后，计划和待办会在成员之间同步。"))
+            AimEmptyState(title: "还没有家庭", message: "连接家庭后，计划和待办会在成员之间同步。")
         }
     }
 
@@ -45,7 +49,7 @@ struct FamilyView: View {
                 Text(family.name).font(.title2.weight(.semibold))
                 Text("成员各自有账号，但共享同一份孕期计划和待办。")
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.aimTextSecondary)
             }
             .aimCard()
         }
@@ -65,14 +69,20 @@ struct FamilyView: View {
         HStack(spacing: 12) {
             Image(systemName: member.role == .mother ? "person.crop.circle.fill" : "person.circle.fill")
                 .font(.title2)
-                .foregroundStyle(member.role == .mother ? Color.aimAccent : Color.secondary)
+                .foregroundStyle(member.role == .mother ? Color.aimAccent : Color.aimTextSecondary)
             VStack(alignment: .leading, spacing: 3) {
                 Text(member.role.displayName).font(.body.weight(.medium))
-                Text(member.status == "active" ? "已加入" : "等待确认")
+                Text(statusText(member))
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.aimTextSecondary)
             }
         }
+    }
+
+    private func statusText(_ member: FamilyMember) -> String {
+        let base = member.status == "active" ? "已加入" : "等待确认"
+        guard let count = store.openTaskCount(for: member.accountID), count > 0 else { return base }
+        return "\(base) · \(count) 项待办"
     }
 
     private var inviteSection: some View {
@@ -90,6 +100,7 @@ private struct InviteMemberSheet: View {
     @State private var phone = ""
     @State private var role: FamilyRole = .father
     @State private var isSubmitting = false
+    @State private var errorMessage: String?
 
     var body: some View {
         NavigationStack {
@@ -103,24 +114,36 @@ private struct InviteMemberSheet: View {
                         ForEach(FamilyRole.allCases, id: \.self) { Text($0.displayName).tag($0) }
                     }
                 }
+                if let errorMessage {
+                    Section { Text(errorMessage).foregroundStyle(Color.aimDanger) }
+                }
             }
             .navigationTitle("邀请成员")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("取消") { dismiss() }
+                    Button("取消") { dismiss() }.disabled(isSubmitting)
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("发送") {
-                        isSubmitting = true
-                        Task {
-                            if await store.invite(phone: phone, role: role) { dismiss() }
-                            isSubmitting = false
-                        }
+                    if isSubmitting {
+                        ProgressView()
+                    } else {
+                        Button("发送") { Task { await submit() } }
+                            .disabled(phone.filter(\.isNumber).count < 6)
                     }
-                    .disabled(phone.count < 6 || isSubmitting)
                 }
             }
         }
         .presentationDetents([.medium])
+    }
+
+    private func submit() async {
+        isSubmitting = true
+        errorMessage = nil
+        defer { isSubmitting = false }
+        if await store.invite(phone: phone, role: role) {
+            dismiss()
+        } else {
+            errorMessage = store.errorMessage ?? "邀请没有发出去，稍后再试。"
+        }
     }
 }
