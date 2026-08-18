@@ -10,6 +10,7 @@ struct TimelineView: View {
     @State private var showingAgent = false
     @State private var showingPregnancySetup = false
     @State private var showsBackToToday = false
+    @State private var toast: AimToastMessage?
 
     private let todayAnchor = "timeline-today"
 
@@ -44,6 +45,7 @@ struct TimelineView: View {
             .fullScreenCover(isPresented: $showingAgent) {
                 AgentSheet(context: agentContext)
             }
+            .aimToast($toast)
         }
     }
 
