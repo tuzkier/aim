@@ -14,9 +14,9 @@ final class CoreJourneyUITests: XCTestCase {
             app.buttons["开始体验"].tap()
         }
 
-        let todayTab = app.tabBars.buttons["今天"]
-        XCTAssertTrue(todayTab.waitForExistence(timeout: 8))
-        todayTab.tap()
+        let timelineTab = app.tabBars.buttons["孕期"]
+        XCTAssertTrue(timelineTab.waitForExistence(timeout: 8))
+        timelineTab.tap()
 
         let agentButton = app.buttons["global-agent-button"]
         XCTAssertTrue(agentButton.waitForExistence(timeout: 5))
@@ -40,19 +40,15 @@ final class CoreJourneyUITests: XCTestCase {
             app.buttons["开始体验"].tap()
         }
 
-        let todayTab = app.tabBars.buttons["今天"]
-        XCTAssertTrue(todayTab.waitForExistence(timeout: 8))
-        todayTab.tap()
-        if app.buttons["补充预产期"].waitForExistence(timeout: 3) {
-            app.buttons["补充预产期"].tap()
+        let timelineTab = app.tabBars.buttons["孕期"]
+        XCTAssertTrue(timelineTab.waitForExistence(timeout: 8))
+        timelineTab.tap()
+        if app.buttons["补充孕期信息"].waitForExistence(timeout: 3) {
+            app.buttons["补充孕期信息"].tap()
             app.buttons["保存并生成计划"].tap()
         }
 
-        let recordsTab = app.tabBars.buttons["记录"]
-        XCTAssertTrue(recordsTab.waitForExistence(timeout: 8))
-        recordsTab.tap()
-
-        let addRecord = app.navigationBars["记录"].buttons["新增记录"]
+        let addRecord = app.buttons["新增记录"]
         XCTAssertTrue(addRecord.waitForExistence(timeout: 5))
         addRecord.tap()
 
