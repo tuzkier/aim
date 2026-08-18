@@ -274,17 +274,20 @@ Agent 与各 sheet 的呈现统一为 `.sheet` / `.fullScreenCover`，不使用 
 - 减少动态效果：开启 `reduceMotion` 时，「回到今天」改为瞬时跳转，toast 改为淡入淡出
 - 保留现有 UI 测试依赖的 `accessibilityIdentifier`，并为时间线新增 `timeline-today-anchor`、`timeline-week-header-{week}`、`agent-diff-sheet`、`agent-undo-toast`
 
-## 10. 数据依赖与降级
+## 10. 数据依赖
 
-时间线需要以下当前 iOS 模型可能不具备的字段：
+已核对 `contracts/public-api/openapi.json` 与 `Generated/OpenAPI/Models.swift`，时间线所需字段服务端**均已具备**，无需改动服务端：
 
-| 字段 | 用途 | 缺失时降级 |
+| 需求 | 数据来源 | 客户端现状 |
 | --- | --- | --- |
-| 任务负责人 | 任务行元信息、家庭待办计数 | 元信息行省略该段，不显示占位 |
-| 变更来源 | `Agent 调整` 标记 | 不显示标记 |
-| 记录与任务的统一时间轴排序 | 时间线合并 | 客户端按 `occurredAt` / `dueAt` 合并排序 |
+| 任务负责人 | `APITaskDTO.assigned_member_id` | 已映射进 `TaskItem.assignedMemberID`，但 UI 未使用 |
+| 变更来源 | `APITaskDTO.changed_by_actor_type`，取值 `account` / `agent` / `system` | **未映射进 `TaskItem`**，需补 |
+| 负责人显示名 | `FamilyMember.role.displayName` | 需按 `assignedMemberID == FamilyMember.accountID` 关联 |
+| 时间线排序 | 任务 `dueAt`、记录 `occurredAt` | 客户端合并排序 |
 
-实施前需先核对 `contracts/public-api/openapi.json` 与 `Generated/OpenAPI/Models.swift`。若字段缺失，本次按上表降级，服务端补齐另行安排，不在本规格范围内。
+唯一缺口是 `TaskItem` 未携带 `changedByActorType`，属客户端映射遗漏，在实施计划的第一个任务补齐。
+
+`assigned_member_id` 与 `FamilyMemberResponse.account_id` 属同一标识空间（`FamilyTaskCountResponse` 即按前者分组、与后者对应）。模板任务的该字段为 `null`，此时任务行不显示负责人段。
 
 ## 11. 不在本次范围
 
