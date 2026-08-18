@@ -130,3 +130,21 @@ final class BusinessRepositoryTests: XCTestCase {
         """.utf8)
     }
 }
+
+final class TaskActorMappingTests: XCTestCase {
+    func testAgentActorRawValueMapsToAgent() {
+        XCTAssertEqual(TaskActor(rawValue: "agent"), .agent)
+        XCTAssertEqual(TaskActor(rawValue: "AGENT"), .agent)
+    }
+
+    func testAccountAndSystemActorsAreNotAgentChanged() {
+        XCTAssertFalse(TaskActor.account.isAgent)
+        XCTAssertFalse(TaskActor.system.isAgent)
+        XCTAssertTrue(TaskActor.agent.isAgent)
+    }
+
+    func testUnrecognisedActorFallsBackToUnknown() {
+        XCTAssertEqual(TaskActor(rawValue: "robot"), .unknown)
+        XCTAssertFalse(TaskActor.unknown.isAgent)
+    }
+}

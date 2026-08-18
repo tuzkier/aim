@@ -9,8 +9,10 @@ struct TaskItem: Identifiable, Codable, Equatable, Sendable {
     let dueAt: Date?
     let scheduledFor: Date?
     let assignedMemberID: UUID?
+    let changedByActor: TaskActor
 
     var isOpen: Bool { status != .completed }
+    var isAgentChanged: Bool { changedByActor.isAgent }
 }
 
 enum TaskStatus: String, Codable, CaseIterable, Sendable {
@@ -29,6 +31,24 @@ enum TaskStatus: String, Codable, CaseIterable, Sendable {
         default: self = .unknown
         }
     }
+}
+
+enum TaskActor: String, Codable, Sendable {
+    case account
+    case agent
+    case system
+    case unknown
+
+    init(rawValue: String) {
+        switch rawValue.lowercased() {
+        case "account": self = .account
+        case "agent": self = .agent
+        case "system": self = .system
+        default: self = .unknown
+        }
+    }
+
+    var isAgent: Bool { self == .agent }
 }
 
 struct TodaySnapshot: Codable, Equatable, Sendable {
@@ -244,7 +264,17 @@ actor BusinessRepository: BusinessRepositoryProtocol {
     }
 
     private func map(_ dto: APITaskDTO) -> TaskItem {
-        TaskItem(id: dto.id, title: dto.title, detail: dto.description, status: TaskStatus(rawValue: dto.status), version: dto.version, dueAt: dto.dueAt, scheduledFor: dto.scheduledFor, assignedMemberID: dto.assignedMemberID)
+        TaskItem(
+            id: dto.id,
+            title: dto.title,
+            detail: dto.description,
+            status: TaskStatus(rawValue: dto.status),
+            version: dto.version,
+            dueAt: dto.dueAt,
+            scheduledFor: dto.scheduledFor,
+            assignedMemberID: dto.assignedMemberID,
+            changedByActor: TaskActor(rawValue: dto.changedByActorType)
+        )
     }
 
     private func map(_ dto: APITodayDTO) -> TodaySnapshot {

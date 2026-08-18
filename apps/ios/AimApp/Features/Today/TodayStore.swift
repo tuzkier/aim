@@ -43,10 +43,10 @@ final class TodayStore {
             asOf: .now,
             weeks: 18,
             days: 2,
-            priorityTask: TaskItem(id: UUID(), title: "预约下周的系统超声检查", detail: "建议提前确认医院和可用时间", status: .todo, version: 1, dueAt: .now.addingTimeInterval(86_400 * 3), scheduledFor: nil, assignedMemberID: nil),
+            priorityTask: TaskItem(id: UUID(), title: "预约下周的系统超声检查", detail: "建议提前确认医院和可用时间", status: .todo, version: 1, dueAt: .now.addingTimeInterval(86_400 * 3), scheduledFor: nil, assignedMemberID: nil, changedByActor: .system),
             upcomingTasks: [
-                TaskItem(id: UUID(), title: "整理最近一次产检记录", detail: nil, status: .todo, version: 1, dueAt: .now.addingTimeInterval(86_400 * 6), scheduledFor: nil, assignedMemberID: nil),
-                TaskItem(id: UUID(), title: "确认杭州生育待遇材料", detail: nil, status: .todo, version: 1, dueAt: .now.addingTimeInterval(86_400 * 10), scheduledFor: nil, assignedMemberID: nil),
+                TaskItem(id: UUID(), title: "整理最近一次产检记录", detail: nil, status: .todo, version: 1, dueAt: .now.addingTimeInterval(86_400 * 6), scheduledFor: nil, assignedMemberID: nil, changedByActor: .system),
+                TaskItem(id: UUID(), title: "确认杭州生育待遇材料", detail: nil, status: .todo, version: 1, dueAt: .now.addingTimeInterval(86_400 * 10), scheduledFor: nil, assignedMemberID: nil, changedByActor: .system),
             ],
             familyOpenTaskCount: 4
         )
