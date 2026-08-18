@@ -56,9 +56,30 @@ struct AgentSheet: View {
                 }
             }
             .background(Color.aimCanvas)
+            .sheet(item: pendingApproval) { request in
+                AgentDiffSheet(preview: AgentChangePreview.from(request)) {
+                    store.approve(request, environment: session.environment)
+                } onDismiss: {
+                    store.cancelApproval(request, environment: session.environment)
+                }
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .ignoresSafeArea()
+    }
+
+    private var pendingApproval: Binding<EveInputRequest?> {
+        Binding(
+            get: {
+                if case let .awaitingApproval(request) = store.state { return request }
+                return nil
+            },
+            set: { newValue in
+                if newValue == nil, case let .awaitingApproval(request) = store.state {
+                    store.cancelApproval(request, environment: session.environment)
+                }
+            }
+        )
     }
 
     private var welcomeContent: some View {
@@ -106,12 +127,8 @@ struct AgentSheet: View {
     @ViewBuilder
     private var statusView: some View {
         switch store.state {
-        case .awaitingApproval(let request):
-            ApprovalBar(request: request) {
-                store.approve(request, environment: session.environment)
-            } onCancel: {
-                store.cancelApproval(request, environment: session.environment)
-            }
+        case .awaitingApproval:
+            EmptyView()
         case .streaming:
             Label("正在整理回答…", systemImage: "ellipsis")
                 .font(.footnote)
@@ -156,31 +173,5 @@ private struct AgentContextCard: View {
         .background(Color.aimAccentSoft.opacity(0.62), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier("agent-current-context")
-    }
-}
-
-private struct ApprovalBar: View {
-    let request: EveInputRequest
-    let onApprove: () -> Void
-    let onCancel: () -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Label("需要你的确认", systemImage: "checkmark.shield")
-                .font(.subheadline.weight(.semibold))
-            Text(request.prompt ?? "要执行这项计划变更吗？")
-                .font(.subheadline)
-            HStack(spacing: 10) {
-                Button("暂不执行", action: onCancel)
-                    .buttonStyle(.bordered)
-                Button("确认执行", action: onApprove)
-                    .buttonStyle(.borderedProminent)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(14)
-        .background(Color.aimDangerSoft, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
     }
 }

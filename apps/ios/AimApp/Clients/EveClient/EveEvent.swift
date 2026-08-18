@@ -58,20 +58,32 @@ struct EveInputRequest: Codable, Equatable, Sendable, Identifiable {
     let prompt: String?
     let options: [EveInputOption]
     let toolName: String?
+    let changes: [EveChangeDTO]?
+    let qualifier: String?
 
     var id: String { requestID }
 
     enum CodingKeys: String, CodingKey {
         case requestID = "requestId"
-        case kind, prompt, options, action
+        case kind, prompt, options, action, changes, qualifier
     }
 
-    init(requestID: String, kind: String, prompt: String?, options: [EveInputOption], toolName: String?) {
+    init(
+        requestID: String,
+        kind: String,
+        prompt: String?,
+        options: [EveInputOption],
+        toolName: String?,
+        changes: [EveChangeDTO]? = nil,
+        qualifier: String? = nil
+    ) {
         self.requestID = requestID
         self.kind = kind
         self.prompt = prompt
         self.options = options
         self.toolName = toolName
+        self.changes = changes
+        self.qualifier = qualifier
     }
 
     init(from decoder: Decoder) throws {
@@ -85,6 +97,8 @@ struct EveInputRequest: Codable, Equatable, Sendable, Identifiable {
         } else {
             toolName = nil
         }
+        changes = try container.decodeIfPresent([EveChangeDTO].self, forKey: .changes)
+        qualifier = try container.decodeIfPresent(String.self, forKey: .qualifier)
     }
 
     func encode(to encoder: Encoder) throws {
@@ -93,7 +107,16 @@ struct EveInputRequest: Codable, Equatable, Sendable, Identifiable {
         try container.encode(kind, forKey: .kind)
         try container.encodeIfPresent(prompt, forKey: .prompt)
         try container.encode(options, forKey: .options)
+        try container.encodeIfPresent(changes, forKey: .changes)
+        try container.encodeIfPresent(qualifier, forKey: .qualifier)
     }
+}
+
+struct EveChangeDTO: Codable, Equatable, Sendable {
+    let field: String
+    let before: String?
+    let after: String
+    let symbol: String?
 }
 
 struct EveInputOption: Codable, Equatable, Sendable, Identifiable {
