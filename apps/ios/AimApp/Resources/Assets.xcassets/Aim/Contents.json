@@ -1,0 +1,9 @@
+{
+  "info": {
+    "author": "aim",
+    "version": 1
+  },
+  "properties": {
+    "provides-namespace": false
+  }
+}

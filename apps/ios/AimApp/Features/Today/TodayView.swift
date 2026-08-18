@@ -24,7 +24,7 @@ struct TodayView: View {
                 }
             }
             .navigationTitle("今天")
-            .background(Color.aimWarmBackground)
+            .background(Color.aimCanvas)
             .refreshable { await store.load() }
             .task {
                 if store.snapshot == nil { await store.load() }
@@ -49,7 +49,7 @@ struct TodayView: View {
                 .buttonStyle(.borderedProminent)
         }
         .padding(28)
-        .aimWarmCard()
+        .aimCard()
         .padding(20)
     }
 
@@ -115,7 +115,7 @@ struct TodayView: View {
             ProgressView(value: Double(snapshot.weeks), total: 40)
                 .tint(.aimAccent)
         }
-        .aimWarmCard()
+        .aimCard()
     }
 }
 
@@ -311,6 +311,6 @@ private struct PriorityTaskRow: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .aimWarmCard()
+        .aimCard()
     }
 }

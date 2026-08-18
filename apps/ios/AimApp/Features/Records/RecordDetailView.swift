@@ -27,7 +27,7 @@ struct RecordDetailView: View {
                     Text(currentRecord.occurredAt, format: .dateTime.year().month().day().hour().minute())
                         .font(.subheadline).foregroundStyle(.secondary)
                 }
-                .aimWarmCard()
+                .aimCard()
             }
             .listRowBackground(Color.clear)
 

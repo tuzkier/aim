@@ -55,7 +55,7 @@ struct AgentSheet: View {
                     }
                 }
             }
-            .background(Color.aimWarmBackground)
+            .background(Color.aimCanvas)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .ignoresSafeArea()
@@ -71,7 +71,7 @@ struct AgentSheet: View {
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .aimWarmCard()
+        .aimCard()
     }
 
     private var chatLocalization: ChatLocalization {
@@ -88,15 +88,15 @@ struct AgentSheet: View {
 
     private var chatTheme: ChatTheme {
         ChatTheme(colors: .init(
-            mainBG: Color.aimWarmBackground,
+            mainBG: Color.aimCanvas,
             mainTint: Color.aimAccent,
             mainText: .primary,
             mainCaptionText: .secondary,
             messageMyBG: Color.aimAccent,
             messageMyText: .white,
-            messageFriendBG: Color.aimWarmSurface,
+            messageFriendBG: Color.aimSurface,
             messageFriendText: .primary,
-            inputBG: Color.aimWarmSurface,
+            inputBG: Color.aimSurface,
             inputText: .primary,
             inputPlaceholderText: .secondary,
             sendButtonBackground: Color.aimAccent
@@ -126,7 +126,7 @@ struct AgentSheet: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
-                .background(Color.aimSoftRose)
+                .background(Color.aimDangerSoft)
         default:
             EmptyView()
         }
@@ -141,7 +141,7 @@ private struct AgentContextCard: View {
             Image(systemName: "scope")
                 .foregroundStyle(Color.aimAccent)
                 .frame(width: 26, height: 26)
-                .background(Color.aimSoftSand, in: Circle())
+                .background(Color.aimAccentSoft, in: Circle())
             VStack(alignment: .leading, spacing: 4) {
                 Text("正在查看 · \(context.title)")
                     .font(.subheadline.weight(.semibold))
@@ -153,7 +153,7 @@ private struct AgentContextCard: View {
             Spacer(minLength: 0)
         }
         .padding(12)
-        .background(Color.aimSoftSand.opacity(0.62), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .background(Color.aimAccentSoft.opacity(0.62), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier("agent-current-context")
     }
@@ -179,7 +179,7 @@ private struct ApprovalBar: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
-        .background(Color.aimSoftRose, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .background(Color.aimDangerSoft, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
     }

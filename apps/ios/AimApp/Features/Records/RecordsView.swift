@@ -38,7 +38,7 @@ struct RecordsView: View {
                 }
             }
             .navigationTitle("记录")
-            .background(Color.aimWarmBackground)
+            .background(Color.aimCanvas)
             .toolbar {
                 if session.pregnancyID != nil {
                     ToolbarItem(placement: .primaryAction) {

@@ -53,7 +53,7 @@ struct OnboardingView: View {
             }
             .navigationTitle("欢迎来到 Aim")
             .scrollContentBackground(.hidden)
-            .background(Color.aimWarmBackground)
+            .background(Color.aimCanvas)
         }
     }
 }

@@ -16,7 +16,7 @@ struct PlanView: View {
                                     .font(.subheadline)
                                     .foregroundStyle(.secondary)
                             }
-                            .aimWarmCard()
+                            .aimCard()
                         }
                         .listRowBackground(Color.clear)
                         .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 10, trailing: 16))
@@ -46,7 +46,7 @@ struct PlanView: View {
                 }
             }
             .navigationTitle("计划")
-            .background(Color.aimWarmBackground)
+            .background(Color.aimCanvas)
             .refreshable { await store.load() }
             .task {
                 if store.snapshot == nil { await store.load() }
