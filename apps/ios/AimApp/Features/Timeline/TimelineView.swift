@@ -11,6 +11,8 @@ struct TimelineView: View {
     @State private var showingPregnancySetup = false
     @State private var showsBackToToday = false
     @State private var toast: AimToastMessage?
+    @State private var delayTarget: TaskItem?
+    @State private var completedTaskID: UUID?
 
     private let todayAnchor = "timeline-today"
 
@@ -24,12 +26,21 @@ struct TimelineView: View {
                 } else if store.weeks.isEmpty, let message = store.errorMessage {
                     AimErrorState(message: message) { Task { await store.load() } }
                 } else {
-                    timeline
+                    VStack(spacing: 0) {
+                        TimelineHeader(
+                            week: store.currentWeek,
+                            days: store.currentDays,
+                            date: store.today,
+                            filter: $store.filter,
+                            onCompose: { showingComposer = true },
+                            onAgent: { showingAgent = true }
+                        )
+                        timeline
+                    }
                 }
             }
             .background(Color.aimCanvas)
-            .navigationTitle(navigationTitle)
-            .toolbar { toolbar }
+            .toolbar(.hidden, for: .navigationBar)
             .refreshable { await store.load() }
             .task(id: session.pregnancyID) {
                 guard session.pregnancyID != nil, store.weeks.isEmpty else { return }
@@ -42,36 +53,16 @@ struct TimelineView: View {
                 }
             }
             .sheet(isPresented: $showingPregnancySetup) { PregnancySetupView() }
+            .sheet(item: $delayTarget) { task in
+                TaskDelaySheet(task: task, repository: planStore.repository) { _ in
+                    delayTarget = nil
+                    Task { await store.load() }
+                }
+            }
             .fullScreenCover(isPresented: $showingAgent) {
                 AgentSheet(context: agentContext)
             }
             .aimToast($toast)
-        }
-    }
-
-    private var navigationTitle: String {
-        guard let week = store.currentWeek else { return "孕期" }
-        return "孕 \(week) 周"
-    }
-
-    @ToolbarContentBuilder
-    private var toolbar: some ToolbarContent {
-        ToolbarItem(placement: .primaryAction) {
-            Menu {
-                Picker("筛选", selection: $store.filter) {
-                    ForEach(TimelineFilter.allCases, id: \.self) { Text($0.displayName).tag($0) }
-                }
-            } label: {
-                Image(systemName: "line.3.horizontal.decrease")
-            }
-            .accessibilityIdentifier("timeline-filter")
-        }
-        ToolbarItem(placement: .primaryAction) {
-            Button("新增记录", systemImage: "plus") { showingComposer = true }
-        }
-        ToolbarItem(placement: .primaryAction) {
-            Button("问一问", systemImage: "wand.and.sparkles") { showingAgent = true }
-                .accessibilityIdentifier("global-agent-button")
         }
     }
 
@@ -82,44 +73,85 @@ struct TimelineView: View {
                     Section {
                         rows(for: week)
                     } header: {
-                        AimWeekHeader(week: week.week, startDate: week.startDate, endDate: week.endDate,
-                                      position: week.position, count: week.entries.count)
-                            .listRowInsets(EdgeInsets(top: 0, leading: AimMetrics.rowLeadingInset,
-                                                      bottom: 0, trailing: AimMetrics.space16))
-                            .listRowBackground(AimTimelineRail(position: week.position, showsDot: true))
-                            .id(week.position == .current ? todayAnchor : "week-\(week.week)")
+                        header(for: week)
                     }
                 }
             }
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
             .background(Color.aimCanvas)
+            .coordinateSpace(name: "timeline")
             .safeAreaInset(edge: .bottom) {
                 if showsBackToToday { backToToday(proxy) }
             }
             .task {
                 proxy.scrollTo(todayAnchor, anchor: .top)
             }
+            .onPreferenceChange(TodayOffsetKey.self) { offset in
+                let threshold = UIScreen.main.bounds.height * 2
+                showsBackToToday = abs(offset) > threshold
+            }
         }
+    }
+
+    private func header(for week: TimelineWeek) -> some View {
+        let isCurrent = week.position == .current
+        return AimWeekHeader(week: week.week, startDate: week.startDate, endDate: week.endDate,
+                              position: week.position, count: week.entries.count)
+            .listRowInsets(EdgeInsets(top: 0, leading: AimMetrics.rowLeadingInset,
+                                      bottom: 0, trailing: AimMetrics.space16))
+            .listRowBackground(AimTimelineRail(position: week.position, showsDot: true))
+            .id(isCurrent ? todayAnchor : "week-\(week.week)")
+            .background {
+                if isCurrent {
+                    GeometryReader { proxy in
+                        Color.clear.preference(
+                            key: TodayOffsetKey.self,
+                            value: proxy.frame(in: .named("timeline")).minY
+                        )
+                    }
+                }
+            }
     }
 
     @ViewBuilder
     private func rows(for week: TimelineWeek) -> some View {
-        if week.position == .current, let focus = store.focusTask {
-            AimFocusCard(task: focus) { showingAgent = true }
-                .listRowInsets(EdgeInsets(top: AimMetrics.space8, leading: AimMetrics.rowLeadingInset,
-                                          bottom: AimMetrics.space12, trailing: AimMetrics.space16))
-                .listRowSeparator(.hidden)
-                .listRowBackground(AimTimelineRail(position: week.position))
-                .accessibilityIdentifier("timeline-today-anchor")
-        }
+        if store.isCollapsed(week) {
+            Button { store.expand(week) } label: {
+                HStack {
+                    Text("孕 \(week.week) 周 · \(week.entries.count) 项")
+                        .font(.footnote)
+                        .foregroundStyle(Color.aimTextTertiary)
+                    Spacer()
+                    Image(systemName: "chevron.down")
+                        .font(.caption)
+                        .foregroundStyle(Color.aimTextTertiary)
+                }
+            }
+            .buttonStyle(.plain)
+            .padding(.vertical, AimMetrics.space8)
+            .listRowInsets(EdgeInsets(top: 0, leading: AimMetrics.rowLeadingInset,
+                                      bottom: 0, trailing: AimMetrics.space16))
+            .listRowSeparator(.hidden)
+            .listRowBackground(AimTimelineRail(position: week.position))
+            .accessibilityIdentifier("timeline-week-collapsed-\(week.week)")
+        } else {
+            if week.position == .current, let focus = store.focusTask {
+                AimFocusCard(task: focus) { showingAgent = true }
+                    .listRowInsets(EdgeInsets(top: AimMetrics.space8, leading: AimMetrics.rowLeadingInset,
+                                              bottom: AimMetrics.space12, trailing: AimMetrics.space16))
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(AimTimelineRail(position: week.position))
+                    .accessibilityIdentifier("timeline-today-anchor")
+            }
 
-        ForEach(entries(in: week)) { entry in
-            row(entry)
-                .listRowInsets(EdgeInsets(top: 0, leading: AimMetrics.rowLeadingInset,
-                                          bottom: 0, trailing: AimMetrics.space16))
-                .listRowSeparator(.hidden)
-                .listRowBackground(AimTimelineRail(position: week.position))
+            ForEach(entries(in: week)) { entry in
+                row(entry)
+                    .listRowInsets(EdgeInsets(top: 0, leading: AimMetrics.rowLeadingInset,
+                                              bottom: 0, trailing: AimMetrics.space16))
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(AimTimelineRail(position: week.position))
+            }
         }
     }
 
@@ -136,6 +168,29 @@ struct TimelineView: View {
                 TaskDetailView(task: task, repository: planStore.repository)
             } label: {
                 AimTaskRow(task: task, assigneeName: store.assigneeName(for: task.assignedMemberID))
+            }
+            .swipeActions(edge: .leading) {
+                if task.isOpen {
+                    Button {
+                        Task {
+                            await store.complete(task)
+                            completedTaskID = task.id
+                        }
+                    } label: {
+                        Label("完成", systemImage: "checkmark")
+                    }
+                    .tint(Color.aimSuccess)
+                }
+            }
+            .swipeActions(edge: .trailing) {
+                if task.isOpen {
+                    Button {
+                        delayTarget = task
+                    } label: {
+                        Label("延期", systemImage: "calendar")
+                    }
+                    .tint(Color.aimAccent)
+                }
             }
         case let .record(record):
             NavigationLink {
@@ -176,5 +231,12 @@ struct TimelineView: View {
         var lines = [week]
         if let focus = store.focusTask { lines.append("当前最重要：" + focus.title) }
         return AgentContext(title: "孕期", summary: lines.joined(separator: "\n"))
+    }
+}
+
+private struct TodayOffsetKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
     }
 }

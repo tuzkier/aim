@@ -51,9 +51,22 @@ final class TimelineStore {
     var records: [RecordItem] = []
     var lastMenstrualPeriod: Date?
     var today: Date = .now
+    var currentDays: Int = 0
 
     var currentWeek: Int? {
         weeks.first { $0.position == .current }?.week
+    }
+
+    var expandedFarWeeks: Set<Int> = []
+
+    func isCollapsed(_ week: TimelineWeek) -> Bool {
+        guard let current = currentWeek else { return false }
+        guard week.position == .future, week.week > current + 4 else { return false }
+        return !expandedFarWeeks.contains(week.week)
+    }
+
+    func expand(_ week: TimelineWeek) {
+        expandedFarWeeks.insert(week.week)
     }
 
     var focusTask: TaskItem? {
@@ -80,6 +93,7 @@ final class TimelineStore {
             let family = try await repository.fetchFamily()
 
             today = todaySnapshot.asOf
+            currentDays = todaySnapshot.days
             lastMenstrualPeriod = TimelineBuilder.lastMenstrualPeriod(
                 asOf: todaySnapshot.asOf,
                 weeks: todaySnapshot.weeks,
