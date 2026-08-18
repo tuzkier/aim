@@ -28,6 +28,12 @@ struct AgentSheet: View {
                     welcomeContent
                         .padding(.horizontal, 16)
                         .padding(.vertical, 12)
+                    quickPromptRow
+                        .padding(.bottom, 12)
+                }
+
+                if !store.activityLog.isEmpty {
+                    activitySection
                 }
 
                 ChatView(messages: AgentChatAdapter.messages(from: store.messages)) { draft in
@@ -64,8 +70,6 @@ struct AgentSheet: View {
                 }
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .ignoresSafeArea()
     }
 
     private var pendingApproval: Binding<EveInputRequest?> {
@@ -89,10 +93,62 @@ struct AgentSheet: View {
                 .foregroundStyle(Color.aimAccent)
             Text("可以问孕期变化、最近记录或接下来要做的事。涉及计划变更时，我会先让你确认。")
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.aimTextSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .aimCard()
+    }
+
+    private let quickPrompts = ["这周还有什么要准备？", "帮我看看最近的记录", "我现在有点不舒服"]
+
+    private var quickPromptRow: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: AimMetrics.space8) {
+                ForEach(quickPrompts, id: \.self) { prompt in
+                    Button(prompt) {
+                        store.draft = prompt
+                        store.send(environment: session.environment)
+                    }
+                    .font(.subheadline)
+                    .foregroundStyle(Color.aimAccent)
+                    .padding(.horizontal, AimMetrics.space12)
+                    .padding(.vertical, AimMetrics.space8)
+                    .background(Color.aimSurface, in: Capsule())
+                    .overlay { Capsule().stroke(Color.aimAccent.opacity(0.2), lineWidth: 1) }
+                    .accessibilityIdentifier("agent-quick-prompt")
+                }
+            }
+            .padding(.horizontal, AimMetrics.space16)
+        }
+    }
+
+    private var activitySection: some View {
+        VStack(alignment: .leading, spacing: AimMetrics.space8) {
+            Text("最近处理").aimLabelStyle()
+            ForEach(store.activityLog.prefix(3)) { activity in
+                HStack(spacing: AimMetrics.space8) {
+                    Image(systemName: "checkmark.circle")
+                        .foregroundStyle(Color.aimSuccess)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(activity.title)
+                            .font(.subheadline)
+                            .foregroundStyle(Color.aimTextPrimary)
+                        Text(activity.occurredAt, style: .time)
+                            .font(.footnote)
+                            .foregroundStyle(Color.aimTextSecondary)
+                    }
+                    Spacer()
+                    if activity.canUndo {
+                        Button("撤销") { store.undo(activity, environment: session.environment) }
+                            .font(.footnote.weight(.medium))
+                            .foregroundStyle(Color.aimAccent)
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, AimMetrics.space16)
+        .padding(.vertical, AimMetrics.space8)
+        .accessibilityIdentifier("agent-activity-log")
     }
 
     private var chatLocalization: ChatLocalization {
@@ -111,15 +167,15 @@ struct AgentSheet: View {
         ChatTheme(colors: .init(
             mainBG: Color.aimCanvas,
             mainTint: Color.aimAccent,
-            mainText: .primary,
-            mainCaptionText: .secondary,
+            mainText: Color.aimTextPrimary,
+            mainCaptionText: Color.aimTextSecondary,
             messageMyBG: Color.aimAccent,
-            messageMyText: .white,
+            messageMyText: Color.aimTextOnAccent,
             messageFriendBG: Color.aimSurface,
-            messageFriendText: .primary,
+            messageFriendText: Color.aimTextPrimary,
             inputBG: Color.aimSurface,
-            inputText: .primary,
-            inputPlaceholderText: .secondary,
+            inputText: Color.aimTextPrimary,
+            inputPlaceholderText: Color.aimTextSecondary,
             sendButtonBackground: Color.aimAccent
         ))
     }
@@ -130,20 +186,33 @@ struct AgentSheet: View {
         case .awaitingApproval:
             EmptyView()
         case .streaming:
-            Label("正在整理回答…", systemImage: "ellipsis")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
+            HStack(spacing: AimMetrics.space8) {
+                ProgressView().controlSize(.small)
+                Text("正在整理回答…")
+                    .font(.footnote)
+                    .foregroundStyle(Color.aimTextSecondary)
+                Spacer()
+                Button("停止") { store.stop() }
+                    .font(.footnote.weight(.medium))
+                    .foregroundStyle(Color.aimAccent)
+                    .accessibilityIdentifier("agent-stop")
+            }
+            .padding(.horizontal, AimMetrics.space16)
+            .padding(.vertical, AimMetrics.space8)
         case .failed(let message):
-            Label(message, systemImage: "exclamationmark.triangle")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(Color.aimDangerSoft)
+            HStack(alignment: .firstTextBaseline, spacing: AimMetrics.space8) {
+                Label(message, systemImage: "exclamationmark.triangle")
+                    .font(.footnote)
+                    .foregroundStyle(Color.aimTextSecondary)
+                Spacer()
+                Button("重试") { store.retryLast(environment: session.environment) }
+                    .font(.footnote.weight(.medium))
+                    .foregroundStyle(Color.aimAccent)
+                    .accessibilityIdentifier("agent-retry")
+            }
+            .padding(.horizontal, AimMetrics.space16)
+            .padding(.vertical, AimMetrics.space12)
+            .background(Color.aimDangerSoft)
         default:
             EmptyView()
         }

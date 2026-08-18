@@ -12,9 +12,12 @@ final class AgentStore {
     var continuationToken: String?
 
     let context: AgentContext?
+    var activityLog: [AgentActivity] = []
+    private(set) var hasAutoSent = false
 
     private var client: EveClient?
     private var activeTask: Task<Void, Never>?
+    private var lastUserText: String?
 
     init(context: AgentContext? = nil) {
         self.context = context
@@ -25,11 +28,28 @@ final class AgentStore {
         return "\(context.prompt)\n\n用户问题：\(text)"
     }
 
+    func markAutoSent() { hasAutoSent = true }
+
+    func autoSend(_ text: String, environment: APIEnvironment) {
+        guard !hasAutoSent else { return }
+        markAutoSent()
+        draft = text
+        send(environment: environment)
+    }
+
+    func retryLast(environment: APIEnvironment) {
+        guard let lastUserText else { return }
+        draft = lastUserText
+        messages.removeAll { $0.text == lastUserText && $0.isUser }
+        send(environment: environment)
+    }
+
     func send(environment: APIEnvironment) {
         let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
         draft = ""
         messages.append(AgentMessage(text: text, isUser: true))
+        lastUserText = text
         let requestText = requestMessage(for: text)
         state = .streaming
         let client = EveClient(environment: environment)
@@ -64,6 +84,25 @@ final class AgentStore {
         state = .idle
     }
 
+    func undo(_ activity: AgentActivity, environment: APIEnvironment) {
+        guard let sessionID else { return }
+        activityLog.removeAll { $0.id == activity.id }
+        let client = EveClient(environment: environment)
+        state = .streaming
+        activeTask = Task { [weak self] in
+            do {
+                let events = try await client.send(
+                    sessionID: sessionID,
+                    message: "撤销上一次计划变更",
+                    from: self?.streamIndex ?? 0
+                )
+                for try await event in events { self?.consume(event) }
+            } catch {
+                self?.fail(error.localizedDescription)
+            }
+        }
+    }
+
     private func respond(_ request: EveInputRequest, approved: Bool, environment: APIEnvironment) {
         guard let sessionID else { return }
         let client = EveClient(environment: environment)
@@ -88,6 +127,10 @@ final class AgentStore {
             if let request = event.inputRequests.first { state = .awaitingApproval(request) }
         case .actionResult:
             state = .applied
+            activityLog.insert(
+                AgentActivity(id: UUID(), title: "已更新家庭计划", occurredAt: .now, canUndo: true),
+                at: 0
+            )
         case .messageCompleted:
             if let message = try? JSONDecoder().decode(EveMessageCompleted.self, from: event.data),
                AgentResponseText.shouldDisplay(finishReason: message.finishReason),
@@ -113,4 +156,11 @@ final class AgentStore {
 private struct EveMessageCompleted: Decodable {
     let finishReason: String?
     let message: String?
+}
+
+struct AgentActivity: Identifiable, Equatable, Sendable {
+    let id: UUID
+    let title: String
+    let occurredAt: Date
+    let canUndo: Bool
 }
