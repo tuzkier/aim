@@ -57,7 +57,13 @@ struct RecordDetailView: View {
             RecordTaskSheet(record: currentRecord, store: store, planStore: planStore) { showingTaskSheet = false }
         }
         .fullScreenCover(isPresented: $showingAgent) {
-            AgentSheet(initialDraft: analysisPrompt(for: currentRecord))
+            AgentSheet(
+                autoSend: analysisPrompt(for: currentRecord),
+                context: AgentContext(
+                    title: "记录",
+                    summary: "\(currentRecord.type.displayName)：\(currentRecord.displayTitle)"
+                )
+            )
         }
     }
 

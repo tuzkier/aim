@@ -40,3 +40,18 @@ final class AgentStoreTests: XCTestCase {
         XCTAssertNotEqual(AgentSheetState.awaitingApproval(request), .applied)
     }
 }
+
+@MainActor
+final class AgentAutoSendTests: XCTestCase {
+    func testAutoSendRecordsUserMessageOnce() {
+        let store = AgentStore(context: nil)
+        store.markAutoSent()
+        XCTAssertTrue(store.hasAutoSent)
+        store.markAutoSent()
+        XCTAssertTrue(store.hasAutoSent)
+    }
+
+    func testFreshStoreHasNotAutoSent() {
+        XCTAssertFalse(AgentStore(context: nil).hasAutoSent)
+    }
+}

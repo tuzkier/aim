@@ -5,12 +5,12 @@ struct AgentSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(AppSessionStore.self) private var session
     @State private var store: AgentStore
+    private let autoSend: String?
     private let onClose: (() -> Void)?
 
-    init(initialDraft: String = "", context: AgentContext? = nil, onClose: (() -> Void)? = nil) {
-        let store = AgentStore(context: context)
-        store.draft = initialDraft
-        _store = State(initialValue: store)
+    init(autoSend: String? = nil, context: AgentContext? = nil, onClose: (() -> Void)? = nil) {
+        _store = State(initialValue: AgentStore(context: context))
+        self.autoSend = autoSend
         self.onClose = onClose
     }
 
@@ -68,6 +68,9 @@ struct AgentSheet: View {
                 } onDismiss: {
                     store.cancelApproval(request, environment: session.environment)
                 }
+            }
+            .task {
+                if let autoSend { store.autoSend(autoSend, environment: session.environment) }
             }
         }
     }
