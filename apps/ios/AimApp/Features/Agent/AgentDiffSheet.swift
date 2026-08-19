@@ -5,6 +5,8 @@ struct AgentDiffSheet: View {
     let onApply: () -> Void
     let onDismiss: () -> Void
 
+    @State private var applied = 0
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: AimMetrics.space20) {
@@ -63,7 +65,10 @@ struct AgentDiffSheet: View {
                             in: RoundedRectangle(cornerRadius: AimMetrics.radiusButton, style: .continuous))
 
                 VStack(spacing: AimMetrics.space4) {
-                    Button(action: onApply) {
+                    Button {
+                        applied += 1
+                        onApply()
+                    } label: {
                         Text(preview.applyTitle)
                             .font(.body.weight(.medium))
                             .frame(maxWidth: .infinity)
@@ -86,6 +91,7 @@ struct AgentDiffSheet: View {
         .presentationDetents([.large])
         .presentationDragIndicator(.visible)
         .accessibilityIdentifier("agent-diff-sheet")
+        .sensoryFeedback(.success, trigger: applied)
     }
 
     private func changeRow(_ row: AgentChangeRow) -> some View {

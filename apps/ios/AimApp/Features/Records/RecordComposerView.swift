@@ -18,6 +18,7 @@ struct RecordComposerView: View {
     @State private var doctorAdvice: String
     @State private var title: String
     @State private var content: String
+    @State private var savedCount = 0
 
     private let symptomOptions = ["恶心", "乏力", "头晕"]
 
@@ -71,6 +72,7 @@ struct RecordComposerView: View {
             }
         }
         .presentationDetents([.large])
+        .sensoryFeedback(.success, trigger: savedCount)
     }
 
     private var typeSection: some View {
@@ -199,7 +201,7 @@ struct RecordComposerView: View {
         let saved: Bool
         if let record { saved = await store.update(recordID: record.id, draft: draft) }
         else { saved = await store.save(draft) }
-        if saved { onSaved(); dismiss() }
+        if saved { savedCount += 1; onSaved(); dismiss() }
     }
 
     private func makeDraft() -> RecordDraft? {

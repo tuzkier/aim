@@ -18,26 +18,27 @@ struct TimelineView: View {
 
     var body: some View {
         NavigationStack {
-            Group {
-                if session.pregnancyID == nil {
-                    setupPrompt
-                } else if store.weeks.isEmpty, store.isLoading {
-                    ProgressView("正在整理孕期时间线")
-                } else if store.weeks.isEmpty, let message = store.errorMessage {
-                    AimErrorState(message: message) { Task { await store.load() } }
-                } else {
-                    VStack(spacing: 0) {
-                        TimelineHeader(
-                            week: store.currentWeek,
-                            days: store.currentDays,
-                            date: store.today,
-                            filter: $store.filter,
-                            onCompose: { showingComposer = true },
-                            onAgent: { showingAgent = true }
-                        )
+            VStack(spacing: 0) {
+                TimelineHeader(
+                    week: store.currentWeek,
+                    days: store.currentDays,
+                    date: store.today,
+                    filter: $store.filter,
+                    onCompose: { if session.pregnancyID != nil { showingComposer = true } },
+                    onAgent: { showingAgent = true }
+                )
+                Group {
+                    if session.pregnancyID == nil {
+                        setupPrompt
+                    } else if store.weeks.isEmpty, store.isLoading {
+                        ProgressView("正在整理孕期时间线")
+                    } else if store.weeks.isEmpty, let message = store.errorMessage {
+                        AimErrorState(message: message) { Task { await store.load() } }
+                    } else {
                         timeline
                     }
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .background(Color.aimCanvas)
             .toolbar(.hidden, for: .navigationBar)
@@ -81,7 +82,7 @@ struct TimelineView: View {
             .scrollContentBackground(.hidden)
             .background(Color.aimCanvas)
             .coordinateSpace(name: "timeline")
-            .safeAreaInset(edge: .bottom) {
+            .overlay(alignment: .bottom) {
                 if showsBackToToday { backToToday(proxy) }
             }
             .task {
@@ -89,8 +90,10 @@ struct TimelineView: View {
             }
             .onPreferenceChange(TodayOffsetKey.self) { offset in
                 let threshold = UIScreen.main.bounds.height * 2
-                showsBackToToday = abs(offset) > threshold
+                let shouldShow = abs(offset) > threshold
+                if shouldShow != showsBackToToday { showsBackToToday = shouldShow }
             }
+            .sensoryFeedback(.success, trigger: completedTaskID)
         }
     }
 
