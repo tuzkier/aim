@@ -109,15 +109,17 @@ final class CoreJourneyUITests: XCTestCase {
         app.launchArguments = ["-reset-session"]
         app.launch()
 
-        // Dedicated phone number: this test mutates state (completing a task
-        // returns 409 on retry), so it needs its own fresh account rather than
-        // sharing the "13800000002" demo account other tests reuse — otherwise
-        // repeated runs race against tasks already completed by prior runs.
+        // Randomized phone number: this test mutates state (completing a task
+        // returns 409 on retry, and swiping an already-completed row — which
+        // has no swipe action to reveal — can register as a plain tap and
+        // navigate into TaskDetailView instead). A brand-new account every
+        // run guarantees every seeded task starts open, sidestepping both
+        // failure modes instead of working around a shared, mutating account.
         if app.textFields["手机号"].waitForExistence(timeout: 2) {
             let phone = app.textFields["手机号"]
             phone.tap()
             phone.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 20))
-            phone.typeText("13800000099")
+            phone.typeText("139\(Int.random(in: 10_000_000...99_999_999))")
             app.buttons["开始体验"].tap()
         }
 
@@ -132,26 +134,13 @@ final class CoreJourneyUITests: XCTestCase {
 
         // .swipeActions(edge: .leading) 的「完成」按钮靠向右滑手势展开
         // （手指从左往右拖动内容，露出贴在左侧的 leading 按钮），不是 swipeLeft。
-        // Rows for already-completed tasks render but expose no swipe action
-        // (TimelineView guards it with `if task.isOpen`), so try each row in
-        // turn rather than assuming the first one is still open — this test's
-        // own account can accumulate completed tasks across repeated re-runs.
-        let taskRows = app.buttons.matching(identifier: "timeline-task-row")
-        XCTAssertTrue(taskRows.firstMatch.waitForExistence(timeout: 8))
+        let taskRow = app.buttons.matching(identifier: "timeline-task-row").firstMatch
+        XCTAssertTrue(taskRow.waitForExistence(timeout: 8))
+        taskRow.swipeRight()
 
         let completeAction = app.buttons["完成"]
-        var completed = false
-        for index in 0..<min(taskRows.count, 5) {
-            let row = taskRows.element(boundBy: index)
-            row.swipeRight()
-            if completeAction.waitForExistence(timeout: 2) {
-                completeAction.tap()
-                completed = true
-                break
-            }
-            row.swipeLeft()
-        }
-        XCTAssertTrue(completed, "Expected at least one open task row among the first 5")
+        XCTAssertTrue(completeAction.waitForExistence(timeout: 3))
+        completeAction.tap()
 
         // The toast only appears after TimelineStore.complete(_:) finishes its
         // full reload (four sequential network calls), so give it real headroom
