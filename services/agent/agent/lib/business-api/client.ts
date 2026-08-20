@@ -61,10 +61,36 @@ function normalizeResult<TData extends Record<string, unknown>>(
   };
 }
 
-export async function callBusinessApi<TData extends Record<string, unknown>>(
+// The agent runtime's session-scoped auth context is intermittently unset on
+// the first read immediately after a tool call starts, even though the
+// session itself authenticated successfully (observed: the same tool call
+// succeeds on a later attempt within the same session). The business API
+// rejects that as a 400 "invalid agent scope" before recording any
+// idempotency invocation, so retrying with the same call id is safe and
+// cannot replay a stale result.
+const SCOPE_RETRY_DELAY_MS = 150;
+
+function extractErrorDetail(body: unknown, status: number): { code: string; message: string } {
+  const errorBody = body && typeof body === "object" ? (body as Record<string, unknown>) : {};
+  const nested = errorBody.error && typeof errorBody.error === "object"
+    ? (errorBody.error as Record<string, unknown>)
+    : {};
+  if (typeof nested.message === "string") {
+    return {
+      code: typeof nested.code === "string" ? nested.code : `http_${status}`,
+      message: nested.message,
+    };
+  }
+  if (typeof errorBody.detail === "string") {
+    return { code: `http_${status}`, message: errorBody.detail };
+  }
+  return { code: `http_${status}`, message: "business API request failed" };
+}
+
+async function requestOnce<TData extends Record<string, unknown>>(
   ctx: ToolContextLike,
   path: string,
-  payload: Record<string, unknown> = {},
+  payload: Record<string, unknown>,
 ): Promise<AimToolResult<TData>> {
   const scope = requireAimScope(ctx);
   const sessionId = requireSessionId(ctx);
@@ -94,14 +120,31 @@ export async function callBusinessApi<TData extends Record<string, unknown>>(
   }
 
   if (!response.ok) {
-    const errorBody = body && typeof body === "object" ? (body as Record<string, unknown>) : {};
-    const details = errorBody.error && typeof errorBody.error === "object"
-      ? (errorBody.error as Record<string, unknown>)
-      : {};
-    const code = typeof details.code === "string" ? details.code : `http_${response.status}`;
-    const message = typeof details.message === "string" ? details.message : "business API request failed";
+    const { code, message } = extractErrorDetail(body, response.status);
     throw new BusinessApiError(response.status, code, message);
   }
 
   return normalizeResult<TData>(body);
+}
+
+function isTransientScopeError(error: unknown): error is BusinessApiError {
+  return (
+    error instanceof BusinessApiError &&
+    error.status === 400 &&
+    error.message === "invalid agent scope"
+  );
+}
+
+export async function callBusinessApi<TData extends Record<string, unknown>>(
+  ctx: ToolContextLike,
+  path: string,
+  payload: Record<string, unknown> = {},
+): Promise<AimToolResult<TData>> {
+  try {
+    return await requestOnce<TData>(ctx, path, payload);
+  } catch (error) {
+    if (!isTransientScopeError(error)) throw error;
+    await new Promise((resolve) => setTimeout(resolve, SCOPE_RETRY_DELAY_MS));
+    return requestOnce<TData>(ctx, path, payload);
+  }
 }
