@@ -7,6 +7,13 @@ final class BusinessRepositoryTests: XCTestCase {
         XCTAssertEqual(TaskStatus(rawValue: "COMPLETED"), .completed)
     }
 
+    func testTaskStatusRecognizesBackendDoneAsCompleted() {
+        // services/api's domain TaskStatus enum only has todo/scheduled/done —
+        // "done" is the real wire value for a finished task, not "completed".
+        XCTAssertEqual(TaskStatus(rawValue: "done"), .completed)
+        XCTAssertEqual(TaskStatus(rawValue: "DONE"), .completed)
+    }
+
     func testFamilyRoleUsesAccountIdentityNotRelationshipLabel() {
         let accountID = UUID()
         let member = FamilyMember(accountID: accountID, role: .father, status: "active", joinedAt: nil)

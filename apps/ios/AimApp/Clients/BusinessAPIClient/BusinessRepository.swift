@@ -26,7 +26,7 @@ enum TaskStatus: String, Codable, CaseIterable, Sendable {
         switch rawValue.lowercased() {
         case "todo": self = .todo
         case "scheduled": self = .scheduled
-        case "completed": self = .completed
+        case "completed", "done": self = .completed
         case "delayed": self = .delayed
         default: self = .unknown
         }
