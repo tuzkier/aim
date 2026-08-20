@@ -4,10 +4,16 @@ struct TaskDetailView: View {
     @State private var store: TaskDetailStore
     @State private var dueDate: Date
     @State private var showingDelay = false
+    @State private var recordStore = RecordStore()
+    @State private var recordPromptTask: TaskItem?
+    @State private var toast: AimToastMessage?
 
     init(task: TaskItem, repository: BusinessRepositoryProtocol?) {
         _store = State(initialValue: TaskDetailStore(task: task, repository: repository))
         _dueDate = State(initialValue: task.dueAt ?? .now.addingTimeInterval(86_400))
+        let records = RecordStore()
+        records.repository = repository
+        _recordStore = State(initialValue: records)
     }
 
     var body: some View {
@@ -40,7 +46,16 @@ struct TaskDetailView: View {
             Section {
                 Button {
                     Task {
-                        _ = await store.complete()
+                        let task = store.task
+                        if await store.complete() {
+                            toast = AimToastMessage(
+                                text: "已完成「\(task.title)」",
+                                undoTitle: "记一下",
+                                accessibilityIdentifier: "complete-task-record-prompt"
+                            ) {
+                                recordPromptTask = task
+                            }
+                        }
                     }
                 } label: {
                     Label(store.task.status == .completed ? "已完成" : "标记完成", systemImage: "checkmark")
@@ -59,6 +74,16 @@ struct TaskDetailView: View {
                 store.task = updated
             }
         }
+        .sheet(item: $recordPromptTask) { task in
+            RecordComposerView(
+                store: recordStore,
+                suggestedType: TaskRecordSuggestion.recordType(forTaskTitle: task.title),
+                suggestedText: task.title
+            ) {
+                recordPromptTask = nil
+            }
+        }
+        .aimToast($toast)
     }
 }
 
