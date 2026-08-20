@@ -32,11 +32,16 @@ final class CoreJourneyUITests: XCTestCase {
         app.launchArguments = ["-reset-session"]
         app.launch()
 
+        // Randomized phone number: this test creates a record and needs to
+        // find and tap it reliably. The shared "13800000002" demo account
+        // accumulates records across every run of this suite over time,
+        // which can push the freshly created row out of reliable reach —
+        // a fresh account keeps the list small and the new row easy to hit.
         if app.textFields["手机号"].waitForExistence(timeout: 2) {
             let phone = app.textFields["手机号"]
             phone.tap()
             phone.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 20))
-            phone.typeText("13800000002")
+            phone.typeText("139\(Int.random(in: 10_000_000...99_999_999))")
             app.buttons["开始体验"].tap()
         }
 

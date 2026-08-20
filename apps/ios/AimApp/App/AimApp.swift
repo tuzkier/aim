@@ -33,15 +33,16 @@ private struct MainTabView: View {
     @State private var planStore = PlanStore()
     @State private var recordStore = RecordStore()
     @State private var familyStore = FamilyStore()
+    @State private var agentStore = AgentStore()
     @State private var selectedTab: AimTab = .timeline
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            TimelineView(store: timelineStore, planStore: planStore, recordStore: recordStore)
+            TimelineView(store: timelineStore, planStore: planStore, recordStore: recordStore, openAgent: openAgent)
                 .tabItem { Label("孕期", systemImage: "heart.text.square") }
                 .tag(AimTab.timeline)
 
-            AgentSheet(context: nil)
+            AgentView(store: agentStore)
                 .tabItem { Label("Agent", systemImage: "wand.and.sparkles") }
                 .tag(AimTab.agent)
 
@@ -53,6 +54,20 @@ private struct MainTabView: View {
         .onChange(of: session.pregnancyID) { _, _ in
             Task { await reloadRepositories() }
         }
+    }
+
+    /// Shared by every "ask the Agent about this" entry point in the app.
+    /// Passing `autoSend` immediately asks that question; leaving it `nil`
+    /// just brings the current page's context into the Agent tab so the
+    /// user can decide what to type. Either way, this always continues the
+    /// one shared conversation rather than opening a fresh, disconnected one.
+    private func openAgent(context: AgentContext, autoSend: String?) {
+        if let autoSend {
+            agentStore.ask(autoSend, context: context, environment: session.environment)
+        } else {
+            agentStore.focus(context: context)
+        }
+        selectedTab = .agent
     }
 
     private enum AimTab: Hashable {

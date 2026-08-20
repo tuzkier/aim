@@ -17,7 +17,7 @@
 		A20000000000000000000008 /* EveClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000008 /* EveClient.swift */; };
 		A20000000000000000000009 /* EveEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000009 /* EveEvent.swift */; };
 		A20000000000000000000010 /* AgentModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000010 /* AgentModels.swift */; };
-		A20000000000000000000011 /* AgentSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000011 /* AgentSheet.swift */; };
+		A20000000000000000000011 /* AgentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000011 /* AgentView.swift */; };
 		A20000000000000000000012 /* AgentStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000012 /* AgentStore.swift */; };
 		A20000000000000000000013 /* FamilyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000013 /* FamilyStore.swift */; };
 		A20000000000000000000014 /* FamilyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000014 /* FamilyView.swift */; };
@@ -76,7 +76,7 @@
 		A10000000000000000000008 /* EveClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clients/EveClient/EveClient.swift; sourceTree = "<group>"; };
 		A10000000000000000000009 /* EveEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clients/EveClient/EveEvent.swift; sourceTree = "<group>"; };
 		A10000000000000000000010 /* AgentModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Agent/AgentModels.swift; sourceTree = "<group>"; };
-		A10000000000000000000011 /* AgentSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Agent/AgentSheet.swift; sourceTree = "<group>"; };
+		A10000000000000000000011 /* AgentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Agent/AgentView.swift; sourceTree = "<group>"; };
 		A10000000000000000000012 /* AgentStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Agent/AgentStore.swift; sourceTree = "<group>"; };
 		A10000000000000000000013 /* FamilyStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Family/FamilyStore.swift; sourceTree = "<group>"; };
 		A10000000000000000000014 /* FamilyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Family/FamilyView.swift; sourceTree = "<group>"; };

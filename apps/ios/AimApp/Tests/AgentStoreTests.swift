@@ -42,16 +42,43 @@ final class AgentStoreTests: XCTestCase {
 }
 
 @MainActor
-final class AgentAutoSendTests: XCTestCase {
-    func testAutoSendRecordsUserMessageOnce() {
+final class AgentSharedSessionTests: XCTestCase {
+    func testFocusUpdatesContextWithoutTouchingConversation() {
         let store = AgentStore(context: nil)
-        store.markAutoSent()
-        XCTAssertTrue(store.hasAutoSent)
-        store.markAutoSent()
-        XCTAssertTrue(store.hasAutoSent)
+        store.messages.append(AgentMessage(text: "早前的问题", isUser: true))
+
+        let newContext = AgentContext(title: "孕期", summary: "孕 6 周")
+        store.focus(context: newContext)
+
+        XCTAssertEqual(store.context, newContext)
+        XCTAssertEqual(store.messages.count, 1, "focus 不应该清空既有会话")
     }
 
-    func testFreshStoreHasNotAutoSent() {
-        XCTAssertFalse(AgentStore(context: nil).hasAutoSent)
+    func testRefocusingOverwritesThePreviousContext() {
+        let store = AgentStore(context: AgentContext(title: "孕期", summary: "孕 6 周"))
+        let recordContext = AgentContext(title: "记录", summary: "恶心，程度 2")
+
+        store.focus(context: recordContext)
+
+        XCTAssertEqual(store.context, recordContext)
+    }
+
+    func testAskSetsContextBeforeSending() {
+        let store = AgentStore(context: nil)
+        let context = AgentContext(title: "记录", summary: "产检：NT")
+        let environment = APIEnvironment(
+            baseURL: URL(string: "http://localhost")!,
+            eveBaseURL: URL(string: "http://localhost")!,
+            bearerToken: nil,
+            accountID: nil,
+            familyID: nil,
+            pregnancyID: nil
+        )
+
+        store.ask("请帮我理解这条记录", context: context, environment: environment)
+
+        XCTAssertEqual(store.context, context)
+        XCTAssertEqual(store.messages.last?.text, "请帮我理解这条记录")
+        XCTAssertTrue(store.messages.last?.isUser ?? false)
     }
 }

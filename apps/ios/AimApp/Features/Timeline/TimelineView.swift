@@ -5,9 +5,9 @@ struct TimelineView: View {
     @Bindable var store: TimelineStore
     let planStore: PlanStore
     let recordStore: RecordStore
+    let openAgent: (AgentContext, String?) -> Void
 
     @State private var showingComposer = false
-    @State private var showingAgent = false
     @State private var showingPregnancySetup = false
     @State private var showsBackToToday = false
     @State private var toast: AimToastMessage?
@@ -26,7 +26,7 @@ struct TimelineView: View {
                     date: store.today,
                     filter: $store.filter,
                     onCompose: { if session.pregnancyID != nil { showingComposer = true } },
-                    onAgent: { showingAgent = true }
+                    onAgent: { openAgent(agentContext, nil) }
                 )
                 Group {
                     if session.pregnancyID == nil {
@@ -60,9 +60,6 @@ struct TimelineView: View {
                     delayTarget = nil
                     Task { await store.load() }
                 }
-            }
-            .fullScreenCover(isPresented: $showingAgent) {
-                AgentSheet(context: agentContext)
             }
             .sheet(item: $recordPromptTask) { task in
                 RecordComposerView(
@@ -151,7 +148,7 @@ struct TimelineView: View {
             .accessibilityIdentifier("timeline-week-collapsed-\(week.week)")
         } else {
             if week.position == .current, let focus = store.focusTask {
-                AimFocusCard(task: focus) { showingAgent = true }
+                AimFocusCard(task: focus) { openAgent(agentContext, nil) }
                     .listRowInsets(EdgeInsets(top: AimMetrics.space8, leading: AimMetrics.rowLeadingInset,
                                               bottom: AimMetrics.space12, trailing: AimMetrics.space16))
                     .listRowSeparator(.hidden)
@@ -217,7 +214,7 @@ struct TimelineView: View {
             }
         case let .record(record):
             NavigationLink {
-                RecordDetailView(record: record, store: recordStore, planStore: planStore)
+                RecordDetailView(record: record, store: recordStore, planStore: planStore, openAgent: openAgent)
             } label: {
                 AimRecordRow(record: record)
             }

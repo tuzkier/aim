@@ -11,9 +11,8 @@ final class AgentStore {
     var streamIndex = 0
     var continuationToken: String?
 
-    let context: AgentContext?
+    var context: AgentContext?
     var activityLog: [AgentActivity] = []
-    private(set) var hasAutoSent = false
 
     private var client: EveClient?
     private var activeTask: Task<Void, Never>?
@@ -28,11 +27,20 @@ final class AgentStore {
         return "\(context.prompt)\n\n用户问题：\(text)"
     }
 
-    func markAutoSent() { hasAutoSent = true }
+    /// Bring the current page's context into view without sending anything —
+    /// used when the entry point is "quickly ask about what I'm looking at",
+    /// not a specific question. Doesn't clear existing conversation history:
+    /// this store is shared across every entry point, so switching context
+    /// mid-conversation is expected, not a reset.
+    func focus(context: AgentContext?) {
+        self.context = context
+    }
 
-    func autoSend(_ text: String, environment: APIEnvironment) {
-        guard !hasAutoSent else { return }
-        markAutoSent()
+    /// Bring in a new context and immediately ask a specific question —
+    /// used when the entry point already knows what to ask (e.g. "analyze
+    /// this record"). Appends to the same shared conversation.
+    func ask(_ text: String, context: AgentContext?, environment: APIEnvironment) {
+        self.context = context
         draft = text
         send(environment: environment)
     }

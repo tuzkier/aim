@@ -1,18 +1,15 @@
 import ExyteChat
 import SwiftUI
 
-struct AgentSheet: View {
-    @Environment(\.dismiss) private var dismiss
+/// The Agent's one persistent conversation. Every entry point in the app —
+/// the Agent tab itself, "ask about this page" icons, "analyze this record"
+/// buttons — shares this same store rather than spinning up a throwaway
+/// session, so switching to it from anywhere continues the same relationship
+/// instead of starting over. There is no "close" affordance: navigating away
+/// is just switching tabs, the same as any other primary destination.
+struct AgentView: View {
     @Environment(AppSessionStore.self) private var session
-    @State private var store: AgentStore
-    private let autoSend: String?
-    private let onClose: (() -> Void)?
-
-    init(autoSend: String? = nil, context: AgentContext? = nil, onClose: (() -> Void)? = nil) {
-        _store = State(initialValue: AgentStore(context: context))
-        self.autoSend = autoSend
-        self.onClose = onClose
-    }
+    @Bindable var store: AgentStore
 
     var body: some View {
         NavigationStack {
@@ -54,13 +51,6 @@ struct AgentSheet: View {
 #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
 #endif
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("关闭") {
-                        if let onClose { onClose() } else { dismiss() }
-                    }
-                }
-            }
             .background(Color.aimCanvas)
             .sheet(item: pendingApproval) { request in
                 AgentDiffSheet(preview: AgentChangePreview.from(request)) {
@@ -68,9 +58,6 @@ struct AgentSheet: View {
                 } onDismiss: {
                     store.cancelApproval(request, environment: session.environment)
                 }
-            }
-            .task {
-                if let autoSend { store.autoSend(autoSend, environment: session.environment) }
             }
         }
     }
