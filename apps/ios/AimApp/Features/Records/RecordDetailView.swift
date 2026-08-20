@@ -6,10 +6,11 @@ struct RecordDetailView: View {
     let record: RecordItem
     @Bindable var store: RecordStore
     let planStore: PlanStore
-    let openAgent: (AgentContext, String?) -> Void
+    let agentStore: AgentStore
     @State private var showingEditor = false
     @State private var showingDeleteConfirmation = false
     @State private var showingTaskSheet = false
+    @State private var showingAgent = false
 
     private var currentRecord: RecordItem {
         store.snapshot?.records.first(where: { $0.id == record.id }) ?? record
@@ -39,13 +40,15 @@ struct RecordDetailView: View {
             Section {
                 Button("转为待办") { showingTaskSheet = true }
                 Button("让 Agent 分析当前记录") {
-                    openAgent(
-                        AgentContext(
+                    agentStore.ask(
+                        analysisPrompt(for: currentRecord),
+                        context: AgentContext(
                             title: "记录",
                             summary: "\(currentRecord.type.displayName)：\(currentRecord.displayTitle)"
                         ),
-                        analysisPrompt(for: currentRecord)
+                        environment: session.environment
                     )
+                    showingAgent = true
                 }
                 if canEdit {
                     Button("编辑记录") { showingEditor = true }
@@ -63,6 +66,9 @@ struct RecordDetailView: View {
         }
         .sheet(isPresented: $showingTaskSheet) {
             RecordTaskSheet(record: currentRecord, store: store, planStore: planStore) { showingTaskSheet = false }
+        }
+        .fullScreenCover(isPresented: $showingAgent) {
+            AgentView(store: agentStore) { showingAgent = false }
         }
     }
 

@@ -5,9 +5,10 @@ struct TimelineView: View {
     @Bindable var store: TimelineStore
     let planStore: PlanStore
     let recordStore: RecordStore
-    let openAgent: (AgentContext, String?) -> Void
+    let agentStore: AgentStore
 
     @State private var showingComposer = false
+    @State private var showingAgent = false
     @State private var showingPregnancySetup = false
     @State private var showsBackToToday = false
     @State private var toast: AimToastMessage?
@@ -26,7 +27,10 @@ struct TimelineView: View {
                     date: store.today,
                     filter: $store.filter,
                     onCompose: { if session.pregnancyID != nil { showingComposer = true } },
-                    onAgent: { openAgent(agentContext, nil) }
+                    onAgent: {
+                        agentStore.focus(context: agentContext)
+                        showingAgent = true
+                    }
                 )
                 Group {
                     if session.pregnancyID == nil {
@@ -70,6 +74,9 @@ struct TimelineView: View {
                     recordPromptTask = nil
                     Task { await store.load() }
                 }
+            }
+            .fullScreenCover(isPresented: $showingAgent) {
+                AgentView(store: agentStore) { showingAgent = false }
             }
             .aimToast($toast)
         }
@@ -148,7 +155,10 @@ struct TimelineView: View {
             .accessibilityIdentifier("timeline-week-collapsed-\(week.week)")
         } else {
             if week.position == .current, let focus = store.focusTask {
-                AimFocusCard(task: focus) { openAgent(agentContext, nil) }
+                AimFocusCard(task: focus) {
+                    agentStore.focus(context: agentContext)
+                    showingAgent = true
+                }
                     .listRowInsets(EdgeInsets(top: AimMetrics.space8, leading: AimMetrics.rowLeadingInset,
                                               bottom: AimMetrics.space12, trailing: AimMetrics.space16))
                     .listRowSeparator(.hidden)
@@ -214,7 +224,7 @@ struct TimelineView: View {
             }
         case let .record(record):
             NavigationLink {
-                RecordDetailView(record: record, store: recordStore, planStore: planStore, openAgent: openAgent)
+                RecordDetailView(record: record, store: recordStore, planStore: planStore, agentStore: agentStore)
             } label: {
                 AimRecordRow(record: record)
             }

@@ -5,11 +5,18 @@ import SwiftUI
 /// the Agent tab itself, "ask about this page" icons, "analyze this record"
 /// buttons — shares this same store rather than spinning up a throwaway
 /// session, so switching to it from anywhere continues the same relationship
-/// instead of starting over. There is no "close" affordance: navigating away
-/// is just switching tabs, the same as any other primary destination.
+/// instead of starting over.
+///
+/// How it's *presented* still varies with the entry point's purpose: as the
+/// Agent tab's root, there's no `onClose` and no close button, because
+/// navigating away is just switching tabs. Opened from a quick-ask entry
+/// point (header icon, focus card, "analyze this record"), it's shown as a
+/// dismissible overlay — that entry point's whole purpose is "let me stay
+/// where I am and just ask" — so pass `onClose` to get a close button back.
 struct AgentView: View {
     @Environment(AppSessionStore.self) private var session
     @Bindable var store: AgentStore
+    var onClose: (() -> Void)?
 
     var body: some View {
         NavigationStack {
@@ -51,6 +58,13 @@ struct AgentView: View {
 #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
 #endif
+            .toolbar {
+                if let onClose {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("关闭", action: onClose)
+                    }
+                }
+            }
             .background(Color.aimCanvas)
             .sheet(item: pendingApproval) { request in
                 AgentDiffSheet(preview: AgentChangePreview.from(request)) {
