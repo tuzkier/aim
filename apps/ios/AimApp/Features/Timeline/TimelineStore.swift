@@ -109,13 +109,16 @@ final class TimelineStore {
         }
     }
 
-    func complete(_ task: TaskItem) async {
-        guard let repository else { return }
+    @discardableResult
+    func complete(_ task: TaskItem) async -> Bool {
+        guard let repository else { return false }
         do {
             _ = try await repository.complete(task: task)
             await load()
+            return true
         } catch {
             errorMessage = error.localizedDescription
+            return false
         }
     }
 

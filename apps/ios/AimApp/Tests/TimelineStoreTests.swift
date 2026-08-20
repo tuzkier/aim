@@ -31,4 +31,12 @@ final class TimelineStoreTests: XCTestCase {
         XCTAssertNil(store.assigneeName(for: nil))
         XCTAssertNil(store.assigneeName(for: UUID()))
     }
+
+    func testCompleteWithoutRepositoryReturnsFalse() async {
+        let store = TimelineStore()
+        let task = TaskItem(id: UUID(), title: "核对材料", detail: nil, status: .todo, version: 1,
+                             dueAt: nil, scheduledFor: nil, assignedMemberID: nil, changedByActor: .system)
+        let result = await store.complete(task)
+        XCTAssertFalse(result)
+    }
 }
