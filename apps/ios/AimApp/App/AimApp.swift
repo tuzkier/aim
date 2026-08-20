@@ -38,7 +38,7 @@ private struct MainTabView: View {
     var body: some View {
         TabView(selection: $selectedTab) {
             TimelineView(store: timelineStore, planStore: planStore, recordStore: recordStore)
-                .tabItem { Label("孕期", systemImage: "timeline.selection") }
+                .tabItem { Label("孕期", systemImage: "heart.text.square") }
                 .tag(AimTab.timeline)
 
             AgentSheet(context: nil)
