@@ -13,6 +13,7 @@ struct TimelineView: View {
     @State private var toast: AimToastMessage?
     @State private var delayTarget: TaskItem?
     @State private var completedTaskID: UUID?
+    @State private var recordPromptTask: TaskItem?
 
     private let todayAnchor = "timeline-today"
 
@@ -62,6 +63,16 @@ struct TimelineView: View {
             }
             .fullScreenCover(isPresented: $showingAgent) {
                 AgentSheet(context: agentContext)
+            }
+            .sheet(item: $recordPromptTask) { task in
+                RecordComposerView(
+                    store: recordStore,
+                    suggestedType: TaskRecordSuggestion.recordType(forTaskTitle: task.title),
+                    suggestedText: task.title
+                ) {
+                    recordPromptTask = nil
+                    Task { await store.load() }
+                }
             }
             .aimToast($toast)
         }
@@ -172,12 +183,21 @@ struct TimelineView: View {
             } label: {
                 AimTaskRow(task: task, assigneeName: store.assigneeName(for: task.assignedMemberID))
             }
+            .accessibilityIdentifier("timeline-task-row")
             .swipeActions(edge: .leading) {
                 if task.isOpen {
                     Button {
                         Task {
-                            await store.complete(task)
-                            completedTaskID = task.id
+                            if await store.complete(task) {
+                                completedTaskID = task.id
+                                toast = AimToastMessage(
+                                    text: "已完成「\(task.title)」",
+                                    undoTitle: "记一下",
+                                    accessibilityIdentifier: "complete-task-record-prompt"
+                                ) {
+                                    recordPromptTask = task
+                                }
+                            }
                         }
                     } label: {
                         Label("完成", systemImage: "checkmark")
