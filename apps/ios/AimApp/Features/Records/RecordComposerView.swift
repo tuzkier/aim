@@ -22,12 +22,18 @@ struct RecordComposerView: View {
 
     private let symptomOptions = ["恶心", "乏力", "头晕"]
 
-    init(store: RecordStore, record: RecordItem? = nil, onSaved: @escaping () -> Void) {
+    init(
+        store: RecordStore,
+        record: RecordItem? = nil,
+        suggestedType: RecordType? = nil,
+        suggestedText: String? = nil,
+        onSaved: @escaping () -> Void
+    ) {
         self.store = store
         self.record = record
         self.onSaved = onSaved
         let source = record
-        _type = State(initialValue: source?.type)
+        _type = State(initialValue: source?.type ?? suggestedType)
         _occurredAt = State(initialValue: source?.occurredAt ?? .now)
         _visibility = State(initialValue: source?.visibility == .unknown ? .family : (source?.visibility ?? .family))
         if case let .symptom(data) = source?.structuredData {
@@ -46,11 +52,11 @@ struct RecordComposerView: View {
             _doctorAdvice = State(initialValue: data.doctorAdvice)
         } else {
             _hospital = State(initialValue: "")
-            _examItems = State(initialValue: "")
+            _examItems = State(initialValue: source == nil && suggestedType == .checkup ? (suggestedText ?? "") : "")
             _result = State(initialValue: "")
             _doctorAdvice = State(initialValue: "")
         }
-        _title = State(initialValue: source?.title ?? "")
+        _title = State(initialValue: source?.title ?? (suggestedType == .note ? (suggestedText ?? "") : ""))
         _content = State(initialValue: source?.content ?? "")
     }
 

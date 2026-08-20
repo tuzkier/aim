@@ -4,6 +4,7 @@ struct AimToastMessage: Equatable, Identifiable {
     let id = UUID()
     let text: String
     var undoTitle: String = "撤销"
+    var accessibilityIdentifier: String = "aim-toast"
     var undo: (() -> Void)?
 
     static func == (lhs: AimToastMessage, rhs: AimToastMessage) -> Bool { lhs.id == rhs.id }
@@ -57,7 +58,7 @@ private struct AimToastModifier: ViewModifier {
         .padding(.horizontal, AimMetrics.space16)
         .padding(.vertical, AimMetrics.space12)
         .background(Color.aimTextPrimary, in: RoundedRectangle(cornerRadius: AimMetrics.radiusToast, style: .continuous))
-        .accessibilityIdentifier("agent-undo-toast")
+        .accessibilityIdentifier(message.accessibilityIdentifier)
     }
 }
 
