@@ -90,6 +90,21 @@ struct RecordDetailView: View {
             }
         case .note:
             Section("内容") { Text(currentRecord.content ?? "没有补充内容") }
+        case let .question(data):
+            Section("想问医生") {
+                Text(currentRecord.content ?? "")
+                if let answer = data.answer, !answer.isEmpty {
+                    LabeledContent("医生的回答", value: answer)
+                } else {
+                    Text(data.answered ? "已解答" : "还没问")
+                        .foregroundStyle(.secondary)
+                }
+            }
+        case let .checklist(data):
+            Section("清单") {
+                LabeledContent("条目", value: data.itemID)
+                LabeledContent("状态", value: data.done ? "已完成" : "待完成")
+            }
         case .unknown:
             Section { Text("这类记录暂不支持完整展示。") }
         }

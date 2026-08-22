@@ -54,7 +54,7 @@ struct AgentView: View {
                 }
                 .chatTheme(chatTheme)
             }
-            .navigationTitle("问一问")
+            .navigationTitle("AIM")
 #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
 #endif

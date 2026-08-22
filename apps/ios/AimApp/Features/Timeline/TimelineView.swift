@@ -9,12 +9,12 @@ struct TimelineView: View {
 
     @State private var showingComposer = false
     @State private var showingAgent = false
-    @State private var showingPregnancySetup = false
     @State private var showsBackToToday = false
     @State private var toast: AimToastMessage?
     @State private var delayTarget: TaskItem?
     @State private var completedTaskID: UUID?
     @State private var recordPromptTask: TaskItem?
+    @State private var focusDetailTask: TaskItem?
 
     private let todayAnchor = "timeline-today"
 
@@ -33,9 +33,7 @@ struct TimelineView: View {
                     }
                 )
                 Group {
-                    if session.pregnancyID == nil {
-                        setupPrompt
-                    } else if store.weeks.isEmpty, store.isLoading {
+                    if store.weeks.isEmpty, store.isLoading {
                         ProgressView("正在整理孕期时间线")
                     } else if store.weeks.isEmpty, let message = store.errorMessage {
                         AimErrorState(message: message) { Task { await store.load() } }
@@ -52,13 +50,15 @@ struct TimelineView: View {
                 guard session.pregnancyID != nil, store.weeks.isEmpty else { return }
                 await store.load()
             }
+            .navigationDestination(item: $focusDetailTask) { task in
+                TaskDetailView(task: task, repository: planStore.repository)
+            }
             .sheet(isPresented: $showingComposer) {
                 RecordComposerView(store: recordStore) {
                     showingComposer = false
                     Task { await store.load() }
                 }
             }
-            .sheet(isPresented: $showingPregnancySetup) { PregnancySetupView() }
             .sheet(item: $delayTarget) { task in
                 TaskDelaySheet(task: task, repository: planStore.repository) { _ in
                     delayTarget = nil
@@ -155,9 +155,11 @@ struct TimelineView: View {
             .accessibilityIdentifier("timeline-week-collapsed-\(week.week)")
         } else {
             if week.position == .current, let focus = store.focusTask {
+                // 焦点任务被 entries(in:) 从列表里排除，这张卡片是它唯一的入口，
+                // 所以主行动必须通向能真正处理它的详情页（完成 / 延期 / 指派）。
+                // 想带上下文提问仍然走头部的 Agent 圆形按钮。
                 AimFocusCard(task: focus) {
-                    agentStore.focus(context: agentContext)
-                    showingAgent = true
+                    focusDetailTask = focus
                 }
                     .listRowInsets(EdgeInsets(top: AimMetrics.space8, leading: AimMetrics.rowLeadingInset,
                                               bottom: AimMetrics.space12, trailing: AimMetrics.space16))
@@ -246,14 +248,6 @@ struct TimelineView: View {
         }
         .padding(.bottom, AimMetrics.space12)
         .accessibilityIdentifier("timeline-back-to-today")
-    }
-
-    private var setupPrompt: some View {
-        AimEmptyState(
-            title: "先补充孕期信息",
-            message: "有了预产期或末次月经，Aim 才能把计划和记录放进正确的孕周。",
-            actionTitle: "补充孕期信息"
-        ) { showingPregnancySetup = true }
     }
 
     private var agentContext: AgentContext {

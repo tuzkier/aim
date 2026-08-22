@@ -1,36 +1,54 @@
 import SwiftUI
 
+/// 孕期日期录入。登录后没有孕期档案时作为准入门槛整屏呈现——填完才能进主界面。
+///
+/// 日期不预填：`model.selectedDate` 初值为 `nil`，用户必须主动选择才能保存。
+/// 详见 `PregnancySetupModel` 的说明。
 struct PregnancySetupView: View {
     @Environment(AppSessionStore.self) private var session
-    @Environment(\.dismiss) private var dismiss
-    @State private var dateMode: PregnancyDateMode = .dueDate
-    @State private var selectedDate = Calendar.current.date(byAdding: .day, value: 154, to: .now) ?? .now
-    @State private var isSubmitting = false
-    @State private var errorMessage: String?
+    @State private var model = PregnancySetupModel()
 
     var body: some View {
         NavigationStack {
             Form {
                 Section {
-                    Picker("我知道的是", selection: $dateMode) {
+                    Picker("我知道的是", selection: $model.dateMode) {
                         ForEach(PregnancyDateMode.allCases, id: \.self) { mode in
                             Text(mode.title).tag(mode)
                         }
                     }
-                    DatePicker(
-                        dateMode.dateTitle,
-                        selection: $selectedDate,
-                        in: dateMode.dateRange,
-                        displayedComponents: .date,
-                    )
-                    Text(dateMode.calculatedSummary(for: selectedDate))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+
+                    if model.isPickingDate {
+                        DatePicker(
+                            model.dateMode.dateTitle,
+                            selection: Binding(
+                                get: { model.selectedDate ?? model.displayAnchor },
+                                set: { model.selectedDate = $0 },
+                            ),
+                            in: model.dateMode.dateRange,
+                            displayedComponents: .date,
+                        )
+                        .datePickerStyle(.wheel)
+                        .accessibilityIdentifier("pregnancy-setup-date-picker")
+
+                        if let selected = model.selectedDate {
+                            Text(model.dateMode.calculatedSummary(for: selected))
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Text("滑动选择你的\(model.dateMode.title)")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                    } else {
+                        Button("选择\(model.dateMode.title)") { model.beginPickingDate() }
+                            .accessibilityIdentifier("pregnancy-setup-choose-date")
+                    }
                 } footer: {
-                    Text("两种日期都按孕 40 周（280 天）换算。之后可以在孕期档案里调整。")
+                    Text("两种日期都按孕 40 周（280 天）换算。填写后才能生成对应孕周的计划。")
                 }
 
-                if let errorMessage {
+                if let errorMessage = model.errorMessage {
                     Section { Text(errorMessage).foregroundStyle(.red) }
                 }
 
@@ -38,49 +56,40 @@ struct PregnancySetupView: View {
                     Button {
                         Task { await save() }
                     } label: {
-                        if isSubmitting {
+                        if model.isSubmitting {
                             ProgressView().frame(maxWidth: .infinity)
                         } else {
                             Text("保存并生成计划").frame(maxWidth: .infinity)
                         }
                     }
                     .buttonStyle(.borderedProminent)
-                    .disabled(isSubmitting)
+                    .disabled(!model.canSave)
+                    .accessibilityIdentifier("pregnancy-setup-save")
                 }
             }
             .navigationTitle("补充孕期信息")
-            .onChange(of: dateMode) { _, mode in
-                selectedDate = mode == .dueDate
-                    ? Calendar.current.date(byAdding: .day, value: 154, to: .now) ?? .now
-                    : Calendar.current.date(byAdding: .day, value: -126, to: .now) ?? .now
-            }
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("稍后") { dismiss() }
-                }
+            .onChange(of: model.dateMode) { _, mode in
+                model.modeDidChange(to: mode)
             }
         }
-        .presentationDetents([.medium])
     }
 
     private func save() async {
+        guard let dueDate = model.resolvedDueDate else { return }
         guard session.familyID != nil else {
-            errorMessage = "家庭信息还没有准备好，请稍后重试。"
+            model.errorMessage = "家庭信息还没有准备好，请稍后重试。"
             return
         }
-        isSubmitting = true
-        errorMessage = nil
-        defer { isSubmitting = false }
+        model.isSubmitting = true
+        model.errorMessage = nil
+        defer { model.isSubmitting = false }
 
         do {
             let repository = BusinessRepository(environment: session.environment)
-            let pregnancyID = try await repository.createPregnancy(
-                dueDate: dateMode.dueDate(from: selectedDate)
-            )
+            let pregnancyID = try await repository.createPregnancy(dueDate: dueDate)
             session.setPregnancyID(pregnancyID)
-            dismiss()
         } catch {
-            errorMessage = error.localizedDescription
+            model.errorMessage = error.localizedDescription
         }
     }
 }

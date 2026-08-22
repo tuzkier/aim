@@ -63,5 +63,10 @@ private actor FailingRecordRepository: BusinessRepositoryProtocol {
     func createRecord(draft: RecordDraft) async throws -> RecordItem { throw APIError.invalidResponse }
     func updateRecord(recordID: UUID, draft: RecordDraft) async throws -> RecordItem { throw APIError.invalidResponse }
     func deleteRecord(recordID: UUID) async throws { throw APIError.invalidResponse }
+    func deleteTask(taskID: UUID) async throws { throw APIError.invalidResponse }
+    func fetchSafetyRules() async throws -> [SafetyRule] { [] }
+    func fetchContentCollection(_ name: String) async throws -> ContentCollection {
+        ContentCollection(id: name, source: "test", sourceURL: "", items: [])
+    }
     func createTaskFromRecord(record: RecordItem, title: String, description: String?, dueAt: Date?) async throws -> TaskItem { throw APIError.invalidResponse }
 }

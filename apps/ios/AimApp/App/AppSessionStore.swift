@@ -31,8 +31,8 @@ final class AppSessionStore {
 
     var environment: APIEnvironment {
         APIEnvironment(
-            baseURL: URL(string: defaults.string(forKey: Keys.apiBaseURL) ?? "http://127.0.0.1:8100")!,
-            eveBaseURL: URL(string: defaults.string(forKey: Keys.eveBaseURL) ?? "http://127.0.0.1:2210")!,
+            baseURL: APIEndpointConfiguration.apiBaseURL(defaults: defaults),
+            eveBaseURL: APIEndpointConfiguration.eveBaseURL(defaults: defaults),
             bearerToken: bearerToken,
             accountID: accountID,
             familyID: familyID,
@@ -76,7 +76,5 @@ final class AppSessionStore {
         static let familyID = "aim.familyID"
         static let pregnancyID = "aim.pregnancyID"
         static let bearerToken = "aim.bearerToken"
-        static let apiBaseURL = "aim.apiBaseURL"
-        static let eveBaseURL = "aim.eveBaseURL"
     }
 }

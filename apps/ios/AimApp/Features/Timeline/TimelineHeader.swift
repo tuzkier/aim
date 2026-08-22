@@ -35,7 +35,7 @@ struct TimelineHeader: View {
                     .accessibilityLabel("新增记录")
 
                 Button(action: onAgent) { circle("wand.and.sparkles", tinted: true) }
-                    .accessibilityLabel("问一问")
+                    .accessibilityLabel("AIM")
                     .accessibilityIdentifier("global-agent-button")
             }
         }

@@ -6,6 +6,8 @@ extension RecordType {
         case .symptom: "身体感受"
         case .checkup: "产检"
         case .note: "随手记"
+        case .question: "想问医生"
+        case .checklist: "清单"
         case .unknown: "记录"
         }
     }
@@ -15,6 +17,8 @@ extension RecordType {
         case .symptom: "heart.text.square"
         case .checkup: "cross.case"
         case .note: "note.text"
+        case .question: "questionmark.bubble"
+        case .checklist: "checklist"
         case .unknown: "doc"
         }
     }
@@ -36,6 +40,8 @@ extension RecordItem {
         case let .symptom(data): data.symptoms.joined(separator: "、")
         case let .checkup(data): data.examItems
         case .note: title?.isEmpty == false ? title! : "随手记"
+        case .question: content?.isEmpty == false ? content! : "想问医生"
+        case let .checklist(data): data.itemID
         case .unknown: type.displayName
         }
     }
@@ -47,6 +53,8 @@ extension RecordItem {
             return "程度 \(data.severity)" + (note.isEmpty ? "" : " · \(note)")
         case let .checkup(data): return data.result
         case .note: return content?.isEmpty == false ? content! : "没有补充内容"
+        case let .question(data): return data.answered ? (data.answer ?? "已解答") : "还没问"
+        case let .checklist(data): return data.done ? "已完成" : "待完成"
         case .unknown: return "暂不支持展示这类记录"
         }
     }

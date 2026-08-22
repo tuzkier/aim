@@ -13,6 +13,8 @@ final class AgentStore {
 
     var context: AgentContext?
     var activityLog: [AgentActivity] = []
+    /// 撤销「新建」类操作直接调删除接口，不经过模型。
+    var repository: BusinessRepositoryProtocol?
 
     private var client: EveClient?
     private var activeTask: Task<Void, Never>?
@@ -93,6 +95,12 @@ final class AgentStore {
     }
 
     func undo(_ activity: AgentActivity, environment: APIEnvironment) {
+        // 新建类有确定的删除目标，直接调接口。让模型去「撤销上一次变更」并不可靠——
+        // 它会转而反问，撤销就落空了。
+        if activity.undoTarget != nil {
+            activeTask = Task { [weak self] in await self?.undoDirectly(activity) }
+            return
+        }
         guard let sessionID else { return }
         activityLog.removeAll { $0.id == activity.id }
         let client = EveClient(environment: environment)
@@ -111,6 +119,21 @@ final class AgentStore {
         }
     }
 
+    /// 直接删除 Agent 刚创建的对象。删除失败时保留台账条目——否则撤销入口消失，
+    /// 数据却还在。
+    func undoDirectly(_ activity: AgentActivity) async {
+        guard let target = activity.undoTarget, let repository else { return }
+        do {
+            switch target {
+            case let .task(taskID): try await repository.deleteTask(taskID: taskID)
+            case let .record(recordID): try await repository.deleteRecord(recordID: recordID)
+            }
+            activityLog.removeAll { $0.id == activity.id }
+        } catch {
+            fail(error.localizedDescription)
+        }
+    }
+
     private func respond(_ request: EveInputRequest, approved: Bool, environment: APIEnvironment) {
         guard let sessionID else { return }
         let client = EveClient(environment: environment)
@@ -126,7 +149,7 @@ final class AgentStore {
         }
     }
 
-    private func consume(_ event: EveEvent) {
+    func consume(_ event: EveEvent) {
         streamIndex = max(streamIndex, event.streamIndex)
         switch event.type {
         case .sessionStarted:
@@ -134,11 +157,9 @@ final class AgentStore {
         case .inputRequested:
             if let request = event.inputRequests.first { state = .awaitingApproval(request) }
         case .actionResult:
+            guard let outcome = AgentToolOutcome(event: event) else { break }
             state = .applied
-            activityLog.insert(
-                AgentActivity(id: UUID(), title: "已更新家庭计划", occurredAt: .now, canUndo: true),
-                at: 0
-            )
+            if let activity = outcome.activity { activityLog.insert(activity, at: 0) }
         case .messageCompleted:
             if let message = try? JSONDecoder().decode(EveMessageCompleted.self, from: event.data),
                AgentResponseText.shouldDisplay(finishReason: message.finishReason),
@@ -171,4 +192,101 @@ struct AgentActivity: Identifiable, Equatable, Sendable {
     let title: String
     let occurredAt: Date
     let canUndo: Bool
+    /// 新建类操作的撤销对象。既有的「修改」类走 undo_operation，没有撤销对象。
+    let undoTarget: AgentUndoTarget?
+
+    init(
+        id: UUID,
+        title: String,
+        occurredAt: Date,
+        canUndo: Bool,
+        undoTarget: AgentUndoTarget? = nil
+    ) {
+        self.id = id
+        self.title = title
+        self.occurredAt = occurredAt
+        self.canUndo = canUndo
+        self.undoTarget = undoTarget
+    }
+}
+
+/// 撤销「Agent 新建」的目标。undo_operation 做的是字段级还原，新建没有可还原的
+/// 前值，所以撤销走的是删除。
+enum AgentUndoTarget: Equatable, Sendable {
+    case task(UUID)
+    case record(UUID)
+}
+
+/// 一次工具调用的结果。
+///
+/// 之前这里不区分工具：任何 action.result 都被记成「已更新家庭计划 · 可撤销」，
+/// 于是用户只是问一句，台账上也会多出一条指向不存在变更的撤销入口。
+struct AgentToolOutcome: Equatable, Sendable {
+    let toolName: String
+    let summary: String
+    let activity: AgentActivity?
+
+    /// 只读工具：调用它们不改变任何事实，不该出现在「最近处理」里。
+    static let readOnlyTools: Set<String> = [
+        "get_pregnancy_context", "list_tasks", "list_records",
+        "get_guidance", "echo_context", "preview_task_change",
+    ]
+
+    init?(event: EveEvent) {
+        guard event.type == .actionResult,
+              let payload = try? JSONDecoder().decode(EveActionResultPayload.self, from: event.data)
+        else { return nil }
+        let result = payload.result
+        toolName = result.toolName
+        summary = result.output.summary ?? ""
+
+        if Self.readOnlyTools.contains(toolName) {
+            activity = nil
+            return
+        }
+
+        let data = result.output.data ?? [:]
+        switch toolName {
+        case "create_task":
+            let title = data["title"] ?? "新的待办"
+            activity = AgentActivity(
+                id: UUID(),
+                title: "已添加待办「\(title)」",
+                occurredAt: .now,
+                canUndo: true,
+                undoTarget: data["task_id"].flatMap(UUID.init(uuidString:)).map(AgentUndoTarget.task)
+            )
+        case "create_record":
+            activity = AgentActivity(
+                id: UUID(),
+                title: "已记录",
+                occurredAt: .now,
+                canUndo: true,
+                undoTarget: data["record_id"].flatMap(UUID.init(uuidString:))
+                    .map(AgentUndoTarget.record)
+            )
+        case "delete_task", "delete_record":
+            // 撤销本身不该再产生一条可撤销的台账。
+            activity = nil
+        default:
+            activity = AgentActivity(
+                id: UUID(),
+                title: "已更新家庭计划",
+                occurredAt: .now,
+                canUndo: true
+            )
+        }
+    }
+}
+
+private struct EveActionResultPayload: Decodable {
+    struct Result: Decodable {
+        struct Output: Decodable {
+            let summary: String?
+            let data: [String: String]?
+        }
+        let toolName: String
+        let output: Output
+    }
+    let result: Result
 }

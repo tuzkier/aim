@@ -201,6 +201,11 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
     let examItems: String?
     let result: String?
     let doctorAdvice: String?
+    let answered: Bool?
+    let answer: String?
+    let collection: String?
+    let itemID: String?
+    let done: Bool?
 
     init(
         symptoms: [String]? = nil,
@@ -209,7 +214,12 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
         hospital: String? = nil,
         examItems: String? = nil,
         result: String? = nil,
-        doctorAdvice: String? = nil
+        doctorAdvice: String? = nil,
+        answered: Bool? = nil,
+        answer: String? = nil,
+        collection: String? = nil,
+        itemID: String? = nil,
+        done: Bool? = nil
     ) {
         self.symptoms = symptoms
         self.severity = severity
@@ -218,12 +228,19 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
         self.examItems = examItems
         self.result = result
         self.doctorAdvice = doctorAdvice
+        self.answered = answered
+        self.answer = answer
+        self.collection = collection
+        self.itemID = itemID
+        self.done = done
     }
 
     enum CodingKeys: String, CodingKey {
         case symptoms, severity, note, hospital, result
         case examItems = "exam_items"
         case doctorAdvice = "doctor_advice"
+        case answered, answer, collection, done
+        case itemID = "item_id"
     }
 
     func recordData(for type: RecordType) -> RecordStructuredData {
@@ -234,6 +251,11 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
         case .checkup:
             guard let hospital, let examItems, let result, let doctorAdvice else { return .unknown }
             return .checkup(CheckupRecordData(hospital: hospital, examItems: examItems, result: result, doctorAdvice: doctorAdvice))
+        case .question:
+            return .question(QuestionRecordData(answered: answered ?? false, answer: answer))
+        case .checklist:
+            guard let collection, let itemID else { return .unknown }
+            return .checklist(ChecklistRecordData(collection: collection, itemID: itemID, done: done ?? false))
         case .note:
             return .note
         case .unknown:
@@ -247,6 +269,10 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
             self.init(symptoms: data.symptoms, severity: data.severity, note: data.note)
         case let .checkup(data):
             self.init(hospital: data.hospital, examItems: data.examItems, result: data.result, doctorAdvice: data.doctorAdvice)
+        case let .question(data):
+            self.init(answered: data.answered, answer: data.answer)
+        case let .checklist(data):
+            self.init(collection: data.collection, itemID: data.itemID, done: data.done)
         case .note, .unknown:
             self.init()
         }

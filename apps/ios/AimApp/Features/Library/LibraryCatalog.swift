@@ -1,0 +1,192 @@
+import Foundation
+
+/// 资料库的一份数据快照。分类的摘要都从它算出来，视图不直接碰仓储。
+struct LibrarySnapshot: Equatable, Sendable {
+    var records: [RecordItem] = []
+    var safetyRuleCount: Int = 0
+    /// 内容集合的条目总数。清单类分类的进度是「已勾选记录数 / 集合条目数」，
+    /// 两边缺一不可——内容还没加载出来时不能显示 0/0，那看起来像没有内容。
+    var collectionSizes: [String: Int] = [:]
+}
+
+/// 一张分类卡上显示的活数据。
+///
+/// 卡片刻意不是纯标题——`headline` 回答「这里现在有多少东西」，
+/// `tags` 给出最值得被看见的几条。空数据时 `headline` 也要有话说，
+/// 不能留一张空卡。
+struct LibrarySummary: Equatable, Sendable {
+    let headline: String
+    var tags: [String] = []
+    var detail: String?
+}
+
+enum LibraryCategoryID: String, CaseIterable, Identifiable, Sendable {
+    case checkups
+    case nutrition
+    case symptoms
+    case questions
+    case paperwork
+    case preparation
+    case safety
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .checkups: "产检与指标"
+        case .nutrition: "吃什么"
+        case .symptoms: "身体感受"
+        case .questions: "想问医生"
+        case .paperwork: "办事指南"
+        case .preparation: "待产准备"
+        case .safety: "危险信号"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .checkups: "stethoscope"
+        case .nutrition: "fork.knife"
+        case .symptoms: "heart.text.square"
+        case .questions: "questionmark.bubble"
+        case .paperwork: "doc.text"
+        case .preparation: "suitcase"
+        case .safety: "exclamationmark.triangle"
+        }
+    }
+
+    func summary(from snapshot: LibrarySnapshot) -> LibrarySummary {
+        switch self {
+        case .symptoms:
+            return Self.symptomSummary(from: snapshot)
+        case .checkups:
+            let count = snapshot.records.filter { $0.type == .checkup }.count
+            return count == 0
+                ? LibrarySummary(headline: "还没有产检记录")
+                : LibrarySummary(headline: "\(count) 次记录")
+        case .safety:
+            return snapshot.safetyRuleCount == 0
+                ? LibrarySummary(headline: "出现这些情况立即就医")
+                : LibrarySummary(headline: "\(snapshot.safetyRuleCount) 条")
+        case .questions:
+            return Self.questionSummary(from: snapshot)
+        case .paperwork:
+            return Self.checklistSummary(
+                from: snapshot, collection: "hangzhou", format: { "\($0)/\($1) 已办妥" })
+        case .preparation:
+            return Self.checklistSummary(
+                from: snapshot, collection: "preparation", format: { "待产包 \($0)/\($1)" })
+        case .nutrition:
+            guard let total = snapshot.collectionSizes["nutrition"], total > 0 else {
+                return LibrarySummary(headline: Self.placeholderHeadline(for: self))
+            }
+            return LibrarySummary(headline: "\(total) 条饮食提示")
+        }
+    }
+
+    /// 进入分类后调起 AIM 时带的上下文，与时间线头部同一套机制。
+    func agentContext(from snapshot: LibrarySnapshot) -> AgentContext {
+        let summary = summary(from: snapshot)
+        var lines = [summary.headline]
+        if !summary.tags.isEmpty { lines.append(summary.tags.joined(separator: "、")) }
+        return AgentContext(title: title, summary: lines.joined(separator: "\n"))
+    }
+
+    private static func placeholderHeadline(for id: LibraryCategoryID) -> String {
+        switch id {
+        case .nutrition: "食谱与禁忌，即将上线"
+        case .questions: "攒下想问医生的问题"
+        case .paperwork: "建卡、生育险、证件"
+        case .preparation: "待产包与婴儿用品"
+        default: "暂无内容"
+        }
+    }
+
+    private static func questionSummary(from snapshot: LibrarySnapshot) -> LibrarySummary {
+        let questions = snapshot.records.compactMap { record -> (RecordItem, QuestionRecordData)? in
+            guard record.type == .question,
+                  case let .question(data) = record.structuredData else { return nil }
+            return (record, data)
+        }
+        guard !questions.isEmpty else {
+            return LibrarySummary(headline: placeholderHeadline(for: .questions))
+        }
+        // 只数还没问的——问过的不该继续占用注意力。
+        let pending = questions.filter { !$0.1.answered }
+        guard !pending.isEmpty else { return LibrarySummary(headline: "都问过了") }
+        let latest = pending.max { $0.0.occurredAt < $1.0.occurredAt }
+        return LibrarySummary(
+            headline: "攒了 \(pending.count) 个问题",
+            detail: latest?.0.content
+        )
+    }
+
+    private static func checklistSummary(
+        from snapshot: LibrarySnapshot,
+        collection: String,
+        format: (Int, Int) -> String
+    ) -> LibrarySummary {
+        guard let total = snapshot.collectionSizes[collection], total > 0 else {
+            return LibrarySummary(headline: placeholderHeadline(for: collection == "preparation" ? .preparation : .paperwork))
+        }
+        let done = snapshot.records.filter { record in
+            guard case let .checklist(data) = record.structuredData else { return false }
+            return data.collection == collection && data.done
+        }.count
+        return LibrarySummary(headline: format(done, total))
+    }
+
+    private static func symptomSummary(from snapshot: LibrarySnapshot) -> LibrarySummary {
+        let cutoff = Calendar.current.date(byAdding: .day, value: -7, to: .now) ?? .now
+        let recent = snapshot.records.filter { $0.type == .symptom && $0.occurredAt >= cutoff }
+        guard !recent.isEmpty else { return LibrarySummary(headline: "还没有记录身体感受") }
+
+        var counts: [String: Int] = [:]
+        var order: [String] = []
+        for record in recent {
+            guard case let .symptom(data) = record.structuredData else { continue }
+            for label in data.symptoms {
+                if counts[label] == nil { order.append(label) }
+                counts[label, default: 0] += 1
+            }
+        }
+        // 出现次数多的排前面；同次数按首次出现顺序，保证结果稳定。
+        let tags = order
+            .sorted { lhs, rhs in
+                let l = counts[lhs] ?? 0, r = counts[rhs] ?? 0
+                if l != r { return l > r }
+                return (order.firstIndex(of: lhs) ?? 0) < (order.firstIndex(of: rhs) ?? 0)
+            }
+            .prefix(3)
+            .map { label in
+                let count = counts[label] ?? 0
+                return count > 1 ? "\(label) ×\(count)" : label
+            }
+        return LibrarySummary(headline: "近 7 天 \(recent.count) 条", tags: Array(tags))
+    }
+}
+
+struct LibraryCategory: Identifiable, Sendable {
+    let id: LibraryCategoryID
+    /// 危险信号单独通栏，不参与网格——它是安全兜底，不该和食谱平级。
+    let isBanner: Bool
+
+    var title: String { id.title }
+    var icon: String { id.icon }
+}
+
+/// 分类目录是数据不是代码：新增一个分类是往这里加一条，而不是改视图。
+enum LibraryCatalog {
+    static let categories: [LibraryCategory] = [
+        LibraryCategory(id: .checkups, isBanner: false),
+        LibraryCategory(id: .nutrition, isBanner: false),
+        LibraryCategory(id: .symptoms, isBanner: false),
+        LibraryCategory(id: .questions, isBanner: false),
+        LibraryCategory(id: .paperwork, isBanner: false),
+        LibraryCategory(id: .preparation, isBanner: false),
+        LibraryCategory(id: .safety, isBanner: true),
+    ]
+
+    static var gridCategories: [LibraryCategory] { categories.filter { !$0.isBanner } }
+    static var bannerCategories: [LibraryCategory] { categories.filter(\.isBanner) }
+}

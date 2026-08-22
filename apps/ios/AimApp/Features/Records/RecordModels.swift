@@ -4,6 +4,8 @@ enum RecordType: Codable, CaseIterable, Sendable, Equatable {
     case symptom
     case checkup
     case note
+    case question
+    case checklist
     case unknown
 
     init(rawValue: String) {
@@ -11,6 +13,8 @@ enum RecordType: Codable, CaseIterable, Sendable, Equatable {
         case "symptom": self = .symptom
         case "checkup": self = .checkup
         case "note": self = .note
+        case "question": self = .question
+        case "checklist": self = .checklist
         default: self = .unknown
         }
     }
@@ -20,6 +24,8 @@ enum RecordType: Codable, CaseIterable, Sendable, Equatable {
         case .symptom: return "symptom"
         case .checkup: return "checkup"
         case .note: return "note"
+        case .question: return "question"
+        case .checklist: return "checklist"
         case .unknown: return "unknown"
         }
     }
@@ -76,11 +82,33 @@ struct CheckupRecordData: Codable, Equatable, Sendable {
     let examItems: String
     let result: String
     let doctorAdvice: String
+    /// 可计算的指标。四段文字画不出趋势，趋势要靠这里。
+    var metrics: CheckupMetrics = CheckupMetrics()
+}
+
+struct QuestionRecordData: Codable, Equatable, Sendable {
+    let answered: Bool
+    let answer: String?
+}
+
+/// 办事指南与待产准备共用：内容库给条目，这里只存勾选状态。
+struct ChecklistRecordData: Codable, Equatable, Sendable {
+    let collection: String
+    let itemID: String
+    let done: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case collection
+        case itemID = "item_id"
+        case done
+    }
 }
 
 enum RecordStructuredData: Equatable, Sendable {
     case symptom(SymptomRecordData)
     case checkup(CheckupRecordData)
+    case question(QuestionRecordData)
+    case checklist(ChecklistRecordData)
     case note
     case unknown
 }

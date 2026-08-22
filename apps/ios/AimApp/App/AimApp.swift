@@ -18,10 +18,14 @@ private struct RootView: View {
 
     var body: some View {
         Group {
-            if session.isConfigured {
-                MainTabView()
-            } else {
+            if !session.isConfigured {
                 OnboardingView()
+            } else if session.pregnancyID == nil {
+                // 没有孕期档案就没有孕周，计划和记录都无处安放。
+                // 这里是准入门槛，不是可跳过的提示。
+                PregnancySetupView()
+            } else {
+                MainTabView()
             }
         }
     }
@@ -34,6 +38,7 @@ private struct MainTabView: View {
     @State private var recordStore = RecordStore()
     @State private var familyStore = FamilyStore()
     @State private var agentStore = AgentStore()
+    @State private var libraryStore = LibraryStore()
     @State private var selectedTab: AimTab = .timeline
 
     var body: some View {
@@ -43,8 +48,12 @@ private struct MainTabView: View {
                 .tag(AimTab.timeline)
 
             AgentView(store: agentStore)
-                .tabItem { Label("Agent", systemImage: "wand.and.sparkles") }
+                .tabItem { Label("AIM", systemImage: "wand.and.sparkles") }
                 .tag(AimTab.agent)
+
+            LibraryView(store: libraryStore, agentStore: agentStore)
+                .tabItem { Label("资料库", systemImage: "books.vertical") }
+                .tag(AimTab.library)
 
             FamilyView(store: familyStore)
                 .tabItem { Label("家庭", systemImage: "person.2") }
@@ -59,6 +68,7 @@ private struct MainTabView: View {
     private enum AimTab: Hashable {
         case timeline
         case agent
+        case library
         case family
     }
 
@@ -68,9 +78,13 @@ private struct MainTabView: View {
         planStore.repository = repository
         recordStore.repository = repository
         familyStore.repository = repository
+        // Agent 撤销「新建」类操作要直接调删除接口，不经过模型。
+        agentStore.repository = repository
+        libraryStore.repository = repository
         await timelineStore.load()
         await planStore.load()
         await recordStore.load()
         await familyStore.load()
+        await libraryStore.load()
     }
 }

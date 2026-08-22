@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	  验证环境后端是 http://REDACTED_HOST（纯 IP，无 TLS）。
+	  ATS 的 NSExceptionDomains 只接受域名，不接受 IP 地址，
+	  因此这里只能整体放开明文 HTTP。
+
+	  这是验证阶段的临时配置。上架 App Store 前必须：
+	  给后端配置域名 + HTTPS 证书，然后删掉整个 NSAppTransportSecurity 段。
+	  参见 infrastructure/deploy/README.md。
+	-->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
+</dict>
+</plist>

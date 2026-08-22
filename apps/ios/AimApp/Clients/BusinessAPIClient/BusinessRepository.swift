@@ -1,6 +1,6 @@
 import Foundation
 
-struct TaskItem: Identifiable, Codable, Equatable, Sendable {
+struct TaskItem: Identifiable, Codable, Hashable, Sendable {
     let id: UUID
     let title: String
     let detail: String?
@@ -105,6 +105,9 @@ protocol BusinessRepositoryProtocol: Sendable {
     func createRecord(draft: RecordDraft) async throws -> RecordItem
     func updateRecord(recordID: UUID, draft: RecordDraft) async throws -> RecordItem
     func deleteRecord(recordID: UUID) async throws
+    func deleteTask(taskID: UUID) async throws
+    func fetchSafetyRules() async throws -> [SafetyRule]
+    func fetchContentCollection(_ name: String) async throws -> ContentCollection
     func createTaskFromRecord(record: RecordItem, title: String, description: String?, dueAt: Date?) async throws -> TaskItem
     func complete(task: TaskItem) async throws -> TaskItem
     func delay(task: TaskItem, until: Date) async throws -> TaskItem
@@ -210,6 +213,31 @@ actor BusinessRepository: BusinessRepositoryProtocol {
         _ = try await session.aimData(for: request)
     }
 
+    /// 危险信号是静态安全内容，不含个人数据，后端也不要求登录。
+    func fetchSafetyRules() async throws -> [SafetyRule] {
+        let request = environment.businessRequest(path: "/api/v1/safety-rules")
+        let (data, _) = try await session.aimData(for: request)
+        return try decoder.decode(APISafetyRuleListDTO.self, from: data).items.map(SafetyRule.init(dto:))
+    }
+
+    /// 可浏览的内容集合（办事指南、待产准备）。集合名由服务端白名单校验。
+    func fetchContentCollection(_ name: String) async throws -> ContentCollection {
+        let request = environment.businessRequest(path: "/api/v1/content/\(name)")
+        let (data, _) = try await session.aimData(for: request)
+        return ContentCollection(dto: try decoder.decode(APIContentCollectionDTO.self, from: data))
+    }
+
+    /// 硬删除任务。用于撤销「Agent 新建的待办」——undo_operation 做的是字段级还原，
+    /// 新建没有可还原的前值。
+    func deleteTask(taskID: UUID) async throws {
+        let pregnancyID = try requiredPregnancyID()
+        let request = environment.businessRequest(
+            path: "/api/v1/pregnancies/\(pregnancyID.uuidString)/tasks/\(taskID.uuidString)",
+            method: "DELETE"
+        )
+        _ = try await session.aimData(for: request)
+    }
+
     func createTaskFromRecord(record: RecordItem, title: String, description: String?, dueAt: Date?) async throws -> TaskItem {
         let pregnancyID = try requiredPregnancyID()
         guard record.pregnancyID == pregnancyID else { throw APIError.invalidResponse }
@@ -294,7 +322,8 @@ actor BusinessRepository: BusinessRepositoryProtocol {
     private func validate(_ draft: RecordDraft) throws {
         guard draft.visibility != .unknown else { throw APIError.invalidResponse }
         switch (draft.type, draft.structuredData) {
-        case (.symptom, .symptom), (.checkup, .checkup), (.note, .note):
+        case (.symptom, .symptom), (.checkup, .checkup), (.note, .note),
+             (.question, .question), (.checklist, .checklist):
             return
         default:
             throw APIError.invalidResponse
