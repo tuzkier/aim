@@ -58,6 +58,7 @@ struct EveInputRequest: Codable, Equatable, Sendable, Identifiable {
     let prompt: String?
     let options: [EveInputOption]
     let toolName: String?
+    let toolInput: [String: JSONValue]?
     let changes: [EveChangeDTO]?
     let qualifier: String?
 
@@ -74,6 +75,7 @@ struct EveInputRequest: Codable, Equatable, Sendable, Identifiable {
         prompt: String?,
         options: [EveInputOption],
         toolName: String?,
+        toolInput: [String: JSONValue]? = nil,
         changes: [EveChangeDTO]? = nil,
         qualifier: String? = nil
     ) {
@@ -82,6 +84,7 @@ struct EveInputRequest: Codable, Equatable, Sendable, Identifiable {
         self.prompt = prompt
         self.options = options
         self.toolName = toolName
+        self.toolInput = toolInput
         self.changes = changes
         self.qualifier = qualifier
     }
@@ -94,8 +97,10 @@ struct EveInputRequest: Codable, Equatable, Sendable, Identifiable {
         options = try container.decodeIfPresent([EveInputOption].self, forKey: .options) ?? []
         if let action = try container.decodeIfPresent(EveToolCallAction.self, forKey: .action) {
             toolName = action.toolName
+            toolInput = action.input
         } else {
             toolName = nil
+            toolInput = nil
         }
         changes = try container.decodeIfPresent([EveChangeDTO].self, forKey: .changes)
         qualifier = try container.decodeIfPresent(String.self, forKey: .qualifier)
@@ -145,8 +150,39 @@ struct EveSessionWaitingPayload: Codable, Sendable {
     let wait: String?
 }
 
-private struct EveToolCallAction: Codable, Sendable {
+private struct EveToolCallAction: Decodable, Sendable {
     let toolName: String
+    /// 工具入参。审批卡要靠它渲染「将要写入的内容长什么样」，
+    /// 而不是只显示 Eve 默认的英文提示。
+    let input: [String: JSONValue]?
+}
+
+/// 只为读取工具入参而存在的最小 JSON 表示。
+enum JSONValue: Decodable, Equatable, Sendable {
+    case string(String)
+    case number(Double)
+    case bool(Bool)
+    case array([JSONValue])
+    case object([String: JSONValue])
+    case null
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        if container.decodeNil() { self = .null }
+        else if let value = try? container.decode(Bool.self) { self = .bool(value) }
+        else if let value = try? container.decode(Double.self) { self = .number(value) }
+        else if let value = try? container.decode(String.self) { self = .string(value) }
+        else if let value = try? container.decode([JSONValue].self) { self = .array(value) }
+        else if let value = try? container.decode([String: JSONValue].self) { self = .object(value) }
+        else { self = .null }
+    }
+
+    var stringValue: String? { if case let .string(v) = self { return v }; return nil }
+    var stringArray: [String]? {
+        guard case let .array(items) = self else { return nil }
+        let strings = items.compactMap(\.stringValue)
+        return strings.count == items.count ? strings : nil
+    }
 }
 
 struct EveNDJSONDecoder: Sendable {

@@ -18,7 +18,7 @@ struct LibraryCategoryDetail: View {
             case .questions: questionList
             case .paperwork: checklist(collection: "hangzhou")
             case .preparation: checklist(collection: "preparation")
-            case .nutrition: reference(collection: "nutrition")
+            case .nutrition: knowledgeOrReference(collection: "nutrition")
             default: comingSoon
             }
         }
@@ -211,6 +211,49 @@ struct LibraryCategoryDetail: View {
 
     /// 只读参考内容。饮食提示不是清单——没有「做完」这个状态，
     /// 所以不给勾选框，避免暗示它是待办。
+    /// 有用户条目就先展示用户条目，静态基线作为「基线参考」放下方。
+    @ViewBuilder
+    private func knowledgeOrReference(collection: String) -> some View {
+        let entries = category.entries(in: store.snapshot)
+        if entries.isEmpty {
+            reference(collection: collection)
+        } else {
+            List {
+                Section("我的资料") {
+                    ForEach(entries) { entry in
+                        NavigationLink { KnowledgeDetailView(entry: entry) } label: {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(entry.title)
+                                    .font(.subheadline.weight(.medium))
+                                    .foregroundStyle(Color.aimTextPrimary)
+                                Text(entry.subtitle)
+                                    .font(.footnote)
+                                    .foregroundStyle(Color.aimTextSecondary)
+                            }
+                        }
+                        .listRowBackground(Color.aimSurface)
+                    }
+                }
+                if let source = store.collections[collection] {
+                    Section("基线参考") {
+                        ForEach(source.items) { item in
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(item.title).font(.subheadline)
+                                Text(item.summary)
+                                    .font(.footnote)
+                                    .foregroundStyle(Color.aimTextSecondary)
+                            }
+                            .listRowBackground(Color.aimSurface)
+                        }
+                    }
+                }
+            }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .accessibilityIdentifier("library-knowledge-list")
+        }
+    }
+
     private func reference(collection: String) -> some View {
         let items = store.collections[collection]?.items ?? []
         return List {

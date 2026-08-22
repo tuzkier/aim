@@ -206,6 +206,13 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
     let collection: String?
     let itemID: String?
     let done: Bool?
+    let category: String?
+    let form: String?
+    let ingredients: [String]?
+    let steps: [String]?
+    let verdict: String?
+    let reason: String?
+    let body: String?
 
     init(
         symptoms: [String]? = nil,
@@ -219,7 +226,14 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
         answer: String? = nil,
         collection: String? = nil,
         itemID: String? = nil,
-        done: Bool? = nil
+        done: Bool? = nil,
+        category: String? = nil,
+        form: String? = nil,
+        ingredients: [String]? = nil,
+        steps: [String]? = nil,
+        verdict: String? = nil,
+        reason: String? = nil,
+        body: String? = nil
     ) {
         self.symptoms = symptoms
         self.severity = severity
@@ -233,6 +247,13 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
         self.collection = collection
         self.itemID = itemID
         self.done = done
+        self.category = category
+        self.form = form
+        self.ingredients = ingredients
+        self.steps = steps
+        self.verdict = verdict
+        self.reason = reason
+        self.body = body
     }
 
     enum CodingKeys: String, CodingKey {
@@ -240,6 +261,7 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
         case examItems = "exam_items"
         case doctorAdvice = "doctor_advice"
         case answered, answer, collection, done
+        case category, form, ingredients, steps, verdict, reason, body
         case itemID = "item_id"
     }
 
@@ -256,6 +278,18 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
         case .checklist:
             guard let collection, let itemID else { return .unknown }
             return .checklist(ChecklistRecordData(collection: collection, itemID: itemID, done: done ?? false))
+        case .knowledge:
+            guard let category, let form else { return .unknown }
+            return .knowledge(KnowledgeRecordData(
+                category: category,
+                form: KnowledgeForm(rawValue: form),
+                ingredients: ingredients,
+                steps: steps,
+                verdict: verdict.map(FoodVerdict.init(rawValue:)),
+                reason: reason,
+                body: body,
+                note: note
+            ))
         case .note:
             return .note
         case .unknown:
@@ -273,6 +307,12 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
             self.init(answered: data.answered, answer: data.answer)
         case let .checklist(data):
             self.init(collection: data.collection, itemID: data.itemID, done: data.done)
+        case let .knowledge(data):
+            self.init(
+                note: data.note, category: data.category, form: data.form.rawValue,
+                ingredients: data.ingredients, steps: data.steps,
+                verdict: data.verdict?.rawValue, reason: data.reason, body: data.body
+            )
         case .note, .unknown:
             self.init()
         }

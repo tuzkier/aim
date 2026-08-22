@@ -105,6 +105,12 @@ struct RecordDetailView: View {
                 LabeledContent("条目", value: data.itemID)
                 LabeledContent("状态", value: data.done ? "已完成" : "待完成")
             }
+        case let .knowledge(data):
+            Section("资料") {
+                if let body = data.body { Text(body) }
+                if let reason = data.reason { Text(reason) }
+                ForEach(data.steps ?? [], id: \.self) { Text($0) }
+            }
         case .unknown:
             Section { Text("这类记录暂不支持完整展示。") }
         }

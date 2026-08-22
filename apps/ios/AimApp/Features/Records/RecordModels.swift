@@ -6,6 +6,7 @@ enum RecordType: Codable, CaseIterable, Sendable, Equatable {
     case note
     case question
     case checklist
+    case knowledge
     case unknown
 
     init(rawValue: String) {
@@ -15,6 +16,7 @@ enum RecordType: Codable, CaseIterable, Sendable, Equatable {
         case "note": self = .note
         case "question": self = .question
         case "checklist": self = .checklist
+        case "knowledge": self = .knowledge
         default: self = .unknown
         }
     }
@@ -26,6 +28,7 @@ enum RecordType: Codable, CaseIterable, Sendable, Equatable {
         case .note: return "note"
         case .question: return "question"
         case .checklist: return "checklist"
+        case .knowledge: return "knowledge"
         case .unknown: return "unknown"
         }
     }
@@ -109,6 +112,7 @@ enum RecordStructuredData: Equatable, Sendable {
     case checkup(CheckupRecordData)
     case question(QuestionRecordData)
     case checklist(ChecklistRecordData)
+    case knowledge(KnowledgeRecordData)
     case note
     case unknown
 }

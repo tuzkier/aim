@@ -55,7 +55,24 @@ enum LibraryCategoryID: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
+    /// 该分类下用户积累的知识条目。
+    func entries(in snapshot: LibrarySnapshot) -> [KnowledgeEntry] {
+        snapshot.records
+            .compactMap(KnowledgeEntry.init(record:))
+            .filter { $0.category == self }
+            .sorted { $0.createdAt > $1.createdAt }
+    }
+
     func summary(from snapshot: LibrarySnapshot) -> LibrarySummary {
+        // 用户自己积累的条目优先于静态基线——那才是这个分类的价值所在。
+        let entries = entries(in: snapshot)
+        if !entries.isEmpty {
+            return LibrarySummary(
+                headline: "\(entries.count) 条资料",
+                tags: entries.prefix(2).map(\.title),
+                detail: entries.first?.subtitle
+            )
+        }
         switch self {
         case .symptoms:
             return Self.symptomSummary(from: snapshot)

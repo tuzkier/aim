@@ -67,10 +67,20 @@ struct AgentView: View {
             }
             .background(Color.aimCanvas)
             .sheet(item: pendingApproval) { request in
-                AgentDiffSheet(preview: AgentChangePreview.from(request)) {
-                    store.approve(request, environment: session.environment)
-                } onDismiss: {
-                    store.cancelApproval(request, environment: session.environment)
+                // 知识条目有自己的形态（食材、步骤、结论），字段级 diff 表达不了，
+                // 所以走专门的预览卡。
+                if let knowledge = KnowledgePreview(request: request) {
+                    KnowledgeApprovalSheet(preview: knowledge) {
+                        store.approve(request, environment: session.environment)
+                    } onDismiss: {
+                        store.cancelApproval(request, environment: session.environment)
+                    }
+                } else {
+                    AgentDiffSheet(preview: AgentChangePreview.from(request)) {
+                        store.approve(request, environment: session.environment)
+                    } onDismiss: {
+                        store.cancelApproval(request, environment: session.environment)
+                    }
                 }
             }
         }

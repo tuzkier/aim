@@ -118,7 +118,7 @@ struct RecordComposerView: View {
             noteFields
             occurredAtSection
         // question / checklist 由资料库和 AIM 创建，不在手动新建里提供。
-        case .question, .checklist, .unknown: EmptyView()
+        case .question, .checklist, .knowledge, .unknown: EmptyView()
         }
     }
 
@@ -195,7 +195,7 @@ struct RecordComposerView: View {
         case .symptom: !symptoms.isEmpty
         case .checkup: !hospital.trimmed.isEmpty && !examItems.trimmed.isEmpty && !result.trimmed.isEmpty && !doctorAdvice.trimmed.isEmpty
         case .note: !content.trimmed.isEmpty
-        case .question, .checklist, .none, .unknown: false
+        case .question, .checklist, .knowledge, .none, .unknown: false
         }
     }
 
@@ -220,7 +220,7 @@ struct RecordComposerView: View {
         case .checkup:
             data = .checkup(CheckupRecordData(hospital: hospital.trimmed, examItems: examItems.trimmed, result: result.trimmed, doctorAdvice: doctorAdvice.trimmed))
         case .note: data = .note
-        case .question, .checklist, .unknown: return nil
+        case .question, .checklist, .knowledge, .unknown: return nil
         }
         return RecordDraft(type: type, occurredAt: occurredAt, visibility: visibility, title: type == .note ? title.trimmed.nilIfEmpty : nil, content: type == .note ? content.trimmed.nilIfEmpty : nil, structuredData: data)
     }
