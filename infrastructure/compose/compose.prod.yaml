@@ -1,0 +1,21 @@
+# 生产 override，与 infrastructure/compose/compose.yaml 叠加使用：
+#   docker compose --env-file .env -f compose.yaml -f compose.prod.yaml up -d
+services:
+  postgres:
+    restart: unless-stopped
+    ports: !override []          # 数据库不对宿主机暴露，只走 compose 内网
+
+  api:
+    restart: unless-stopped
+    build:
+      args:
+        # 服务器直连 pypi.org 不通，构建走阿里云镜像站
+        PIP_INDEX_URL: https://mirrors.aliyun.com/pypi/simple/
+        PIP_TRUSTED_HOST: mirrors.aliyun.com
+    ports: !override
+      - "127.0.0.1:8100:8000"    # 只监听本机，由 Nginx 反代
+
+  eve:
+    restart: unless-stopped
+    ports: !override
+      - "127.0.0.1:2210:2000"
