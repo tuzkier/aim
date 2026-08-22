@@ -185,6 +185,170 @@
         }
       }
     },
+    "/internal/agent-tools/create-task": {
+      "post": {
+        "tags": [
+          "agent-tools"
+        ],
+        "summary": "Create Task Endpoint",
+        "operationId": "create_task_endpoint_internal_agent_tools_create_task_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/aim_api__contexts__agent_access__adapters__inbound__http__router__CreateTaskRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/internal/agent-tools/delete-task": {
+      "post": {
+        "tags": [
+          "agent-tools"
+        ],
+        "summary": "Delete Task Endpoint",
+        "operationId": "delete_task_endpoint_internal_agent_tools_delete_task_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteTaskRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/internal/agent-tools/create-record": {
+      "post": {
+        "tags": [
+          "agent-tools"
+        ],
+        "summary": "Create Record Endpoint",
+        "operationId": "create_record_endpoint_internal_agent_tools_create_record_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/aim_api__contexts__agent_access__adapters__inbound__http__router__CreateRecordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/internal/agent-tools/delete-record": {
+      "post": {
+        "tags": [
+          "agent-tools"
+        ],
+        "summary": "Delete Record Endpoint",
+        "operationId": "delete_record_endpoint_internal_agent_tools_delete_record_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteRecordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/internal/agent-tools/assign-task": {
       "post": {
         "tags": [
@@ -401,137 +565,6 @@
         "type": "object",
         "title": "CreatePregnancyRequest"
       },
-      "CreateRecordRequest": {
-        "properties": {
-          "type": {
-            "$ref": "#/components/schemas/RecordType"
-          },
-          "occurred_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Occurred At"
-          },
-          "visibility": {
-            "$ref": "#/components/schemas/RecordVisibility"
-          },
-          "title": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 200
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Title"
-          },
-          "content": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 5000
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Content"
-          },
-          "structured_data": {
-            "additionalProperties": true,
-            "type": "object",
-            "title": "Structured Data"
-          }
-        },
-        "type": "object",
-        "required": [
-          "type",
-          "occurred_at",
-          "visibility",
-          "structured_data"
-        ],
-        "title": "CreateRecordRequest"
-      },
-      "CreateTaskRequest": {
-        "properties": {
-          "title": {
-            "type": "string",
-            "maxLength": 200,
-            "minLength": 1,
-            "title": "Title"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 5000
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "due_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Due At"
-          },
-          "assigned_member_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Assigned Member Id"
-          },
-          "record_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Record Id"
-          },
-          "source_type": {
-            "$ref": "#/components/schemas/TaskSourceType",
-            "default": "user"
-          },
-          "source_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 200
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Source Id"
-          }
-        },
-        "type": "object",
-        "required": [
-          "title"
-        ],
-        "title": "CreateTaskRequest"
-      },
       "DelayTaskRequest": {
         "properties": {
           "expected_version": {
@@ -551,6 +584,34 @@
           "due_at"
         ],
         "title": "DelayTaskRequest"
+      },
+      "DeleteRecordRequest": {
+        "properties": {
+          "record_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Record Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "record_id"
+        ],
+        "title": "DeleteRecordRequest"
+      },
+      "DeleteTaskRequest": {
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Task Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "task_id"
+        ],
+        "title": "DeleteTaskRequest"
       },
       "DemoSessionRequest": {
         "properties": {
@@ -1250,7 +1311,9 @@
         "enum": [
           "symptom",
           "checkup",
-          "note"
+          "note",
+          "question",
+          "checklist"
         ],
         "title": "RecordType"
       },
@@ -1773,6 +1836,95 @@
         ],
         "title": "AssignTaskRequest"
       },
+      "aim_api__contexts__agent_access__adapters__inbound__http__router__CreateRecordRequest": {
+        "properties": {
+          "record_type": {
+            "$ref": "#/components/schemas/RecordType"
+          },
+          "structured_data": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Structured Data"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content"
+          },
+          "occurred_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Occurred At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "record_type"
+        ],
+        "title": "CreateRecordRequest"
+      },
+      "aim_api__contexts__agent_access__adapters__inbound__http__router__CreateTaskRequest": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "due_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title"
+        ],
+        "title": "CreateTaskRequest"
+      },
       "aim_api__contexts__agent_access__adapters__inbound__http__router__RecordFactRequest": {
         "properties": {
           "key": {
@@ -1840,6 +1992,85 @@
         ],
         "title": "AssignTaskRequest"
       },
+      "aim_api__contexts__planning__adapters__inbound__http__router__CreateTaskRequest": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 5000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "due_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          },
+          "assigned_member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assigned Member Id"
+          },
+          "record_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Record Id"
+          },
+          "source_type": {
+            "$ref": "#/components/schemas/TaskSourceType",
+            "default": "user"
+          },
+          "source_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title"
+        ],
+        "title": "CreateTaskRequest"
+      },
       "aim_api__contexts__pregnancy__adapters__inbound__http__router__RecordFactRequest": {
         "properties": {
           "key": {
@@ -1874,6 +2105,58 @@
           "source"
         ],
         "title": "RecordFactRequest"
+      },
+      "aim_api__contexts__records__adapters__inbound__http__router__CreateRecordRequest": {
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/RecordType"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Occurred At"
+          },
+          "visibility": {
+            "$ref": "#/components/schemas/RecordVisibility"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "content": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 5000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content"
+          },
+          "structured_data": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Structured Data"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "occurred_at",
+          "visibility",
+          "structured_data"
+        ],
+        "title": "CreateRecordRequest"
       }
     }
   }

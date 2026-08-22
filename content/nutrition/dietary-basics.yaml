@@ -1,0 +1,29 @@
+id: nutrition-dietary-basics
+version: 1.0.0
+source: Aim 孕期饮食基线
+source_url: https://www.gov.cn/
+reviewed_at: "2026-08-22"
+applicability:
+  region: [CN]
+items:
+  - id: raw-and-undercooked
+    title: 生食与未煮熟的食物
+    summary: 生鱼片、溏心蛋、未煮熟的肉类存在李斯特菌与寄生虫风险。具体尺度请以产检医生的意见为准。
+  - id: unpasteurized-dairy
+    title: 未经巴氏杀菌的乳制品
+    summary: 生牛奶与部分软质奶酪属于常见提示项。购买时留意包装上的杀菌标识。
+  - id: high-mercury-fish
+    title: 汞含量较高的鱼类
+    summary: 鲨鱼、旗鱼、部分金枪鱼常被列入限制清单。鱼类本身是重要营养来源，限制的是种类而非全部。
+  - id: alcohol
+    title: 酒精
+    summary: 孕期饮酒没有公认的安全下限。含酒精的调味料与甜品也需要留意。
+  - id: caffeine
+    title: 咖啡因
+    summary: 咖啡、茶、可乐与巧克力都含咖啡因。每日总量的建议上限请咨询医生。
+  - id: iron-and-folate
+    title: 铁与叶酸
+    summary: 孕期需求量高于平时。是否需要额外补充、补充多少，由产检结果决定，不要自行加量。
+  - id: food-safety-habits
+    title: 处理与储存
+    summary: 生熟分开、彻底加热剩菜、蔬果洗净。这些习惯比记住某一份禁忌清单更有用。

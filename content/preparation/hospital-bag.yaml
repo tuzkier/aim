@@ -1,0 +1,30 @@
+id: preparation-hospital-bag
+version: 1.0.0
+source: Aim 待产准备基线
+source_url: https://www.gov.cn/
+reviewed_at: "2026-08-22"
+applicability:
+  region: [CN]
+  suggested_from_week: 32
+items:
+  - id: documents
+    title: 证件与卡片
+    summary: 身份证、医保卡、产检本、建卡资料。入院第一件事就是这些，单独装一个袋子。
+  - id: mother-clothing
+    title: 妈妈的衣物
+    summary: 开襟睡衣、哺乳内衣、防滑拖鞋、出院穿的宽松外衣。
+  - id: mother-toiletries
+    title: 妈妈的洗漱用品
+    summary: 牙刷牙膏、毛巾、卫生巾（产褥期专用）、一次性内裤。
+  - id: baby-clothing
+    title: 宝宝的衣物
+    summary: 和尚服、包被、帽子、袜子。按当季厚度准备，不用多。
+  - id: baby-care
+    title: 宝宝的护理用品
+    summary: 新生儿纸尿裤、湿巾、隔尿垫。医院通常有一部分，先少带。
+  - id: feeding
+    title: 喂养用品
+    summary: 奶瓶、小勺。是否需要奶粉按医院和自身情况决定，不必提前囤。
+  - id: companion
+    title: 陪产家属的东西
+    summary: 换洗衣物、充电器、现金或零钱、简单干粮。陪产往往比预想的久。

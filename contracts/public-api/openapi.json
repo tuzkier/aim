@@ -820,6 +820,53 @@
         }
       }
     },
+    "/api/v1/pregnancies/{pregnancy_id}/tasks/{task_id}": {
+      "delete": {
+        "tags": [
+          "planning"
+        ],
+        "summary": "Delete Task Endpoint",
+        "description": "硬删除任务。\n\n这是「撤销 Agent 新建的待办」的落地路径：undo_change 做的是字段级还原，\n新建没有可还原的前值。删除会级联清除该任务的 task_changes。\n\n任务不存在时同样返回 204——撤销可能被重放，重复删除不该报错。",
+        "operationId": "delete_task_endpoint_api_v1_pregnancies__pregnancy_id__tasks__task_id__delete",
+        "parameters": [
+          {
+            "name": "pregnancy_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Pregnancy Id"
+            }
+          },
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Task Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/tasks/{task_id}/schedule": {
       "post": {
         "tags": [
@@ -1111,6 +1158,67 @@
               "type": "string",
               "default": "CN-ZJ-HZ",
               "title": "Region"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/safety-rules": {
+      "get": {
+        "tags": [
+          "guidance"
+        ],
+        "summary": "Get Safety Rules Endpoint",
+        "description": "危险信号。不含个人数据，因此不要求登录——\n真出事的时候不该被登录态挡在外面。",
+        "operationId": "get_safety_rules_endpoint_api_v1_safety_rules_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/content/{collection}": {
+      "get": {
+        "tags": [
+          "guidance"
+        ],
+        "summary": "Get Content Collection Endpoint",
+        "description": "可浏览的内容集合（办事指南、待产准备）。\n\n集合名走白名单，未知集合返回 404 而不是去磁盘上拼路径读取。",
+        "operationId": "get_content_collection_endpoint_api_v1_content__collection__get",
+        "parameters": [
+          {
+            "name": "collection",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Collection"
             }
           }
         ],
@@ -2100,7 +2208,9 @@
         "enum": [
           "symptom",
           "checkup",
-          "note"
+          "note",
+          "question",
+          "checklist"
         ],
         "title": "RecordType"
       },
