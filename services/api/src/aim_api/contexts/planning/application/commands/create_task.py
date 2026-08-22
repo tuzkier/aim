@@ -20,6 +20,9 @@ class CreateTaskCommand:
     source_type: TaskSourceType = TaskSourceType.user
     source_id: str | None = None
     assigned_member_id: UUID | None = None
+    # Agent 建的任务要标成 agent 来源，时间线才会显示「Agent 调整」。
+    # 默认仍是 account，公开 API 的行为不变。
+    changed_by_actor_type: ActorType = ActorType.account
 
 
 async def execute(command: CreateTaskCommand, uow: PlanningUnitOfWork) -> Task:
@@ -46,7 +49,7 @@ async def execute(command: CreateTaskCommand, uow: PlanningUnitOfWork) -> Task:
         description=command.description,
         source_type=command.source_type,
         source_id=command.source_id,
-        changed_by_actor_type=ActorType.account,
+        changed_by_actor_type=command.changed_by_actor_type,
         changed_by_actor_id=command.account_id,
         due_at=command.due_at,
         assigned_member_id=command.assigned_member_id,

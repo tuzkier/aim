@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import UTC, date, datetime, time, timedelta
 from uuid import UUID
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Response
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from aim_api.contexts.guidance.application.queries.get_guidance import initial_plan_items
@@ -15,6 +15,7 @@ from aim_api.contexts.planning.application.commands import (
     complete_task,
     create_task,
     delay_task,
+    delete_task,
     schedule_task,
     undo_change,
 )
@@ -22,6 +23,7 @@ from aim_api.contexts.planning.application.commands.assign_task import AssignTas
 from aim_api.contexts.planning.application.commands.complete_task import CompleteTaskCommand
 from aim_api.contexts.planning.application.commands.create_task import CreateTaskCommand
 from aim_api.contexts.planning.application.commands.delay_task import DelayTaskCommand
+from aim_api.contexts.planning.application.commands.delete_task import DeleteTaskCommand
 from aim_api.contexts.planning.application.commands.generate_initial_plan import (
     GenerateInitialPlanCommand,
     TaskSeed,
@@ -329,6 +331,34 @@ async def create_task_endpoint(
         )
     except Exception as error:
         _translate(error)
+
+
+@router.delete("/api/v1/pregnancies/{pregnancy_id}/tasks/{task_id}", status_code=204)
+async def delete_task_endpoint(pregnancy_id: UUID, task_id: UUID, request: Request) -> Response:
+    """硬删除任务。
+
+    这是「撤销 Agent 新建的待办」的落地路径：undo_change 做的是字段级还原，
+    新建没有可还原的前值。删除会级联清除该任务的 task_changes。
+
+    任务不存在时同样返回 204——撤销可能被重放，重复删除不该报错。
+    """
+    actor = _actor(request)
+    database = request.app.state.database
+    async with database.session() as session:
+        uow = SqlAlchemyPlanningUnitOfWork(session)
+        try:
+            await delete_task.execute(
+                DeleteTaskCommand(
+                    task_id=task_id,
+                    pregnancy_id=pregnancy_id,
+                    account_id=actor.account_id,
+                ),
+                uow,
+            )
+        except Exception as error:
+            await uow.rollback()
+            _translate(error)
+    return Response(status_code=204)
 
 
 @router.post("/api/v1/tasks/{task_id}/schedule", response_model=TaskResponse)

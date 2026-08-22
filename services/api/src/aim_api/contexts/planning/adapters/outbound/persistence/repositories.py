@@ -69,6 +69,12 @@ class SqlAlchemyPlanningRepository:
         model = await self.session.get(TaskModel, task_id)
         return _to_task(model) if model else None
 
+    async def delete_task(self, task_id: UUID) -> None:
+        """硬删除。任务的 task_changes 会随外键级联一并删除，审计轨迹不保留。"""
+        model = await self.session.get(TaskModel, task_id)
+        if model is not None:
+            await self.session.delete(model)
+
     async def save_task_change(self, task: Task, change: TaskChange, expected_version: int) -> None:
         result = await self.session.execute(
             update(TaskModel)

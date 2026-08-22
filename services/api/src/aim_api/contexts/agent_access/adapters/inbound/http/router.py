@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hmac
 from dataclasses import asdict
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any, Literal
 from uuid import UUID
 
@@ -35,15 +35,20 @@ from aim_api.contexts.planning.adapters.outbound.persistence.repositories import
 from aim_api.contexts.planning.application.commands import (
     assign_task,
     complete_task,
+    create_task,
     delay_task,
+    delete_task,
     schedule_task,
     undo_change,
 )
 from aim_api.contexts.planning.application.commands.assign_task import AssignTaskCommand
 from aim_api.contexts.planning.application.commands.complete_task import CompleteTaskCommand
+from aim_api.contexts.planning.application.commands.create_task import CreateTaskCommand
+from aim_api.contexts.planning.application.commands.delete_task import DeleteTaskCommand
 from aim_api.contexts.planning.application.commands.delay_task import DelayTaskCommand
 from aim_api.contexts.planning.application.commands.schedule_task import ScheduleTaskCommand
 from aim_api.contexts.planning.application.commands.undo_change import UndoChangeCommand
+from aim_api.contexts.planning.domain.task import ActorType
 from aim_api.contexts.pregnancy.adapters.outbound.persistence.repositories import (
     SqlAlchemyPregnancyRepository,
 )
@@ -53,9 +58,12 @@ from aim_api.contexts.pregnancy.domain.fact import FactSource
 from aim_api.contexts.records.adapters.outbound.persistence.repositories import (
     SqlAlchemyRecordsUnitOfWork,
 )
+from aim_api.contexts.records.application.commands import create_record, delete_record
+from aim_api.contexts.records.application.commands.create_record import CreateRecordCommand
+from aim_api.contexts.records.application.commands.delete_record import DeleteRecordCommand
 from aim_api.contexts.records.application.queries import list_records
 from aim_api.contexts.records.application.queries.list_records import ListRecordsQuery
-from aim_api.contexts.records.domain.record import RecordType
+from aim_api.contexts.records.domain.record import RecordType, RecordVisibility
 from aim_api.platform.http.errors import (
     ApprovalRequiredError,
     ConflictError,
@@ -99,6 +107,28 @@ class RecordFactRequest(BaseModel):
     pregnancy_id: UUID | None = None
 
 
+class CreateTaskRequest(BaseModel):
+    title: str = Field(min_length=1, max_length=200)
+    description: str | None = None
+    due_at: datetime | None = None
+
+
+class DeleteTaskRequest(BaseModel):
+    task_id: UUID
+
+
+class CreateRecordRequest(BaseModel):
+    record_type: RecordType
+    structured_data: dict[str, Any] = Field(default_factory=dict)
+    title: str | None = None
+    content: str | None = None
+    occurred_at: datetime | None = None
+
+
+class DeleteRecordRequest(BaseModel):
+    record_id: UUID
+
+
 class GetGuidanceRequest(BaseModel):
     week: int = Field(ge=0)
     region: str = "CN-ZJ-HZ"
@@ -136,6 +166,16 @@ def _context(request: Request) -> AgentToolContext:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="invalid agent scope"
         ) from error
+
+
+# 时间线重设计 §6.1 的「直接执行」档：建普通待办、整理记录。
+# 不打断对话，写入后由客户端 toast 提供撤销。
+#
+# 档位在服务端声明，而不是看调用方传来的 approved 标志——否则「执行前确认」
+# 那一档等于形同虚设，任何调用方带上 approved: true 就能绕过。
+DIRECT_EXECUTION_TOOLS = frozenset(
+    {"create_task", "delete_task", "create_record", "delete_record"}
+)
 
 
 async def _run(
@@ -176,7 +216,7 @@ async def _run(
             await session.rollback()
             raise ForbiddenError(str(error)) from error
 
-        if write and not body.get("approved", False):
+        if write and tool_name not in DIRECT_EXECUTION_TOOLS and not body.get("approved", False):
             result = ToolResult(
                 operation_id=str(invocation.operation_id),
                 status="approval_required",
@@ -321,6 +361,82 @@ async def _update_task(session, context: AgentToolContext, body: dict[str, Any])
     )
 
 
+async def _create_task(session, context: AgentToolContext, body: dict[str, Any]):
+    """Agent 新建待办。actor 记为 agent，时间线据此显示「Agent 调整」。"""
+    uow = SqlAlchemyPlanningUnitOfWork(session)
+    task = await create_task.execute(
+        CreateTaskCommand(
+            pregnancy_id=context.pregnancy_id,
+            account_id=context.account_id,
+            title=body["title"],
+            description=body.get("description"),
+            due_at=_parse_datetime(body.get("due_at")),
+            changed_by_actor_type=ActorType.agent,
+        ),
+        uow,
+    )
+    return ({"task_id": str(task.id), "title": task.title}, f"已添加待办：{task.title}")
+
+
+async def _delete_task(session, context: AgentToolContext, body: dict[str, Any]):
+    """撤销「Agent 新建待办」。任务不存在时也算成功——撤销可能被重放。"""
+    uow = SqlAlchemyPlanningUnitOfWork(session)
+    task_id = UUID(body["task_id"])
+    existing = await uow.repository.get_task(task_id)
+    if existing is not None and existing.pregnancy_id != context.pregnancy_id:
+        raise ForbiddenError("task is outside the agent pregnancy scope")
+    await delete_task.execute(
+        DeleteTaskCommand(
+            task_id=task_id,
+            pregnancy_id=context.pregnancy_id,
+            account_id=context.account_id,
+        ),
+        uow,
+    )
+    return ({"task_id": str(task_id)}, "已撤销新增的待办")
+
+
+async def _create_record(session, context: AgentToolContext, body: dict[str, Any]):
+    uow = SqlAlchemyRecordsUnitOfWork(session)
+    record = await create_record.execute(
+        CreateRecordCommand(
+            pregnancy_id=context.pregnancy_id,
+            family_id=context.family_id,
+            account_id=context.account_id,
+            record_type=RecordType(body["record_type"]),
+            occurred_at=_parse_datetime(body.get("occurred_at")) or datetime.now(UTC),
+            visibility=RecordVisibility.family,
+            structured_data=body.get("structured_data") or {},
+            title=body.get("title"),
+            content=body.get("content"),
+        ),
+        uow,
+    )
+    return ({"record_id": str(record.id)}, "已记录")
+
+
+async def _delete_record(session, context: AgentToolContext, body: dict[str, Any]):
+    uow = SqlAlchemyRecordsUnitOfWork(session)
+    await delete_record.execute(
+        DeleteRecordCommand(
+            record_id=UUID(body["record_id"]),
+            family_id=context.family_id,
+            account_id=context.account_id,
+            pregnancy_id=context.pregnancy_id,
+        ),
+        uow,
+    )
+    return ({"record_id": body["record_id"]}, "已撤销记录")
+
+
+def _parse_datetime(value: Any) -> datetime | None:
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value
+    return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+
+
 async def _assign_task(session, context: AgentToolContext, body: dict[str, Any]):
     uow = SqlAlchemyPlanningUnitOfWork(session)
     task = await uow.repository.get_task(UUID(body["task_id"]))
@@ -417,6 +533,26 @@ async def list_records_endpoint(request: Request, payload: ListRecordsRequest):
 @router.post("/update-task", response_model=ToolResult, include_in_schema=False)
 async def update_task(request: Request, payload: UpdateTaskRequest):
     return await _run(request, "update_task", payload, _update_task, write=True)
+
+
+@router.post("/create-task", response_model=ToolResult, include_in_schema=False)
+async def create_task_endpoint(request: Request, payload: CreateTaskRequest):
+    return await _run(request, "create_task", payload, _create_task, write=True)
+
+
+@router.post("/delete-task", response_model=ToolResult, include_in_schema=False)
+async def delete_task_endpoint(request: Request, payload: DeleteTaskRequest):
+    return await _run(request, "delete_task", payload, _delete_task, write=True)
+
+
+@router.post("/create-record", response_model=ToolResult, include_in_schema=False)
+async def create_record_endpoint(request: Request, payload: CreateRecordRequest):
+    return await _run(request, "create_record", payload, _create_record, write=True)
+
+
+@router.post("/delete-record", response_model=ToolResult, include_in_schema=False)
+async def delete_record_endpoint(request: Request, payload: DeleteRecordRequest):
+    return await _run(request, "delete_record", payload, _delete_record, write=True)
 
 
 @router.post("/assign-task", response_model=ToolResult, include_in_schema=False)
