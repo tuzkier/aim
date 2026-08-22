@@ -115,3 +115,34 @@ test("delete_task targets the undo endpoint", async () => {
     task_id: "33333333-3333-3333-3333-333333333333",
   });
 });
+
+test("create_knowledge is gated by approval unlike the direct-execution tools", async () => {
+  const createKnowledge = (await import("../../agent/tools/create_knowledge.ts")).default;
+
+  // 知识条目走「执行前确认」档：内容长、常由模型总结，先看一眼再存。
+  assert.notEqual(createKnowledge.approval, undefined);
+  assert.equal(createTask.approval, undefined);
+});
+
+test("create_knowledge forwards the chosen form's fields", async () => {
+  const createKnowledge = (await import("../../agent/tools/create_knowledge.ts")).default;
+  const { request } = await withStubbedApi({ record_id: "id", title: "菠菜猪肝汤" }, () =>
+    createKnowledge.execute(
+      {
+        title: "菠菜猪肝汤",
+        category: "nutrition",
+        form: "recipe",
+        ingredients: ["菠菜 200g", "猪肝 100g"],
+        steps: ["猪肝切片焯水", "下菠菜煮 3 分钟"],
+      },
+      scope,
+    ),
+  );
+
+  assert.equal(request?.url, "http://api.test/internal/agent-tools/create-knowledge");
+  const body = (await request?.clone().json()) as Record<string, unknown>;
+  assert.equal(body.form, "recipe");
+  assert.deepEqual(body.steps, ["猪肝切片焯水", "下菠菜煮 3 分钟"]);
+  // 审批过了才会走到 execute，所以这里带 approved 是正确的。
+  assert.equal(body.approved, true);
+});

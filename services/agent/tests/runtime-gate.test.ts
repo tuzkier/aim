@@ -84,6 +84,7 @@ test("compiled runtime exposes only the intended root and specialist tools", asy
     summary.tools.map((tool) => tool.name).sort(),
     [
       "assign_task",
+      "create_knowledge",
       "create_record",
       "create_task",
       "delete_record",
