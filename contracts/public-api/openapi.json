@@ -2210,7 +2210,8 @@
           "checkup",
           "note",
           "question",
-          "checklist"
+          "checklist",
+          "knowledge"
         ],
         "title": "RecordType"
       },

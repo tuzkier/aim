@@ -61,6 +61,7 @@ from aim_api.contexts.records.adapters.outbound.persistence.repositories import 
 from aim_api.contexts.records.application.commands import create_record, delete_record
 from aim_api.contexts.records.application.commands.create_record import CreateRecordCommand
 from aim_api.contexts.records.application.commands.delete_record import DeleteRecordCommand
+from aim_api.contexts.records.domain.errors import RecordValidationError
 from aim_api.contexts.records.application.queries import list_records
 from aim_api.contexts.records.application.queries.list_records import ListRecordsQuery
 from aim_api.contexts.records.domain.record import RecordType, RecordVisibility
@@ -123,6 +124,20 @@ class CreateRecordRequest(BaseModel):
     title: str | None = None
     content: str | None = None
     occurred_at: datetime | None = None
+
+
+class CreateKnowledgeRequest(BaseModel):
+    title: str = Field(min_length=1, max_length=200)
+    category: str
+    form: str
+    ingredients: list[str] | None = None
+    steps: list[str] | None = None
+    verdict: str | None = None
+    reason: str | None = None
+    body: str | None = None
+    note: str | None = None
+    # Eve 在用户确认后才带上它；档位判定见 _run。
+    approved: bool = False
 
 
 class DeleteRecordRequest(BaseModel):
@@ -233,6 +248,11 @@ async def _run(
         except PermissionError as error:
             await session.rollback()
             raise ForbiddenError(str(error)) from error
+        except RecordValidationError as error:
+            # 模型把字段填错了。返回可读的冲突而不是 500——
+            # 错误信息会回到模型手里，它才有机会改对重试。
+            await session.rollback()
+            raise ConflictError(str(error)) from error
         except Exception:
             await session.rollback()
             raise
@@ -396,6 +416,30 @@ async def _delete_task(session, context: AgentToolContext, body: dict[str, Any])
     return ({"task_id": str(task_id)}, "已撤销新增的待办")
 
 
+async def _create_knowledge(session, context: AgentToolContext, body: dict[str, Any]):
+    """写入一条知识条目。形态决定哪些字段必填，校验在领域层。"""
+    uow = SqlAlchemyRecordsUnitOfWork(session)
+    structured = {
+        key: value
+        for key, value in body.items()
+        if key not in ("title", "approved") and value is not None
+    }
+    record = await create_record.execute(
+        CreateRecordCommand(
+            pregnancy_id=context.pregnancy_id,
+            family_id=context.family_id,
+            account_id=context.account_id,
+            record_type=RecordType.knowledge,
+            occurred_at=datetime.now(UTC),
+            visibility=RecordVisibility.family,
+            structured_data=structured,
+            title=body["title"],
+        ),
+        uow,
+    )
+    return ({"record_id": str(record.id), "title": body["title"]}, f"已收录：{body['title']}")
+
+
 async def _create_record(session, context: AgentToolContext, body: dict[str, Any]):
     uow = SqlAlchemyRecordsUnitOfWork(session)
     record = await create_record.execute(
@@ -543,6 +587,11 @@ async def create_task_endpoint(request: Request, payload: CreateTaskRequest):
 @router.post("/delete-task", response_model=ToolResult, include_in_schema=False)
 async def delete_task_endpoint(request: Request, payload: DeleteTaskRequest):
     return await _run(request, "delete_task", payload, _delete_task, write=True)
+
+
+@router.post("/create-knowledge", response_model=ToolResult, include_in_schema=False)
+async def create_knowledge_endpoint(request: Request, payload: CreateKnowledgeRequest):
+    return await _run(request, "create_knowledge", payload, _create_knowledge, write=True)
 
 
 @router.post("/create-record", response_model=ToolResult, include_in_schema=False)

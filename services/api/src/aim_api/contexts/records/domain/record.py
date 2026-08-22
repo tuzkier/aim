@@ -15,6 +15,7 @@ class RecordType(StrEnum):
     note = "note"
     question = "question"
     checklist = "checklist"
+    knowledge = "knowledge"
 
 
 class RecordVisibility(StrEnum):
@@ -60,7 +61,7 @@ class Record:
             raise RecordValidationError("structured_data must be a JSON object")
         if attachment_refs:
             raise RecordValidationError("attachment references are reserved until uploads are supported")
-        cls._validate_payload(record_type, structured_data, content)
+        cls._validate_payload(record_type, structured_data, content, title)
         structured_data = cls._with_defaults(record_type, structured_data)
         created_at = now or datetime.now(UTC)
         return cls(
@@ -109,6 +110,57 @@ class Record:
         "hemoglobin": (50.0, 200.0),
     }
 
+    KNOWLEDGE_CATEGORIES: ClassVar[frozenset[str]] = frozenset(
+        {"nutrition", "paperwork", "preparation", "checkups", "symptoms", "questions"}
+    )
+    # 孕期饮食大量情况是「可以但要限量」。只给能/不能两档会逼出错误的
+    # 绝对化结论，所以是三档。
+    FOOD_VERDICTS: ClassVar[frozenset[str]] = frozenset({"safe", "limit", "avoid"})
+
+    @classmethod
+    def _validate_knowledge(cls, data: dict[str, Any], title: str | None) -> None:
+        if not isinstance(title, str) or not title.strip():
+            raise RecordValidationError("knowledge entries require a title")
+
+        category = data.get("category")
+        if category not in cls.KNOWLEDGE_CATEGORIES:
+            # 分类决定条目出现在哪张卡下。写错等于存进了一个看不见的地方。
+            raise RecordValidationError(f"unsupported knowledge category: {category}")
+
+        form = data.get("form")
+        if form == "recipe":
+            cls._require_nonempty_strings(data, "ingredients")
+            cls._require_nonempty_strings(data, "steps")
+        elif form == "food_rule":
+            if data.get("verdict") not in cls.FOOD_VERDICTS:
+                raise RecordValidationError(
+                    "food_rule verdict must be one of safe / limit / avoid"
+                )
+            # 只给结论不给原因，用户没法判断这条是否适用于自己。
+            cls._require_text(data, "reason")
+        elif form == "howto":
+            cls._require_nonempty_strings(data, "steps")
+        elif form == "tip":
+            cls._require_text(data, "body")
+        else:
+            raise RecordValidationError(f"unsupported knowledge form: {form}")
+
+    @staticmethod
+    def _require_nonempty_strings(data: dict[str, Any], field: str) -> None:
+        values = data.get(field)
+        if (
+            not isinstance(values, list)
+            or not values
+            or not all(isinstance(v, str) and v.strip() for v in values)
+        ):
+            raise RecordValidationError(f"knowledge {field} must be a non-empty string list")
+
+    @staticmethod
+    def _require_text(data: dict[str, Any], field: str) -> None:
+        value = data.get(field)
+        if not isinstance(value, str) or not value.strip():
+            raise RecordValidationError(f"knowledge {field} must be non-empty text")
+
     @classmethod
     def _validate_checkup_metrics(cls, metrics: Any) -> None:
         if metrics is None:
@@ -155,6 +207,7 @@ class Record:
         record_type: RecordType,
         structured_data: dict[str, Any],
         content: str | None,
+        title: str | None = None,
     ) -> None:
         if record_type is RecordType.symptom:
             symptoms = structured_data.get("symptoms")
@@ -195,6 +248,12 @@ class Record:
             answer = structured_data.get("answer")
             if answer is not None and not isinstance(answer, str):
                 raise RecordValidationError("question answer must be a string when provided")
+            return
+
+        # 知识条目：由对话积累的资料。分类决定它出现在哪张卡下，
+        # 形态决定它怎么渲染。
+        if record_type is RecordType.knowledge:
+            cls._validate_knowledge(structured_data, title)
             return
 
         # 「办事指南」「待产准备」共用：内容库给条目，这里只存勾选状态。
