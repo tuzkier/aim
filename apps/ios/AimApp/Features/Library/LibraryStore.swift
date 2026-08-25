@@ -81,11 +81,14 @@ final class LibraryStore {
         guard let repository else { return }
         let existing = checklistRecord(collection: collection, itemID: itemID)
         let nextDone = !(existing.map(isDone) ?? false)
+        // 标题跟着记录一起存：人能读的名字在内容文件里，而记录只带 id。
+        // 不存的话，记录列表和详情就只剩一个 slug 可显示。
+        let itemTitle = collections[collection]?.items.first { $0.id == itemID }?.title
         let draft = RecordDraft(
             type: .checklist,
             occurredAt: existing?.occurredAt ?? .now,
             visibility: .family,
-            title: nil,
+            title: itemTitle ?? existing?.title,
             content: nil,
             structuredData: .checklist(
                 ChecklistRecordData(collection: collection, itemID: itemID, done: nextDone)

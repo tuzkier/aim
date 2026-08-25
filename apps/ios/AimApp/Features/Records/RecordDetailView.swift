@@ -102,7 +102,7 @@ struct RecordDetailView: View {
             }
         case let .checklist(data):
             Section("清单") {
-                LabeledContent("条目", value: data.itemID)
+                LabeledContent("条目", value: record.displayTitle)
                 LabeledContent("状态", value: data.done ? "已完成" : "待完成")
             }
         case let .knowledge(data):
