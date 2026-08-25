@@ -20,6 +20,7 @@ from aim_api.contexts.family.domain.family import (
     FamilyMemberRole,
     FamilyMemberStatus,
 )
+from aim_api.contexts.family.domain.errors import FamilyMemberNotFound, FamilyNotFound
 from aim_api.contexts.family.domain.invitation import Invitation, InvitationStatus
 from aim_api.contexts.identity.domain.account import Account, AccountStatus
 
@@ -122,6 +123,31 @@ class SqlAlchemyFamilyRepository:
             )
             .values(status=FamilyMemberStatus.active.value, joined_at=joined_at)
         )
+
+    async def rename_family(self, family_id: UUID, name: str) -> None:
+        model = await self.session.get(FamilyModel, family_id)
+        if model is None:
+            raise FamilyNotFound(str(family_id))
+        model.name = name
+
+    async def update_member_profile(
+        self,
+        family_id: UUID,
+        account_id: UUID,
+        *,
+        nickname: str | None,
+        role: FamilyMemberRole | None,
+    ) -> None:
+        """改成员的称呼和角色。只被 /members/me 调用——改别人需要一套权限模型。"""
+        model = await self.session.get(FamilyMemberModel, (family_id, account_id))
+        if model is None:
+            raise FamilyMemberNotFound(str(account_id))
+        # None 表示这次不改这一项，而不是「清空」。两者必须区分开，
+        # 否则只想改称呼的请求会把角色抹掉。
+        if nickname is not None:
+            model.nickname = nickname
+        if role is not None:
+            model.role = role.value
 
     async def get_invitation_by_hash(self, token_hash: str) -> Invitation | None:
         model = await self.session.scalar(

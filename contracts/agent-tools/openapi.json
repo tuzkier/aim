@@ -1493,6 +1493,21 @@
         ],
         "title": "RegisterRequest"
       },
+      "RenameFamilyRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "RenameFamilyRequest"
+      },
       "ScheduleTaskRequest": {
         "properties": {
           "expected_version": {
@@ -1825,6 +1840,34 @@
           "expected_version"
         ],
         "title": "UndoOperationRequest"
+      },
+      "UpdateMyMembershipRequest": {
+        "properties": {
+          "nickname": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 60
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nickname"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FamilyMemberRole"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "UpdateMyMembershipRequest"
       },
       "UpdateRecordRequest": {
         "properties": {

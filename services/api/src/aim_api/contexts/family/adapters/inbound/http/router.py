@@ -4,7 +4,7 @@ from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Request
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, field_validator, Field
 
 from aim_api.contexts.family.adapters.outbound.persistence.repositories import (
     SqlAlchemyFamilyUnitOfWork,
@@ -21,6 +21,7 @@ from aim_api.contexts.family.application.ports import PersistenceConflict
 from aim_api.contexts.family.application.queries import get_family
 from aim_api.contexts.family.application.queries.get_family import GetFamilyQuery
 from aim_api.contexts.family.domain.errors import (
+    FamilyNotFound,
     DuplicateFamilyMember,
     FamilyAccessDenied,
     FamilyDomainError,
@@ -44,6 +45,25 @@ class CreateFamilyRequest(BaseModel):
 class InviteMemberRequest(BaseModel):
     invitee_phone: str = Field(min_length=6, max_length=20)
     role: FamilyMemberRole
+
+
+class RenameFamilyRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+
+    @field_validator("name")
+    @classmethod
+    def _not_blank(cls, value: str) -> str:
+        # 纯空格能通过 min_length，但一个看不见名字的家庭对用户毫无意义。
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("家庭名不能为空")
+        return stripped
+
+
+class UpdateMyMembershipRequest(BaseModel):
+    #: 两项都可选，只传要改的那个。None 表示「这次不改」，不是「清空」。
+    nickname: str | None = Field(default=None, max_length=60)
+    role: FamilyMemberRole | None = None
 
 
 class FamilyMemberResponse(BaseModel):
@@ -99,7 +119,7 @@ def _translate(error: Exception) -> None:
         raise ConflictError(str(error)) from error
     if isinstance(error, (InvitationExpired,)):
         raise ConflictError(str(error)) from error
-    if isinstance(error, (InvitationNotFound, ValueError)):
+    if isinstance(error, (FamilyNotFound, InvitationNotFound, ValueError)):
         raise NotFoundError(str(error)) from error
     if isinstance(error, PersistenceConflict):
         raise ConflictError(str(error)) from error
@@ -202,4 +222,58 @@ async def get_family_endpoint(family_id: UUID, request: Request) -> FamilyRespon
         except Exception as error:
             await uow.rollback()
             _translate(error)
+        return _family_response(family)
+
+
+@router.patch("/api/v1/families/{family_id}", response_model=FamilyResponse)
+async def rename_family_endpoint(
+    family_id: UUID, payload: RenameFamilyRequest, request: Request
+) -> FamilyResponse:
+    actor = _actor(request)
+    database = request.app.state.database
+    async with database.session() as session:
+        uow = SqlAlchemyFamilyUnitOfWork(session)
+        try:
+            if not await uow.repository.is_active_member(family_id, actor.account_id):
+                raise FamilyAccessDenied(str(family_id))
+            await uow.repository.rename_family(family_id, payload.name)
+            await uow.commit()
+            family = await uow.repository.get_family(family_id)
+        except Exception as error:
+            await uow.rollback()
+            _translate(error)
+        if family is None:
+            raise NotFoundError(str(family_id))
+        return _family_response(family)
+
+
+@router.patch("/api/v1/families/{family_id}/members/me", response_model=FamilyResponse)
+async def update_my_membership_endpoint(
+    family_id: UUID, payload: UpdateMyMembershipRequest, request: Request
+) -> FamilyResponse:
+    """改自己的称呼和角色。
+
+    端点里没有 member_id 入口——改别人需要一套「谁能改谁」的权限模型，
+    而当前没有需求支撑它。想改别人时，加的应当是那套模型，不是这个参数。
+    """
+    actor = _actor(request)
+    database = request.app.state.database
+    async with database.session() as session:
+        uow = SqlAlchemyFamilyUnitOfWork(session)
+        try:
+            if not await uow.repository.is_active_member(family_id, actor.account_id):
+                raise FamilyAccessDenied(str(family_id))
+            await uow.repository.update_member_profile(
+                family_id,
+                actor.account_id,
+                nickname=payload.nickname,
+                role=payload.role,
+            )
+            await uow.commit()
+            family = await uow.repository.get_family(family_id)
+        except Exception as error:
+            await uow.rollback()
+            _translate(error)
+        if family is None:
+            raise NotFoundError(str(family_id))
         return _family_response(family)

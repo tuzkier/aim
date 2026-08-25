@@ -285,6 +285,111 @@
             }
           }
         }
+      },
+      "patch": {
+        "tags": [
+          "family"
+        ],
+        "summary": "Rename Family Endpoint",
+        "operationId": "rename_family_endpoint_api_v1_families__family_id__patch",
+        "parameters": [
+          {
+            "name": "family_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Family Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenameFamilyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FamilyResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/families/{family_id}/members/me": {
+      "patch": {
+        "tags": [
+          "family"
+        ],
+        "summary": "Update My Membership Endpoint",
+        "description": "改自己的称呼和角色。\n\n端点里没有 member_id 入口——改别人需要一套「谁能改谁」的权限模型，\n而当前没有需求支撑它。想改别人时，加的应当是那套模型，不是这个参数。",
+        "operationId": "update_my_membership_endpoint_api_v1_families__family_id__members_me_patch",
+        "parameters": [
+          {
+            "name": "family_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Family Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMyMembershipRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FamilyResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/families/{family_id}/pregnancies": {
@@ -2264,6 +2369,21 @@
         ],
         "title": "RegisterRequest"
       },
+      "RenameFamilyRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "RenameFamilyRequest"
+      },
       "ScheduleTaskRequest": {
         "properties": {
           "expected_version": {
@@ -2538,6 +2658,34 @@
           "family_task_counts"
         ],
         "title": "TodayResponse"
+      },
+      "UpdateMyMembershipRequest": {
+        "properties": {
+          "nickname": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 60
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nickname"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FamilyMemberRole"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "UpdateMyMembershipRequest"
       },
       "UpdateRecordRequest": {
         "properties": {

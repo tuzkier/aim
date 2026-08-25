@@ -9,6 +9,10 @@ class DuplicateFamilyMember(FamilyDomainError):
     code = "family.duplicate_member"
 
 
+class FamilyNotFound(FamilyDomainError):
+    """家庭不存在。"""
+
+
 class FamilyMemberNotFound(FamilyDomainError):
     code = "family.member_not_found"
 
