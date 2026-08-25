@@ -108,6 +108,11 @@
 		A20000000000000000000112 /* Tests/AuthFormTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000111 /* Tests/AuthFormTests.swift */; };
 		A20000000000000000000114 /* Tests/ChecklistRecordDisplayTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000113 /* Tests/ChecklistRecordDisplayTests.swift */; };
 		A20000000000000000000116 /* Features/Records/ContentTitleIndex.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000115 /* Features/Records/ContentTitleIndex.swift */; };
+		A20000000000000000000118 /* Features/Agent/AgentSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000117 /* Features/Agent/AgentSession.swift */; };
+		A20000000000000000000120 /* Tests/AgentSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000119 /* Tests/AgentSessionTests.swift */; };
+		A20000000000000000000122 /* Features/Agent/AgentSessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000121 /* Features/Agent/AgentSessionStore.swift */; };
+		A20000000000000000000124 /* Features/Agent/AgentSessionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000123 /* Features/Agent/AgentSessionListView.swift */; };
+		A20000000000000000000126 /* Features/Agent/AgentPromptText.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000125 /* Features/Agent/AgentPromptText.swift */; };
 		A20000000000000000000099 /* Features/Library/NutritionSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000098 /* Features/Library/NutritionSection.swift */; };
 		A20000000000000000000100 /* Tests/NutritionSectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000099 /* Tests/NutritionSectionTests.swift */; };
 /* End PBXBuildFile section */
@@ -234,6 +239,11 @@
 		A10000000000000000000111 /* Tests/AuthFormTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/AuthFormTests.swift; sourceTree = "<group>"; };
 		A10000000000000000000113 /* Tests/ChecklistRecordDisplayTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/ChecklistRecordDisplayTests.swift; sourceTree = "<group>"; };
 		A10000000000000000000115 /* Features/Records/ContentTitleIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Records/ContentTitleIndex.swift; sourceTree = "<group>"; };
+		A10000000000000000000117 /* Features/Agent/AgentSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Agent/AgentSession.swift; sourceTree = "<group>"; };
+		A10000000000000000000119 /* Tests/AgentSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/AgentSessionTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000121 /* Features/Agent/AgentSessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Agent/AgentSessionStore.swift; sourceTree = "<group>"; };
+		A10000000000000000000123 /* Features/Agent/AgentSessionListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Agent/AgentSessionListView.swift; sourceTree = "<group>"; };
+		A10000000000000000000125 /* Features/Agent/AgentPromptText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Agent/AgentPromptText.swift; sourceTree = "<group>"; };
 		A10000000000000000000098 /* Features/Library/NutritionSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Library/NutritionSection.swift; sourceTree = "<group>"; };
 		A10000000000000000000099 /* Tests/NutritionSectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/NutritionSectionTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -507,6 +517,7 @@
 				A10000000000000000000107 /* Tests/SessionExpiryTests.swift */,
 				A10000000000000000000111 /* Tests/AuthFormTests.swift */,
 				A10000000000000000000113 /* Tests/ChecklistRecordDisplayTests.swift */,
+				A10000000000000000000119 /* Tests/AgentSessionTests.swift */,
 				A10000000000000000000072 /* Tests/LibraryStoreTests.swift */,
 				A10000000000000000000067 /* Tests/LibraryCatalogTests.swift */,
 				A10000000000000000000065 /* Tests/AgentActivityLogTests.swift */,
@@ -1172,6 +1183,10 @@
 				A10000000000000000000101 /* Features/Agent/AgentQuestion.swift */,
 				A10000000000000000000109 /* Features/Onboarding/AuthForm.swift */,
 				A10000000000000000000115 /* Features/Records/ContentTitleIndex.swift */,
+				A10000000000000000000117 /* Features/Agent/AgentSession.swift */,
+				A10000000000000000000121 /* Features/Agent/AgentSessionStore.swift */,
+				A10000000000000000000123 /* Features/Agent/AgentSessionListView.swift */,
+				A10000000000000000000125 /* Features/Agent/AgentPromptText.swift */,
 				A10000000000000000000098 /* Features/Library/NutritionSection.swift */,
 				A10000000000000000000097 /* Features/Library/ContentItemDetailView.swift */,
 				A10000000000000000000095 /* Features/Library/SymptomPattern.swift */,
@@ -1332,6 +1347,10 @@
 				A20000000000000000000102 /* Features/Agent/AgentQuestion.swift in Sources */,
 				A20000000000000000000110 /* Features/Onboarding/AuthForm.swift in Sources */,
 				A20000000000000000000116 /* Features/Records/ContentTitleIndex.swift in Sources */,
+				A20000000000000000000118 /* Features/Agent/AgentSession.swift in Sources */,
+				A20000000000000000000122 /* Features/Agent/AgentSessionStore.swift in Sources */,
+				A20000000000000000000124 /* Features/Agent/AgentSessionListView.swift in Sources */,
+				A20000000000000000000126 /* Features/Agent/AgentPromptText.swift in Sources */,
 				A20000000000000000000099 /* Features/Library/NutritionSection.swift in Sources */,
 				A20000000000000000000098 /* Features/Library/ContentItemDetailView.swift in Sources */,
 				A20000000000000000000096 /* Features/Library/SymptomPattern.swift in Sources */,
@@ -1421,6 +1440,7 @@
 				A20000000000000000000108 /* Tests/SessionExpiryTests.swift in Sources */,
 				A20000000000000000000112 /* Tests/AuthFormTests.swift in Sources */,
 				A20000000000000000000114 /* Tests/ChecklistRecordDisplayTests.swift in Sources */,
+				A20000000000000000000120 /* Tests/AgentSessionTests.swift in Sources */,
 				A20000000000000000000073 /* Tests/LibraryStoreTests.swift in Sources */,
 				A20000000000000000000068 /* Tests/LibraryCatalogTests.swift in Sources */,
 				A20000000000000000000065 /* Tests/AgentActivityLogTests.swift in Sources */,

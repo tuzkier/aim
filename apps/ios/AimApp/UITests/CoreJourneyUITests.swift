@@ -655,6 +655,53 @@ final class CoreJourneyUITests: XCTestCase {
         )
     }
 
+
+    /// AIM 的会话此前只活在内存里，App 一重启就找不回来。这条守的是「翻得回去」：
+    /// 问一句 → 开新对话 → 从历史列表把刚才那段找回来。
+    func testAPastConversationCanBeReopenedFromHistory() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-reset-session"]
+        app.launch()
+        registerNewAccount(in: app)
+        completePregnancySetup(in: app)
+
+        let agentTab = app.tabBars.buttons["AIM"]
+        XCTAssertTrue(agentTab.waitForExistence(timeout: 15))
+        agentTab.tap()
+
+        let input = app.textFields.element(
+            matching: NSPredicate(format: "placeholderValue == %@", "告诉我你现在在担心什么"))
+        XCTAssertTrue(input.waitForExistence(timeout: 10))
+        let question = "孕期能喝咖啡吗"
+        input.tap()
+        input.typeText(question)
+        app.buttons["arrowSend"].tap()
+
+        // 问句立刻回显，不用等模型答完——会话在发出去那一刻就登记了。
+        XCTAssertTrue(app.staticTexts[question].waitForExistence(timeout: 20), "提问应当出现在对话里")
+
+        let newConversation = app.buttons["agent-new-conversation"]
+        XCTAssertTrue(newConversation.waitForExistence(timeout: 10))
+        newConversation.tap()
+        XCTAssertFalse(
+            app.staticTexts[question].waitForExistence(timeout: 3),
+            "开了新对话，上一段就不该还留在屏幕上")
+
+        app.buttons["agent-history"].tap()
+        XCTAssertTrue(
+            app.otherElements["agent-session-list"].waitForExistence(timeout: 10)
+                || app.navigationBars["历史对话"].waitForExistence(timeout: 5),
+            "应当能打开历史对话列表")
+
+        let row = app.buttons["agent-session-row"].firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 15), "刚才那段应当出现在历史里")
+        row.tap()
+
+        XCTAssertTrue(
+            app.staticTexts[question].waitForExistence(timeout: 25),
+            "点回历史对话，内容应当被重放回来")
+    }
+
     /// 注册一个全新账号。
     ///
     /// 服务端的 `demo-session` 免密入口已经删除，所有用例都要走真实注册：

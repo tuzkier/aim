@@ -38,6 +38,7 @@ private struct MainTabView: View {
     @State private var recordStore = RecordStore()
     @State private var familyStore = FamilyStore()
     @State private var agentStore = AgentStore()
+    @State private var agentSessions = AgentSessionStore()
     @State private var libraryStore = LibraryStore()
     @State private var selectedTab: AimTab = .timeline
 
@@ -80,6 +81,7 @@ private struct MainTabView: View {
         familyStore.repository = repository
         // Agent 撤销「新建」类操作要直接调删除接口，不经过模型。
         agentStore.repository = repository
+        agentStore.sessions = agentSessions
         libraryStore.repository = repository
         await timelineStore.load()
         await planStore.load()

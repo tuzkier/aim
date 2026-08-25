@@ -43,7 +43,11 @@ final class AgentStoreTests: XCTestCase {
 
 @MainActor
 final class AgentSharedSessionTests: XCTestCase {
-    func testFocusUpdatesContextWithoutTouchingConversation() {
+    /// 快捷入口（记录、事项上的「问问 AIM」）开一段新对话。
+    ///
+    /// 此前所有入口共享同一段对话，结果是一段里混着十几件不相干的事，
+    /// 有了会话列表之后根本没法翻。旧对话不会丢——它已经登记在会话目录里。
+    func testFocusStartsAFreshConversationForTheNewContext() {
         let store = AgentStore(context: nil)
         store.messages.append(AgentMessage(text: "早前的问题", isUser: true))
 
@@ -51,7 +55,8 @@ final class AgentSharedSessionTests: XCTestCase {
         store.focus(context: newContext)
 
         XCTAssertEqual(store.context, newContext)
-        XCTAssertEqual(store.messages.count, 1, "focus 不应该清空既有会话")
+        XCTAssertTrue(store.messages.isEmpty, "快捷入口应当开新的一段，而不是接着上一段")
+        XCTAssertNil(store.sessionID, "新的一段还没有会话 id，发第一句时才建")
     }
 
     func testRefocusingOverwritesThePreviousContext() {

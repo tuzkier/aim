@@ -285,3 +285,19 @@ private enum EveJSONValue: Codable, Sendable {
         }
     }
 }
+
+private struct EveMessageReceived: Decodable {
+    let message: String?
+    let text: String?
+}
+
+extension EveEvent {
+    /// 用户发的那句话。重放历史对话时要靠它还原提问——
+    /// 实时发送时这句是客户端本地 append 的，事件里的这份没人用。
+    var userMessageText: String? {
+        guard type == .messageReceived,
+              let payload = try? JSONDecoder().decode(EveMessageReceived.self, from: data)
+        else { return nil }
+        return payload.message ?? payload.text
+    }
+}

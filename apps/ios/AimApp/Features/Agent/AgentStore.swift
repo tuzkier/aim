@@ -15,10 +15,15 @@ final class AgentStore {
     var activityLog: [AgentActivity] = []
     /// 撤销「新建」类操作直接调删除接口，不经过模型。
     var repository: BusinessRepositoryProtocol?
+    /// 会话目录。新对话开始时要登记，回到旧对话时要顶到最前。
+    var sessions: AgentSessionStore?
 
     private var client: EveClient?
     private var activeTask: Task<Void, Never>?
     private var lastUserText: String?
+    /// 重放历史对话时为真。实时发送时用户消息是本地 append 的，
+    /// 只有重放才需要从 message.received 事件里还原它，否则会重复两条。
+    private var isReplaying = false
 
     init(context: AgentContext? = nil) {
         self.context = context
@@ -35,6 +40,9 @@ final class AgentStore {
     /// this store is shared across every entry point, so switching context
     /// mid-conversation is expected, not a reset.
     func focus(context: AgentContext?) {
+        // 快捷入口开新的一段：一段对话里混十几件不相干的事，以后没法翻。
+        // 当前这段不会丢——它已经在会话目录里。
+        startNewConversation()
         self.context = context
     }
 
@@ -42,9 +50,53 @@ final class AgentStore {
     /// used when the entry point already knows what to ask (e.g. "analyze
     /// this record"). Appends to the same shared conversation.
     func ask(_ text: String, context: AgentContext?, environment: APIEnvironment) {
+        startNewConversation()
         self.context = context
         draft = text
         send(environment: environment)
+    }
+
+    /// 开一段新的对话。当前这段不会丢——它已经在目录里。
+    func startNewConversation() {
+        activeTask?.cancel()
+        sessionID = nil
+        streamIndex = 0
+        continuationToken = nil
+        messages = []
+        activityLog = []
+        state = .idle
+    }
+
+    /// 打开一段历史对话：把 Eve 那边的事件从头重放回来。
+    ///
+    /// 内容不在我们库里，只有 Eve 有。重放不到时给一句明确的话，
+    /// 而不是让用户对着空白页猜。
+    func open(_ session: AgentSessionSummary, environment: APIEnvironment) {
+        activeTask?.cancel()
+        sessionID = session.eveSessionID
+        streamIndex = 0
+        continuationToken = nil
+        messages = []
+        activityLog = []
+        state = .streaming
+        isReplaying = true
+
+        let client = EveClient(environment: environment)
+        self.client = client
+        activeTask = Task { [weak self] in
+            let events = await client.resume(sessionID: session.eveSessionID, from: 0)
+            do {
+                for try await event in events { self?.consume(event) }
+                self?.isReplaying = false
+                if self?.messages.isEmpty == true {
+                    self?.fail("这段对话的内容已不可用")
+                }
+            } catch {
+                self?.isReplaying = false
+                self?.fail("这段对话的内容已不可用")
+            }
+            await self?.sessions?.touch(session, environment: environment)
+        }
     }
 
     func retryLast(environment: APIEnvironment) {
@@ -99,7 +151,16 @@ final class AgentStore {
                     events = try await client.send(sessionID: sessionID, message: requestText, from: self?.streamIndex ?? 0)
                 } else {
                     events = try await client.start(message: requestText)
-                    self?.sessionID = await client.currentSessionID
+                    let newID = await client.currentSessionID
+                    self?.sessionID = newID
+                    // 登记进目录，否则这段对话重启后就再也找不到了。
+                    if let newID {
+                        await self?.sessions?.record(
+                            eveSessionID: newID,
+                            title: AgentSessionTitle.from(text),
+                            environment: environment
+                        )
+                    }
                 }
                 for try await event in events { self?.consume(event) }
             } catch {
@@ -214,6 +275,12 @@ final class AgentStore {
             } else {
                 state = .awaitingApproval(request)
             }
+        case .messageReceived:
+            // 只在重放时还原用户消息。实时发送已经本地 append 过了。
+            guard isReplaying,
+                  let text = event.userMessageText,
+                  !text.isEmpty else { break }
+            messages.append(AgentMessage(text: AgentPromptText.userVisible(text), isUser: true))
         case .actionResult:
             guard let outcome = AgentToolOutcome(event: event) else { break }
             state = .applied

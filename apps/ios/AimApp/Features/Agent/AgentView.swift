@@ -18,6 +18,10 @@ struct AgentView: View {
     @Bindable var store: AgentStore
     var onClose: (() -> Void)?
 
+    @State private var showingSessions = false
+    /// 首次进入时接着最近那段聊——孕期的问题往往是连着的（「刚才说的那个…」）。
+    @State private var hasResumed = false
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
@@ -63,6 +67,39 @@ struct AgentView: View {
                     ToolbarItem(placement: .cancellationAction) {
                         Button("关闭", action: onClose)
                     }
+                }
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        showingSessions = true
+                    } label: { Image(systemName: "clock.arrow.circlepath") }
+                        .accessibilityLabel("历史对话")
+                        .accessibilityIdentifier("agent-history")
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        store.startNewConversation()
+                    } label: { Image(systemName: "square.and.pencil") }
+                        .accessibilityLabel("新对话")
+                        .accessibilityIdentifier("agent-new-conversation")
+                        .disabled(store.messages.isEmpty)
+                }
+            }
+            .sheet(isPresented: $showingSessions) {
+                if let sessions = store.sessions {
+                    AgentSessionListView(store: sessions) { picked in
+                        store.open(picked, environment: session.environment)
+                    }
+                }
+            }
+            .task {
+                // 只有 AIM 标签页会接续历史；快捷入口（onClose 非空）总是新对话。
+                guard onClose == nil, !hasResumed, let sessions = store.sessions else { return }
+                hasResumed = true
+                await sessions.load(environment: session.environment)
+                // 只在没有正在进行的对话时才接续，免得把用户手上这段顶掉。
+                if store.sessionID == nil, store.messages.isEmpty,
+                   let recent = AgentSessionSummary.mostRecent(of: sessions.sessions) {
+                    store.open(recent, environment: session.environment)
                 }
             }
             .background(Color.aimCanvas)
