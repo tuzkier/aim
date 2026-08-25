@@ -30,7 +30,11 @@ from aim_api.contexts.pregnancy.application.commands.create_pregnancy import (
     CreatePregnancyCommand,
 )
 from aim_api.platform.auth.context import issue_session_token
-from aim_api.platform.auth.passwords import MIN_PASSWORD_LENGTH, hash_password
+from aim_api.platform.auth.passwords import (
+    MIN_PASSWORD_LENGTH,
+    hash_password,
+    verify_password,
+)
 from aim_api.platform.config.settings import Settings
 from aim_api.platform.database.session import Database
 
@@ -40,6 +44,13 @@ router = APIRouter(tags=["identity"])
 class DemoSessionRequest(BaseModel):
     phone: str = Field(min_length=6, max_length=20)
     due_date: date | None = None
+
+
+class LoginRequest(BaseModel):
+    phone: str = Field(min_length=6, max_length=20)
+    # 登录不校验密码长度：规则变严时老密码仍要能登进来，
+    # 而且在这里校验等于告诉攻击者「这个长度不可能是真密码」。
+    password: str = Field(min_length=1, max_length=200)
 
 
 class RegisterRequest(BaseModel):
@@ -248,4 +259,46 @@ async def register(payload: RegisterRequest, request: Request) -> DemoSessionRes
         pregnancy_id=pregnancy_id,
         role=payload.role,
         token=issue_session_token(account_id, payload.phone, settings.auth_secret),
+    )
+
+
+#: 手机号不存在时也要走一次真实的哈希校验。直接返回会让「不存在」比「密码错」
+#: 快一个数量级，响应时间就把答案说出来了。这个哈希对应一个不可能被猜中的密码。
+_DUMMY_HASH = hash_password("no-account-with-this-phone-exists")
+
+LOGIN_FAILURE = "手机号或密码不对"
+
+
+@router.post("/api/v1/auth/login", response_model=DemoSessionResponse, status_code=200)
+async def login(payload: LoginRequest, request: Request) -> DemoSessionResponse:
+    settings: Settings = request.app.state.settings
+    database: Database = request.app.state.database
+
+    async with database.session() as session:
+        family_uow = SqlAlchemyFamilyUnitOfWork(session)
+        account = await family_uow.repository.get_account_by_phone(payload.phone)
+
+        hashed = account.password_hash if account is not None else _DUMMY_HASH
+        password_ok = verify_password(payload.password, hashed)
+        if account is None or not password_ok:
+            # 「账号不存在」和「密码错误」返回完全一样的东西。区分开，
+            # 这个接口就成了手机号枚举器。
+            raise HTTPException(status_code=401, detail=LOGIN_FAILURE)
+
+        # 登录不建任何东西：账号既然注册过，家庭就已经存在。
+        family = await family_uow.repository.get_first_family_for_account(account.id)
+        if family is None:
+            raise HTTPException(status_code=409, detail="账号没有关联的家庭，请联系管理员")
+        member = family.members.get(account.id)
+
+        pregnancy_uow = SqlAlchemyPregnancyUnitOfWork(session)
+        pregnancy = await pregnancy_uow.repository.get_first_pregnancy_for_family(family.id)
+
+    return DemoSessionResponse(
+        account_id=account.id,
+        phone=account.phone,
+        family_id=family.id,
+        pregnancy_id=pregnancy.id if pregnancy is not None else None,
+        role=member.role if member is not None else FamilyMemberRole.mother,
+        token=issue_session_token(account.id, account.phone, settings.auth_secret),
     )
