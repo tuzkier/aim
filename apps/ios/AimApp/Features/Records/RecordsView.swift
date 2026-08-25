@@ -37,15 +37,20 @@ extension RecordVisibility {
 }
 
 extension RecordItem {
+    @MainActor
     var displayTitle: String {
         switch structuredData {
         case let .symptom(data): data.symptoms.joined(separator: "、")
         case let .checkup(data): data.examItems
         case .note: title?.isEmpty == false ? title! : "随手记"
         case .question: content?.isEmpty == false ? content! : "想问医生"
-        // 绝不回落到 item_id：那是内部标识，用户没有任何办法看懂
-        // （曾经在记录列表里直接显示成 maternity-benefits-materials）。
-        case .checklist: title?.trimmed.isEmpty == false ? title!.trimmed : "清单条目"
+        case let .checklist(data):
+            // 优先用记录自带的标题（勾选时存下来的），否则查内容索引把 id 换回标题。
+            // 两条都不成立才用兜底文案——但绝不显示 item_id，那是内部标识。
+            title?.trimmed.isEmpty == false
+                ? title!.trimmed
+                : ContentTitleIndex.title(collection: data.collection, itemID: data.itemID)
+                    ?? "清单条目"
         case .knowledge: title ?? "资料"
         case .unknown: type.displayName
         }

@@ -31,6 +31,8 @@ final class LibraryStore {
             collections = [
                 "hangzhou": loaded.2, "preparation": loaded.3, "nutrition": loaded.4,
             ]
+            // 记录列表和时间线要靠它把 item_id 换回标题。
+            ContentTitleIndex.register(collections)
             snapshot = LibrarySnapshot(
                 records: loaded.0.records,
                 safetyRuleCount: loaded.1.count,
