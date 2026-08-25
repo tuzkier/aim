@@ -30,6 +30,7 @@ from aim_api.contexts.pregnancy.application.commands.create_pregnancy import (
     CreatePregnancyCommand,
 )
 from aim_api.platform.auth.context import issue_session_token
+from aim_api.platform.auth.passwords import MIN_PASSWORD_LENGTH, hash_password
 from aim_api.platform.config.settings import Settings
 from aim_api.platform.database.session import Database
 
@@ -38,6 +39,15 @@ router = APIRouter(tags=["identity"])
 
 class DemoSessionRequest(BaseModel):
     phone: str = Field(min_length=6, max_length=20)
+    due_date: date | None = None
+
+
+class RegisterRequest(BaseModel):
+    phone: str = Field(min_length=6, max_length=20)
+    # 长度是密码强度里真正起作用的维度，所以只管长度，不要求字符组合。
+    password: str = Field(min_length=MIN_PASSWORD_LENGTH, max_length=200)
+    role: FamilyMemberRole
+    nickname: str | None = Field(default=None, max_length=60)
     due_date: date | None = None
 
 
@@ -51,9 +61,13 @@ class DemoSessionResponse(BaseModel):
 
 
 async def _ensure_family_and_pregnancy(
-    payload: DemoSessionRequest,
+    payload: DemoSessionRequest | RegisterRequest,
     account_id: UUID,
     database: Database,
+    *,
+    password_hash: str = "",
+    role: FamilyMemberRole = FamilyMemberRole.mother,
+    nickname: str | None = None,
 ) -> tuple[UUID, UUID | None, bool]:
     created = False
     async with database.session() as session:
@@ -65,7 +79,9 @@ async def _ensure_family_and_pregnancy(
                     account_id=account_id,
                     phone=payload.phone,
                     name="我的家庭",
-                    role=FamilyMemberRole.mother,
+                    role=role,
+                    password_hash=password_hash,
+                    nickname=nickname,
                 ),
                 family_uow,
             )
@@ -198,3 +214,38 @@ async def create_demo_session(
     )
     response.status_code = 201 if created else 200
     return body
+
+
+@router.post("/api/v1/auth/register", response_model=DemoSessionResponse, status_code=201)
+async def register(payload: RegisterRequest, request: Request) -> DemoSessionResponse:
+    settings: Settings = request.app.state.settings
+    database: Database = request.app.state.database
+
+    async with database.session() as session:
+        family_uow = SqlAlchemyFamilyUnitOfWork(session)
+        existing = await family_uow.repository.get_account_by_phone(payload.phone)
+    if existing is not None:
+        # 注册接口区分「已注册」是必要的——用户得知道该去登录。登录接口则相反，
+        # 那里区分开就成了手机号枚举器。
+        raise HTTPException(status_code=409, detail="该手机号已经注册过了")
+
+    account_id = uuid4()
+    family_id, pregnancy_id, _ = await _ensure_family_and_pregnancy(
+        payload,
+        account_id,
+        database,
+        password_hash=hash_password(payload.password),
+        role=payload.role,
+        nickname=payload.nickname,
+    )
+    if pregnancy_id is not None:
+        await _ensure_initial_plan(pregnancy_id, account_id, database)
+
+    return DemoSessionResponse(
+        account_id=account_id,
+        phone=payload.phone,
+        family_id=family_id,
+        pregnancy_id=pregnancy_id,
+        role=payload.role,
+        token=issue_session_token(account_id, payload.phone, settings.auth_secret),
+    )

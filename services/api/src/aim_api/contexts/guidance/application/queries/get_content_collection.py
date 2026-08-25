@@ -23,6 +23,9 @@ class ContentItem:
     title: str
     summary: str
     verification_url: str | None = None
+    # 待产包按「证件 / 妈妈 / 宝宝 / 陪产家属」分组收拾，
+    # 一个平铺清单在真收拾的时候没法用。
+    group: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -55,6 +58,7 @@ def execute(collection: str) -> ContentCollection:
                 title=str(item["title"]),
                 summary=str(item["summary"]),
                 verification_url=item.get("verification_url"),
+                group=item.get("group"),
             )
             for item in document["items"]
         ),

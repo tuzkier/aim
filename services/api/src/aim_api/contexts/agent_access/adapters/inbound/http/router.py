@@ -132,6 +132,7 @@ class CreateKnowledgeRequest(BaseModel):
     form: str
     ingredients: list[str] | None = None
     steps: list[str] | None = None
+    purposes: list[str] | None = None
     verdict: str | None = None
     reason: str | None = None
     body: str | None = None

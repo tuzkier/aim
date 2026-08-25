@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from uuid import UUID
 
-from sqlalchemy import DateTime, ForeignKey, Index, String, Uuid
+from sqlalchemy import DateTime, ForeignKey, Index, String, Uuid, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from aim_api.platform.database.session import Base
@@ -19,6 +19,7 @@ class AccountModel(Base):
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True)
     phone: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="active")
+    password_hash: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=utc_now
     )
@@ -48,6 +49,7 @@ class FamilyMemberModel(Base):
     )
     role: Mapped[str] = mapped_column(String(30), nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False)
+    nickname: Mapped[str | None] = mapped_column(String(60), nullable=True)
     invited_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     joined_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 

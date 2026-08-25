@@ -27,14 +27,24 @@ class Account:
 
     id: UUID
     phone: str
+    #: argon2id 哈希。域模型里从不出现明文密码。
+    password_hash: str = ""
     status: AccountStatus = AccountStatus.active
     created_at: datetime | None = None
 
     @classmethod
-    def register(cls, account_id: UUID, phone: str, *, now: datetime | None = None) -> Account:
+    def register(
+        cls,
+        account_id: UUID,
+        phone: str,
+        *,
+        password_hash: str = "",
+        now: datetime | None = None,
+    ) -> Account:
         return cls(
             id=account_id,
             phone=normalize_phone(phone),
+            password_hash=password_hash,
             created_at=now or datetime.now(UTC),
         )
 

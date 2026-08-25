@@ -131,12 +131,19 @@ class Record:
         if form == "recipe":
             cls._require_nonempty_strings(data, "ingredients")
             cls._require_nonempty_strings(data, "steps")
+            # 用途是找菜谱的入口——孕期找菜的起点几乎总是「我缺铁，吃什么」。
+            # 可选：不是每道菜都有明确用途。
+            if "purposes" in data:
+                cls._require_nonempty_strings(data, "purposes")
         elif form == "food_rule":
-            if data.get("verdict") not in cls.FOOD_VERDICTS:
+            # 结论可选。「补铁要配维C」「孕吐时少食多餐」归不进任何一档，
+            # 强制结论只会逼出牵强的判断。
+            verdict = data.get("verdict")
+            if verdict is not None and verdict not in cls.FOOD_VERDICTS:
                 raise RecordValidationError(
                     "food_rule verdict must be one of safe / limit / avoid"
                 )
-            # 只给结论不给原因，用户没法判断这条是否适用于自己。
+            # 原因仍然必填：只给结论不给原因，用户没法判断这条是否适用于自己。
             cls._require_text(data, "reason")
         elif form == "howto":
             cls._require_nonempty_strings(data, "steps")

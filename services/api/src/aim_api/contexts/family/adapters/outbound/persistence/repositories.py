@@ -35,6 +35,7 @@ class SqlAlchemyFamilyRepository:
                 id=account.id,
                 phone=account.phone,
                 status=account.status.value,
+                password_hash=account.password_hash,
                 created_at=account.created_at,
             )
             self.session.add(model)
@@ -106,6 +107,7 @@ class SqlAlchemyFamilyRepository:
                 account_id=member.account_id,
                 role=member.role.value,
                 status=member.status.value,
+                nickname=member.nickname,
                 invited_at=member.invited_at,
                 joined_at=member.joined_at,
             )
@@ -162,6 +164,7 @@ def _to_account(model: AccountModel) -> Account:
     return Account(
         id=model.id,
         phone=model.phone,
+        password_hash=model.password_hash,
         status=AccountStatus(model.status),
         created_at=model.created_at,
     )
@@ -172,6 +175,7 @@ def _to_member(model: FamilyMemberModel) -> FamilyMember:
         account_id=model.account_id,
         role=FamilyMemberRole(model.role),
         status=FamilyMemberStatus(model.status),
+        nickname=model.nickname,
         invited_at=model.invited_at,
         joined_at=model.joined_at,
     )

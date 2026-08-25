@@ -28,6 +28,8 @@ class FamilyMember:
     account_id: UUID
     role: FamilyMemberRole
     status: FamilyMemberStatus
+    #: 家里怎么称呼这个人。为空时界面回退显示角色名。
+    nickname: str | None = None
     joined_at: datetime | None = None
     invited_at: datetime | None = None
 
@@ -37,12 +39,14 @@ class FamilyMember:
         account_id: UUID,
         role: FamilyMemberRole,
         *,
+        nickname: str | None = None,
         joined_at: datetime | None = None,
     ) -> FamilyMember:
         return cls(
             account_id=account_id,
             role=role,
             status=FamilyMemberStatus.active,
+            nickname=nickname,
             joined_at=joined_at or datetime.now(UTC),
         )
 

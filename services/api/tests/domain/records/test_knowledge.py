@@ -105,3 +105,47 @@ class TestKnowledgeShape:
         """分类决定条目出现在哪张卡下。写错分类等于存进了一个看不见的地方。"""
         with pytest.raises(RecordValidationError):
             make(category="astrology", form="tip", body="正文")
+
+
+class TestRecipePurposes:
+    """孕期找菜谱的起点几乎总是「我缺铁，吃什么」——用途才是入口，
+    标题不是。"""
+
+    def test_a_recipe_can_carry_purposes(self):
+        record = make(
+            category="nutrition", form="recipe",
+            ingredients=["菠菜", "猪肝"], steps=["煮"],
+            purposes=["补铁", "缓解孕吐"],
+        )
+
+        assert record.structured_data["purposes"] == ["补铁", "缓解孕吐"]
+
+    def test_purposes_are_optional(self):
+        record = make(category="nutrition", form="recipe",
+                      ingredients=["菠菜"], steps=["煮"])
+
+        assert record.structured_data.get("purposes") is None
+
+    def test_blank_purposes_are_rejected(self):
+        with pytest.raises(RecordValidationError):
+            make(category="nutrition", form="recipe",
+                 ingredients=["菠菜"], steps=["煮"], purposes=["  "])
+
+
+class TestFoodRuleWithoutAVerdict:
+    """「饮食提示」不止是能不能吃：「补铁要配维C」「孕吐时少食多餐」
+    都归不进任何一档。强制结论会逼出牵强的判断。"""
+
+    def test_a_rule_without_a_verdict_is_allowed(self):
+        record = make(category="nutrition", form="food_rule",
+                      reason="补铁的同时吃点维生素C，吸收会好一些")
+
+        assert record.structured_data.get("verdict") is None
+
+    def test_a_reason_is_still_required(self):
+        with pytest.raises(RecordValidationError):
+            make(category="nutrition", form="food_rule", verdict="limit")
+
+    def test_an_explicit_verdict_still_has_to_be_valid(self):
+        with pytest.raises(RecordValidationError):
+            make(category="nutrition", form="food_rule", verdict="maybe", reason="原因")

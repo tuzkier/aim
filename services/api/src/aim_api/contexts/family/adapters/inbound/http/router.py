@@ -49,6 +49,8 @@ class InviteMemberRequest(BaseModel):
 class FamilyMemberResponse(BaseModel):
     account_id: UUID
     role: FamilyMemberRole
+    #: 为空时由客户端回退显示角色名。
+    nickname: str | None
     status: str
     invited_at: datetime | None
     joined_at: datetime | None
@@ -80,6 +82,7 @@ def _family_response(family: Family) -> FamilyResponse:
             FamilyMemberResponse(
                 account_id=member.account_id,
                 role=member.role,
+                nickname=member.nickname,
                 status=member.status.value,
                 invited_at=member.invited_at,
                 joined_at=member.joined_at,
