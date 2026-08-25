@@ -722,6 +722,28 @@
         "type": "object",
         "title": "CreatePregnancyRequest"
       },
+      "CreateSessionRequest": {
+        "properties": {
+          "eve_session_id": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Eve Session Id"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Title"
+          }
+        },
+        "type": "object",
+        "required": [
+          "eve_session_id",
+          "title"
+        ],
+        "title": "CreateSessionRequest"
+      },
       "DelayTaskRequest": {
         "properties": {
           "expected_version": {
@@ -1528,52 +1550,21 @@
         ],
         "title": "ScheduleTaskRequest"
       },
-      "SessionResponse": {
+      "SessionListResponse": {
         "properties": {
-          "account_id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Account Id"
-          },
-          "phone": {
-            "type": "string",
-            "title": "Phone"
-          },
-          "family_id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Family Id"
-          },
-          "pregnancy_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Pregnancy Id"
-          },
-          "role": {
-            "$ref": "#/components/schemas/FamilyMemberRole"
-          },
-          "token": {
-            "type": "string",
-            "title": "Token"
+          "sessions": {
+            "items": {
+              "$ref": "#/components/schemas/aim_api__contexts__agent_access__adapters__inbound__http__sessions_router__SessionResponse"
+            },
+            "type": "array",
+            "title": "Sessions"
           }
         },
         "type": "object",
         "required": [
-          "account_id",
-          "phone",
-          "family_id",
-          "pregnancy_id",
-          "role",
-          "token"
+          "sessions"
         ],
-        "title": "SessionResponse"
+        "title": "SessionListResponse"
       },
       "TaskResponse": {
         "properties": {
@@ -1933,6 +1924,30 @@
         "type": "object",
         "title": "UpdateRecordRequest"
       },
+      "UpdateSessionRequest": {
+        "properties": {
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "touch": {
+            "type": "boolean",
+            "title": "Touch",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "UpdateSessionRequest"
+      },
       "UpdateTaskRequest": {
         "properties": {
           "task_id": {
@@ -2222,6 +2237,89 @@
           "source"
         ],
         "title": "RecordFactRequest"
+      },
+      "aim_api__contexts__agent_access__adapters__inbound__http__sessions_router__SessionResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "eve_session_id": {
+            "type": "string",
+            "title": "Eve Session Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "last_active_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last Active At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "eve_session_id",
+          "title",
+          "created_at",
+          "last_active_at"
+        ],
+        "title": "SessionResponse"
+      },
+      "aim_api__contexts__identity__adapters__inbound__http__router__SessionResponse": {
+        "properties": {
+          "account_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Account Id"
+          },
+          "phone": {
+            "type": "string",
+            "title": "Phone"
+          },
+          "family_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Family Id"
+          },
+          "pregnancy_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pregnancy Id"
+          },
+          "role": {
+            "$ref": "#/components/schemas/FamilyMemberRole"
+          },
+          "token": {
+            "type": "string",
+            "title": "Token"
+          }
+        },
+        "type": "object",
+        "required": [
+          "account_id",
+          "phone",
+          "family_id",
+          "pregnancy_id",
+          "role",
+          "token"
+        ],
+        "title": "SessionResponse"
       },
       "aim_api__contexts__planning__adapters__inbound__http__router__AssignTaskRequest": {
         "properties": {

@@ -49,7 +49,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SessionResponse"
+                  "$ref": "#/components/schemas/aim_api__contexts__identity__adapters__inbound__http__router__SessionResponse"
                 }
               }
             }
@@ -90,7 +90,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SessionResponse"
+                  "$ref": "#/components/schemas/aim_api__contexts__identity__adapters__inbound__http__router__SessionResponse"
                 }
               }
             }
@@ -1439,6 +1439,153 @@
           }
         }
       }
+    },
+    "/api/v1/agent/sessions": {
+      "get": {
+        "tags": [
+          "agent-sessions"
+        ],
+        "summary": "List Sessions",
+        "operationId": "list_sessions_api_v1_agent_sessions_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionListResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "agent-sessions"
+        ],
+        "summary": "Create Session",
+        "operationId": "create_session_api_v1_agent_sessions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSessionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aim_api__contexts__agent_access__adapters__inbound__http__sessions_router__SessionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/agent/sessions/{session_id}": {
+      "patch": {
+        "tags": [
+          "agent-sessions"
+        ],
+        "summary": "Update Session",
+        "operationId": "update_session_api_v1_agent_sessions__session_id__patch",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSessionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/aim_api__contexts__agent_access__adapters__inbound__http__sessions_router__SessionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "agent-sessions"
+        ],
+        "summary": "Delete Session",
+        "operationId": "delete_session_api_v1_agent_sessions__session_id__delete",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1570,6 +1717,28 @@
           "structured_data"
         ],
         "title": "CreateRecordRequest"
+      },
+      "CreateSessionRequest": {
+        "properties": {
+          "eve_session_id": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Eve Session Id"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Title"
+          }
+        },
+        "type": "object",
+        "required": [
+          "eve_session_id",
+          "title"
+        ],
+        "title": "CreateSessionRequest"
       },
       "CreateTaskRequest": {
         "properties": {
@@ -2404,52 +2573,21 @@
         ],
         "title": "ScheduleTaskRequest"
       },
-      "SessionResponse": {
+      "SessionListResponse": {
         "properties": {
-          "account_id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Account Id"
-          },
-          "phone": {
-            "type": "string",
-            "title": "Phone"
-          },
-          "family_id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Family Id"
-          },
-          "pregnancy_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Pregnancy Id"
-          },
-          "role": {
-            "$ref": "#/components/schemas/FamilyMemberRole"
-          },
-          "token": {
-            "type": "string",
-            "title": "Token"
+          "sessions": {
+            "items": {
+              "$ref": "#/components/schemas/aim_api__contexts__agent_access__adapters__inbound__http__sessions_router__SessionResponse"
+            },
+            "type": "array",
+            "title": "Sessions"
           }
         },
         "type": "object",
         "required": [
-          "account_id",
-          "phone",
-          "family_id",
-          "pregnancy_id",
-          "role",
-          "token"
+          "sessions"
         ],
-        "title": "SessionResponse"
+        "title": "SessionListResponse"
       },
       "TaskResponse": {
         "properties": {
@@ -2751,6 +2889,30 @@
         "type": "object",
         "title": "UpdateRecordRequest"
       },
+      "UpdateSessionRequest": {
+        "properties": {
+          "title": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "touch": {
+            "type": "boolean",
+            "title": "Touch",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "UpdateSessionRequest"
+      },
       "ValidationError": {
         "properties": {
           "loc": {
@@ -2790,6 +2952,89 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "aim_api__contexts__agent_access__adapters__inbound__http__sessions_router__SessionResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "eve_session_id": {
+            "type": "string",
+            "title": "Eve Session Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "last_active_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last Active At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "eve_session_id",
+          "title",
+          "created_at",
+          "last_active_at"
+        ],
+        "title": "SessionResponse"
+      },
+      "aim_api__contexts__identity__adapters__inbound__http__router__SessionResponse": {
+        "properties": {
+          "account_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Account Id"
+          },
+          "phone": {
+            "type": "string",
+            "title": "Phone"
+          },
+          "family_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Family Id"
+          },
+          "pregnancy_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pregnancy Id"
+          },
+          "role": {
+            "$ref": "#/components/schemas/FamilyMemberRole"
+          },
+          "token": {
+            "type": "string",
+            "title": "Token"
+          }
+        },
+        "type": "object",
+        "required": [
+          "account_id",
+          "phone",
+          "family_id",
+          "pregnancy_id",
+          "role",
+          "token"
+        ],
+        "title": "SessionResponse"
       }
     }
   }
