@@ -47,13 +47,13 @@ private struct MainTabView: View {
                 .tabItem { Label("孕期", systemImage: "heart.text.square") }
                 .tag(AimTab.timeline)
 
-            AgentView(store: agentStore)
-                .tabItem { Label("AIM", systemImage: "wand.and.sparkles") }
-                .tag(AimTab.agent)
-
             LibraryView(store: libraryStore, agentStore: agentStore)
                 .tabItem { Label("资料库", systemImage: "books.vertical") }
                 .tag(AimTab.library)
+
+            AgentView(store: agentStore)
+                .tabItem { Label("AIM", systemImage: "wand.and.sparkles") }
+                .tag(AimTab.agent)
 
             FamilyView(store: familyStore)
                 .tabItem { Label("家庭", systemImage: "person.2") }

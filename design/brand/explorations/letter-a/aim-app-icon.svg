@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
+  <title id="title">Aim app icon artwork</title>
+  <desc id="desc">Aim brand mark on the product's warm ivory canvas.</desc>
+  <rect width="1024" height="1024" fill="#FFF8F1"/>
+  <g transform="translate(128 128) scale(1.5)">
+    <g fill="none" stroke="#BC5F3A" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M128 390C145 275 187 145 256 92C325 145 367 275 384 390" stroke-width="54"/>
+      <path d="M157 342C202 323 241 299 275 269C312 236 330 203 328 171" stroke-width="42"/>
+    </g>
+    <circle cx="330" cy="134" r="23" fill="#6B7F4E"/>
+  </g>
+</svg>
