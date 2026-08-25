@@ -146,3 +146,44 @@ test("create_knowledge forwards the chosen form's fields", async () => {
   // 审批过了才会走到 execute，所以这里带 approved 是正确的。
   assert.equal(body.approved, true);
 });
+
+test("create_knowledge carries a recipe's purposes", async () => {
+  const createKnowledge = (await import("../../agent/tools/create_knowledge.ts")).default;
+  const { request } = await withStubbedApi({ record_id: "id", title: "菠菜猪肝汤" }, () =>
+    createKnowledge.execute(
+      {
+        title: "菠菜猪肝汤",
+        category: "nutrition",
+        form: "recipe",
+        ingredients: ["菠菜 200g", "猪肝 100g"],
+        steps: ["焯水", "下菠菜"],
+        purposes: ["补铁"],
+      },
+      scope,
+    ),
+  );
+
+  // 用途是找菜谱的入口，丢了它菜谱就只能靠标题找。
+  const body = (await request?.clone().json()) as Record<string, unknown>;
+  assert.deepEqual(body.purposes, ["补铁"]);
+});
+
+test("create_knowledge allows advice with no verdict", async () => {
+  const createKnowledge = (await import("../../agent/tools/create_knowledge.ts")).default;
+  const { request } = await withStubbedApi({ record_id: "id", title: "补铁搭配" }, () =>
+    createKnowledge.execute(
+      {
+        title: "补铁搭配",
+        category: "nutrition",
+        form: "food_rule",
+        reason: "补铁的同时吃点维生素C，吸收会好一些",
+      },
+      scope,
+    ),
+  );
+
+  // 「补铁要配维C」归不进能吃/不能吃任何一档。
+  const body = (await request?.clone().json()) as Record<string, unknown>;
+  assert.equal("verdict" in body, false);
+  assert.equal(body.reason, "补铁的同时吃点维生素C，吸收会好一些");
+});

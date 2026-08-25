@@ -47,4 +47,4 @@ scheme 的 Run → Arguments 里加上 `-local` 启动参数即可。也可以�
 xcrun simctl spawn booted defaults delete com.aim.pregnancy
 ```Eve 默认使用确定性 Mock Model；接入真实模型前请通过环境变量覆盖，不要把凭证写入 Compose 文件。
 
-本地 iOS 首屏只使用手机号进入演示账号，后端会自动创建账号和家庭；进入后可选择录入预产期或末次月经，Aim 会按 280 天互相换算，再生成孕期计划。不会连接短信，也不会把内部 ID 或 Token 暴露给用户。该演示入口由 `DEV_AUTH_ENABLED` 控制，仅用于本地验收。
+iOS 首屏是手机号 + 密码的注册／登录，注册时选择家庭角色（妈妈／爸爸／其他家人）和称呼。进入后可录入预产期或末次月经，Aim 按 280 天互相换算并生成孕期计划。不发送短信；密码找回靠服务器上的 `services/api/scripts/reset_password.py`。

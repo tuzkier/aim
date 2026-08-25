@@ -4,6 +4,9 @@ import SwiftUI
 /// 「能不能吃」把结论放最上面，而不是把所有形态都摊成一段文字。
 struct KnowledgeDetailView: View {
     let entry: KnowledgeEntry
+    var agentStore: AgentStore?
+
+    @State private var showingAgent = false
 
     var body: some View {
         List {
@@ -31,6 +34,20 @@ struct KnowledgeDetailView: View {
                     .listRowBackground(Color.aimSurface)
             }
 
+            if let agentStore {
+                Section {
+                    Button {
+                        agentStore.focus(context: entry.askContext)
+                        showingAgent = true
+                    } label: {
+                        Label("就这条问问 AIM", systemImage: "wand.and.sparkles")
+                            .foregroundStyle(Color.aimAccent)
+                    }
+                    .accessibilityIdentifier("knowledge-ask-agent")
+                }
+                .listRowBackground(Color.aimSurface)
+            }
+
             Section {
                 Text("由 AIM 依据对话整理，不替代产检医生的意见。")
                     .font(.caption)
@@ -45,6 +62,11 @@ struct KnowledgeDetailView: View {
 #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
 #endif
+        .fullScreenCover(isPresented: $showingAgent) {
+            if let agentStore {
+                AgentView(store: agentStore) { showingAgent = false }
+            }
+        }
     }
 
     private var verdictColor: Color {

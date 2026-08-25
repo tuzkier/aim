@@ -65,3 +65,59 @@ struct MetricTrend: Equatable, Sendable {
         return points.isEmpty ? nil : MetricTrend(unit: unit, points: points)
     }
 }
+
+/// 可以画趋势的指标种类。
+///
+/// 「只列出真有数据的」是这里的关键：空着的切换项点进去是一片空白，等于骗人。
+enum MetricKind: String, CaseIterable, Identifiable, Sendable {
+    case weight
+    case bloodPressure
+    case fastingGlucose
+    case hemoglobin
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .weight: "体重"
+        case .bloodPressure: "血压"
+        case .fastingGlucose: "空腹血糖"
+        case .hemoglobin: "血红蛋白"
+        }
+    }
+
+    /// 单位跟着指标走，否则「62 mmHg」这种显示会误导。
+    var unit: String {
+        switch self {
+        case .weight: "kg"
+        case .bloodPressure: "mmHg"
+        case .fastingGlucose: "mmol/L"
+        case .hemoglobin: "g/L"
+        }
+    }
+
+    /// 血压用收缩压画趋势——它是孕期最常被关注的那个数。
+    private var pick: @Sendable (CheckupMetrics) -> Double? {
+        switch self {
+        case .weight: { $0.weightKg }
+        case .bloodPressure: { $0.systolic }
+        case .fastingGlucose: { $0.fastingGlucose }
+        case .hemoglobin: { $0.hemoglobin }
+        }
+    }
+
+    func trend(in records: [RecordItem]) -> MetricTrend? {
+        let points = records
+            .compactMap { record -> MetricPoint? in
+                guard case let .checkup(data) = record.structuredData,
+                      let value = pick(data.metrics) else { return nil }
+                return MetricPoint(date: record.occurredAt, value: value)
+            }
+            .sorted { $0.date < $1.date }
+        return points.isEmpty ? nil : MetricTrend(unit: unit, points: points)
+    }
+
+    static func available(in records: [RecordItem]) -> [MetricKind] {
+        allCases.filter { $0.trend(in: records) != nil }
+    }
+}

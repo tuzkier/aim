@@ -41,11 +41,6 @@ from aim_api.platform.database.session import Database
 router = APIRouter(tags=["identity"])
 
 
-class DemoSessionRequest(BaseModel):
-    phone: str = Field(min_length=6, max_length=20)
-    due_date: date | None = None
-
-
 class LoginRequest(BaseModel):
     phone: str = Field(min_length=6, max_length=20)
     # 登录不校验密码长度：规则变严时老密码仍要能登进来，
@@ -62,7 +57,7 @@ class RegisterRequest(BaseModel):
     due_date: date | None = None
 
 
-class DemoSessionResponse(BaseModel):
+class SessionResponse(BaseModel):
     account_id: UUID
     phone: str
     family_id: UUID
@@ -72,7 +67,7 @@ class DemoSessionResponse(BaseModel):
 
 
 async def _ensure_family_and_pregnancy(
-    payload: DemoSessionRequest | RegisterRequest,
+    payload: RegisterRequest | LoginRequest,
     account_id: UUID,
     database: Database,
     *,
@@ -186,49 +181,8 @@ def _initial_task_seeds(gestational_week: int, as_of: date) -> tuple[TaskSeed, .
     )
 
 
-@router.post(
-    "/api/v1/auth/demo-session",
-    response_model=DemoSessionResponse,
-    status_code=200,
-    responses={200: {"model": DemoSessionResponse}, 201: {"model": DemoSessionResponse}},
-)
-async def create_demo_session(
-    payload: DemoSessionRequest,
-    request: Request,
-    response: Response,
-) -> DemoSessionResponse:
-    settings: Settings = request.app.state.settings
-    if not settings.dev_auth_enabled:
-        raise HTTPException(status_code=404, detail="Not Found")
-
-    database: Database = request.app.state.database
-    async with database.session() as session:
-        family_uow = SqlAlchemyFamilyUnitOfWork(session)
-        account = await family_uow.repository.get_account_by_phone(payload.phone)
-
-    account_id = account.id if account is not None else uuid4()
-    family_id, pregnancy_id, created = await _ensure_family_and_pregnancy(
-        payload,
-        account_id,
-        database,
-    )
-    if pregnancy_id is not None:
-        await _ensure_initial_plan(pregnancy_id, account_id, database)
-
-    body = DemoSessionResponse(
-        account_id=account_id,
-        phone=payload.phone,
-        family_id=family_id,
-        pregnancy_id=pregnancy_id,
-        role=FamilyMemberRole.mother,
-        token=issue_session_token(account_id, payload.phone, settings.auth_secret),
-    )
-    response.status_code = 201 if created else 200
-    return body
-
-
-@router.post("/api/v1/auth/register", response_model=DemoSessionResponse, status_code=201)
-async def register(payload: RegisterRequest, request: Request) -> DemoSessionResponse:
+@router.post("/api/v1/auth/register", response_model=SessionResponse, status_code=201)
+async def register(payload: RegisterRequest, request: Request) -> SessionResponse:
     settings: Settings = request.app.state.settings
     database: Database = request.app.state.database
 
@@ -252,7 +206,7 @@ async def register(payload: RegisterRequest, request: Request) -> DemoSessionRes
     if pregnancy_id is not None:
         await _ensure_initial_plan(pregnancy_id, account_id, database)
 
-    return DemoSessionResponse(
+    return SessionResponse(
         account_id=account_id,
         phone=payload.phone,
         family_id=family_id,
@@ -269,8 +223,8 @@ _DUMMY_HASH = hash_password("no-account-with-this-phone-exists")
 LOGIN_FAILURE = "手机号或密码不对"
 
 
-@router.post("/api/v1/auth/login", response_model=DemoSessionResponse, status_code=200)
-async def login(payload: LoginRequest, request: Request) -> DemoSessionResponse:
+@router.post("/api/v1/auth/login", response_model=SessionResponse, status_code=200)
+async def login(payload: LoginRequest, request: Request) -> SessionResponse:
     settings: Settings = request.app.state.settings
     database: Database = request.app.state.database
 
@@ -294,7 +248,7 @@ async def login(payload: LoginRequest, request: Request) -> DemoSessionResponse:
         pregnancy_uow = SqlAlchemyPregnancyUnitOfWork(session)
         pregnancy = await pregnancy_uow.repository.get_first_pregnancy_for_family(family.id)
 
-    return DemoSessionResponse(
+    return SessionResponse(
         account_id=account.id,
         phone=account.phone,
         family_id=family.id,

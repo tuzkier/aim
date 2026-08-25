@@ -171,3 +171,129 @@ private final class FakeLibraryRepository: BusinessRepositoryProtocol, @unchecke
     func assign(task: TaskItem, to memberID: UUID?) async throws -> TaskItem { throw APIError.notConfigured }
     func invite(phone: String, role: FamilyRole) async throws { throw APIError.notConfigured }
 }
+
+@MainActor
+final class LibraryStoreReloadTests: XCTestCase {
+    /// 资料库原本只在首次加载，之后用户在时间线新记的产检这里看不到。
+    func testLoadingAgainPicksUpNewRecords() async {
+        let repository = CountingRepository()
+        let store = LibraryStore()
+        store.repository = repository
+
+        await store.load()
+        XCTAssertEqual(store.snapshot.records.count, 0)
+
+        repository.records = [CountingRepository.makeCheckup()]
+        await store.load()
+
+        XCTAssertEqual(store.snapshot.records.count, 1)
+        XCTAssertEqual(repository.fetchCount, 2)
+    }
+}
+
+private final class CountingRepository: BusinessRepositoryProtocol, @unchecked Sendable {
+    var records: [RecordItem] = []
+    var fetchCount = 0
+
+    static func makeCheckup() -> RecordItem {
+        RecordItem(
+            id: UUID(), pregnancyID: UUID(), familyID: UUID(), authorAccountID: UUID(),
+            type: .checkup, occurredAt: .now, visibility: .family, title: nil, content: nil,
+            structuredData: .checkup(CheckupRecordData(
+                hospital: "市一医院", examItems: "常规", result: "正常", doctorAdvice: "复查")),
+            attachmentRefs: [], createdAt: .now, updatedAt: .now
+        )
+    }
+
+    func fetchRecords(type: RecordType?) async throws -> RecordSnapshot {
+        fetchCount += 1
+        return RecordSnapshot(records: records)
+    }
+    func fetchSafetyRules() async throws -> [SafetyRule] { [] }
+    func fetchContentCollection(_ name: String) async throws -> ContentCollection {
+        ContentCollection(id: name, source: "test", sourceURL: "", items: [])
+    }
+    func fetchToday() async throws -> TodaySnapshot { throw APIError.notConfigured }
+    func fetchPlan() async throws -> PlanSnapshot { throw APIError.notConfigured }
+    func fetchFamily() async throws -> FamilySnapshot { throw APIError.notConfigured }
+    func createPregnancy(dueDate: Date) async throws -> UUID { throw APIError.notConfigured }
+    func createRecord(draft: RecordDraft) async throws -> RecordItem { throw APIError.notConfigured }
+    func updateRecord(recordID: UUID, draft: RecordDraft) async throws -> RecordItem { throw APIError.notConfigured }
+    func deleteRecord(recordID: UUID) async throws {}
+    func deleteTask(taskID: UUID) async throws {}
+    func createTaskFromRecord(record: RecordItem, title: String, description: String?, dueAt: Date?) async throws -> TaskItem { throw APIError.notConfigured }
+    func complete(task: TaskItem) async throws -> TaskItem { throw APIError.notConfigured }
+    func delay(task: TaskItem, until: Date) async throws -> TaskItem { throw APIError.notConfigured }
+    func schedule(task: TaskItem, at: Date) async throws -> TaskItem { throw APIError.notConfigured }
+    func assign(task: TaskItem, to memberID: UUID?) async throws -> TaskItem { throw APIError.notConfigured }
+    func invite(phone: String, role: FamilyRole) async throws { throw APIError.notConfigured }
+}
+
+@MainActor
+final class LibraryEntryActionTests: XCTestCase {
+    private func entryRecord(_ title: String) -> RecordItem {
+        RecordItem(
+            id: UUID(), pregnancyID: UUID(), familyID: UUID(), authorAccountID: UUID(),
+            type: .knowledge, occurredAt: .now, visibility: .family,
+            title: title, content: nil,
+            structuredData: .knowledge(KnowledgeRecordData(
+                category: "nutrition", form: .tip, body: "正文")),
+            attachmentRefs: [], createdAt: .now, updatedAt: .now)
+    }
+
+    /// 资料库不该只能看。存错了、过时了，要能删掉。
+    func testAnEntryCanBeDeleted() async {
+        let record = entryRecord("过时的菜谱")
+        let repository = DeletingRepository()
+        let store = LibraryStore()
+        store.repository = repository
+        store.snapshot = LibrarySnapshot(records: [record])
+
+        await store.deleteEntry(id: record.id)
+
+        XCTAssertEqual(repository.deletedRecordIDs, [record.id])
+    }
+
+    /// 在某个分类里问 AIM，要带上这个分类的上下文，
+    /// 否则模型不知道该往哪里存。
+    func testAskingFromACategoryCarriesItsContext() {
+        let snapshot = LibrarySnapshot(records: [entryRecord("菠菜猪肝汤")])
+
+        let context = LibraryCategoryID.nutrition.askContext(from: snapshot)
+
+        XCTAssertTrue(context.summary.contains("吃什么"))
+        XCTAssertTrue(context.summary.contains("菠菜猪肝汤"))
+    }
+
+    /// 针对某一条提问时，上下文要带上这条本身。
+    func testAskingAboutAnEntryCarriesTheEntry() {
+        let entry = KnowledgeEntry(record: entryRecord("菠菜猪肝汤"))!
+
+        let context = entry.askContext
+
+        XCTAssertTrue(context.summary.contains("菠菜猪肝汤"))
+    }
+}
+
+private final class DeletingRepository: BusinessRepositoryProtocol, @unchecked Sendable {
+    var deletedRecordIDs: [UUID] = []
+    func deleteRecord(recordID: UUID) async throws { deletedRecordIDs.append(recordID) }
+    func fetchRecords(type: RecordType?) async throws -> RecordSnapshot { RecordSnapshot(records: []) }
+    func fetchSafetyRules() async throws -> [SafetyRule] { [] }
+    func fetchContentCollection(_ name: String) async throws -> ContentCollection {
+        ContentCollection(id: name, source: "test", sourceURL: "", items: [])
+    }
+    func fetchToday() async throws -> TodaySnapshot { throw APIError.notConfigured }
+    func fetchPlan() async throws -> PlanSnapshot { throw APIError.notConfigured }
+    func fetchFamily() async throws -> FamilySnapshot { throw APIError.notConfigured }
+    func createPregnancy(dueDate: Date) async throws -> UUID { throw APIError.notConfigured }
+    func createRecord(draft: RecordDraft) async throws -> RecordItem { throw APIError.notConfigured }
+    func updateRecord(recordID: UUID, draft: RecordDraft) async throws -> RecordItem { throw APIError.notConfigured }
+    func deleteTask(taskID: UUID) async throws {}
+    func createTaskFromRecord(record: RecordItem, title: String, description: String?, dueAt: Date?) async throws -> TaskItem { throw APIError.notConfigured }
+    func complete(task: TaskItem) async throws -> TaskItem { throw APIError.notConfigured }
+    func delay(task: TaskItem, until: Date) async throws -> TaskItem { throw APIError.notConfigured }
+    func schedule(task: TaskItem, at: Date) async throws -> TaskItem { throw APIError.notConfigured }
+    func assign(task: TaskItem, to memberID: UUID?) async throws -> TaskItem { throw APIError.notConfigured }
+    func invite(phone: String, role: FamilyRole) async throws { throw APIError.notConfigured }
+}

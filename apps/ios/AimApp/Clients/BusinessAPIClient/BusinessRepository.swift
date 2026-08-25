@@ -322,8 +322,12 @@ actor BusinessRepository: BusinessRepositoryProtocol {
     private func validate(_ draft: RecordDraft) throws {
         guard draft.visibility != .unknown else { throw APIError.invalidResponse }
         switch (draft.type, draft.structuredData) {
+        // 每加一种记录类型都要记得补这里，否则请求发不出去而后端明明支持。
+        // KnowledgeComposer / RecordComposer 已经各自校验过内容，这里只确认
+        // 类型与结构化数据是配套的。
         case (.symptom, .symptom), (.checkup, .checkup), (.note, .note),
-             (.question, .question), (.checklist, .checklist):
+             (.question, .question), (.checklist, .checklist),
+             (.knowledge, .knowledge):
             return
         default:
             throw APIError.invalidResponse

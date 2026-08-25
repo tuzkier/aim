@@ -16,6 +16,7 @@ struct RecordComposerView: View {
     @State private var examItems: String
     @State private var result: String
     @State private var doctorAdvice: String
+    @State private var metrics: CheckupMetricInput
     @State private var title: String
     @State private var content: String
     @State private var savedCount = 0
@@ -50,7 +51,13 @@ struct RecordComposerView: View {
             _examItems = State(initialValue: data.examItems)
             _result = State(initialValue: data.result)
             _doctorAdvice = State(initialValue: data.doctorAdvice)
+            _metrics = State(initialValue: CheckupMetricInput(
+                weight: data.metrics.weightKg.map { Self.text($0) } ?? "",
+                systolic: data.metrics.systolic.map { Self.text($0) } ?? "",
+                diastolic: data.metrics.diastolic.map { Self.text($0) } ?? ""
+            ))
         } else {
+            _metrics = State(initialValue: CheckupMetricInput())
             _hospital = State(initialValue: "")
             _examItems = State(initialValue: source == nil && suggestedType == .checkup ? (suggestedText ?? "") : "")
             _result = State(initialValue: "")
@@ -162,12 +169,53 @@ struct RecordComposerView: View {
     }
 
     private var checkupFields: some View {
-        Section("产检信息") {
-            TextField("医院", text: $hospital)
-            TextField("检查项目", text: $examItems)
-            TextField("检查结果", text: $result, axis: .vertical)
-            TextField("医生建议", text: $doctorAdvice, axis: .vertical)
+        Group {
+            Section("产检信息") {
+                TextField("医院", text: $hospital)
+                    .accessibilityIdentifier("checkup-hospital")
+                TextField("检查项目", text: $examItems)
+                    .accessibilityIdentifier("checkup-exam-items")
+                TextField("检查结果", text: $result, axis: .vertical)
+                    .accessibilityIdentifier("checkup-result")
+                TextField("医生建议", text: $doctorAdvice, axis: .vertical)
+                    .accessibilityIdentifier("checkup-advice")
+            }
+            Section {
+                metricField("体重", unit: "kg", text: $metrics.weight, id: "weight")
+                metricField("收缩压", unit: "mmHg", text: $metrics.systolic, id: "systolic")
+                metricField("舒张压", unit: "mmHg", text: $metrics.diastolic, id: "diastolic")
+                if let message = metrics.validationMessage {
+                    Text(message).font(.footnote).foregroundStyle(Color.aimDanger)
+                }
+            } header: {
+                Text("指标（可选）")
+            } footer: {
+                // 空着表示这次没测，不是 0——当成 0 会把趋势线拉平。
+                Text("填了才会进资料库的趋势图。这次没测就留空。")
+            }
         }
+    }
+
+    private func metricField(
+        _ label: String, unit: String, text: Binding<String>, id: String
+    ) -> some View {
+        HStack {
+            Text(label)
+            Spacer()
+            TextField("未测", text: text)
+                .multilineTextAlignment(.trailing)
+                .frame(maxWidth: 90)
+#if os(iOS)
+                .keyboardType(.decimalPad)
+#endif
+                .accessibilityIdentifier("checkup-metric-\(id)")
+            Text(unit).font(.caption).foregroundStyle(Color.aimTextTertiary)
+        }
+    }
+
+    /// 62.0 显示成 "62" 而不是 "62.0"，回填时看着自然。
+    private static func text(_ value: Double) -> String {
+        value == value.rounded() ? String(Int(value)) : String(value)
     }
 
     private var noteFields: some View {
@@ -193,7 +241,11 @@ struct RecordComposerView: View {
     private var canSave: Bool {
         switch type {
         case .symptom: !symptoms.isEmpty
-        case .checkup: !hospital.trimmed.isEmpty && !examItems.trimmed.isEmpty && !result.trimmed.isEmpty && !doctorAdvice.trimmed.isEmpty
+        case .checkup:
+            !hospital.trimmed.isEmpty && !examItems.trimmed.isEmpty
+                && !result.trimmed.isEmpty && !doctorAdvice.trimmed.isEmpty
+                // 指标填错了不让存——后端也会拒，不如当场说清楚。
+                && metrics.validationMessage == nil
         case .note: !content.trimmed.isEmpty
         case .question, .checklist, .knowledge, .none, .unknown: false
         }
@@ -218,7 +270,10 @@ struct RecordComposerView: View {
         case .symptom:
             data = .symptom(SymptomRecordData(symptoms: symptoms.sorted(), severity: severity, note: symptomNote.trimmed.nilIfEmpty))
         case .checkup:
-            data = .checkup(CheckupRecordData(hospital: hospital.trimmed, examItems: examItems.trimmed, result: result.trimmed, doctorAdvice: doctorAdvice.trimmed))
+            data = .checkup(CheckupRecordData(
+                hospital: hospital.trimmed, examItems: examItems.trimmed,
+                result: result.trimmed, doctorAdvice: doctorAdvice.trimmed,
+                metrics: metrics.parsed()))
         case .note: data = .note
         case .question, .checklist, .knowledge, .unknown: return nil
         }

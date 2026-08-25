@@ -46,6 +46,18 @@ struct EveEvent: Equatable, Sendable {
         return (try? JSONDecoder().decode(EveInputRequestedPayload.self, from: data).requests) ?? []
     }
 
+    /// 这一轮到此为止，服务端不会再吐字节了。
+    ///
+    /// 不认这个标记就会一直挂在流上等下一条事件，60 秒后 URLSession 抛
+    /// `NSURLErrorTimedOut`，界面上冒出一句「The request timed out.」——
+    /// 回答明明已经正常显示，却在一分钟后被一条假错误覆盖掉。
+    var isTerminal: Bool {
+        switch type {
+        case .sessionWaiting, .sessionCompleted: true
+        default: false
+        }
+    }
+
     var continuationToken: String? {
         guard type == .sessionWaiting else { return nil }
         return try? JSONDecoder().decode(EveSessionWaitingPayload.self, from: data).continuationToken
@@ -61,12 +73,14 @@ struct EveInputRequest: Codable, Equatable, Sendable, Identifiable {
     let toolInput: [String: JSONValue]?
     let changes: [EveChangeDTO]?
     let qualifier: String?
+    /// Eve 说这次提问能不能自由作答。提问是 true，写操作批准是 false。
+    let allowFreeform: Bool
 
     var id: String { requestID }
 
     enum CodingKeys: String, CodingKey {
         case requestID = "requestId"
-        case kind, prompt, options, action, changes, qualifier
+        case kind, prompt, options, action, changes, qualifier, allowFreeform
     }
 
     init(
@@ -77,8 +91,10 @@ struct EveInputRequest: Codable, Equatable, Sendable, Identifiable {
         toolName: String?,
         toolInput: [String: JSONValue]? = nil,
         changes: [EveChangeDTO]? = nil,
-        qualifier: String? = nil
+        qualifier: String? = nil,
+        allowFreeform: Bool = false
     ) {
+        self.allowFreeform = allowFreeform
         self.requestID = requestID
         self.kind = kind
         self.prompt = prompt
@@ -104,6 +120,7 @@ struct EveInputRequest: Codable, Equatable, Sendable, Identifiable {
         }
         changes = try container.decodeIfPresent([EveChangeDTO].self, forKey: .changes)
         qualifier = try container.decodeIfPresent(String.self, forKey: .qualifier)
+        allowFreeform = try container.decodeIfPresent(Bool.self, forKey: .allowFreeform) ?? false
     }
 
     func encode(to encoder: Encoder) throws {

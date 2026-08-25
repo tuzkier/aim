@@ -12,6 +12,15 @@ final class AppSessionStore {
 
     private let defaults: UserDefaults
     private let keychain: KeychainStore
+    /// 观察者随 store 一起释放时自动注销。`deinit` 在 @MainActor 类里是
+    /// nonisolated，碰不到 main-actor 属性，所以把注销挪进这个包装的 deinit。
+    private final class ObserverToken: @unchecked Sendable {
+        private let token: any NSObjectProtocol
+        init(_ token: any NSObjectProtocol) { self.token = token }
+        deinit { NotificationCenter.default.removeObserver(token) }
+    }
+
+    private var expiryObserver: ObserverToken?
 
     init(defaults: UserDefaults = .standard, keychain: KeychainStore = KeychainStore()) {
         self.defaults = defaults
@@ -23,6 +32,23 @@ final class AppSessionStore {
         if ProcessInfo.processInfo.arguments.contains("-reset-session") {
             clear()
         }
+        expiryObserver = ObserverToken(
+            NotificationCenter.default.addObserver(
+                forName: .aimSessionExpired, object: nil, queue: .main
+            ) { [weak self] _ in
+                MainActor.assumeIsolated { self?.handleSessionExpired() }
+            }
+        )
+    }
+
+    /// 服务端不认这张票了。清掉本地会话——根视图看到 `isConfigured == false`
+    /// 就会回到登录页，用户重新进一次就恢复了。
+    ///
+    /// 家庭和孕期 ID 也要一并清：服务端账号没了，那两个 ID 指向的东西同样不存在，
+    /// 留着只会让下一次请求继续 404/401。
+    func handleSessionExpired() {
+        guard isConfigured else { return }
+        clear()
     }
 
     var isConfigured: Bool {

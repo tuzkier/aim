@@ -101,6 +101,18 @@ enum LibraryCategoryID: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
+    /// 在某个分类里问 AIM 时带的上下文。要说清「这是哪个分类」，
+    /// 否则模型不知道该往哪里存。
+    func askContext(from snapshot: LibrarySnapshot) -> AgentContext {
+        var lines = ["当前在资料库的「\(title)」分类"]
+        let entries = entries(in: snapshot)
+        if !entries.isEmpty {
+            lines.append("已收录：" + entries.prefix(5).map(\.title).joined(separator: "、"))
+        }
+        lines.append("如果我要你记录什么，请存进这个分类。")
+        return AgentContext(title: title, summary: lines.joined(separator: "\n"))
+    }
+
     /// 进入分类后调起 AIM 时带的上下文，与时间线头部同一套机制。
     func agentContext(from snapshot: LibrarySnapshot) -> AgentContext {
         let summary = summary(from: snapshot)

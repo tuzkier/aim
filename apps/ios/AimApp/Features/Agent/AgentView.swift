@@ -136,6 +136,29 @@ struct AgentView: View {
         }
     }
 
+    private func answerOptions(_ question: AgentQuestion) -> some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: AimMetrics.space8) {
+                ForEach(question.options) { option in
+                    Button(option.label) {
+                        store.answer(
+                            optionID: option.id, label: option.label, environment: session.environment
+                        )
+                    }
+                    .font(.subheadline)
+                    .foregroundStyle(Color.aimAccent)
+                    .padding(.horizontal, AimMetrics.space12)
+                    .padding(.vertical, AimMetrics.space8)
+                    .background(Color.aimSurface, in: Capsule())
+                    .overlay { Capsule().stroke(Color.aimAccent.opacity(0.2), lineWidth: 1) }
+                    .accessibilityIdentifier("agent-answer-option-\(option.id)")
+                }
+            }
+            .padding(.horizontal, AimMetrics.space16)
+        }
+        .padding(.vertical, AimMetrics.space8)
+    }
+
     private var activitySection: some View {
         VStack(alignment: .leading, spacing: AimMetrics.space8) {
             Text("最近处理").aimLabelStyle()
@@ -199,6 +222,20 @@ struct AgentView: View {
         switch store.state {
         case .awaitingApproval:
             EmptyView()
+        case .awaitingAnswer:
+            if let question = store.pendingQuestion, !question.options.isEmpty {
+                answerOptions(question)
+            } else {
+                // 线上抓到的提问一个选项都不发，只能打字答。不写这句的话
+                // 界面看起来只是停住了，没人知道该干什么。
+                Text("直接在下面回答就行")
+                    .font(.footnote)
+                    .foregroundStyle(Color.aimTextSecondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, AimMetrics.space16)
+                    .padding(.vertical, AimMetrics.space8)
+                    .accessibilityIdentifier("agent-answer-hint")
+            }
         case .streaming:
             HStack(spacing: AimMetrics.space8) {
                 ProgressView().controlSize(.small)

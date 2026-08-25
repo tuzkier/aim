@@ -3,343 +3,1649 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 60;
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A20000000000000000000001 /* AimApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000001 /* AimApp.swift */; };
-		A20000000000000000000002 /* AppSessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000002 /* AppSessionStore.swift */; };
-		A20000000000000000000003 /* APIEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000003 /* APIEnvironment.swift */; };
-		A20000000000000000000061 /* APIEndpointConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000060 /* APIEndpointConfiguration.swift */; };
-		A20000000000000000000062 /* APIEndpointConfigurationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000062 /* APIEndpointConfigurationTests.swift */; };
-		A20000000000000000000063 /* PregnancySetupModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000063 /* PregnancySetupModelTests.swift */; };
-		A20000000000000000000065 /* AgentActivityLogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000065 /* AgentActivityLogTests.swift */; };
-		A20000000000000000000068 /* LibraryCatalogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000067 /* LibraryCatalogTests.swift */; };
-		A20000000000000000000079 /* KnowledgeEntryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000078 /* KnowledgeEntryTests.swift */; };
-		A20000000000000000000073 /* LibraryStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000072 /* LibraryStoreTests.swift */; };
-		A20000000000000000000066 /* LibraryCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000066 /* LibraryCatalog.swift */; };
-		A20000000000000000000083 /* KnowledgeApprovalSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000082 /* KnowledgeApprovalSheet.swift */; };
-		A20000000000000000000082 /* KnowledgePreviewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000081 /* KnowledgePreviewTests.swift */; };
-		A20000000000000000000081 /* KnowledgePreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000080 /* KnowledgePreview.swift */; };
-		A20000000000000000000080 /* KnowledgeDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000079 /* KnowledgeDetailView.swift */; };
-		A20000000000000000000078 /* KnowledgeEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000077 /* KnowledgeEntry.swift */; };
-		A20000000000000000000077 /* LibraryFocusTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000076 /* LibraryFocusTests.swift */; };
-		A20000000000000000000076 /* LibraryFocus.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000075 /* LibraryFocus.swift */; };
-		A20000000000000000000075 /* MetricTrendTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000074 /* MetricTrendTests.swift */; };
-		A20000000000000000000074 /* MetricTrend.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000073 /* MetricTrend.swift */; };
-		A20000000000000000000072 /* LibraryCategoryDetail.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000071 /* LibraryCategoryDetail.swift */; };
-		A20000000000000000000071 /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000070 /* LibraryView.swift */; };
-		A20000000000000000000070 /* LibraryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000069 /* LibraryStore.swift */; };
-		A20000000000000000000069 /* LibraryModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000068 /* LibraryModels.swift */; };
-		A20000000000000000000064 /* PregnancySetupModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000064 /* PregnancySetupModel.swift */; };
-		A20000000000000000000004 /* ModelContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000004 /* ModelContainer.swift */; };
-		A20000000000000000000005 /* AimTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000005 /* AimTheme.swift */; };
-		A20000000000000000000006 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000006 /* Models.swift */; };
-		A20000000000000000000007 /* BusinessRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000007 /* BusinessRepository.swift */; };
-		A20000000000000000000008 /* EveClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000008 /* EveClient.swift */; };
-		A20000000000000000000009 /* EveEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000009 /* EveEvent.swift */; };
-		A20000000000000000000010 /* AgentModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000010 /* AgentModels.swift */; };
-		A20000000000000000000011 /* AgentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000011 /* AgentView.swift */; };
-		A20000000000000000000012 /* AgentStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000012 /* AgentStore.swift */; };
-		A20000000000000000000013 /* FamilyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000013 /* FamilyStore.swift */; };
-		A20000000000000000000014 /* FamilyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000014 /* FamilyView.swift */; };
-		A20000000000000000000015 /* OnboardingStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000015 /* OnboardingStore.swift */; };
-		A20000000000000000000016 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000016 /* OnboardingView.swift */; };
-		A20000000000000000000017 /* PlanStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000017 /* PlanStore.swift */; };
-		A20000000000000000000019 /* TaskDetailStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000019 /* TaskDetailStore.swift */; };
-		A20000000000000000000020 /* TaskDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000020 /* TaskDetailView.swift */; };
-		A20000000000000000000021 /* TodayStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000021 /* TodayStore.swift */; };
-		A20000000000000000000022 /* TodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000022 /* TodayView.swift */; };
-		A20000000000000000000023 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000023 /* Assets.xcassets */; };
-		A20000000000000000000024 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000027 /* KeychainStore.swift */; };
-		A20000000000000000000025 /* RecordModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000028 /* RecordModels.swift */; };
-		A20000000000000000000026 /* RecordStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000029 /* RecordStore.swift */; };
-		A20000000000000000000036 /* RecordStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000036 /* RecordStoreTests.swift */; };
-		A20000000000000000000037 /* RecordsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000037 /* RecordsView.swift */; };
-		A20000000000000000000038 /* RecordComposerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000038 /* RecordComposerView.swift */; };
-		A20000000000000000000039 /* RecordDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000039 /* RecordDetailView.swift */; };
+		A20000000000000000000001 /* App/AimApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000001 /* App/AimApp.swift */; };
+		A20000000000000000000002 /* App/AppSessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000002 /* App/AppSessionStore.swift */; };
+		A20000000000000000000003 /* Core/Networking/APIEnvironment.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000003 /* Core/Networking/APIEnvironment.swift */; };
+		A20000000000000000000004 /* Core/Persistence/ModelContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000004 /* Core/Persistence/ModelContainer.swift */; };
+		A20000000000000000000005 /* Core/DesignSystem/AimTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000005 /* Core/DesignSystem/AimTheme.swift */; };
+		A20000000000000000000006 /* Generated/OpenAPI/Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000006 /* Generated/OpenAPI/Models.swift */; };
+		A20000000000000000000007 /* Clients/BusinessAPIClient/BusinessRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000007 /* Clients/BusinessAPIClient/BusinessRepository.swift */; };
+		A20000000000000000000008 /* Clients/EveClient/EveClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000008 /* Clients/EveClient/EveClient.swift */; };
+		A20000000000000000000009 /* Clients/EveClient/EveEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000009 /* Clients/EveClient/EveEvent.swift */; };
+		A20000000000000000000010 /* Features/Agent/AgentModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000010 /* Features/Agent/AgentModels.swift */; };
+		A20000000000000000000011 /* Features/Agent/AgentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000011 /* Features/Agent/AgentView.swift */; };
+		A20000000000000000000012 /* Features/Agent/AgentStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000012 /* Features/Agent/AgentStore.swift */; };
+		A20000000000000000000013 /* Features/Family/FamilyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000013 /* Features/Family/FamilyStore.swift */; };
+		A20000000000000000000014 /* Features/Family/FamilyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000014 /* Features/Family/FamilyView.swift */; };
+		A20000000000000000000015 /* Features/Onboarding/OnboardingStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000015 /* Features/Onboarding/OnboardingStore.swift */; };
+		A20000000000000000000016 /* Features/Onboarding/OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000016 /* Features/Onboarding/OnboardingView.swift */; };
+		A20000000000000000000017 /* Features/Plan/PlanStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000017 /* Features/Plan/PlanStore.swift */; };
+		A20000000000000000000019 /* Features/TaskDetail/TaskDetailStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000019 /* Features/TaskDetail/TaskDetailStore.swift */; };
+		A20000000000000000000020 /* Features/TaskDetail/TaskDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000020 /* Features/TaskDetail/TaskDetailView.swift */; };
+		A20000000000000000000021 /* Features/Today/TodayStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000021 /* Features/Today/TodayStore.swift */; };
+		A20000000000000000000022 /* Features/Today/TodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000022 /* Features/Today/TodayView.swift */; };
+		A20000000000000000000023 /* Resources/Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000023 /* Resources/Assets.xcassets */; };
+		A20000000000000000000024 /* Core/Auth/KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000027 /* Core/Auth/KeychainStore.swift */; };
+		A20000000000000000000025 /* Features/Records/RecordModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000028 /* Features/Records/RecordModels.swift */; };
+		A20000000000000000000026 /* Features/Records/RecordStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000029 /* Features/Records/RecordStore.swift */; };
+		A20000000000000000000030 /* Tests/EveClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000030 /* Tests/EveClientTests.swift */; };
+		A20000000000000000000031 /* Tests/BusinessRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000031 /* Tests/BusinessRepositoryTests.swift */; };
+		A20000000000000000000032 /* Tests/TodayStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000032 /* Tests/TodayStoreTests.swift */; };
+		A20000000000000000000033 /* Tests/TaskDetailStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000033 /* Tests/TaskDetailStoreTests.swift */; };
+		A20000000000000000000034 /* UITests/CoreJourneyUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000034 /* UITests/CoreJourneyUITests.swift */; };
+		A20000000000000000000035 /* Tests/AgentStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000035 /* Tests/AgentStoreTests.swift */; };
+		A20000000000000000000036 /* Tests/RecordStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000036 /* Tests/RecordStoreTests.swift */; };
+		A20000000000000000000037 /* Features/Records/RecordsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000037 /* Features/Records/RecordsView.swift */; };
+		A20000000000000000000038 /* Features/Records/RecordComposerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000038 /* Features/Records/RecordComposerView.swift */; };
+		A20000000000000000000039 /* Features/Records/RecordDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000039 /* Features/Records/RecordDetailView.swift */; };
 		A20000000000000000000040 /* ExyteChat in Frameworks */ = {isa = PBXBuildFile; productRef = A12000000000000000000001 /* ExyteChat */; };
-		A20000000000000000000041 /* AgentChatAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000040 /* AgentChatAdapter.swift */; };
-		A20000000000000000000030 /* EveClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000030 /* EveClientTests.swift */; };
-		A20000000000000000000031 /* BusinessRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000031 /* BusinessRepositoryTests.swift */; };
-		A20000000000000000000032 /* TodayStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000032 /* TodayStoreTests.swift */; };
-		A20000000000000000000033 /* TaskDetailStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000033 /* TaskDetailStoreTests.swift */; };
-		A20000000000000000000034 /* CoreJourneyUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000034 /* CoreJourneyUITests.swift */; };
-		A20000000000000000000035 /* AgentStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000035 /* AgentStoreTests.swift */; };
-		A20000000000000000000042 /* TimelineModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000041 /* TimelineModels.swift */; };
-		A20000000000000000000043 /* TimelineBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000042 /* TimelineBuilder.swift */; };
-		A20000000000000000000044 /* TimelineBuilderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000043 /* TimelineBuilderTests.swift */; };
-		A20000000000000000000045 /* AimMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000044 /* AimMetrics.swift */; };
-		A20000000000000000000046 /* AimTimelineRail.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000045 /* AimTimelineRail.swift */; };
-		A20000000000000000000047 /* AimWeekHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000046 /* AimWeekHeader.swift */; };
-		A20000000000000000000048 /* AimTimelineRows.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000047 /* AimTimelineRows.swift */; };
-		A20000000000000000000049 /* TimelineStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000048 /* TimelineStore.swift */; };
-		A20000000000000000000050 /* TimelineStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000049 /* TimelineStoreTests.swift */; };
-		A20000000000000000000051 /* TimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000050 /* TimelineView.swift */; };
-		A20000000000000000000052 /* AimFocusCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000051 /* AimFocusCard.swift */; };
-		A20000000000000000000053 /* AimStateViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000052 /* AimStateViews.swift */; };
-		A20000000000000000000054 /* AimToast.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000053 /* AimToast.swift */; };
-		A20000000000000000000055 /* AgentChangePreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000054 /* AgentChangePreview.swift */; };
-		A20000000000000000000056 /* AgentDiffSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000055 /* AgentDiffSheet.swift */; };
-		A20000000000000000000057 /* AgentChangePreviewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000056 /* AgentChangePreviewTests.swift */; };
-		A20000000000000000000058 /* TimelineHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000057 /* TimelineHeader.swift */; };
-		A20000000000000000000059 /* TaskRecordSuggestion.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000058 /* TaskRecordSuggestion.swift */; };
-		A20000000000000000000060 /* TaskRecordSuggestionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000059 /* TaskRecordSuggestionTests.swift */; };
+		A20000000000000000000041 /* Features/Agent/AgentChatAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000040 /* Features/Agent/AgentChatAdapter.swift */; };
+		A20000000000000000000042 /* Features/Timeline/TimelineModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000041 /* Features/Timeline/TimelineModels.swift */; };
+		A20000000000000000000043 /* Features/Timeline/TimelineBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000042 /* Features/Timeline/TimelineBuilder.swift */; };
+		A20000000000000000000044 /* Tests/TimelineBuilderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000043 /* Tests/TimelineBuilderTests.swift */; };
+		A20000000000000000000045 /* Core/DesignSystem/AimMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000044 /* Core/DesignSystem/AimMetrics.swift */; };
+		A20000000000000000000046 /* Core/DesignSystem/Components/AimTimelineRail.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000045 /* Core/DesignSystem/Components/AimTimelineRail.swift */; };
+		A20000000000000000000047 /* Core/DesignSystem/Components/AimWeekHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000046 /* Core/DesignSystem/Components/AimWeekHeader.swift */; };
+		A20000000000000000000048 /* Core/DesignSystem/Components/AimTimelineRows.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000047 /* Core/DesignSystem/Components/AimTimelineRows.swift */; };
+		A20000000000000000000049 /* Features/Timeline/TimelineStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000048 /* Features/Timeline/TimelineStore.swift */; };
+		A20000000000000000000050 /* Tests/TimelineStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000049 /* Tests/TimelineStoreTests.swift */; };
+		A20000000000000000000051 /* Features/Timeline/TimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000050 /* Features/Timeline/TimelineView.swift */; };
+		A20000000000000000000052 /* Core/DesignSystem/Components/AimFocusCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000051 /* Core/DesignSystem/Components/AimFocusCard.swift */; };
+		A20000000000000000000053 /* Core/DesignSystem/Components/AimStateViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000052 /* Core/DesignSystem/Components/AimStateViews.swift */; };
+		A20000000000000000000054 /* Core/DesignSystem/Components/AimToast.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000053 /* Core/DesignSystem/Components/AimToast.swift */; };
+		A20000000000000000000055 /* Features/Agent/AgentChangePreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000054 /* Features/Agent/AgentChangePreview.swift */; };
+		A20000000000000000000056 /* Features/Agent/AgentDiffSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000055 /* Features/Agent/AgentDiffSheet.swift */; };
+		A20000000000000000000057 /* Tests/AgentChangePreviewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000056 /* Tests/AgentChangePreviewTests.swift */; };
+		A20000000000000000000058 /* Features/Timeline/TimelineHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000057 /* Features/Timeline/TimelineHeader.swift */; };
+		A20000000000000000000059 /* Features/Records/TaskRecordSuggestion.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000058 /* Features/Records/TaskRecordSuggestion.swift */; };
+		A20000000000000000000060 /* Tests/TaskRecordSuggestionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000059 /* Tests/TaskRecordSuggestionTests.swift */; };
+		A20000000000000000000061 /* Core/Networking/APIEndpointConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000060 /* Core/Networking/APIEndpointConfiguration.swift */; };
+		A20000000000000000000062 /* Tests/APIEndpointConfigurationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000062 /* Tests/APIEndpointConfigurationTests.swift */; };
+		A20000000000000000000063 /* Tests/PregnancySetupModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000063 /* Tests/PregnancySetupModelTests.swift */; };
+		A20000000000000000000064 /* Features/Onboarding/PregnancySetupModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000064 /* Features/Onboarding/PregnancySetupModel.swift */; };
+		A20000000000000000000065 /* Tests/AgentActivityLogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000065 /* Tests/AgentActivityLogTests.swift */; };
+		A20000000000000000000066 /* Features/Library/LibraryCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000066 /* Features/Library/LibraryCatalog.swift */; };
+		A20000000000000000000068 /* Tests/LibraryCatalogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000067 /* Tests/LibraryCatalogTests.swift */; };
+		A20000000000000000000069 /* Features/Library/LibraryModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000068 /* Features/Library/LibraryModels.swift */; };
+		A20000000000000000000070 /* Features/Library/LibraryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000069 /* Features/Library/LibraryStore.swift */; };
+		A20000000000000000000071 /* Features/Library/LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000070 /* Features/Library/LibraryView.swift */; };
+		A20000000000000000000072 /* Features/Library/LibraryCategoryDetail.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000071 /* Features/Library/LibraryCategoryDetail.swift */; };
+		A20000000000000000000073 /* Tests/LibraryStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000072 /* Tests/LibraryStoreTests.swift */; };
+		A20000000000000000000074 /* Features/Library/MetricTrend.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000073 /* Features/Library/MetricTrend.swift */; };
+		A20000000000000000000075 /* Tests/MetricTrendTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000074 /* Tests/MetricTrendTests.swift */; };
+		A20000000000000000000076 /* Features/Library/LibraryFocus.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000075 /* Features/Library/LibraryFocus.swift */; };
+		A20000000000000000000077 /* Tests/LibraryFocusTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000076 /* Tests/LibraryFocusTests.swift */; };
+		A20000000000000000000078 /* Features/Library/KnowledgeEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000077 /* Features/Library/KnowledgeEntry.swift */; };
+		A20000000000000000000079 /* Tests/KnowledgeEntryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000078 /* Tests/KnowledgeEntryTests.swift */; };
+		A20000000000000000000080 /* Features/Library/KnowledgeDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000079 /* Features/Library/KnowledgeDetailView.swift */; };
+		A20000000000000000000081 /* Features/Library/KnowledgePreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000080 /* Features/Library/KnowledgePreview.swift */; };
+		A20000000000000000000082 /* Tests/KnowledgePreviewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000081 /* Tests/KnowledgePreviewTests.swift */; };
+		A20000000000000000000083 /* Features/Library/KnowledgeApprovalSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000082 /* Features/Library/KnowledgeApprovalSheet.swift */; };
+		A20000000000000000000084 /* Features/Records/CheckupMetricInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000083 /* Features/Records/CheckupMetricInput.swift */; };
+		A20000000000000000000085 /* Tests/CheckupMetricInputTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000084 /* Tests/CheckupMetricInputTests.swift */; };
+		A20000000000000000000086 /* Tests/CheckupMetricsRoundTripTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000085 /* Tests/CheckupMetricsRoundTripTests.swift */; };
+		A20000000000000000000087 /* Features/Library/KnowledgeComposerModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000086 /* Features/Library/KnowledgeComposerModel.swift */; };
+		A20000000000000000000088 /* Tests/KnowledgeComposerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000087 /* Tests/KnowledgeComposerTests.swift */; };
+		A20000000000000000000089 /* Features/Library/KnowledgeComposerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000088 /* Features/Library/KnowledgeComposerView.swift */; };
+		A20000000000000000000090 /* Features/Library/ConsultationList.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000089 /* Features/Library/ConsultationList.swift */; };
+		A20000000000000000000091 /* Tests/ConsultationListTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000090 /* Tests/ConsultationListTests.swift */; };
+		A20000000000000000000092 /* Features/Library/ConsultationListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000091 /* Features/Library/ConsultationListView.swift */; };
+		A20000000000000000000093 /* Features/Library/SafetyCheck.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000092 /* Features/Library/SafetyCheck.swift */; };
+		A20000000000000000000094 /* Tests/SafetyCheckTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000093 /* Tests/SafetyCheckTests.swift */; };
+		A20000000000000000000095 /* Tests/MetricKindTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000094 /* Tests/MetricKindTests.swift */; };
+		A20000000000000000000096 /* Features/Library/SymptomPattern.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000095 /* Features/Library/SymptomPattern.swift */; };
+		A20000000000000000000097 /* Tests/SymptomPatternTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000096 /* Tests/SymptomPatternTests.swift */; };
+		A20000000000000000000098 /* Features/Library/ContentItemDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000097 /* Features/Library/ContentItemDetailView.swift */; };
+		A20000000000000000000102 /* Features/Agent/AgentQuestion.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000101 /* Features/Agent/AgentQuestion.swift */; };
+		A20000000000000000000104 /* Tests/AgentQuestionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000103 /* Tests/AgentQuestionTests.swift */; };
+		A20000000000000000000106 /* Tests/EveStreamTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000105 /* Tests/EveStreamTests.swift */; };
+		A20000000000000000000108 /* Tests/SessionExpiryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000107 /* Tests/SessionExpiryTests.swift */; };
+		A20000000000000000000099 /* Features/Library/NutritionSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000098 /* Features/Library/NutritionSection.swift */; };
+		A20000000000000000000100 /* Tests/NutritionSectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000099 /* Tests/NutritionSectionTests.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		A90000000000000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A60000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A50000000000000000000001;
+			remoteInfo = AimApp;
+		};
+		A90000000000000000000002 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A60000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A50000000000000000000001;
+			remoteInfo = AimApp;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
-		A10000000000000000000001 /* AimApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/AimApp.swift; sourceTree = "<group>"; };
-		A10000000000000000000002 /* AppSessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/AppSessionStore.swift; sourceTree = "<group>"; };
-		A10000000000000000000003 /* APIEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Networking/APIEnvironment.swift; sourceTree = "<group>"; };
-		A10000000000000000000060 /* APIEndpointConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Networking/APIEndpointConfiguration.swift; sourceTree = "<group>"; };
-		A10000000000000000000062 /* APIEndpointConfigurationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/APIEndpointConfigurationTests.swift; sourceTree = "<group>"; };
-		A10000000000000000000063 /* PregnancySetupModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/PregnancySetupModelTests.swift; sourceTree = "<group>"; };
-		A10000000000000000000065 /* AgentActivityLogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/AgentActivityLogTests.swift; sourceTree = "<group>"; };
-		A10000000000000000000067 /* LibraryCatalogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/LibraryCatalogTests.swift; sourceTree = "<group>"; };
-		A10000000000000000000078 /* KnowledgeEntryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/KnowledgeEntryTests.swift; sourceTree = "<group>"; };
-		A10000000000000000000072 /* LibraryStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/LibraryStoreTests.swift; sourceTree = "<group>"; };
-		A10000000000000000000066 /* LibraryCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Library/LibraryCatalog.swift; sourceTree = "<group>"; };
-		A10000000000000000000082 /* KnowledgeApprovalSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Library/KnowledgeApprovalSheet.swift; sourceTree = "<group>"; };
-		A10000000000000000000081 /* KnowledgePreviewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/KnowledgePreviewTests.swift; sourceTree = "<group>"; };
-		A10000000000000000000080 /* KnowledgePreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Library/KnowledgePreview.swift; sourceTree = "<group>"; };
-		A10000000000000000000079 /* KnowledgeDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Library/KnowledgeDetailView.swift; sourceTree = "<group>"; };
-		A10000000000000000000077 /* KnowledgeEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Library/KnowledgeEntry.swift; sourceTree = "<group>"; };
-		A10000000000000000000076 /* LibraryFocusTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/LibraryFocusTests.swift; sourceTree = "<group>"; };
-		A10000000000000000000075 /* LibraryFocus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Library/LibraryFocus.swift; sourceTree = "<group>"; };
-		A10000000000000000000074 /* MetricTrendTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/MetricTrendTests.swift; sourceTree = "<group>"; };
-		A10000000000000000000073 /* MetricTrend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Library/MetricTrend.swift; sourceTree = "<group>"; };
-		A10000000000000000000071 /* LibraryCategoryDetail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Library/LibraryCategoryDetail.swift; sourceTree = "<group>"; };
-		A10000000000000000000070 /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Library/LibraryView.swift; sourceTree = "<group>"; };
-		A10000000000000000000069 /* LibraryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Library/LibraryStore.swift; sourceTree = "<group>"; };
-		A10000000000000000000068 /* LibraryModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Library/LibraryModels.swift; sourceTree = "<group>"; };
-		A10000000000000000000064 /* PregnancySetupModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Onboarding/PregnancySetupModel.swift; sourceTree = "<group>"; };
-		A10000000000000000000061 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Resources/Info.plist; sourceTree = "<group>"; };
-		A10000000000000000000004 /* ModelContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Persistence/ModelContainer.swift; sourceTree = "<group>"; };
-		A10000000000000000000005 /* AimTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/DesignSystem/AimTheme.swift; sourceTree = "<group>"; };
-		A10000000000000000000006 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Generated/OpenAPI/Models.swift; sourceTree = "<group>"; };
-		A10000000000000000000007 /* BusinessRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clients/BusinessAPIClient/BusinessRepository.swift; sourceTree = "<group>"; };
-		A10000000000000000000008 /* EveClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clients/EveClient/EveClient.swift; sourceTree = "<group>"; };
-		A10000000000000000000009 /* EveEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clients/EveClient/EveEvent.swift; sourceTree = "<group>"; };
-		A10000000000000000000010 /* AgentModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Agent/AgentModels.swift; sourceTree = "<group>"; };
-		A10000000000000000000011 /* AgentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Agent/AgentView.swift; sourceTree = "<group>"; };
-		A10000000000000000000012 /* AgentStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Agent/AgentStore.swift; sourceTree = "<group>"; };
-		A10000000000000000000013 /* FamilyStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Family/FamilyStore.swift; sourceTree = "<group>"; };
-		A10000000000000000000014 /* FamilyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Family/FamilyView.swift; sourceTree = "<group>"; };
-		A10000000000000000000015 /* OnboardingStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Onboarding/OnboardingStore.swift; sourceTree = "<group>"; };
-		A10000000000000000000016 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Onboarding/OnboardingView.swift; sourceTree = "<group>"; };
-		A10000000000000000000017 /* PlanStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Plan/PlanStore.swift; sourceTree = "<group>"; };
-		A10000000000000000000019 /* TaskDetailStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/TaskDetail/TaskDetailStore.swift; sourceTree = "<group>"; };
-		A10000000000000000000020 /* TaskDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/TaskDetail/TaskDetailView.swift; sourceTree = "<group>"; };
-		A10000000000000000000021 /* TodayStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Today/TodayStore.swift; sourceTree = "<group>"; };
-		A10000000000000000000022 /* TodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Today/TodayView.swift; sourceTree = "<group>"; };
-		A10000000000000000000023 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Resources/Assets.xcassets; sourceTree = "<group>"; };
+		A10000000000000000000001 /* App/AimApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/AimApp.swift; sourceTree = "<group>"; };
+		A10000000000000000000002 /* App/AppSessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/AppSessionStore.swift; sourceTree = "<group>"; };
+		A10000000000000000000003 /* Core/Networking/APIEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Networking/APIEnvironment.swift; sourceTree = "<group>"; };
+		A10000000000000000000004 /* Core/Persistence/ModelContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Persistence/ModelContainer.swift; sourceTree = "<group>"; };
+		A10000000000000000000005 /* Core/DesignSystem/AimTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/DesignSystem/AimTheme.swift; sourceTree = "<group>"; };
+		A10000000000000000000006 /* Generated/OpenAPI/Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Generated/OpenAPI/Models.swift; sourceTree = "<group>"; };
+		A10000000000000000000007 /* Clients/BusinessAPIClient/BusinessRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clients/BusinessAPIClient/BusinessRepository.swift; sourceTree = "<group>"; };
+		A10000000000000000000008 /* Clients/EveClient/EveClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clients/EveClient/EveClient.swift; sourceTree = "<group>"; };
+		A10000000000000000000009 /* Clients/EveClient/EveEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Clients/EveClient/EveEvent.swift; sourceTree = "<group>"; };
+		A10000000000000000000010 /* Features/Agent/AgentModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Agent/AgentModels.swift; sourceTree = "<group>"; };
+		A10000000000000000000011 /* Features/Agent/AgentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Agent/AgentView.swift; sourceTree = "<group>"; };
+		A10000000000000000000012 /* Features/Agent/AgentStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Agent/AgentStore.swift; sourceTree = "<group>"; };
+		A10000000000000000000013 /* Features/Family/FamilyStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Family/FamilyStore.swift; sourceTree = "<group>"; };
+		A10000000000000000000014 /* Features/Family/FamilyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Family/FamilyView.swift; sourceTree = "<group>"; };
+		A10000000000000000000015 /* Features/Onboarding/OnboardingStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Onboarding/OnboardingStore.swift; sourceTree = "<group>"; };
+		A10000000000000000000016 /* Features/Onboarding/OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Onboarding/OnboardingView.swift; sourceTree = "<group>"; };
+		A10000000000000000000017 /* Features/Plan/PlanStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Plan/PlanStore.swift; sourceTree = "<group>"; };
+		A10000000000000000000019 /* Features/TaskDetail/TaskDetailStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/TaskDetail/TaskDetailStore.swift; sourceTree = "<group>"; };
+		A10000000000000000000020 /* Features/TaskDetail/TaskDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/TaskDetail/TaskDetailView.swift; sourceTree = "<group>"; };
+		A10000000000000000000021 /* Features/Today/TodayStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Today/TodayStore.swift; sourceTree = "<group>"; };
+		A10000000000000000000022 /* Features/Today/TodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Today/TodayView.swift; sourceTree = "<group>"; };
+		A10000000000000000000023 /* Resources/Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Resources/Assets.xcassets; sourceTree = "<group>"; };
 		A10000000000000000000024 /* AimApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AimApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		A10000000000000000000025 /* AimAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle.xctest; includeInIndex = 0; path = AimAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		A10000000000000000000026 /* AimAppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle.xctest; includeInIndex = 0; path = AimAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		A10000000000000000000027 /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Auth/KeychainStore.swift; sourceTree = "<group>"; };
-		A10000000000000000000028 /* RecordModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Records/RecordModels.swift; sourceTree = "<group>"; };
-		A10000000000000000000029 /* RecordStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Records/RecordStore.swift; sourceTree = "<group>"; };
-		A10000000000000000000030 /* EveClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/EveClientTests.swift; sourceTree = "<group>"; };
-		A10000000000000000000031 /* BusinessRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/BusinessRepositoryTests.swift; sourceTree = "<group>"; };
-		A10000000000000000000032 /* TodayStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/TodayStoreTests.swift; sourceTree = "<group>"; };
-		A10000000000000000000033 /* TaskDetailStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/TaskDetailStoreTests.swift; sourceTree = "<group>"; };
-		A10000000000000000000034 /* CoreJourneyUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UITests/CoreJourneyUITests.swift; sourceTree = "<group>"; };
-		A10000000000000000000035 /* AgentStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/AgentStoreTests.swift; sourceTree = "<group>"; };
-		A10000000000000000000036 /* RecordStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/RecordStoreTests.swift; sourceTree = "<group>"; };
-		A10000000000000000000037 /* RecordsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Records/RecordsView.swift; sourceTree = "<group>"; };
-		A10000000000000000000038 /* RecordComposerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Records/RecordComposerView.swift; sourceTree = "<group>"; };
-		A10000000000000000000039 /* RecordDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Records/RecordDetailView.swift; sourceTree = "<group>"; };
-		A10000000000000000000040 /* AgentChatAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Agent/AgentChatAdapter.swift; sourceTree = "<group>"; };
-		A10000000000000000000041 /* TimelineModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Timeline/TimelineModels.swift; sourceTree = "<group>"; };
-		A10000000000000000000042 /* TimelineBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Timeline/TimelineBuilder.swift; sourceTree = "<group>"; };
-		A10000000000000000000043 /* TimelineBuilderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/TimelineBuilderTests.swift; sourceTree = "<group>"; };
-		A10000000000000000000044 /* AimMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/DesignSystem/AimMetrics.swift; sourceTree = "<group>"; };
-		A10000000000000000000045 /* AimTimelineRail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/DesignSystem/Components/AimTimelineRail.swift; sourceTree = "<group>"; };
-		A10000000000000000000046 /* AimWeekHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/DesignSystem/Components/AimWeekHeader.swift; sourceTree = "<group>"; };
-		A10000000000000000000047 /* AimTimelineRows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/DesignSystem/Components/AimTimelineRows.swift; sourceTree = "<group>"; };
-		A10000000000000000000048 /* TimelineStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Timeline/TimelineStore.swift; sourceTree = "<group>"; };
-		A10000000000000000000049 /* TimelineStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/TimelineStoreTests.swift; sourceTree = "<group>"; };
-		A10000000000000000000050 /* TimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Timeline/TimelineView.swift; sourceTree = "<group>"; };
-		A10000000000000000000051 /* AimFocusCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/DesignSystem/Components/AimFocusCard.swift; sourceTree = "<group>"; };
-		A10000000000000000000052 /* AimStateViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/DesignSystem/Components/AimStateViews.swift; sourceTree = "<group>"; };
-		A10000000000000000000053 /* AimToast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/DesignSystem/Components/AimToast.swift; sourceTree = "<group>"; };
-		A10000000000000000000054 /* AgentChangePreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Agent/AgentChangePreview.swift; sourceTree = "<group>"; };
-		A10000000000000000000055 /* AgentDiffSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Agent/AgentDiffSheet.swift; sourceTree = "<group>"; };
-		A10000000000000000000056 /* AgentChangePreviewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/AgentChangePreviewTests.swift; sourceTree = "<group>"; };
-		A10000000000000000000057 /* TimelineHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Timeline/TimelineHeader.swift; sourceTree = "<group>"; };
-		A10000000000000000000058 /* TaskRecordSuggestion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Records/TaskRecordSuggestion.swift; sourceTree = "<group>"; };
-		A10000000000000000000059 /* TaskRecordSuggestionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/TaskRecordSuggestionTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000025 /* AimAppTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = file; path = AimAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A10000000000000000000026 /* AimAppUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = file; path = AimAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A10000000000000000000027 /* Core/Auth/KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Auth/KeychainStore.swift; sourceTree = "<group>"; };
+		A10000000000000000000028 /* Features/Records/RecordModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Records/RecordModels.swift; sourceTree = "<group>"; };
+		A10000000000000000000029 /* Features/Records/RecordStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Records/RecordStore.swift; sourceTree = "<group>"; };
+		A10000000000000000000030 /* Tests/EveClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/EveClientTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000031 /* Tests/BusinessRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/BusinessRepositoryTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000032 /* Tests/TodayStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/TodayStoreTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000033 /* Tests/TaskDetailStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/TaskDetailStoreTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000034 /* UITests/CoreJourneyUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UITests/CoreJourneyUITests.swift; sourceTree = "<group>"; };
+		A10000000000000000000035 /* Tests/AgentStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/AgentStoreTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000036 /* Tests/RecordStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/RecordStoreTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000037 /* Features/Records/RecordsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Records/RecordsView.swift; sourceTree = "<group>"; };
+		A10000000000000000000038 /* Features/Records/RecordComposerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Records/RecordComposerView.swift; sourceTree = "<group>"; };
+		A10000000000000000000039 /* Features/Records/RecordDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Records/RecordDetailView.swift; sourceTree = "<group>"; };
+		A10000000000000000000040 /* Features/Agent/AgentChatAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Agent/AgentChatAdapter.swift; sourceTree = "<group>"; };
+		A10000000000000000000041 /* Features/Timeline/TimelineModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Timeline/TimelineModels.swift; sourceTree = "<group>"; };
+		A10000000000000000000042 /* Features/Timeline/TimelineBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Timeline/TimelineBuilder.swift; sourceTree = "<group>"; };
+		A10000000000000000000043 /* Tests/TimelineBuilderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/TimelineBuilderTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000044 /* Core/DesignSystem/AimMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/DesignSystem/AimMetrics.swift; sourceTree = "<group>"; };
+		A10000000000000000000045 /* Core/DesignSystem/Components/AimTimelineRail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/DesignSystem/Components/AimTimelineRail.swift; sourceTree = "<group>"; };
+		A10000000000000000000046 /* Core/DesignSystem/Components/AimWeekHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/DesignSystem/Components/AimWeekHeader.swift; sourceTree = "<group>"; };
+		A10000000000000000000047 /* Core/DesignSystem/Components/AimTimelineRows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/DesignSystem/Components/AimTimelineRows.swift; sourceTree = "<group>"; };
+		A10000000000000000000048 /* Features/Timeline/TimelineStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Timeline/TimelineStore.swift; sourceTree = "<group>"; };
+		A10000000000000000000049 /* Tests/TimelineStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/TimelineStoreTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000050 /* Features/Timeline/TimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Timeline/TimelineView.swift; sourceTree = "<group>"; };
+		A10000000000000000000051 /* Core/DesignSystem/Components/AimFocusCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/DesignSystem/Components/AimFocusCard.swift; sourceTree = "<group>"; };
+		A10000000000000000000052 /* Core/DesignSystem/Components/AimStateViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/DesignSystem/Components/AimStateViews.swift; sourceTree = "<group>"; };
+		A10000000000000000000053 /* Core/DesignSystem/Components/AimToast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/DesignSystem/Components/AimToast.swift; sourceTree = "<group>"; };
+		A10000000000000000000054 /* Features/Agent/AgentChangePreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Agent/AgentChangePreview.swift; sourceTree = "<group>"; };
+		A10000000000000000000055 /* Features/Agent/AgentDiffSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Agent/AgentDiffSheet.swift; sourceTree = "<group>"; };
+		A10000000000000000000056 /* Tests/AgentChangePreviewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/AgentChangePreviewTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000057 /* Features/Timeline/TimelineHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Timeline/TimelineHeader.swift; sourceTree = "<group>"; };
+		A10000000000000000000058 /* Features/Records/TaskRecordSuggestion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Records/TaskRecordSuggestion.swift; sourceTree = "<group>"; };
+		A10000000000000000000059 /* Tests/TaskRecordSuggestionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/TaskRecordSuggestionTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000060 /* Core/Networking/APIEndpointConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Networking/APIEndpointConfiguration.swift; sourceTree = "<group>"; };
+		A10000000000000000000061 /* Resources/Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Resources/Info.plist; sourceTree = "<group>"; };
+		A10000000000000000000062 /* Tests/APIEndpointConfigurationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/APIEndpointConfigurationTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000063 /* Tests/PregnancySetupModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/PregnancySetupModelTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000064 /* Features/Onboarding/PregnancySetupModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Onboarding/PregnancySetupModel.swift; sourceTree = "<group>"; };
+		A10000000000000000000065 /* Tests/AgentActivityLogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/AgentActivityLogTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000066 /* Features/Library/LibraryCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Library/LibraryCatalog.swift; sourceTree = "<group>"; };
+		A10000000000000000000067 /* Tests/LibraryCatalogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/LibraryCatalogTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000068 /* Features/Library/LibraryModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Library/LibraryModels.swift; sourceTree = "<group>"; };
+		A10000000000000000000069 /* Features/Library/LibraryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Library/LibraryStore.swift; sourceTree = "<group>"; };
+		A10000000000000000000070 /* Features/Library/LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Library/LibraryView.swift; sourceTree = "<group>"; };
+		A10000000000000000000071 /* Features/Library/LibraryCategoryDetail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Library/LibraryCategoryDetail.swift; sourceTree = "<group>"; };
+		A10000000000000000000072 /* Tests/LibraryStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/LibraryStoreTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000073 /* Features/Library/MetricTrend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Library/MetricTrend.swift; sourceTree = "<group>"; };
+		A10000000000000000000074 /* Tests/MetricTrendTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/MetricTrendTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000075 /* Features/Library/LibraryFocus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Library/LibraryFocus.swift; sourceTree = "<group>"; };
+		A10000000000000000000076 /* Tests/LibraryFocusTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/LibraryFocusTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000077 /* Features/Library/KnowledgeEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Library/KnowledgeEntry.swift; sourceTree = "<group>"; };
+		A10000000000000000000078 /* Tests/KnowledgeEntryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/KnowledgeEntryTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000079 /* Features/Library/KnowledgeDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Library/KnowledgeDetailView.swift; sourceTree = "<group>"; };
+		A10000000000000000000080 /* Features/Library/KnowledgePreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Library/KnowledgePreview.swift; sourceTree = "<group>"; };
+		A10000000000000000000081 /* Tests/KnowledgePreviewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/KnowledgePreviewTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000082 /* Features/Library/KnowledgeApprovalSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Library/KnowledgeApprovalSheet.swift; sourceTree = "<group>"; };
+		A10000000000000000000083 /* Features/Records/CheckupMetricInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Records/CheckupMetricInput.swift; sourceTree = "<group>"; };
+		A10000000000000000000084 /* Tests/CheckupMetricInputTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/CheckupMetricInputTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000085 /* Tests/CheckupMetricsRoundTripTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/CheckupMetricsRoundTripTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000086 /* Features/Library/KnowledgeComposerModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Library/KnowledgeComposerModel.swift; sourceTree = "<group>"; };
+		A10000000000000000000087 /* Tests/KnowledgeComposerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/KnowledgeComposerTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000088 /* Features/Library/KnowledgeComposerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Library/KnowledgeComposerView.swift; sourceTree = "<group>"; };
+		A10000000000000000000089 /* Features/Library/ConsultationList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Library/ConsultationList.swift; sourceTree = "<group>"; };
+		A10000000000000000000090 /* Tests/ConsultationListTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/ConsultationListTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000091 /* Features/Library/ConsultationListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Library/ConsultationListView.swift; sourceTree = "<group>"; };
+		A10000000000000000000092 /* Features/Library/SafetyCheck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Library/SafetyCheck.swift; sourceTree = "<group>"; };
+		A10000000000000000000093 /* Tests/SafetyCheckTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/SafetyCheckTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000094 /* Tests/MetricKindTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/MetricKindTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000095 /* Features/Library/SymptomPattern.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Library/SymptomPattern.swift; sourceTree = "<group>"; };
+		A10000000000000000000096 /* Tests/SymptomPatternTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/SymptomPatternTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000097 /* Features/Library/ContentItemDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Library/ContentItemDetailView.swift; sourceTree = "<group>"; };
+		A10000000000000000000101 /* Features/Agent/AgentQuestion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Agent/AgentQuestion.swift; sourceTree = "<group>"; };
+		A10000000000000000000103 /* Tests/AgentQuestionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/AgentQuestionTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000105 /* Tests/EveStreamTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/EveStreamTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000107 /* Tests/SessionExpiryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/SessionExpiryTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000098 /* Features/Library/NutritionSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Library/NutritionSection.swift; sourceTree = "<group>"; };
+		A10000000000000000000099 /* Tests/NutritionSectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/NutritionSectionTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		A30000000000000000000001 /* AimApp Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (A20000000000000000000040 /* ExyteChat in Frameworks */); runOnlyForDeploymentPostprocessing = 0; };
-		A30000000000000000000002 /* AimAppTests Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
-		A30000000000000000000003 /* AimAppUITests Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		A30000000000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A20000000000000000000040 /* ExyteChat in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A30000000000000000000002 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A30000000000000000000003 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		A40000000000000000000001 = {isa = PBXGroup; children = (A40000000000000000000105, A40000000000000000000002, A40000000000000000000003, A40000000000000000000004, A40000000000000000000005, A40000000000000000000006, A40000000000000000000007, A40000000000000000000008, A40000000000000000000009, A40000000000000000000010, A40000000000000000000011, A40000000000000000000012, A40000000000000000000013, A40000000000000000000014, A40000000000000000000015, A40000000000000000000016, A40000000000000000000017, A40000000000000000000018, A40000000000000000000019, A40000000000000000000020, A40000000000000000000021, A40000000000000000000022, A40000000000000000000023, A40000000000000000000024, A40000000000000000000025, A40000000000000000000026, A40000000000000000000027, A40000000000000000000028, A40000000000000000000029, A40000000000000000000032, A40000000000000000000033, A40000000000000000000034, A40000000000000000000035, A40000000000000000000036, A40000000000000000000037, A40000000000000000000038, A40000000000000000000039, A40000000000000000000040, A40000000000000000000041, A40000000000000000000042, A40000000000000000000043, A40000000000000000000044, A40000000000000000000045, A40000000000000000000046, A40000000000000000000047, A40000000000000000000048, A40000000000000000000049, A40000000000000000000050, A40000000000000000000051, A40000000000000000000052, A40000000000000000000053, A40000000000000000000054, A40000000000000000000055, A40000000000000000000056, A40000000000000000000057, A40000000000000000000058, A40000000000000000000059, A40000000000000000000060, A40000000000000000000061, A40000000000000000000062, A40000000000000000000063, A40000000000000000000064, A40000000000000000000065, A40000000000000000000066, A40000000000000000000067, A40000000000000000000068, A40000000000000000000069, A40000000000000000000070, A40000000000000000000071, A40000000000000000000072, A40000000000000000000073, A40000000000000000000074, A40000000000000000000075, A40000000000000000000076, A40000000000000000000077, A40000000000000000000078, A40000000000000000000079, A40000000000000000000080, A40000000000000000000081, A40000000000000000000082, A40000000000000000000083, A40000000000000000000084, A40000000000000000000085, A40000000000000000000086, A40000000000000000000087, A40000000000000000000088, A40000000000000000000089, A40000000000000000000090, A40000000000000000000091, A40000000000000000000092, A40000000000000000000093, A40000000000000000000094, A40000000000000000000095, A40000000000000000000096, A40000000000000000000097, A40000000000000000000098, A40000000000000000000099, A40000000000000000000100, A40000000000000000000101, A40000000000000000000102, A40000000000000000000103, A40000000000000000000104); name = AimApp; path = AimApp; sourceTree = "<group>"; };
-		A40000000000000000000002 = {isa = PBXGroup; children = (A10000000000000000000001, A10000000000000000000002); name = App; sourceTree = "<group>"; };
-		A40000000000000000000003 = {isa = PBXGroup; children = (A10000000000000000000060, A10000000000000000000003, A10000000000000000000004, A10000000000000000000005, A10000000000000000000027, A10000000000000000000044); name = Core; sourceTree = "<group>"; };
-		A40000000000000000000004 = {isa = PBXGroup; children = (A10000000000000000000007); name = BusinessAPIClient; sourceTree = "<group>"; };
-		A40000000000000000000005 = {isa = PBXGroup; children = (A10000000000000000000008, A10000000000000000000009); name = EveClient; sourceTree = "<group>"; };
-		A40000000000000000000006 = {isa = PBXGroup; children = (A10000000000000000000010, A10000000000000000000011, A10000000000000000000012, A10000000000000000000040, A10000000000000000000054, A10000000000000000000055); name = Agent; sourceTree = "<group>"; };
-		A40000000000000000000007 = {isa = PBXGroup; children = (A10000000000000000000013, A10000000000000000000014); name = Family; sourceTree = "<group>"; };
-		A40000000000000000000008 = {isa = PBXGroup; children = (A10000000000000000000064, A10000000000000000000015, A10000000000000000000016); name = Onboarding; sourceTree = "<group>"; };
-		A40000000000000000000009 = {isa = PBXGroup; children = (A10000000000000000000017); name = Plan; sourceTree = "<group>"; };
-		A40000000000000000000010 = {isa = PBXGroup; children = (A10000000000000000000019, A10000000000000000000020); name = TaskDetail; sourceTree = "<group>"; };
-		A40000000000000000000011 = {isa = PBXGroup; children = (A10000000000000000000021, A10000000000000000000022); name = Today; sourceTree = "<group>"; };
-		A40000000000000000000102 = {isa = PBXGroup; children = (A10000000000000000000028, A10000000000000000000029, A10000000000000000000037, A10000000000000000000038, A10000000000000000000039, A10000000000000000000058); name = Records; sourceTree = "<group>"; };
-		A40000000000000000000012 = {isa = PBXGroup; children = (A10000000000000000000006); name = OpenAPI; sourceTree = "<group>"; };
-		A40000000000000000000013 = {isa = PBXGroup; children = (A10000000000000000000023, A10000000000000000000061); name = Resources; sourceTree = "<group>"; };
-		A40000000000000000000014 = {isa = PBXGroup; children = (A10000000000000000000081, A10000000000000000000078, A10000000000000000000076, A10000000000000000000074, A10000000000000000000072, A10000000000000000000067, A10000000000000000000065, A10000000000000000000063, A10000000000000000000062, A10000000000000000000030, A10000000000000000000031, A10000000000000000000032, A10000000000000000000033, A10000000000000000000035, A10000000000000000000036, A10000000000000000000043, A10000000000000000000049, A10000000000000000000056, A10000000000000000000059); name = Tests; sourceTree = "<group>"; };
-		A40000000000000000000103 = {isa = PBXGroup; children = (A10000000000000000000041, A10000000000000000000042, A10000000000000000000048, A10000000000000000000050, A10000000000000000000057); name = Timeline; sourceTree = "<group>"; };
-		A40000000000000000000105 = {isa = PBXGroup; children = (A10000000000000000000082, A10000000000000000000080, A10000000000000000000079, A10000000000000000000077, A10000000000000000000075, A10000000000000000000073, A10000000000000000000068, A10000000000000000000069, A10000000000000000000070, A10000000000000000000071, A10000000000000000000066); name = Library; sourceTree = "<group>"; };
-		A40000000000000000000104 = {isa = PBXGroup; children = (A10000000000000000000045, A10000000000000000000046, A10000000000000000000047, A10000000000000000000051, A10000000000000000000052, A10000000000000000000053); name = Components; sourceTree = "<group>"; };
-		A40000000000000000000015 = {isa = PBXGroup; children = (A10000000000000000000034); name = UITests; sourceTree = "<group>"; };
-		A40000000000000000000016 = {isa = PBXGroup; children = (A10000000000000000000024, A10000000000000000000025, A10000000000000000000026); name = Products; sourceTree = "<group>"; };
-		A40000000000000000000017 = {isa = PBXGroup; children = (); name = Networking; path = Core/Networking; sourceTree = "<group>"; };
-		A40000000000000000000018 = {isa = PBXGroup; children = (); name = Persistence; path = Core/Persistence; sourceTree = "<group>"; };
-		A40000000000000000000019 = {isa = PBXGroup; children = (); name = DesignSystem; path = Core/DesignSystem; sourceTree = "<group>"; };
-		A40000000000000000000020 = {isa = PBXGroup; children = (); name = Clients; path = Clients; sourceTree = "<group>"; };
-		A40000000000000000000021 = {isa = PBXGroup; children = (); name = Features; path = Features; sourceTree = "<group>"; };
-		A40000000000000000000022 = {isa = PBXGroup; children = (); name = Generated; path = Generated; sourceTree = "<group>"; };
-		A40000000000000000000023 = {isa = PBXGroup; children = (); name = Config; sourceTree = "<group>"; };
-		A40000000000000000000024 = {isa = PBXGroup; children = (); name = Supporting; sourceTree = "<group>"; };
-		A40000000000000000000025 = {isa = PBXGroup; children = (); name = Preview; sourceTree = "<group>"; };
-		A40000000000000000000026 = {isa = PBXGroup; children = (); name = Docs; sourceTree = "<group>"; };
-		A40000000000000000000027 = {isa = PBXGroup; children = (); name = TestSupport; sourceTree = "<group>"; };
-		A40000000000000000000028 = {isa = PBXGroup; children = (); name = Fixtures; sourceTree = "<group>"; };
-		A40000000000000000000029 = {isa = PBXGroup; children = (); name = ResourcesSupport; sourceTree = "<group>"; };
-		A40000000000000000000032 = {isa = PBXGroup; children = (); name = Localization; sourceTree = "<group>"; };
-		A40000000000000000000033 = {isa = PBXGroup; children = (); name = PreviewContent; sourceTree = "<group>"; };
-		A40000000000000000000034 = {isa = PBXGroup; children = (); name = Scripts; sourceTree = "<group>"; };
-		A40000000000000000000035 = {isa = PBXGroup; children = (); name = Shared; sourceTree = "<group>"; };
-		A40000000000000000000036 = {isa = PBXGroup; children = (); name = Extensions; sourceTree = "<group>"; };
-		A40000000000000000000037 = {isa = PBXGroup; children = (); name = Mocks; sourceTree = "<group>"; };
-		A40000000000000000000038 = {isa = PBXGroup; children = (); name = Schemas; sourceTree = "<group>"; };
-		A40000000000000000000039 = {isa = PBXGroup; children = (); name = GeneratedSupport; sourceTree = "<group>"; };
-		A40000000000000000000040 = {isa = PBXGroup; children = (); name = Agents; sourceTree = "<group>"; };
-		A40000000000000000000041 = {isa = PBXGroup; children = (); name = Streams; sourceTree = "<group>"; };
-		A40000000000000000000042 = {isa = PBXGroup; children = (); name = Domain; sourceTree = "<group>"; };
-		A40000000000000000000043 = {isa = PBXGroup; children = (); name = State; sourceTree = "<group>"; };
-		A40000000000000000000044 = {isa = PBXGroup; children = (); name = Views; sourceTree = "<group>"; };
-		A40000000000000000000045 = {isa = PBXGroup; children = (); name = Store; sourceTree = "<group>"; };
-		A40000000000000000000046 = {isa = PBXGroup; children = (); name = Navigation; sourceTree = "<group>"; };
-		A40000000000000000000047 = {isa = PBXGroup; children = (); name = Analytics; sourceTree = "<group>"; };
-		A40000000000000000000048 = {isa = PBXGroup; children = (); name = Logs; sourceTree = "<group>"; };
-		A40000000000000000000049 = {isa = PBXGroup; children = (); name = Services; sourceTree = "<group>"; };
-		A40000000000000000000050 = {isa = PBXGroup; children = (); name = Policies; sourceTree = "<group>"; };
-		A40000000000000000000051 = {isa = PBXGroup; children = (); name = OnDevice; sourceTree = "<group>"; };
-		A40000000000000000000052 = {isa = PBXGroup; children = (); name = Security; sourceTree = "<group>"; };
-		A40000000000000000000053 = {isa = PBXGroup; children = (); name = Notifications; sourceTree = "<group>"; };
-		A40000000000000000000054 = {isa = PBXGroup; children = (); name = Cache; sourceTree = "<group>"; };
-		A40000000000000000000055 = {isa = PBXGroup; children = (); name = Offline; sourceTree = "<group>"; };
-		A40000000000000000000056 = {isa = PBXGroup; children = (); name = AppIntents; sourceTree = "<group>"; };
-		A40000000000000000000057 = {isa = PBXGroup; children = (); name = Widgets; sourceTree = "<group>"; };
-		A40000000000000000000058 = {isa = PBXGroup; children = (); name = TestsSupport; sourceTree = "<group>"; };
-		A40000000000000000000059 = {isa = PBXGroup; children = (); name = UITestSupport; sourceTree = "<group>"; };
-		A40000000000000000000060 = {isa = PBXGroup; children = (); name = AppClips; sourceTree = "<group>"; };
-		A40000000000000000000061 = {isa = PBXGroup; children = (); name = AppStore; sourceTree = "<group>"; };
-		A40000000000000000000062 = {isa = PBXGroup; children = (); name = Build; sourceTree = "<group>"; };
-		A40000000000000000000063 = {isa = PBXGroup; children = (); name = CI; sourceTree = "<group>"; };
-		A40000000000000000000064 = {isa = PBXGroup; children = (); name = Privacy; sourceTree = "<group>"; };
-		A40000000000000000000065 = {isa = PBXGroup; children = (); name = Entitlements; sourceTree = "<group>"; };
-		A40000000000000000000066 = {isa = PBXGroup; children = (); name = LocalizationSupport; sourceTree = "<group>"; };
-		A40000000000000000000067 = {isa = PBXGroup; children = (); name = Help; sourceTree = "<group>"; };
-		A40000000000000000000068 = {isa = PBXGroup; children = (); name = Legal; sourceTree = "<group>"; };
-		A40000000000000000000069 = {isa = PBXGroup; children = (); name = Screens; sourceTree = "<group>"; };
-		A40000000000000000000070 = {isa = PBXGroup; children = (); name = Components; sourceTree = "<group>"; };
-		A40000000000000000000071 = {isa = PBXGroup; children = (); name = Modifiers; sourceTree = "<group>"; };
-		A40000000000000000000072 = {isa = PBXGroup; children = (); name = PreviewData; sourceTree = "<group>"; };
-		A40000000000000000000073 = {isa = PBXGroup; children = (); name = SampleData; sourceTree = "<group>"; };
-		A40000000000000000000074 = {isa = PBXGroup; children = (); name = UserDefaults; sourceTree = "<group>"; };
-		A40000000000000000000075 = {isa = PBXGroup; children = (); name = Keychain; sourceTree = "<group>"; };
-		A40000000000000000000076 = {isa = PBXGroup; children = (); name = Auth; sourceTree = "<group>"; };
-		A40000000000000000000077 = {isa = PBXGroup; children = (); name = Errors; sourceTree = "<group>"; };
-		A40000000000000000000078 = {isa = PBXGroup; children = (); name = Background; sourceTree = "<group>"; };
-		A40000000000000000000079 = {isa = PBXGroup; children = (); name = Remote; sourceTree = "<group>"; };
-		A40000000000000000000080 = {isa = PBXGroup; children = (); name = Local; sourceTree = "<group>"; };
-		A40000000000000000000081 = {isa = PBXGroup; children = (); name = Experimental; sourceTree = "<group>"; };
-		A40000000000000000000082 = {isa = PBXGroup; children = (); name = Deprecated; sourceTree = "<group>"; };
-		A40000000000000000000083 = {isa = PBXGroup; children = (); name = Modules; sourceTree = "<group>"; };
-		A40000000000000000000084 = {isa = PBXGroup; children = (); name = SharedUI; sourceTree = "<group>"; };
-		A40000000000000000000085 = {isa = PBXGroup; children = (); name = Accessibility; sourceTree = "<group>"; };
-		A40000000000000000000086 = {isa = PBXGroup; children = (); name = Performance; sourceTree = "<group>"; };
-		A40000000000000000000087 = {isa = PBXGroup; children = (); name = Dependencies; sourceTree = "<group>"; };
-		A40000000000000000000088 = {isa = PBXGroup; children = (); name = Concurrency; sourceTree = "<group>"; };
-		A40000000000000000000089 = {isa = PBXGroup; children = (); name = BuildTools; sourceTree = "<group>"; };
-		A40000000000000000000090 = {isa = PBXGroup; children = (); name = Codegen; sourceTree = "<group>"; };
-		A40000000000000000000091 = {isa = PBXGroup; children = (); name = Contracts; sourceTree = "<group>"; };
-		A40000000000000000000092 = {isa = PBXGroup; children = (); name = OpenAPI; sourceTree = "<group>"; };
-		A40000000000000000000093 = {isa = PBXGroup; children = (); name = Documentation; sourceTree = "<group>"; };
-		A40000000000000000000094 = {isa = PBXGroup; children = (); name = Architecture; sourceTree = "<group>"; };
-		A40000000000000000000095 = {isa = PBXGroup; children = (); name = Product; sourceTree = "<group>"; };
-		A40000000000000000000096 = {isa = PBXGroup; children = (); name = Release; sourceTree = "<group>"; };
-		A40000000000000000000097 = {isa = PBXGroup; children = (); name = Internal; sourceTree = "<group>"; };
-		A40000000000000000000098 = {isa = PBXGroup; children = (); name = External; sourceTree = "<group>"; };
-		A40000000000000000000099 = {isa = PBXGroup; children = (); name = Root; sourceTree = "<group>"; };
-		A40000000000000000000100 = {isa = PBXGroup; children = (); name = Empty; sourceTree = "<group>"; };
-		A40000000000000000000101 = {isa = PBXGroup; children = (); name = Reserved; sourceTree = "<group>"; };
+		A40000000000000000000001 /* AimApp */ = {
+			isa = PBXGroup;
+			children = (
+				A40000000000000000000105 /* Library */,
+				A40000000000000000000002 /* App */,
+				A40000000000000000000003 /* Core */,
+				A40000000000000000000004 /* BusinessAPIClient */,
+				A40000000000000000000005 /* EveClient */,
+				A40000000000000000000006 /* Agent */,
+				A40000000000000000000007 /* Family */,
+				A40000000000000000000008 /* Onboarding */,
+				A40000000000000000000009 /* Plan */,
+				A40000000000000000000010 /* TaskDetail */,
+				A40000000000000000000011 /* Today */,
+				A40000000000000000000012 /* OpenAPI */,
+				A40000000000000000000013 /* Resources */,
+				A40000000000000000000014 /* Tests */,
+				A40000000000000000000015 /* UITests */,
+				A40000000000000000000016 /* Products */,
+				A40000000000000000000017 /* Networking */,
+				A40000000000000000000018 /* Persistence */,
+				A40000000000000000000019 /* DesignSystem */,
+				A40000000000000000000020 /* Clients */,
+				A40000000000000000000021 /* Features */,
+				A40000000000000000000022 /* Generated */,
+				A40000000000000000000023 /* Config */,
+				A40000000000000000000024 /* Supporting */,
+				A40000000000000000000025 /* Preview */,
+				A40000000000000000000026 /* Docs */,
+				A40000000000000000000027 /* TestSupport */,
+				A40000000000000000000028 /* Fixtures */,
+				A40000000000000000000029 /* ResourcesSupport */,
+				A40000000000000000000032 /* Localization */,
+				A40000000000000000000033 /* PreviewContent */,
+				A40000000000000000000034 /* Scripts */,
+				A40000000000000000000035 /* Shared */,
+				A40000000000000000000036 /* Extensions */,
+				A40000000000000000000037 /* Mocks */,
+				A40000000000000000000038 /* Schemas */,
+				A40000000000000000000039 /* GeneratedSupport */,
+				A40000000000000000000040 /* Agents */,
+				A40000000000000000000041 /* Streams */,
+				A40000000000000000000042 /* Domain */,
+				A40000000000000000000043 /* State */,
+				A40000000000000000000044 /* Views */,
+				A40000000000000000000045 /* Store */,
+				A40000000000000000000046 /* Navigation */,
+				A40000000000000000000047 /* Analytics */,
+				A40000000000000000000048 /* Logs */,
+				A40000000000000000000049 /* Services */,
+				A40000000000000000000050 /* Policies */,
+				A40000000000000000000051 /* OnDevice */,
+				A40000000000000000000052 /* Security */,
+				A40000000000000000000053 /* Notifications */,
+				A40000000000000000000054 /* Cache */,
+				A40000000000000000000055 /* Offline */,
+				A40000000000000000000056 /* AppIntents */,
+				A40000000000000000000057 /* Widgets */,
+				A40000000000000000000058 /* TestsSupport */,
+				A40000000000000000000059 /* UITestSupport */,
+				A40000000000000000000060 /* AppClips */,
+				A40000000000000000000061 /* AppStore */,
+				A40000000000000000000062 /* Build */,
+				A40000000000000000000063 /* CI */,
+				A40000000000000000000064 /* Privacy */,
+				A40000000000000000000065 /* Entitlements */,
+				A40000000000000000000066 /* LocalizationSupport */,
+				A40000000000000000000067 /* Help */,
+				A40000000000000000000068 /* Legal */,
+				A40000000000000000000069 /* Screens */,
+				A40000000000000000000070 /* Components */,
+				A40000000000000000000071 /* Modifiers */,
+				A40000000000000000000072 /* PreviewData */,
+				A40000000000000000000073 /* SampleData */,
+				A40000000000000000000074 /* UserDefaults */,
+				A40000000000000000000075 /* Keychain */,
+				A40000000000000000000076 /* Auth */,
+				A40000000000000000000077 /* Errors */,
+				A40000000000000000000078 /* Background */,
+				A40000000000000000000079 /* Remote */,
+				A40000000000000000000080 /* Local */,
+				A40000000000000000000081 /* Experimental */,
+				A40000000000000000000082 /* Deprecated */,
+				A40000000000000000000083 /* Modules */,
+				A40000000000000000000084 /* SharedUI */,
+				A40000000000000000000085 /* Accessibility */,
+				A40000000000000000000086 /* Performance */,
+				A40000000000000000000087 /* Dependencies */,
+				A40000000000000000000088 /* Concurrency */,
+				A40000000000000000000089 /* BuildTools */,
+				A40000000000000000000090 /* Codegen */,
+				A40000000000000000000091 /* Contracts */,
+				A40000000000000000000092 /* OpenAPI */,
+				A40000000000000000000093 /* Documentation */,
+				A40000000000000000000094 /* Architecture */,
+				A40000000000000000000095 /* Product */,
+				A40000000000000000000096 /* Release */,
+				A40000000000000000000097 /* Internal */,
+				A40000000000000000000098 /* External */,
+				A40000000000000000000099 /* Root */,
+				A40000000000000000000100 /* Empty */,
+				A40000000000000000000101 /* Reserved */,
+				A40000000000000000000102 /* Records */,
+				A40000000000000000000103 /* Timeline */,
+				A40000000000000000000104 /* Components */,
+			);
+			path = AimApp;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000002 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000001 /* App/AimApp.swift */,
+				A10000000000000000000002 /* App/AppSessionStore.swift */,
+			);
+			name = App;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000003 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000060 /* Core/Networking/APIEndpointConfiguration.swift */,
+				A10000000000000000000003 /* Core/Networking/APIEnvironment.swift */,
+				A10000000000000000000004 /* Core/Persistence/ModelContainer.swift */,
+				A10000000000000000000005 /* Core/DesignSystem/AimTheme.swift */,
+				A10000000000000000000027 /* Core/Auth/KeychainStore.swift */,
+				A10000000000000000000044 /* Core/DesignSystem/AimMetrics.swift */,
+			);
+			name = Core;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000004 /* BusinessAPIClient */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000007 /* Clients/BusinessAPIClient/BusinessRepository.swift */,
+			);
+			name = BusinessAPIClient;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000005 /* EveClient */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000008 /* Clients/EveClient/EveClient.swift */,
+				A10000000000000000000009 /* Clients/EveClient/EveEvent.swift */,
+			);
+			name = EveClient;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000006 /* Agent */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000010 /* Features/Agent/AgentModels.swift */,
+				A10000000000000000000011 /* Features/Agent/AgentView.swift */,
+				A10000000000000000000012 /* Features/Agent/AgentStore.swift */,
+				A10000000000000000000040 /* Features/Agent/AgentChatAdapter.swift */,
+				A10000000000000000000054 /* Features/Agent/AgentChangePreview.swift */,
+				A10000000000000000000055 /* Features/Agent/AgentDiffSheet.swift */,
+			);
+			name = Agent;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000007 /* Family */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000013 /* Features/Family/FamilyStore.swift */,
+				A10000000000000000000014 /* Features/Family/FamilyView.swift */,
+			);
+			name = Family;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000008 /* Onboarding */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000064 /* Features/Onboarding/PregnancySetupModel.swift */,
+				A10000000000000000000015 /* Features/Onboarding/OnboardingStore.swift */,
+				A10000000000000000000016 /* Features/Onboarding/OnboardingView.swift */,
+			);
+			name = Onboarding;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000009 /* Plan */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000017 /* Features/Plan/PlanStore.swift */,
+			);
+			name = Plan;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000010 /* TaskDetail */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000019 /* Features/TaskDetail/TaskDetailStore.swift */,
+				A10000000000000000000020 /* Features/TaskDetail/TaskDetailView.swift */,
+			);
+			name = TaskDetail;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000011 /* Today */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000021 /* Features/Today/TodayStore.swift */,
+				A10000000000000000000022 /* Features/Today/TodayView.swift */,
+			);
+			name = Today;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000012 /* OpenAPI */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000006 /* Generated/OpenAPI/Models.swift */,
+			);
+			name = OpenAPI;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000013 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000023 /* Resources/Assets.xcassets */,
+				A10000000000000000000061 /* Resources/Info.plist */,
+			);
+			name = Resources;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000014 /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000099 /* Tests/NutritionSectionTests.swift */,
+				A10000000000000000000096 /* Tests/SymptomPatternTests.swift */,
+				A10000000000000000000094 /* Tests/MetricKindTests.swift */,
+				A10000000000000000000093 /* Tests/SafetyCheckTests.swift */,
+				A10000000000000000000090 /* Tests/ConsultationListTests.swift */,
+				A10000000000000000000087 /* Tests/KnowledgeComposerTests.swift */,
+				A10000000000000000000085 /* Tests/CheckupMetricsRoundTripTests.swift */,
+				A10000000000000000000084 /* Tests/CheckupMetricInputTests.swift */,
+				A10000000000000000000081 /* Tests/KnowledgePreviewTests.swift */,
+				A10000000000000000000078 /* Tests/KnowledgeEntryTests.swift */,
+				A10000000000000000000076 /* Tests/LibraryFocusTests.swift */,
+				A10000000000000000000074 /* Tests/MetricTrendTests.swift */,
+				A10000000000000000000103 /* Tests/AgentQuestionTests.swift */,
+				A10000000000000000000105 /* Tests/EveStreamTests.swift */,
+				A10000000000000000000107 /* Tests/SessionExpiryTests.swift */,
+				A10000000000000000000072 /* Tests/LibraryStoreTests.swift */,
+				A10000000000000000000067 /* Tests/LibraryCatalogTests.swift */,
+				A10000000000000000000065 /* Tests/AgentActivityLogTests.swift */,
+				A10000000000000000000063 /* Tests/PregnancySetupModelTests.swift */,
+				A10000000000000000000062 /* Tests/APIEndpointConfigurationTests.swift */,
+				A10000000000000000000030 /* Tests/EveClientTests.swift */,
+				A10000000000000000000031 /* Tests/BusinessRepositoryTests.swift */,
+				A10000000000000000000032 /* Tests/TodayStoreTests.swift */,
+				A10000000000000000000033 /* Tests/TaskDetailStoreTests.swift */,
+				A10000000000000000000035 /* Tests/AgentStoreTests.swift */,
+				A10000000000000000000036 /* Tests/RecordStoreTests.swift */,
+				A10000000000000000000043 /* Tests/TimelineBuilderTests.swift */,
+				A10000000000000000000049 /* Tests/TimelineStoreTests.swift */,
+				A10000000000000000000056 /* Tests/AgentChangePreviewTests.swift */,
+				A10000000000000000000059 /* Tests/TaskRecordSuggestionTests.swift */,
+			);
+			name = Tests;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000015 /* UITests */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000034 /* UITests/CoreJourneyUITests.swift */,
+			);
+			name = UITests;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000016 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000024 /* AimApp.app */,
+				A10000000000000000000025 /* AimAppTests.xctest */,
+				A10000000000000000000026 /* AimAppUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000017 /* Networking */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Networking;
+			path = Core/Networking;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000018 /* Persistence */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Persistence;
+			path = Core/Persistence;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000019 /* DesignSystem */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = DesignSystem;
+			path = Core/DesignSystem;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000020 /* Clients */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Clients;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000021 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000022 /* Generated */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Generated;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000023 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Config;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000024 /* Supporting */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Supporting;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000025 /* Preview */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Preview;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000026 /* Docs */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Docs;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000027 /* TestSupport */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = TestSupport;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000028 /* Fixtures */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Fixtures;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000029 /* ResourcesSupport */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = ResourcesSupport;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000032 /* Localization */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Localization;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000033 /* PreviewContent */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = PreviewContent;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000034 /* Scripts */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Scripts;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000035 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Shared;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000036 /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Extensions;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000037 /* Mocks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Mocks;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000038 /* Schemas */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Schemas;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000039 /* GeneratedSupport */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = GeneratedSupport;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000040 /* Agents */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Agents;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000041 /* Streams */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Streams;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000042 /* Domain */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Domain;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000043 /* State */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = State;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000044 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Views;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000045 /* Store */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Store;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000046 /* Navigation */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Navigation;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000047 /* Analytics */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Analytics;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000048 /* Logs */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Logs;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000049 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Services;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000050 /* Policies */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Policies;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000051 /* OnDevice */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = OnDevice;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000052 /* Security */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Security;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000053 /* Notifications */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Notifications;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000054 /* Cache */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Cache;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000055 /* Offline */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Offline;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000056 /* AppIntents */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = AppIntents;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000057 /* Widgets */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Widgets;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000058 /* TestsSupport */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = TestsSupport;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000059 /* UITestSupport */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = UITestSupport;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000060 /* AppClips */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = AppClips;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000061 /* AppStore */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = AppStore;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000062 /* Build */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Build;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000063 /* CI */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = CI;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000064 /* Privacy */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Privacy;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000065 /* Entitlements */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Entitlements;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000066 /* LocalizationSupport */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = LocalizationSupport;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000067 /* Help */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Help;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000068 /* Legal */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Legal;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000069 /* Screens */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Screens;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000070 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Components;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000071 /* Modifiers */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Modifiers;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000072 /* PreviewData */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = PreviewData;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000073 /* SampleData */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = SampleData;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000074 /* UserDefaults */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = UserDefaults;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000075 /* Keychain */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Keychain;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000076 /* Auth */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Auth;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000077 /* Errors */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Errors;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000078 /* Background */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Background;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000079 /* Remote */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Remote;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000080 /* Local */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Local;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000081 /* Experimental */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Experimental;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000082 /* Deprecated */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Deprecated;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000083 /* Modules */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Modules;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000084 /* SharedUI */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = SharedUI;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000085 /* Accessibility */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Accessibility;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000086 /* Performance */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Performance;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000087 /* Dependencies */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Dependencies;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000088 /* Concurrency */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Concurrency;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000089 /* BuildTools */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = BuildTools;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000090 /* Codegen */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Codegen;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000091 /* Contracts */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Contracts;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000092 /* OpenAPI */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = OpenAPI;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000093 /* Documentation */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Documentation;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000094 /* Architecture */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Architecture;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000095 /* Product */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Product;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000096 /* Release */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Release;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000097 /* Internal */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Internal;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000098 /* External */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = External;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000099 /* Root */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Root;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000100 /* Empty */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Empty;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000101 /* Reserved */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Reserved;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000102 /* Records */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000028 /* Features/Records/RecordModels.swift */,
+				A10000000000000000000029 /* Features/Records/RecordStore.swift */,
+				A10000000000000000000037 /* Features/Records/RecordsView.swift */,
+				A10000000000000000000038 /* Features/Records/RecordComposerView.swift */,
+				A10000000000000000000039 /* Features/Records/RecordDetailView.swift */,
+				A10000000000000000000058 /* Features/Records/TaskRecordSuggestion.swift */,
+			);
+			name = Records;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000103 /* Timeline */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000041 /* Features/Timeline/TimelineModels.swift */,
+				A10000000000000000000042 /* Features/Timeline/TimelineBuilder.swift */,
+				A10000000000000000000048 /* Features/Timeline/TimelineStore.swift */,
+				A10000000000000000000050 /* Features/Timeline/TimelineView.swift */,
+				A10000000000000000000057 /* Features/Timeline/TimelineHeader.swift */,
+			);
+			name = Timeline;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000104 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000045 /* Core/DesignSystem/Components/AimTimelineRail.swift */,
+				A10000000000000000000046 /* Core/DesignSystem/Components/AimWeekHeader.swift */,
+				A10000000000000000000047 /* Core/DesignSystem/Components/AimTimelineRows.swift */,
+				A10000000000000000000051 /* Core/DesignSystem/Components/AimFocusCard.swift */,
+				A10000000000000000000052 /* Core/DesignSystem/Components/AimStateViews.swift */,
+				A10000000000000000000053 /* Core/DesignSystem/Components/AimToast.swift */,
+			);
+			name = Components;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000105 /* Library */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000101 /* Features/Agent/AgentQuestion.swift */,
+				A10000000000000000000098 /* Features/Library/NutritionSection.swift */,
+				A10000000000000000000097 /* Features/Library/ContentItemDetailView.swift */,
+				A10000000000000000000095 /* Features/Library/SymptomPattern.swift */,
+				A10000000000000000000092 /* Features/Library/SafetyCheck.swift */,
+				A10000000000000000000091 /* Features/Library/ConsultationListView.swift */,
+				A10000000000000000000089 /* Features/Library/ConsultationList.swift */,
+				A10000000000000000000088 /* Features/Library/KnowledgeComposerView.swift */,
+				A10000000000000000000086 /* Features/Library/KnowledgeComposerModel.swift */,
+				A10000000000000000000083 /* Features/Records/CheckupMetricInput.swift */,
+				A10000000000000000000082 /* Features/Library/KnowledgeApprovalSheet.swift */,
+				A10000000000000000000080 /* Features/Library/KnowledgePreview.swift */,
+				A10000000000000000000079 /* Features/Library/KnowledgeDetailView.swift */,
+				A10000000000000000000077 /* Features/Library/KnowledgeEntry.swift */,
+				A10000000000000000000075 /* Features/Library/LibraryFocus.swift */,
+				A10000000000000000000073 /* Features/Library/MetricTrend.swift */,
+				A10000000000000000000068 /* Features/Library/LibraryModels.swift */,
+				A10000000000000000000069 /* Features/Library/LibraryStore.swift */,
+				A10000000000000000000070 /* Features/Library/LibraryView.swift */,
+				A10000000000000000000071 /* Features/Library/LibraryCategoryDetail.swift */,
+				A10000000000000000000066 /* Features/Library/LibraryCatalog.swift */,
+			);
+			name = Library;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		A50000000000000000000001 /* AimApp */ = {isa = PBXNativeTarget; buildConfigurationList = A70000000000000000000001 /* Build configuration list for PBXNativeTarget "AimApp" */; buildPhases = (A30000000000000000000004, A30000000000000000000005, A30000000000000000000001); buildRules = (); dependencies = (); name = AimApp; packageProductDependencies = (A12000000000000000000001 /* ExyteChat */); productName = AimApp; productReference = A10000000000000000000024 /* AimApp.app */; productType = "com.apple.product-type.application"; };
-		A50000000000000000000002 /* AimAppTests */ = {isa = PBXNativeTarget; buildConfigurationList = A70000000000000000000002 /* Build configuration list for PBXNativeTarget "AimAppTests" */; buildPhases = (A30000000000000000000006, A30000000000000000000007, A30000000000000000000002); buildRules = (); dependencies = (A80000000000000000000001); name = AimAppTests; productName = AimAppTests; productReference = A10000000000000000000025 /* AimAppTests.xctest */; productType = "com.apple.product-type.bundle.unit-test"; };
-		A50000000000000000000003 /* AimAppUITests */ = {isa = PBXNativeTarget; buildConfigurationList = A70000000000000000000003 /* Build configuration list for PBXNativeTarget "AimAppUITests" */; buildPhases = (A30000000000000000000008, A30000000000000000000009, A30000000000000000000003); buildRules = (); dependencies = (A80000000000000000000002); name = AimAppUITests; productName = AimAppUITests; productReference = A10000000000000000000026 /* AimAppUITests.xctest */; productType = "com.apple.product-type.bundle.ui-testing"; };
+		A50000000000000000000001 /* AimApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A70000000000000000000001 /* Build configuration list for PBXNativeTarget "AimApp" */;
+			buildPhases = (
+				A30000000000000000000004 /* Sources */,
+				A30000000000000000000005 /* Resources */,
+				A30000000000000000000001 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = AimApp;
+			packageProductDependencies = (
+				A12000000000000000000001 /* ExyteChat */,
+			);
+			productName = AimApp;
+			productReference = A10000000000000000000024 /* AimApp.app */;
+			productType = "com.apple.product-type.application";
+		};
+		A50000000000000000000002 /* AimAppTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A70000000000000000000002 /* Build configuration list for PBXNativeTarget "AimAppTests" */;
+			buildPhases = (
+				A30000000000000000000006 /* Sources */,
+				A30000000000000000000007 /* Resources */,
+				A30000000000000000000002 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A80000000000000000000001 /* PBXTargetDependency */,
+			);
+			name = AimAppTests;
+			productName = AimAppTests;
+			productReference = A10000000000000000000025 /* AimAppTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		A50000000000000000000003 /* AimAppUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A70000000000000000000003 /* Build configuration list for PBXNativeTarget "AimAppUITests" */;
+			buildPhases = (
+				A30000000000000000000008 /* Sources */,
+				A30000000000000000000009 /* Resources */,
+				A30000000000000000000003 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A80000000000000000000002 /* PBXTargetDependency */,
+			);
+			name = AimAppUITests;
+			productName = AimAppUITests;
+			productReference = A10000000000000000000026 /* AimAppUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		A60000000000000000000001 /* Project object */ = {isa = PBXProject; attributes = { LastUpgradeCheck = 1600; TargetAttributes = { A50000000000000000000001 = { CreatedOnToolsVersion = 16.0; }; A50000000000000000000002 = { CreatedOnToolsVersion = 16.0; TestTargetID = A50000000000000000000001; }; A50000000000000000000003 = { CreatedOnToolsVersion = 16.0; TestTargetID = A50000000000000000000001; }; }; }; buildConfigurationList = A70000000000000000000004 /* Build configuration list for PBXProject "AimApp" */; compatibilityVersion = "Xcode 15.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = (en, "zh-Hans"); mainGroup = A40000000000000000000001; packageReferences = (A11000000000000000000001 /* XCRemoteSwiftPackageReference "Chat" */); productRefGroup = A40000000000000000000016; projectDirPath = ""; projectRoot = ""; targets = (A50000000000000000000001, A50000000000000000000002, A50000000000000000000003); };
+		A60000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					A50000000000000000000001 = {
+						CreatedOnToolsVersion = 16.0;
+					};
+					A50000000000000000000002 = {
+						CreatedOnToolsVersion = 16.0;
+						TestTargetID = A50000000000000000000001;
+					};
+					A50000000000000000000003 = {
+						CreatedOnToolsVersion = 16.0;
+						TestTargetID = A50000000000000000000001;
+					};
+				};
+			};
+			buildConfigurationList = A70000000000000000000004 /* Build configuration list for PBXProject "AimApp" */;
+			compatibilityVersion = "Xcode 15.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				"zh-Hans",
+			);
+			mainGroup = A40000000000000000000001 /* AimApp */;
+			packageReferences = (
+				A11000000000000000000001 /* XCRemoteSwiftPackageReference "Chat" */,
+			);
+			productRefGroup = A40000000000000000000016 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A50000000000000000000001 /* AimApp */,
+				A50000000000000000000002 /* AimAppTests */,
+				A50000000000000000000003 /* AimAppUITests */,
+			);
+		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		A30000000000000000000005 /* AimApp Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (A20000000000000000000023); runOnlyForDeploymentPostprocessing = 0; };
-		A30000000000000000000007 /* AimAppTests Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
-		A30000000000000000000009 /* AimAppUITests Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		A30000000000000000000005 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A20000000000000000000023 /* Resources/Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A30000000000000000000007 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A30000000000000000000009 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		A30000000000000000000004 /* AimApp Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A20000000000000000000083, A20000000000000000000081, A20000000000000000000080, A20000000000000000000078, A20000000000000000000076, A20000000000000000000074, A20000000000000000000072, A20000000000000000000071, A20000000000000000000070, A20000000000000000000069, A20000000000000000000066, A20000000000000000000064, A20000000000000000000061, A20000000000000000000001, A20000000000000000000002, A20000000000000000000003, A20000000000000000000004, A20000000000000000000005, A20000000000000000000006, A20000000000000000000007, A20000000000000000000008, A20000000000000000000009, A20000000000000000000010, A20000000000000000000011, A20000000000000000000012, A20000000000000000000013, A20000000000000000000014, A20000000000000000000015, A20000000000000000000016, A20000000000000000000017, A20000000000000000000019, A20000000000000000000020, A20000000000000000000021, A20000000000000000000022, A20000000000000000000024, A20000000000000000000025, A20000000000000000000026, A20000000000000000000037, A20000000000000000000038, A20000000000000000000039, A20000000000000000000041, A20000000000000000000042, A20000000000000000000043, A20000000000000000000045, A20000000000000000000046, A20000000000000000000047, A20000000000000000000048, A20000000000000000000049, A20000000000000000000051, A20000000000000000000052, A20000000000000000000053, A20000000000000000000054, A20000000000000000000055, A20000000000000000000056, A20000000000000000000058, A20000000000000000000059); runOnlyForDeploymentPostprocessing = 0; };
-		A30000000000000000000006 /* AimAppTests Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A20000000000000000000082, A20000000000000000000079, A20000000000000000000077, A20000000000000000000075, A20000000000000000000073, A20000000000000000000068, A20000000000000000000065, A20000000000000000000063, A20000000000000000000062, A20000000000000000000030, A20000000000000000000031, A20000000000000000000032, A20000000000000000000033, A20000000000000000000035, A20000000000000000000036, A20000000000000000000044, A20000000000000000000050, A20000000000000000000057, A20000000000000000000060); runOnlyForDeploymentPostprocessing = 0; };
-		A30000000000000000000008 /* AimAppUITests Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A20000000000000000000034); runOnlyForDeploymentPostprocessing = 0; };
+		A30000000000000000000004 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A20000000000000000000102 /* Features/Agent/AgentQuestion.swift in Sources */,
+				A20000000000000000000099 /* Features/Library/NutritionSection.swift in Sources */,
+				A20000000000000000000098 /* Features/Library/ContentItemDetailView.swift in Sources */,
+				A20000000000000000000096 /* Features/Library/SymptomPattern.swift in Sources */,
+				A20000000000000000000093 /* Features/Library/SafetyCheck.swift in Sources */,
+				A20000000000000000000092 /* Features/Library/ConsultationListView.swift in Sources */,
+				A20000000000000000000090 /* Features/Library/ConsultationList.swift in Sources */,
+				A20000000000000000000089 /* Features/Library/KnowledgeComposerView.swift in Sources */,
+				A20000000000000000000087 /* Features/Library/KnowledgeComposerModel.swift in Sources */,
+				A20000000000000000000084 /* Features/Records/CheckupMetricInput.swift in Sources */,
+				A20000000000000000000083 /* Features/Library/KnowledgeApprovalSheet.swift in Sources */,
+				A20000000000000000000081 /* Features/Library/KnowledgePreview.swift in Sources */,
+				A20000000000000000000080 /* Features/Library/KnowledgeDetailView.swift in Sources */,
+				A20000000000000000000078 /* Features/Library/KnowledgeEntry.swift in Sources */,
+				A20000000000000000000076 /* Features/Library/LibraryFocus.swift in Sources */,
+				A20000000000000000000074 /* Features/Library/MetricTrend.swift in Sources */,
+				A20000000000000000000072 /* Features/Library/LibraryCategoryDetail.swift in Sources */,
+				A20000000000000000000071 /* Features/Library/LibraryView.swift in Sources */,
+				A20000000000000000000070 /* Features/Library/LibraryStore.swift in Sources */,
+				A20000000000000000000069 /* Features/Library/LibraryModels.swift in Sources */,
+				A20000000000000000000066 /* Features/Library/LibraryCatalog.swift in Sources */,
+				A20000000000000000000064 /* Features/Onboarding/PregnancySetupModel.swift in Sources */,
+				A20000000000000000000061 /* Core/Networking/APIEndpointConfiguration.swift in Sources */,
+				A20000000000000000000001 /* App/AimApp.swift in Sources */,
+				A20000000000000000000002 /* App/AppSessionStore.swift in Sources */,
+				A20000000000000000000003 /* Core/Networking/APIEnvironment.swift in Sources */,
+				A20000000000000000000004 /* Core/Persistence/ModelContainer.swift in Sources */,
+				A20000000000000000000005 /* Core/DesignSystem/AimTheme.swift in Sources */,
+				A20000000000000000000006 /* Generated/OpenAPI/Models.swift in Sources */,
+				A20000000000000000000007 /* Clients/BusinessAPIClient/BusinessRepository.swift in Sources */,
+				A20000000000000000000008 /* Clients/EveClient/EveClient.swift in Sources */,
+				A20000000000000000000009 /* Clients/EveClient/EveEvent.swift in Sources */,
+				A20000000000000000000010 /* Features/Agent/AgentModels.swift in Sources */,
+				A20000000000000000000011 /* Features/Agent/AgentView.swift in Sources */,
+				A20000000000000000000012 /* Features/Agent/AgentStore.swift in Sources */,
+				A20000000000000000000013 /* Features/Family/FamilyStore.swift in Sources */,
+				A20000000000000000000014 /* Features/Family/FamilyView.swift in Sources */,
+				A20000000000000000000015 /* Features/Onboarding/OnboardingStore.swift in Sources */,
+				A20000000000000000000016 /* Features/Onboarding/OnboardingView.swift in Sources */,
+				A20000000000000000000017 /* Features/Plan/PlanStore.swift in Sources */,
+				A20000000000000000000019 /* Features/TaskDetail/TaskDetailStore.swift in Sources */,
+				A20000000000000000000020 /* Features/TaskDetail/TaskDetailView.swift in Sources */,
+				A20000000000000000000021 /* Features/Today/TodayStore.swift in Sources */,
+				A20000000000000000000022 /* Features/Today/TodayView.swift in Sources */,
+				A20000000000000000000024 /* Core/Auth/KeychainStore.swift in Sources */,
+				A20000000000000000000025 /* Features/Records/RecordModels.swift in Sources */,
+				A20000000000000000000026 /* Features/Records/RecordStore.swift in Sources */,
+				A20000000000000000000037 /* Features/Records/RecordsView.swift in Sources */,
+				A20000000000000000000038 /* Features/Records/RecordComposerView.swift in Sources */,
+				A20000000000000000000039 /* Features/Records/RecordDetailView.swift in Sources */,
+				A20000000000000000000041 /* Features/Agent/AgentChatAdapter.swift in Sources */,
+				A20000000000000000000042 /* Features/Timeline/TimelineModels.swift in Sources */,
+				A20000000000000000000043 /* Features/Timeline/TimelineBuilder.swift in Sources */,
+				A20000000000000000000045 /* Core/DesignSystem/AimMetrics.swift in Sources */,
+				A20000000000000000000046 /* Core/DesignSystem/Components/AimTimelineRail.swift in Sources */,
+				A20000000000000000000047 /* Core/DesignSystem/Components/AimWeekHeader.swift in Sources */,
+				A20000000000000000000048 /* Core/DesignSystem/Components/AimTimelineRows.swift in Sources */,
+				A20000000000000000000049 /* Features/Timeline/TimelineStore.swift in Sources */,
+				A20000000000000000000051 /* Features/Timeline/TimelineView.swift in Sources */,
+				A20000000000000000000052 /* Core/DesignSystem/Components/AimFocusCard.swift in Sources */,
+				A20000000000000000000053 /* Core/DesignSystem/Components/AimStateViews.swift in Sources */,
+				A20000000000000000000054 /* Core/DesignSystem/Components/AimToast.swift in Sources */,
+				A20000000000000000000055 /* Features/Agent/AgentChangePreview.swift in Sources */,
+				A20000000000000000000056 /* Features/Agent/AgentDiffSheet.swift in Sources */,
+				A20000000000000000000058 /* Features/Timeline/TimelineHeader.swift in Sources */,
+				A20000000000000000000059 /* Features/Records/TaskRecordSuggestion.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A30000000000000000000006 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A20000000000000000000100 /* Tests/NutritionSectionTests.swift in Sources */,
+				A20000000000000000000097 /* Tests/SymptomPatternTests.swift in Sources */,
+				A20000000000000000000095 /* Tests/MetricKindTests.swift in Sources */,
+				A20000000000000000000094 /* Tests/SafetyCheckTests.swift in Sources */,
+				A20000000000000000000091 /* Tests/ConsultationListTests.swift in Sources */,
+				A20000000000000000000088 /* Tests/KnowledgeComposerTests.swift in Sources */,
+				A20000000000000000000086 /* Tests/CheckupMetricsRoundTripTests.swift in Sources */,
+				A20000000000000000000085 /* Tests/CheckupMetricInputTests.swift in Sources */,
+				A20000000000000000000082 /* Tests/KnowledgePreviewTests.swift in Sources */,
+				A20000000000000000000079 /* Tests/KnowledgeEntryTests.swift in Sources */,
+				A20000000000000000000077 /* Tests/LibraryFocusTests.swift in Sources */,
+				A20000000000000000000075 /* Tests/MetricTrendTests.swift in Sources */,
+				A20000000000000000000104 /* Tests/AgentQuestionTests.swift in Sources */,
+				A20000000000000000000106 /* Tests/EveStreamTests.swift in Sources */,
+				A20000000000000000000108 /* Tests/SessionExpiryTests.swift in Sources */,
+				A20000000000000000000073 /* Tests/LibraryStoreTests.swift in Sources */,
+				A20000000000000000000068 /* Tests/LibraryCatalogTests.swift in Sources */,
+				A20000000000000000000065 /* Tests/AgentActivityLogTests.swift in Sources */,
+				A20000000000000000000063 /* Tests/PregnancySetupModelTests.swift in Sources */,
+				A20000000000000000000062 /* Tests/APIEndpointConfigurationTests.swift in Sources */,
+				A20000000000000000000030 /* Tests/EveClientTests.swift in Sources */,
+				A20000000000000000000031 /* Tests/BusinessRepositoryTests.swift in Sources */,
+				A20000000000000000000032 /* Tests/TodayStoreTests.swift in Sources */,
+				A20000000000000000000033 /* Tests/TaskDetailStoreTests.swift in Sources */,
+				A20000000000000000000035 /* Tests/AgentStoreTests.swift in Sources */,
+				A20000000000000000000036 /* Tests/RecordStoreTests.swift in Sources */,
+				A20000000000000000000044 /* Tests/TimelineBuilderTests.swift in Sources */,
+				A20000000000000000000050 /* Tests/TimelineStoreTests.swift in Sources */,
+				A20000000000000000000057 /* Tests/AgentChangePreviewTests.swift in Sources */,
+				A20000000000000000000060 /* Tests/TaskRecordSuggestionTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A30000000000000000000008 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A20000000000000000000034 /* UITests/CoreJourneyUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		A80000000000000000000001 /* PBXTargetDependency */ = {isa = PBXTargetDependency; target = A50000000000000000000001; targetProxy = A90000000000000000000001; };
-		A80000000000000000000002 /* PBXTargetDependency */ = {isa = PBXTargetDependency; target = A50000000000000000000001; targetProxy = A90000000000000000000002; };
+		A80000000000000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A50000000000000000000001 /* AimApp */;
+			targetProxy = A90000000000000000000001 /* PBXContainerItemProxy */;
+		};
+		A80000000000000000000002 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A50000000000000000000001 /* AimApp */;
+			targetProxy = A90000000000000000000002 /* PBXContainerItemProxy */;
+		};
 /* End PBXTargetDependency section */
 
-/* Begin XCRemoteSwiftPackageReference section */
-		A11000000000000000000001 /* XCRemoteSwiftPackageReference "Chat" */ = {isa = XCRemoteSwiftPackageReference; repositoryURL = "https://github.com/exyte/Chat.git"; requirement = {kind = exactVersion; version = 3.2.8;}; };
-/* End XCRemoteSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		A12000000000000000000001 /* ExyteChat */ = {isa = XCSwiftPackageProductDependency; package = A11000000000000000000001 /* XCRemoteSwiftPackageReference "Chat" */; productName = ExyteChat; };
-/* End XCSwiftPackageProductDependency section */
-
-/* Begin PBXContainerItemProxy section */
-		A90000000000000000000001 = {isa = PBXContainerItemProxy; containerPortal = A60000000000000000000001; proxyType = 1; remoteGlobalIDString = A50000000000000000000001; remoteInfo = AimApp; };
-		A90000000000000000000002 = {isa = PBXContainerItemProxy; containerPortal = A60000000000000000000001; proxyType = 1; remoteGlobalIDString = A50000000000000000000001; remoteInfo = AimApp; };
-/* End PBXContainerItemProxy section */
-
 /* Begin XCBuildConfiguration section */
-		A71000000000000000000001 /* Debug AimApp */ = {isa = XCBuildConfiguration; buildSettings = { ALWAYS_SEARCH_USER_PATHS = NO; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; DEVELOPMENT_TEAM = ""; ENABLE_TESTABILITY = YES; "EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64; GENERATE_INFOPLIST_FILE = YES; INFOPLIST_FILE = AimApp/Resources/Info.plist; INFOPLIST_KEY_UILaunchScreen_Generation = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks"; PRODUCT_BUNDLE_IDENTIFIER = com.aim.pregnancy; PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = iphoneos; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; SWIFT_VERSION = 5.0; SWIFT_OPTIMIZATION_LEVEL = "-Onone"; TARGETED_DEVICE_FAMILY = "1"; }; name = Debug; };
-		A71000000000000000000002 /* Release AimApp */ = {isa = XCBuildConfiguration; buildSettings = { ALWAYS_SEARCH_USER_PATHS = NO; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; DEVELOPMENT_TEAM = ""; "EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64; GENERATE_INFOPLIST_FILE = YES; INFOPLIST_FILE = AimApp/Resources/Info.plist; INFOPLIST_KEY_UILaunchScreen_Generation = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks"; PRODUCT_BUNDLE_IDENTIFIER = com.aim.pregnancy; PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = iphoneos; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1"; }; name = Release; };
-		A71000000000000000000003 /* Debug AimAppTests */ = {isa = XCBuildConfiguration; buildSettings = { BUNDLE_LOADER = "$(TEST_HOST)"; CODE_SIGN_STYLE = Automatic; "EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64; GENERATE_INFOPLIST_FILE = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; PRODUCT_BUNDLE_IDENTIFIER = com.aim.pregnancy.tests; PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = iphoneos; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1"; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AimApp.app/AimApp"; }; name = Debug; };
-		A71000000000000000000004 /* Release AimAppTests */ = {isa = XCBuildConfiguration; buildSettings = { BUNDLE_LOADER = "$(TEST_HOST)"; CODE_SIGN_STYLE = Automatic; "EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64; GENERATE_INFOPLIST_FILE = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; PRODUCT_BUNDLE_IDENTIFIER = com.aim.pregnancy.tests; PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = iphoneos; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1"; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AimApp.app/AimApp"; }; name = Release; };
-		A71000000000000000000005 /* Debug AimAppUITests */ = {isa = XCBuildConfiguration; buildSettings = { CODE_SIGN_STYLE = Automatic; "EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64; GENERATE_INFOPLIST_FILE = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; PRODUCT_BUNDLE_IDENTIFIER = com.aim.pregnancy.uitests; PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = iphoneos; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1"; TEST_TARGET_NAME = AimApp; }; name = Debug; };
-		A71000000000000000000006 /* Release AimAppUITests */ = {isa = XCBuildConfiguration; buildSettings = { CODE_SIGN_STYLE = Automatic; "EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64; GENERATE_INFOPLIST_FILE = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; PRODUCT_BUNDLE_IDENTIFIER = com.aim.pregnancy.uitests; PRODUCT_NAME = "$(TARGET_NAME)"; SDKROOT = iphoneos; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1"; TEST_TARGET_NAME = AimApp; }; name = Release; };
-		A71000000000000000000007 /* Debug Project */ = {isa = XCBuildConfiguration; buildSettings = { ALWAYS_SEARCH_USER_PATHS = NO; CLANG_ENABLE_MODULES = YES; SWIFT_VERSION = 5.0; }; name = Debug; };
-		A71000000000000000000008 /* Release Project */ = {isa = XCBuildConfiguration; buildSettings = { ALWAYS_SEARCH_USER_PATHS = NO; CLANG_ENABLE_MODULES = YES; SWIFT_VERSION = 5.0; }; name = Release; };
+		A71000000000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = GPD52BS997;
+				ENABLE_TESTABILITY = YES;
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = AimApp/Resources/Info.plist;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.aim.pregnancy;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		A71000000000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = GPD52BS997;
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = AimApp/Resources/Info.plist;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.aim.pregnancy;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		A71000000000000000000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.aim.pregnancy.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AimApp.app/AimApp";
+			};
+			name = Debug;
+		};
+		A71000000000000000000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.aim.pregnancy.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AimApp.app/AimApp";
+			};
+			name = Release;
+		};
+		A71000000000000000000005 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.aim.pregnancy.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = AimApp;
+			};
+			name = Debug;
+		};
+		A71000000000000000000006 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.aim.pregnancy.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = AimApp;
+			};
+			name = Release;
+		};
+		A71000000000000000000007 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		A71000000000000000000008 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		A70000000000000000000001 /* Build configuration list for PBXNativeTarget "AimApp" */ = {isa = XCConfigurationList; buildConfigurations = (A71000000000000000000001, A71000000000000000000002); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
-		A70000000000000000000002 /* Build configuration list for PBXNativeTarget "AimAppTests" */ = {isa = XCConfigurationList; buildConfigurations = (A71000000000000000000003, A71000000000000000000004); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
-		A70000000000000000000003 /* Build configuration list for PBXNativeTarget "AimAppUITests" */ = {isa = XCConfigurationList; buildConfigurations = (A71000000000000000000005, A71000000000000000000006); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
-		A70000000000000000000004 /* Build configuration list for PBXProject "AimApp" */ = {isa = XCConfigurationList; buildConfigurations = (A71000000000000000000007, A71000000000000000000008); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		A70000000000000000000001 /* Build configuration list for PBXNativeTarget "AimApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A71000000000000000000001 /* Debug */,
+				A71000000000000000000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A70000000000000000000002 /* Build configuration list for PBXNativeTarget "AimAppTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A71000000000000000000003 /* Debug */,
+				A71000000000000000000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A70000000000000000000003 /* Build configuration list for PBXNativeTarget "AimAppUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A71000000000000000000005 /* Debug */,
+				A71000000000000000000006 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A70000000000000000000004 /* Build configuration list for PBXProject "AimApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A71000000000000000000007 /* Debug */,
+				A71000000000000000000008 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		A11000000000000000000001 /* XCRemoteSwiftPackageReference "Chat" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/exyte/Chat.git";
+			requirement = {
+				kind = exactVersion;
+				version = 3.2.8;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		A12000000000000000000001 /* ExyteChat */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A11000000000000000000001 /* XCRemoteSwiftPackageReference "Chat" */;
+			productName = ExyteChat;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = A60000000000000000000001 /* Project object */;
 }

@@ -4,6 +4,9 @@ enum AgentSheetState: Equatable {
     case idle
     case streaming
     case awaitingApproval(EveInputRequest)
+    /// Agent 反问、正等着你回答。和 awaitingApproval 分开：那个要浮层确认，
+    /// 这个留在对话里回答。
+    case awaitingAnswer(EveInputRequest)
     case applied
     case failed(String)
 }

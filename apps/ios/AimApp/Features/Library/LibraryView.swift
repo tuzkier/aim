@@ -57,10 +57,10 @@ struct LibraryView: View {
             .navigationTitle("资料库")
             .toolbar(.hidden, for: .navigationBar)
             .refreshable { await store.load() }
-            .task(id: session.pregnancyID) {
-                guard store.snapshot.records.isEmpty, store.safetyRules.isEmpty else { return }
-                await store.load()
-            }
+            // 每次进入这个 Tab 都重新拉取：记录可能是在时间线或 AIM 里新增的，
+            // 只加载一次会让资料库停在过期快照上。
+            .task(id: session.pregnancyID) { await store.load() }
+            .onAppear { Task { await store.load() } }
             .navigationDestination(item: $openCategory) { category in
                 LibraryCategoryDetail(category: category, store: store, agentStore: agentStore)
             }

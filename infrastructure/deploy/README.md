@@ -46,7 +46,18 @@ Nginx 80 端口按路径前缀分流，两个服务合并在同一域名下：
 
 ## iOS 接入
 
-App 默认连这个环境，规则在 `apps/ios/AimApp/Core/Networking/APIEndpointConfiguration.swift`。
+**只有装到真机上的包才连这个环境**；模拟器和 UI 测试一律连开发机的本地 Compose 栈。
+规则在 `apps/ios/AimApp/Core/Networking/APIEndpointConfiguration.swift`，判据是编译期的
+`targetEnvironment(simulator)`，不是启动参数——参数会忘记加，而忘记的代价是测试数据
+默默写进生产库（曾因此在生产库堆了 253 个测试账号）。
+
+跑 UI 测试前先起本地栈，否则用例会连不上：
+
+```bash
+docker compose --env-file .env -f infrastructure/compose/compose.yaml up -d
+```
+
+需要拿模拟器验线上时，加 `-remote` 启动参数。
 
 因为后端是纯 IP 且无 TLS，`apps/ios/AimApp/Resources/Info.plist` 里开了
 `NSAllowsArbitraryLoads`。ATS 的 `NSExceptionDomains` **只接受域名、不接受 IP**，
@@ -59,5 +70,14 @@ App 默认连这个环境，规则在 `apps/ios/AimApp/Core/Networking/APIEndpoi
 
 ## 安全现状
 
-`DEV_AUTH_ENABLED=true` 是当前**唯一**登录方式，无短信校验，任何人用任意手机号
-即可创建账号。仅适用于验证阶段；接入真实用户前必须先实现正式鉴权。
+登录方式是手机号 + 密码（argon2id）。**注册开放**：任何人都能创建账号——这是
+2026-08-25 知情下的选择，见 `docs/superpowers/specs/2026-08-25-password-auth-design.md`。
+
+**仍然是明文 HTTP**，密码在链路上是明文的。接入真实用户前必须先配域名 + HTTPS，
+并删掉 `apps/ios/AimApp/Resources/Info.plist` 里的 `NSAppTransportSecurity` 段。
+
+忘记密码没有自助路径，用服务器上的脚本重置：
+
+```bash
+docker exec -i aim-api-1 python scripts/reset_password.py 13800000000 新密码
+```

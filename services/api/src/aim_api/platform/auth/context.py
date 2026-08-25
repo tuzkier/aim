@@ -32,11 +32,16 @@ class ActorContext:
     expires_at: int
 
 
+#: 会话有效期。原来是 1 小时——免密登录时代重登一次即可，没有代价；
+#: 加了密码之后它意味着每小时手输一次密码。孕期 App 是每天要用的工具，不是网银。
+SESSION_TTL_SECONDS = 30 * 24 * 3600
+
+
 def issue_session_token(
     account_id: UUID, phone: str, secret: str, *, now: int | None = None
 ) -> str:
     issued_at = int(time.time()) if now is None else now
-    payload = {"account_id": str(account_id), "phone": phone, "exp": issued_at + 3600}
+    payload = {"account_id": str(account_id), "phone": phone, "exp": issued_at + SESSION_TTL_SECONDS}
     encoded = _encode(payload)
     signature = hmac.new(secret.encode(), encoded.encode(), hashlib.sha256).hexdigest()
     return f"aim.v1.{encoded}.{signature}"

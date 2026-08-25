@@ -34,7 +34,29 @@ actor EveClient {
     }
 
     func respondToApproval(sessionID: String, approvalID: String, approved: Bool) async throws {
-        let response = EveInputResponse(requestID: approvalID, optionID: approved ? "approve" : "cancel", text: nil)
+        try await postInputResponse(
+            sessionID: sessionID,
+            response: EveInputResponse(
+                requestID: approvalID, optionID: approved ? "approve" : "cancel", text: nil
+            )
+        )
+    }
+
+    /// 回答 Agent 的反问。和批准不同，这里要把用户真正选的选项或打的字送回去——
+    /// 批准那条路把 optionID 写死成 "approve"/"cancel"，用来答题等于什么都没说。
+    func respondToInput(
+        sessionID: String,
+        requestID: String,
+        optionID: String?,
+        text: String?
+    ) async throws {
+        try await postInputResponse(
+            sessionID: sessionID,
+            response: EveInputResponse(requestID: requestID, optionID: optionID, text: text)
+        )
+    }
+
+    private func postInputResponse(sessionID: String, response: EveInputResponse) async throws {
         let body = try JSONEncoder().encode(["inputResponses": [response]])
         let request = environment.eveRequest(path: "/eve/v1/session/\(sessionID)", method: "POST", body: body)
         _ = try await session.aimData(for: request)
@@ -65,6 +87,12 @@ actor EveClient {
                         lineData.append(0x0A)
                         for event in try decoder.append(lineData) {
                             continuation.yield(event)
+                            // 服务端说完了就收口。继续读下去只会空等到超时，
+                            // 而那条超时会被当成真错误覆盖掉已经收到的回答。
+                            if event.isTerminal {
+                                continuation.finish()
+                                return
+                            }
                         }
                     }
                     for event in try decoder.finish() { continuation.yield(event) }

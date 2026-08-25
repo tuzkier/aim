@@ -9,8 +9,11 @@ import { toolResultSchema } from "../lib/business-api/tool-result-schema.ts";
 export default defineTool({
   description:
     "Save a piece of pregnancy knowledge to the user's library after they confirm it. " +
-    "Use form=recipe for dishes (ingredients + steps), form=food_rule for whether " +
-    "something is safe to eat (verdict + reason), form=howto for procedures with steps, " +
+    "Use form=recipe for dishes — always fill purposes with what the dish is good for " +
+    "(e.g. 补铁, 缓解孕吐, 补钙), that is how the user finds it later. " +
+    "Use form=food_rule for anything about how to eat: whether something is safe " +
+    "(set verdict), or advice with no yes/no answer such as pairing or meal timing " +
+    "(leave verdict out, reason carries the advice). Use form=howto for procedures with steps, " +
     "and form=tip for a short standalone note. Fill every field the chosen form needs — " +
     "a recipe without steps is not worth saving.",
   inputSchema: z.object({
@@ -26,6 +29,8 @@ export default defineTool({
     form: z.enum(["recipe", "food_rule", "howto", "tip"]),
     ingredients: z.array(z.string().min(1)).optional(),
     steps: z.array(z.string().min(1)).optional(),
+    // 用途是找菜谱的入口——孕期找菜的起点几乎总是「我缺铁，吃什么」。
+    purposes: z.array(z.string().min(1)).max(4).optional(),
     // 三档而不是能/不能两档：孕期饮食大量情况是「可以但要限量」。
     verdict: z.enum(["safe", "limit", "avoid"]).optional(),
     reason: z.string().max(2000).optional(),

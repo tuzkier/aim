@@ -58,7 +58,10 @@ struct TaskDetailView: View {
                         }
                     }
                 } label: {
-                    Label(store.task.status == .completed ? "已完成" : "标记完成", systemImage: "checkmark")
+                    // 不用 Label：图标和文字会被当成一个整体居中，文字因此被顶到
+                    // 右边约 12pt。而这个 checkmark 在完成/未完成两态是同一个，
+                    // 本来就没在表达状态，删掉即可，文字才真正落在中线上。
+                    Text(store.task.status == .completed ? "已完成" : "标记完成")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)

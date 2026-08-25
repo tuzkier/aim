@@ -12,7 +12,9 @@ final class LibraryStore {
     var errorMessage: String?
 
     func load() async {
-        guard let repository else { return }
+        // 重入保护取代了原来的「只加载一次」判断——后者会让资料库
+        // 永远停在首次快照上，用户在时间线新记的产检这里看不到。
+        guard let repository, !isLoading else { return }
         isLoading = true
         errorMessage = nil
         defer { isLoading = false }
@@ -96,6 +98,48 @@ final class LibraryStore {
                 _ = try await repository.createRecord(draft: draft)
             }
         }
+    }
+
+    /// 问诊结束后一次性把清单里的问题标记为已问。
+    /// 逐条标记是此前唯一的方式，产检结束回来要点很多次。
+    func markQuestionsAnswered(ids: [UUID]) async {
+        guard let repository else { return }
+        let targets = snapshot.records.filter { ids.contains($0.id) && $0.type == .question }
+        for record in targets {
+            let draft = RecordDraft(
+                type: .question, occurredAt: record.occurredAt, visibility: record.visibility,
+                title: record.title, content: record.content,
+                structuredData: .question(QuestionRecordData(answered: true, answer: nil)))
+            do {
+                _ = try await repository.updateRecord(recordID: record.id, draft: draft)
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
+        await load()
+    }
+
+    /// 保存一条知识条目。已有 id 就是编辑，否则新建。
+    func saveEntry(draft: RecordDraft, editing id: UUID?) async -> Bool {
+        guard let repository else { return false }
+        do {
+            if let id {
+                _ = try await repository.updateRecord(recordID: id, draft: draft)
+            } else {
+                _ = try await repository.createRecord(draft: draft)
+            }
+            await load()
+            return true
+        } catch {
+            errorMessage = error.localizedDescription
+            return false
+        }
+    }
+
+    /// 删除一条知识条目。资料库不该只能看——存错了、过时了要能删掉。
+    func deleteEntry(id: UUID) async {
+        guard let repository else { return }
+        await perform { try await repository.deleteRecord(recordID: id) }
     }
 
     func isChecked(collection: String, itemID: String) -> Bool {

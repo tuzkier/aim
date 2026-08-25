@@ -200,6 +200,313 @@ final class CoreJourneyUITests: XCTestCase {
 
 
 
+
+
+
+
+
+    /// 「吃什么」是两个场景：菜谱回答做什么，饮食提示回答注意什么。
+    /// 此前混在一个列表里，找菜要在禁忌里翻，查能不能吃要在菜谱里翻。
+    func testNutritionSeparatesRecipesFromAdvice() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-reset-session"]
+        app.launch()
+
+        if app.textFields["手机号"].waitForExistence(timeout: 2) {
+            let phone = app.textFields["手机号"]
+            phone.tap()
+            phone.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 20))
+            phone.typeText("139\(Int.random(in: 10_000_000...99_999_999))")
+            app.buttons["开始体验"].tap()
+        }
+
+        completePregnancySetup(in: app)
+
+        let libraryTab = app.tabBars.buttons["资料库"]
+        XCTAssertTrue(libraryTab.waitForExistence(timeout: 15))
+        libraryTab.tap()
+
+        let nutrition = app.buttons["library-card-nutrition"]
+        reveal(nutrition, in: app)
+        nutrition.tap()
+
+        let picker = app.segmentedControls["nutrition-section-picker"]
+        XCTAssertTrue(picker.waitForExistence(timeout: 10))
+
+        // 默认落在菜谱页：这是「吃什么」最常被记录的东西。
+        let addManually = app.buttons["library-add-manually"]
+        XCTAssertTrue(addManually.waitForExistence(timeout: 5))
+        addManually.tap()
+
+        let title = app.textFields["knowledge-title"]
+        XCTAssertTrue(title.waitForExistence(timeout: 8))
+        title.tap()
+        title.typeText("菠菜猪肝汤")
+
+        let ingredient = app.textFields["knowledge-ingredient-0"]
+        reveal(ingredient, in: app)
+        ingredient.tap()
+        ingredient.typeText("菠菜 200g")
+
+        let step = app.textFields["knowledge-step-0"]
+        reveal(step, in: app)
+        step.tap()
+        step.typeText("焯水后煮 3 分钟")
+
+        // 用途是以后找到这道菜的入口。
+        let purpose = app.textFields["knowledge-purpose-0"]
+        reveal(purpose, in: app)
+        purpose.tap()
+        purpose.typeText("补铁")
+
+        let save = app.buttons["knowledge-save"]
+        XCTAssertTrue(save.isEnabled)
+        save.tap()
+
+        XCTAssertTrue(
+            app.staticTexts["菠菜猪肝汤"].waitForExistence(timeout: 15),
+            "菜谱应出现在菜谱页"
+        )
+        XCTAssertTrue(
+            app.buttons["nutrition-purpose-补铁"].waitForExistence(timeout: 10),
+            "用途标签应当来自菜谱自己"
+        )
+
+        // 切到饮食提示，菜谱不该出现在这边。
+        picker.buttons["饮食提示"].tap()
+        XCTAssertFalse(
+            app.staticTexts["菠菜猪肝汤"].waitForExistence(timeout: 3),
+            "菜谱不该出现在饮食提示里"
+        )
+    }
+
+    /// Aim 自带的条目此前只有标题和一行摘要、且不可点，用户看到的是一堆
+    /// 读不下去的行。这条用例守住「能点进去看完整内容」。
+    func testBuiltInReferenceItemsOpenTheirDetail() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-reset-session"]
+        app.launch()
+
+        if app.textFields["手机号"].waitForExistence(timeout: 2) {
+            let phone = app.textFields["手机号"]
+            phone.tap()
+            phone.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 20))
+            phone.typeText("139\(Int.random(in: 10_000_000...99_999_999))")
+            app.buttons["开始体验"].tap()
+        }
+
+        completePregnancySetup(in: app)
+
+        let libraryTab = app.tabBars.buttons["资料库"]
+        XCTAssertTrue(libraryTab.waitForExistence(timeout: 15))
+        libraryTab.tap()
+
+        let nutrition = app.buttons["library-card-nutrition"]
+        reveal(nutrition, in: app)
+        nutrition.tap()
+
+        // 自带参考归在「饮食提示」下——它们讲的是注意什么，不是菜谱。
+        let picker = app.segmentedControls["nutrition-section-picker"]
+        XCTAssertTrue(picker.waitForExistence(timeout: 10), "「吃什么」应当分成菜谱与饮食提示")
+        picker.buttons["饮食提示"].tap()
+
+        // 内容 id 来自 content/nutrition，不是写死在客户端的。
+        let item = app.buttons["content-item-raw-and-undercooked"]
+        reveal(item, in: app)
+        item.tap()
+
+        XCTAssertTrue(
+            app.navigationBars["生食与未煮熟的食物"].waitForExistence(timeout: 10),
+            "自带条目应当能点进详情"
+        )
+        XCTAssertTrue(
+            app.buttons["content-ask-agent"].waitForExistence(timeout: 5),
+            "详情里应当能就这条问 AIM"
+        )
+    }
+
+    /// 「想问医生」此前缺了最关键的一步：产检那天怎么把攒下的问题一次带走。
+    /// 这条用例守住完整闭环——攒问题、生成清单、问完一次性标记。
+    func testConsultationListClosesTheQuestionLoop() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-reset-session"]
+        app.launch()
+
+        if app.textFields["手机号"].waitForExistence(timeout: 2) {
+            let phone = app.textFields["手机号"]
+            phone.tap()
+            phone.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 20))
+            phone.typeText("139\(Int.random(in: 10_000_000...99_999_999))")
+            app.buttons["开始体验"].tap()
+        }
+
+        completePregnancySetup(in: app)
+
+        let libraryTab = app.tabBars.buttons["资料库"]
+        XCTAssertTrue(libraryTab.waitForExistence(timeout: 15))
+        libraryTab.tap()
+
+        let questions = app.buttons["library-card-questions"]
+        reveal(questions, in: app)
+        questions.tap()
+
+        // 攒两个问题。清单入口只在有未答问题时才出现。
+        let field = app.textFields["library-question-field"]
+        XCTAssertTrue(field.waitForExistence(timeout: 10))
+        for text in ["能不能继续游泳", "这个胎动正常吗"] {
+            field.tap()
+            field.typeText(text)
+            app.buttons["library-question-add"].tap()
+            XCTAssertTrue(app.staticTexts[text].waitForExistence(timeout: 10))
+        }
+
+        let consultation = app.buttons["library-consultation-list"]
+        reveal(consultation, in: app)
+        consultation.tap()
+
+        XCTAssertTrue(
+            app.buttons["consultation-mark-all"].waitForExistence(timeout: 10),
+            "问诊清单应当能打开"
+        )
+        XCTAssertTrue(app.staticTexts["能不能继续游泳"].exists, "清单里应当有攒下的问题")
+
+        app.buttons["consultation-mark-all"].tap()
+
+        // 全部标记为已问之后，清单入口应当消失——没有待问的问题了。
+        XCTAssertTrue(
+            app.buttons["library-question-field"].waitForExistence(timeout: 15)
+                || app.textFields["library-question-field"].waitForExistence(timeout: 5),
+            "应当回到问题列表"
+        )
+        XCTAssertFalse(
+            app.buttons["library-consultation-list"].waitForExistence(timeout: 5),
+            "都问过之后不该还提示生成清单"
+        )
+    }
+
+    /// 资料库是积累下来的内容，你和 AIM 都能往里加。此前只有 AIM 能加，
+    /// 用户想手动录一道菜谱做不到——这条用例守住「自己记一条」这条路径。
+    func testUserCanAddAndEditAKnowledgeEntryThemselves() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-reset-session"]
+        app.launch()
+
+        if app.textFields["手机号"].waitForExistence(timeout: 2) {
+            let phone = app.textFields["手机号"]
+            phone.tap()
+            phone.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 20))
+            phone.typeText("139\(Int.random(in: 10_000_000...99_999_999))")
+            app.buttons["开始体验"].tap()
+        }
+
+        completePregnancySetup(in: app)
+
+        let libraryTab = app.tabBars.buttons["资料库"]
+        XCTAssertTrue(libraryTab.waitForExistence(timeout: 15))
+        libraryTab.tap()
+
+        let nutrition = app.buttons["library-card-nutrition"]
+        reveal(nutrition, in: app)
+        nutrition.tap()
+
+        let addManually = app.buttons["library-add-manually"]
+        XCTAssertTrue(addManually.waitForExistence(timeout: 10), "应当能自己记一条")
+        addManually.tap()
+
+        XCTAssertTrue(app.navigationBars["新增资料"].waitForExistence(timeout: 8), "录入界面应当弹出")
+        let title = app.textFields["knowledge-title"]
+        XCTAssertTrue(title.waitForExistence(timeout: 5))
+        title.tap()
+        title.typeText("红枣枸杞粥")
+
+        // 吃什么默认按菜谱录，食材与做法都要填齐才能保存。
+        let ingredient = app.textFields["knowledge-ingredient-0"]
+        reveal(ingredient, in: app)
+        ingredient.tap()
+        ingredient.typeText("红枣 5 颗")
+
+        let step = app.textFields["knowledge-step-0"]
+        reveal(step, in: app)
+        step.tap()
+        step.typeText("洗净后煮 30 分钟")
+
+        let save = app.buttons["knowledge-save"]
+        XCTAssertTrue(save.isEnabled, "填齐后应当可以保存")
+        save.tap()
+
+        XCTAssertTrue(
+            app.staticTexts["红枣枸杞粥"].waitForExistence(timeout: 15),
+            "自己记的条目应出现在分类里"
+        )
+    }
+
+    /// 产检指标是趋势图与「本周关注」血压规则的数据源。此前后端支持
+    /// metrics 字段，但界面上填不了——这条用例守住录入链路。
+    func testCheckupMetricsCanBeRecorded() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-reset-session"]
+        app.launch()
+
+        if app.textFields["手机号"].waitForExistence(timeout: 2) {
+            let phone = app.textFields["手机号"]
+            phone.tap()
+            phone.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 20))
+            phone.typeText("139\(Int.random(in: 10_000_000...99_999_999))")
+            app.buttons["开始体验"].tap()
+        }
+
+        completePregnancySetup(in: app)
+
+        let timelineTab = app.tabBars.buttons["孕期"]
+        XCTAssertTrue(timelineTab.waitForExistence(timeout: 15))
+        timelineTab.tap()
+
+        let addRecord = app.buttons["新增记录"]
+        XCTAssertTrue(addRecord.waitForExistence(timeout: 10))
+        addRecord.tap()
+
+        app.buttons["record-type-checkup"].tap()
+
+        // 按序号定位文本框会踩焦点竞态，用稳定标识。
+        for (identifier, value) in [
+            ("checkup-hospital", "市一医院"),
+            ("checkup-exam-items", "常规产检"),
+            ("checkup-result", "正常"),
+            ("checkup-advice", "按时复查"),
+        ] {
+            let field = app.textFields[identifier]
+            reveal(field, in: app)
+            field.tap()
+            XCTAssertTrue(field.waitForExistence(timeout: 3))
+            field.typeText(value)
+        }
+
+        let weight = app.textFields["checkup-metric-weight"]
+        reveal(weight, in: app)
+        weight.tap()
+        weight.typeText("62.5")
+
+        let systolic = app.textFields["checkup-metric-systolic"]
+        systolic.tap()
+        systolic.typeText("118")
+
+        let save = app.buttons["保存记录"]
+        reveal(save, in: app)
+        save.tap()
+
+        // 存下去之后资料库的产检卡应当反映出这条记录。
+        let libraryTab = app.tabBars.buttons["资料库"]
+        XCTAssertTrue(libraryTab.waitForExistence(timeout: 15))
+        libraryTab.tap()
+
+        let checkups = app.buttons["library-card-checkups"]
+        XCTAssertTrue(checkups.waitForExistence(timeout: 15))
+        XCTAssertTrue(
+            app.staticTexts["1 次记录"].waitForExistence(timeout: 10),
+            "录入的产检应出现在资料库"
+        )
+    }
+
     /// 想问医生与待产准备走的是同一套机制：内容库出条目，checklist 记录存勾选状态。
     /// 这条用例验证两者都能真的写进去，而不只是渲染出来。
     func testLibraryQuestionsAndChecklistCanBeWrittenTo() throws {
@@ -337,6 +644,62 @@ final class CoreJourneyUITests: XCTestCase {
 
     /// 登录后没有孕期档案时，日期录入是一道准入门槛。日期不再预填，
     /// 必须真的拨动滚轮才算选定——所以这里不能只是「点保存」。
+
+
+
+    /// 办事指南和待产准备走的是 checklist(collection:) 那条分支，它只渲染静态
+    /// 内容集合，从不渲染用户和 AIM 攒下来的条目。于是「自己记一条」和
+    /// 「让 AIM 记」两个入口都在，条目也确实存进了服务端，但详情页什么都不显示。
+    func testPaperworkShowsEntriesAddedByHand() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-reset-session"]
+        app.launch()
+
+        if app.textFields["手机号"].waitForExistence(timeout: 2) {
+            let phone = app.textFields["手机号"]
+            phone.tap()
+            phone.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 20))
+            phone.typeText("139\(Int.random(in: 10_000_000...99_999_999))")
+            app.buttons["开始体验"].tap()
+        }
+        completePregnancySetup(in: app)
+
+        let libraryTab = app.tabBars.buttons["资料库"]
+        XCTAssertTrue(libraryTab.waitForExistence(timeout: 15))
+        libraryTab.tap()
+
+        let paperwork = app.buttons["library-card-paperwork"]
+        reveal(paperwork, in: app)
+        paperwork.tap()
+
+        let addManually = app.buttons["library-add-manually"]
+        XCTAssertTrue(addManually.waitForExistence(timeout: 10), "办事指南应当能自己记一条")
+        addManually.tap()
+
+        XCTAssertTrue(app.navigationBars["新增资料"].waitForExistence(timeout: 8))
+        let title = app.textFields["knowledge-title"]
+        XCTAssertTrue(title.waitForExistence(timeout: 5))
+        title.tap()
+        title.typeText("建卡当天的流程")
+
+        // 办事指南默认按「提示」录，只需要正文。
+        let body = app.textFields["knowledge-body"]
+        XCTAssertTrue(body.waitForExistence(timeout: 5), "提示形态应当有正文输入框")
+        reveal(body, in: app)
+        body.tap()
+        body.typeText("先取号再建档，社保卡和身份证都要带")
+
+        let save = app.buttons["knowledge-save"]
+        reveal(save, in: app)
+        XCTAssertTrue(save.isEnabled, "填齐后应当可以保存")
+        save.tap()
+
+        XCTAssertTrue(
+            app.staticTexts["建卡当天的流程"].waitForExistence(timeout: 15),
+            "存进去的条目必须出现在办事指南里，否则等于存进了看不见的地方"
+        )
+    }
+
     private func completePregnancySetup(in app: XCUIApplication) {
         let save = app.buttons["pregnancy-setup-save"]
         guard save.waitForExistence(timeout: 10) else { return }

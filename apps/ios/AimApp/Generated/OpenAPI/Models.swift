@@ -201,6 +201,8 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
     let examItems: String?
     let result: String?
     let doctorAdvice: String?
+    /// 可计算的产检指标。缺了它，趋势条与「本周关注」的血压规则永远没有数据。
+    let metrics: CheckupMetrics?
     let answered: Bool?
     let answer: String?
     let collection: String?
@@ -213,6 +215,7 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
     let verdict: String?
     let reason: String?
     let body: String?
+    let purposes: [String]?
 
     init(
         symptoms: [String]? = nil,
@@ -222,6 +225,7 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
         examItems: String? = nil,
         result: String? = nil,
         doctorAdvice: String? = nil,
+        metrics: CheckupMetrics? = nil,
         answered: Bool? = nil,
         answer: String? = nil,
         collection: String? = nil,
@@ -233,7 +237,8 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
         steps: [String]? = nil,
         verdict: String? = nil,
         reason: String? = nil,
-        body: String? = nil
+        body: String? = nil,
+        purposes: [String]? = nil
     ) {
         self.symptoms = symptoms
         self.severity = severity
@@ -242,6 +247,7 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
         self.examItems = examItems
         self.result = result
         self.doctorAdvice = doctorAdvice
+        self.metrics = metrics
         self.answered = answered
         self.answer = answer
         self.collection = collection
@@ -254,14 +260,15 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
         self.verdict = verdict
         self.reason = reason
         self.body = body
+        self.purposes = purposes
     }
 
     enum CodingKeys: String, CodingKey {
-        case symptoms, severity, note, hospital, result
+        case symptoms, severity, note, hospital, result, metrics
         case examItems = "exam_items"
         case doctorAdvice = "doctor_advice"
         case answered, answer, collection, done
-        case category, form, ingredients, steps, verdict, reason, body
+        case category, form, ingredients, steps, verdict, reason, body, purposes
         case itemID = "item_id"
     }
 
@@ -272,7 +279,9 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
             return .symptom(SymptomRecordData(symptoms: symptoms, severity: severity, note: note))
         case .checkup:
             guard let hospital, let examItems, let result, let doctorAdvice else { return .unknown }
-            return .checkup(CheckupRecordData(hospital: hospital, examItems: examItems, result: result, doctorAdvice: doctorAdvice))
+            return .checkup(CheckupRecordData(
+                hospital: hospital, examItems: examItems, result: result,
+                doctorAdvice: doctorAdvice, metrics: metrics ?? CheckupMetrics()))
         case .question:
             return .question(QuestionRecordData(answered: answered ?? false, answer: answer))
         case .checklist:
@@ -288,7 +297,8 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
                 verdict: verdict.map(FoodVerdict.init(rawValue:)),
                 reason: reason,
                 body: body,
-                note: note
+                note: note,
+                purposes: purposes
             ))
         case .note:
             return .note
@@ -302,7 +312,11 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
         case let .symptom(data):
             self.init(symptoms: data.symptoms, severity: data.severity, note: data.note)
         case let .checkup(data):
-            self.init(hospital: data.hospital, examItems: data.examItems, result: data.result, doctorAdvice: data.doctorAdvice)
+            self.init(
+                hospital: data.hospital, examItems: data.examItems, result: data.result,
+                doctorAdvice: data.doctorAdvice,
+                // 没测的指标不发空对象，避免把 null 当成 0。
+                metrics: data.metrics.isEmpty ? nil : data.metrics)
         case let .question(data):
             self.init(answered: data.answered, answer: data.answer)
         case let .checklist(data):
@@ -311,7 +325,8 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
             self.init(
                 note: data.note, category: data.category, form: data.form.rawValue,
                 ingredients: data.ingredients, steps: data.steps,
-                verdict: data.verdict?.rawValue, reason: data.reason, body: data.body
+                verdict: data.verdict?.rawValue, reason: data.reason, body: data.body,
+                purposes: data.purposes
             )
         case .note, .unknown:
             self.init()

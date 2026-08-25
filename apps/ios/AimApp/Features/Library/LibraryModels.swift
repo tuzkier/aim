@@ -43,6 +43,9 @@ struct ContentItem: Identifiable, Equatable, Sendable {
     let title: String
     let summary: String
     let verificationURL: String?
+    /// 待产包按「证件 / 妈妈 / 宝宝 / 陪产家属」分组——
+    /// 一个平铺清单在真收拾的时候没法用。
+    let group: String?
 }
 
 struct ContentCollection: Equatable, Sendable {
@@ -57,9 +60,10 @@ struct APIContentItemDTO: Decodable, Sendable {
     let title: String
     let summary: String
     let verificationURL: String?
+    let group: String?
 
     enum CodingKeys: String, CodingKey {
-        case id, title, summary
+        case id, title, summary, group
         case verificationURL = "verification_url"
     }
 }
@@ -83,7 +87,7 @@ extension ContentCollection {
         sourceURL = dto.sourceURL
         items = dto.items.map {
             ContentItem(id: $0.id, title: $0.title, summary: $0.summary,
-                        verificationURL: $0.verificationURL)
+                        verificationURL: $0.verificationURL, group: $0.group)
         }
     }
 }

@@ -26,7 +26,8 @@
         "properties": {
           "id": {"type": "string"},
           "title": {"type": "string"},
-          "summary": {"type": "string"}
+          "summary": {"type": "string"},
+          "group": {"type": "string"}
         },
         "additionalProperties": false
       }

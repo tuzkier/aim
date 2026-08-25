@@ -54,10 +54,37 @@ final class AgentStore {
         send(environment: environment)
     }
 
+    /// 正等着你回答的那次反问，没有就是 nil。
+    var pendingQuestion: AgentQuestion? {
+        guard case let .awaitingAnswer(request) = state else { return nil }
+        return AgentQuestion(request: request)
+    }
+
+    /// 点选项作答。发回去的是选项自己的 id，不是写死的 "approve"。
+    func answer(optionID: String?, label: String, environment: APIEnvironment) {
+        guard case let .awaitingAnswer(request) = state else { return }
+        messages.append(AgentMessage(text: label, isUser: true))
+        lastUserText = label
+        deliverAnswer(
+            requestID: request.requestID,
+            optionID: optionID,
+            text: optionID == nil ? label : nil,
+            environment: environment
+        )
+    }
+
     func send(environment: APIEnvironment) {
         let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
         draft = ""
+        // 有反问悬着的时候，打的字是这次提问的答案，不是新一轮对话。
+        // 另起一轮模型就收不到答案，会一直卡在等待里。
+        if case let .awaitingAnswer(request) = state {
+            messages.append(AgentMessage(text: text, isUser: true))
+            lastUserText = text
+            deliverAnswer(requestID: request.requestID, optionID: nil, text: text, environment: environment)
+            return
+        }
         messages.append(AgentMessage(text: text, isUser: true))
         lastUserText = text
         let requestText = requestMessage(for: text)
@@ -134,6 +161,30 @@ final class AgentStore {
         }
     }
 
+    private func deliverAnswer(
+        requestID: String,
+        optionID: String?,
+        text: String?,
+        environment: APIEnvironment
+    ) {
+        guard let sessionID else { return }
+        let client = EveClient(environment: environment)
+        self.client = client
+        state = .streaming
+        activeTask?.cancel()
+        activeTask = Task { [weak self] in
+            do {
+                try await client.respondToInput(
+                    sessionID: sessionID, requestID: requestID, optionID: optionID, text: text
+                )
+                let events = await client.resume(sessionID: sessionID, from: self?.streamIndex ?? 0)
+                for try await event in events { self?.consume(event) }
+            } catch {
+                self?.fail(error.localizedDescription)
+            }
+        }
+    }
+
     private func respond(_ request: EveInputRequest, approved: Bool, environment: APIEnvironment) {
         guard let sessionID else { return }
         let client = EveClient(environment: environment)
@@ -155,7 +206,14 @@ final class AgentStore {
         case .sessionStarted:
             break
         case .inputRequested:
-            if let request = event.inputRequests.first { state = .awaitingApproval(request) }
+            guard let request = event.inputRequests.first else { break }
+            if let question = AgentQuestion(request: request) {
+                // 反问进对话流，用户在输入框或选项里回答。
+                messages.append(AgentMessage(text: question.prompt, isUser: false))
+                state = .awaitingAnswer(request)
+            } else {
+                state = .awaitingApproval(request)
+            }
         case .actionResult:
             guard let outcome = AgentToolOutcome(event: event) else { break }
             state = .applied

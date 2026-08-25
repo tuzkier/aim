@@ -56,9 +56,12 @@ struct KnowledgeRecordData: Codable, Equatable, Sendable {
     var reason: String?
     var body: String?
     var note: String?
+    /// 菜谱的用途标签（补铁、缓解孕吐…）。孕期找菜谱的起点几乎总是
+    /// 「我缺铁，吃什么」——用途才是入口，标题不是。
+    var purposes: [String]?
 
     enum CodingKeys: String, CodingKey {
-        case category, form, ingredients, steps, verdict, reason, body, note
+        case category, form, ingredients, steps, verdict, reason, body, note, purposes
     }
 }
 
@@ -78,14 +81,29 @@ struct KnowledgeEntry: Identifiable, Equatable, Sendable {
         case .recipe:
             let ingredients = data.ingredients?.count ?? 0
             let steps = data.steps?.count ?? 0
-            return "\(ingredients) 样食材 · \(steps) 步"
+            let size = "\(ingredients) 样食材 · \(steps) 步"
+            guard let purposes = data.purposes, !purposes.isEmpty else { return size }
+            return purposes.joined(separator: "、") + " · " + size
         case .foodRule:
-            return data.verdict?.displayName ?? "待确认"
+            // 结论可选：「补铁要配维C」这类建议没有能吃/不能吃的答案。
+            if let verdict = data.verdict { return verdict.displayName }
+            return data.reason ?? ""
         case .howto:
             return "\(data.steps?.count ?? 0) 步"
         case .tip, .unknown:
             return data.body ?? ""
         }
+    }
+
+    /// 针对这一条提问时的上下文。
+    var askContext: AgentContext {
+        var lines = ["资料库里的一条记录：\(title)"]
+        if let ingredients = data.ingredients { lines.append("食材：" + ingredients.joined(separator: "、")) }
+        if let steps = data.steps { lines.append("做法：" + steps.joined(separator: "；")) }
+        if let verdict = data.verdict { lines.append("结论：" + verdict.displayName) }
+        if let reason = data.reason { lines.append(reason) }
+        if let body = data.body { lines.append(body) }
+        return AgentContext(title: title, summary: lines.joined(separator: "\n"))
     }
 
     init?(record: RecordItem) {
