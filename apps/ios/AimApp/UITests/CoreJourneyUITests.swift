@@ -617,6 +617,44 @@ final class CoreJourneyUITests: XCTestCase {
     }
 
 
+
+    /// 注册时身份写死成妈妈、家庭名写死成「我的家庭」、成员没有称呼——
+    /// 三样都没有补救入口。这条守住新的注册与家庭编辑路径。
+    func testRegisteringAsFatherWithANicknameAndRenamingTheFamily() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-reset-session"]
+        app.launch()
+
+        registerNewAccount(in: app, role: "爸爸", nickname: "阿斌")
+        completePregnancySetup(in: app)
+
+        let familyTab = app.tabBars.buttons["家庭"]
+        XCTAssertTrue(familyTab.waitForExistence(timeout: 15))
+        familyTab.tap()
+
+        // 列表里显示的是称呼，不是角色名。
+        XCTAssertTrue(
+            app.staticTexts["阿斌"].waitForExistence(timeout: 10),
+            "成员行应当显示称呼，否则两个「其他家人」分不出谁是谁"
+        )
+
+        let rename = app.buttons["family-rename"]
+        reveal(rename, in: app)
+        rename.tap()
+
+        let field = app.textFields["family-name-field"]
+        XCTAssertTrue(field.waitForExistence(timeout: 8))
+        field.tap()
+        field.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 12))
+        field.typeText("王家")
+        app.buttons["family-name-save"].tap()
+
+        XCTAssertTrue(
+            app.staticTexts["王家"].waitForExistence(timeout: 15),
+            "家庭名此前写死成「我的家庭」，改不了"
+        )
+    }
+
     /// 注册一个全新账号。
     ///
     /// 服务端的 `demo-session` 免密入口已经删除，所有用例都要走真实注册：

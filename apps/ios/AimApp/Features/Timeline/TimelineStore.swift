@@ -142,8 +142,8 @@ extension TimelineStore {
         let today = calendar.date(from: DateComponents(year: 2026, month: 8, day: 14, hour: 9))!
         let motherID = UUID()
         store.familyMembers = [
-            FamilyMember(accountID: motherID, role: .mother, status: "active", joinedAt: nil),
-            FamilyMember(accountID: UUID(), role: .father, status: "active", joinedAt: nil)
+            FamilyMember(accountID: motherID, role: .mother, nickname: nil, status: "active", joinedAt: nil),
+            FamilyMember(accountID: UUID(), role: .father, nickname: nil, status: "active", joinedAt: nil)
         ]
         store.tasks = [
             TaskItem(id: UUID(), title: "核对检查所需材料", detail: "检查日期确定后，需要提前核对证件和既往资料。",

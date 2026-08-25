@@ -16,9 +16,23 @@ final class BusinessRepositoryTests: XCTestCase {
 
     func testFamilyRoleUsesAccountIdentityNotRelationshipLabel() {
         let accountID = UUID()
-        let member = FamilyMember(accountID: accountID, role: .father, status: "active", joinedAt: nil)
+        let member = FamilyMember(
+            accountID: accountID, role: .father, nickname: nil, status: "active", joinedAt: nil)
         XCTAssertEqual(member.id, accountID)
         XCTAssertEqual(member.role, .father)
+    }
+
+    /// 成员列表里显示的是称呼；没填称呼时回退到身份，
+    /// 否则两个「其他家人」在列表里完全一样。
+    func testMemberDisplayNamePrefersTheNicknameAndFallsBackToTheRole() {
+        func member(_ nickname: String?) -> FamilyMember {
+            FamilyMember(
+                accountID: UUID(), role: .otherCaregiver, nickname: nickname,
+                status: "active", joinedAt: nil)
+        }
+        XCTAssertEqual(member("婆婆").displayName, "婆婆")
+        XCTAssertEqual(member(nil).displayName, "其他家人")
+        XCTAssertEqual(member("   ").displayName, "其他家人", "只有空格等于没填")
     }
 
     func testSessionResponseDecodesWithoutExposingInternalWiring() throws {

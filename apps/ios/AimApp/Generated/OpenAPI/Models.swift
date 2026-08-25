@@ -94,13 +94,15 @@ struct APIFamilyDTO: Codable, Sendable {
 struct APIFamilyMemberDTO: Codable, Sendable {
     let accountID: UUID
     let role: String
+    /// 少声明一个字段，数据就在两个方向上静默丢失——服务端存了，客户端看不见。
+    let nickname: String?
     let status: String
     let invitedAt: Date?
     let joinedAt: Date?
 
     enum CodingKeys: String, CodingKey {
         case accountID = "account_id"
-        case role, status
+        case role, nickname, status
         case invitedAt = "invited_at"
         case joinedAt = "joined_at"
     }

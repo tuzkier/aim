@@ -170,6 +170,11 @@ private final class FakeLibraryRepository: BusinessRepositoryProtocol, @unchecke
     func schedule(task: TaskItem, at: Date) async throws -> TaskItem { throw APIError.notConfigured }
     func assign(task: TaskItem, to memberID: UUID?) async throws -> TaskItem { throw APIError.notConfigured }
     func invite(phone: String, role: FamilyRole) async throws { throw APIError.notConfigured }
+
+    // 这两个替身不涉及家庭编辑，实现成空操作即可；
+    // 真要用到时会因为断言不成立而暴露，而不是被静默吞掉。
+    func renameFamily(to name: String) async throws {}
+    func updateMyMembership(nickname: String?, role: FamilyRole?) async throws {}
 }
 
 @MainActor
@@ -227,6 +232,11 @@ private final class CountingRepository: BusinessRepositoryProtocol, @unchecked S
     func schedule(task: TaskItem, at: Date) async throws -> TaskItem { throw APIError.notConfigured }
     func assign(task: TaskItem, to memberID: UUID?) async throws -> TaskItem { throw APIError.notConfigured }
     func invite(phone: String, role: FamilyRole) async throws { throw APIError.notConfigured }
+
+    // 这两个替身不涉及家庭编辑，实现成空操作即可；
+    // 真要用到时会因为断言不成立而暴露，而不是被静默吞掉。
+    func renameFamily(to name: String) async throws {}
+    func updateMyMembership(nickname: String?, role: FamilyRole?) async throws {}
 }
 
 @MainActor
@@ -296,4 +306,9 @@ private final class DeletingRepository: BusinessRepositoryProtocol, @unchecked S
     func schedule(task: TaskItem, at: Date) async throws -> TaskItem { throw APIError.notConfigured }
     func assign(task: TaskItem, to memberID: UUID?) async throws -> TaskItem { throw APIError.notConfigured }
     func invite(phone: String, role: FamilyRole) async throws { throw APIError.notConfigured }
+
+    // 这两个替身不涉及家庭编辑，实现成空操作即可；
+    // 真要用到时会因为断言不成立而暴露，而不是被静默吞掉。
+    func renameFamily(to name: String) async throws {}
+    func updateMyMembership(nickname: String?, role: FamilyRole?) async throws {}
 }

@@ -72,8 +72,18 @@ struct FamilyMember: Identifiable, Codable, Equatable, Sendable {
     var id: UUID { accountID }
     let accountID: UUID
     let role: FamilyRole
+    /// 家里怎么称呼这个人。为空时回退到角色名——两个「其他家人」
+    /// 只显示角色的话，在列表里完全分不出谁是谁。
+    let nickname: String?
     let status: String
     let joinedAt: Date?
+
+    var displayName: String {
+        guard let nickname, !nickname.trimmingCharacters(in: .whitespaces).isEmpty else {
+            return role.displayName
+        }
+        return nickname
+    }
 }
 
 enum FamilyRole: String, CaseIterable, Codable, Sendable {
@@ -85,7 +95,8 @@ enum FamilyRole: String, CaseIterable, Codable, Sendable {
         switch self {
         case .mother: return "妈妈"
         case .father: return "爸爸"
-        case .otherCaregiver: return "其他照护者"
+        // 「其他照护者」是书面语，注册页上直接给用户看太生硬。
+        case .otherCaregiver: return "其他家人"
         }
     }
 }
@@ -114,6 +125,8 @@ protocol BusinessRepositoryProtocol: Sendable {
     func schedule(task: TaskItem, at: Date) async throws -> TaskItem
     func assign(task: TaskItem, to memberID: UUID?) async throws -> TaskItem
     func invite(phone: String, role: FamilyRole) async throws
+    func renameFamily(to name: String) async throws
+    func updateMyMembership(nickname: String?, role: FamilyRole?) async throws
 }
 
 actor BusinessRepository: BusinessRepositoryProtocol {
@@ -274,6 +287,27 @@ actor BusinessRepository: BusinessRepositoryProtocol {
         _ = try await session.aimData(for: request)
     }
 
+    func renameFamily(to name: String) async throws {
+        let familyID = try requiredFamilyID()
+        struct Body: Encodable { let name: String }
+        let body = try encoder.encode(Body(name: name))
+        let request = environment.businessRequest(
+            path: "/api/v1/families/\(familyID.uuidString)", method: "PATCH", body: body)
+        _ = try await session.aimData(for: request)
+    }
+
+    /// 只改自己。端点里没有 member_id——改别人需要一套「谁能改谁」的权限模型。
+    func updateMyMembership(nickname: String?, role: FamilyRole?) async throws {
+        let familyID = try requiredFamilyID()
+        // nil 表示「这次不改这一项」，不是「清空」。两者混同的话，
+        // 只想改称呼的请求会把角色抹掉。
+        struct Body: Encodable { let nickname: String?; let role: String? }
+        let body = try encoder.encode(Body(nickname: nickname, role: role?.rawValue))
+        let request = environment.businessRequest(
+            path: "/api/v1/families/\(familyID.uuidString)/members/me", method: "PATCH", body: body)
+        _ = try await session.aimData(for: request)
+    }
+
     private func mutate<Body: Encodable>(path: String, body: Body) async throws -> TaskItem {
         let data = try encoder.encode(body)
         let request = environment.businessRequest(path: path, method: "POST", body: data)
@@ -315,7 +349,12 @@ actor BusinessRepository: BusinessRepositoryProtocol {
 
     private func map(_ dto: APIFamilyDTO) -> FamilySnapshot {
         FamilySnapshot(id: dto.id, name: dto.name, members: dto.members.map { member in
-            FamilyMember(accountID: member.accountID, role: FamilyRole(rawValue: member.role) ?? .otherCaregiver, status: member.status, joinedAt: member.joinedAt)
+            FamilyMember(
+                accountID: member.accountID,
+                role: FamilyRole(rawValue: member.role) ?? .otherCaregiver,
+                nickname: member.nickname,
+                status: member.status,
+                joinedAt: member.joinedAt)
         })
     }
 

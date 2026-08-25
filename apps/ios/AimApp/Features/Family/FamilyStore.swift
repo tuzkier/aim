@@ -36,11 +36,35 @@ final class FamilyStore {
         catch { errorMessage = error.localizedDescription; return false }
     }
 
+    func rename(to name: String) async -> Bool {
+        guard let repository else {
+            errorMessage = APIError.notConfigured.localizedDescription
+            return false
+        }
+        do { try await repository.renameFamily(to: name); await load(); return true }
+        catch { errorMessage = error.localizedDescription; return false }
+    }
+
+    func updateMyself(nickname: String?, role: FamilyRole?) async -> Bool {
+        guard let repository else {
+            errorMessage = APIError.notConfigured.localizedDescription
+            return false
+        }
+        do {
+            try await repository.updateMyMembership(nickname: nickname, role: role)
+            await load()
+            return true
+        } catch {
+            errorMessage = error.localizedDescription
+            return false
+        }
+    }
+
     static func preview() -> FamilyStore {
         let store = FamilyStore()
         store.snapshot = FamilySnapshot(id: UUID(), name: "我们的家", members: [
-            FamilyMember(accountID: UUID(), role: .mother, status: "active", joinedAt: .now),
-            FamilyMember(accountID: UUID(), role: .father, status: "active", joinedAt: .now),
+            FamilyMember(accountID: UUID(), role: .mother, nickname: "阿敏", status: "active", joinedAt: .now),
+            FamilyMember(accountID: UUID(), role: .father, nickname: nil, status: "active", joinedAt: .now),
         ])
         return store
     }
