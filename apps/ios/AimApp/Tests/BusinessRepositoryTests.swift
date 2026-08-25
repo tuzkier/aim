@@ -21,7 +21,7 @@ final class BusinessRepositoryTests: XCTestCase {
         XCTAssertEqual(member.role, .father)
     }
 
-    func testDemoSessionResponseDecodesWithoutExposingInternalWiring() throws {
+    func testSessionResponseDecodesWithoutExposingInternalWiring() throws {
         let payload = """
         {
           "account_id": "11111111-1111-1111-1111-111111111111",
@@ -33,14 +33,14 @@ final class BusinessRepositoryTests: XCTestCase {
         }
         """.data(using: .utf8)!
 
-        let response = try JSONDecoder().decode(DemoSessionResponse.self, from: payload)
+        let response = try JSONDecoder().decode(SessionResponse.self, from: payload)
 
         XCTAssertEqual(response.phone, "13800000001")
         XCTAssertEqual(response.role, .mother)
         XCTAssertEqual(response.accountID.uuidString, "11111111-1111-1111-1111-111111111111")
     }
 
-    func testDemoSessionResponseAllowsPregnancySetupToBeDeferred() throws {
+    func testSessionResponseAllowsPregnancySetupToBeDeferred() throws {
         let payload = """
         {
           "account_id": "11111111-1111-1111-1111-111111111111",
@@ -52,7 +52,7 @@ final class BusinessRepositoryTests: XCTestCase {
         }
         """.data(using: .utf8)!
 
-        let response = try JSONDecoder().decode(DemoSessionResponse.self, from: payload)
+        let response = try JSONDecoder().decode(SessionResponse.self, from: payload)
 
         XCTAssertNil(response.pregnancyID)
     }

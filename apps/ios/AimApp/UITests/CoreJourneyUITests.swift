@@ -6,13 +6,7 @@ final class CoreJourneyUITests: XCTestCase {
         app.launchArguments = ["-reset-session"]
         app.launch()
 
-        if app.textFields["手机号"].waitForExistence(timeout: 2) {
-            let phone = app.textFields["手机号"]
-            phone.tap()
-            phone.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 20))
-            phone.typeText("139\(Int.random(in: 10_000_000...99_999_999))")
-            app.buttons["开始体验"].tap()
-        }
+        registerNewAccount(in: app)
 
         completePregnancySetup(in: app)
 
@@ -36,13 +30,7 @@ final class CoreJourneyUITests: XCTestCase {
 
         // 每个用例都用随机手机号：测试不该占用登录页预填的演示号，
         // 否则真人点进来看到的是测试残留数据。
-        if app.textFields["手机号"].waitForExistence(timeout: 2) {
-            let phone = app.textFields["手机号"]
-            phone.tap()
-            phone.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 20))
-            phone.typeText("139\(Int.random(in: 10_000_000...99_999_999))")
-            app.buttons["开始体验"].tap()
-        }
+        registerNewAccount(in: app)
 
         completePregnancySetup(in: app)
 
@@ -80,13 +68,7 @@ final class CoreJourneyUITests: XCTestCase {
         app.launchArguments = ["-reset-session"]
         app.launch()
 
-        if app.textFields["手机号"].waitForExistence(timeout: 2) {
-            let phone = app.textFields["手机号"]
-            phone.tap()
-            phone.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 20))
-            phone.typeText("139\(Int.random(in: 10_000_000...99_999_999))")
-            app.buttons["开始体验"].tap()
-        }
+        registerNewAccount(in: app)
 
         completePregnancySetup(in: app)
 
@@ -114,13 +96,7 @@ final class CoreJourneyUITests: XCTestCase {
         // navigate into TaskDetailView instead). A brand-new account every
         // run guarantees every seeded task starts open, sidestepping both
         // failure modes instead of working around a shared, mutating account.
-        if app.textFields["手机号"].waitForExistence(timeout: 2) {
-            let phone = app.textFields["手机号"]
-            phone.tap()
-            phone.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 20))
-            phone.typeText("139\(Int.random(in: 10_000_000...99_999_999))")
-            app.buttons["开始体验"].tap()
-        }
+        registerNewAccount(in: app)
 
         completePregnancySetup(in: app)
 
@@ -162,13 +138,7 @@ final class CoreJourneyUITests: XCTestCase {
         app.launch()
 
         // 全新账号保证焦点任务处于未完成状态，焦点卡一定会渲染。
-        if app.textFields["手机号"].waitForExistence(timeout: 2) {
-            let phone = app.textFields["手机号"]
-            phone.tap()
-            phone.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 20))
-            phone.typeText("139\(Int.random(in: 10_000_000...99_999_999))")
-            app.buttons["开始体验"].tap()
-        }
+        registerNewAccount(in: app)
 
         completePregnancySetup(in: app)
 
@@ -212,13 +182,7 @@ final class CoreJourneyUITests: XCTestCase {
         app.launchArguments = ["-reset-session"]
         app.launch()
 
-        if app.textFields["手机号"].waitForExistence(timeout: 2) {
-            let phone = app.textFields["手机号"]
-            phone.tap()
-            phone.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 20))
-            phone.typeText("139\(Int.random(in: 10_000_000...99_999_999))")
-            app.buttons["开始体验"].tap()
-        }
+        registerNewAccount(in: app)
 
         completePregnancySetup(in: app)
 
@@ -287,13 +251,7 @@ final class CoreJourneyUITests: XCTestCase {
         app.launchArguments = ["-reset-session"]
         app.launch()
 
-        if app.textFields["手机号"].waitForExistence(timeout: 2) {
-            let phone = app.textFields["手机号"]
-            phone.tap()
-            phone.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 20))
-            phone.typeText("139\(Int.random(in: 10_000_000...99_999_999))")
-            app.buttons["开始体验"].tap()
-        }
+        registerNewAccount(in: app)
 
         completePregnancySetup(in: app)
 
@@ -332,13 +290,7 @@ final class CoreJourneyUITests: XCTestCase {
         app.launchArguments = ["-reset-session"]
         app.launch()
 
-        if app.textFields["手机号"].waitForExistence(timeout: 2) {
-            let phone = app.textFields["手机号"]
-            phone.tap()
-            phone.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 20))
-            phone.typeText("139\(Int.random(in: 10_000_000...99_999_999))")
-            app.buttons["开始体验"].tap()
-        }
+        registerNewAccount(in: app)
 
         completePregnancySetup(in: app)
 
@@ -391,13 +343,7 @@ final class CoreJourneyUITests: XCTestCase {
         app.launchArguments = ["-reset-session"]
         app.launch()
 
-        if app.textFields["手机号"].waitForExistence(timeout: 2) {
-            let phone = app.textFields["手机号"]
-            phone.tap()
-            phone.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 20))
-            phone.typeText("139\(Int.random(in: 10_000_000...99_999_999))")
-            app.buttons["开始体验"].tap()
-        }
+        registerNewAccount(in: app)
 
         completePregnancySetup(in: app)
 
@@ -447,13 +393,7 @@ final class CoreJourneyUITests: XCTestCase {
         app.launchArguments = ["-reset-session"]
         app.launch()
 
-        if app.textFields["手机号"].waitForExistence(timeout: 2) {
-            let phone = app.textFields["手机号"]
-            phone.tap()
-            phone.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 20))
-            phone.typeText("139\(Int.random(in: 10_000_000...99_999_999))")
-            app.buttons["开始体验"].tap()
-        }
+        registerNewAccount(in: app)
 
         completePregnancySetup(in: app)
 
@@ -514,13 +454,7 @@ final class CoreJourneyUITests: XCTestCase {
         app.launchArguments = ["-reset-session"]
         app.launch()
 
-        if app.textFields["手机号"].waitForExistence(timeout: 2) {
-            let phone = app.textFields["手机号"]
-            phone.tap()
-            phone.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 20))
-            phone.typeText("139\(Int.random(in: 10_000_000...99_999_999))")
-            app.buttons["开始体验"].tap()
-        }
+        registerNewAccount(in: app)
 
         completePregnancySetup(in: app)
 
@@ -568,13 +502,7 @@ final class CoreJourneyUITests: XCTestCase {
         app.launchArguments = ["-reset-session"]
         app.launch()
 
-        if app.textFields["手机号"].waitForExistence(timeout: 2) {
-            let phone = app.textFields["手机号"]
-            phone.tap()
-            phone.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 20))
-            phone.typeText("139\(Int.random(in: 10_000_000...99_999_999))")
-            app.buttons["开始体验"].tap()
-        }
+        registerNewAccount(in: app)
 
         completePregnancySetup(in: app)
 
@@ -606,13 +534,7 @@ final class CoreJourneyUITests: XCTestCase {
         app.launchArguments = ["-reset-session"]
         app.launch()
 
-        if app.textFields["手机号"].waitForExistence(timeout: 2) {
-            let phone = app.textFields["手机号"]
-            phone.tap()
-            phone.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 20))
-            phone.typeText("139\(Int.random(in: 10_000_000...99_999_999))")
-            app.buttons["开始体验"].tap()
-        }
+        registerNewAccount(in: app)
 
         // 不点任何东西，录入界面就应该自己出现，且底部 Tab 还进不去。
         let save = app.buttons["pregnancy-setup-save"]
@@ -655,13 +577,7 @@ final class CoreJourneyUITests: XCTestCase {
         app.launchArguments = ["-reset-session"]
         app.launch()
 
-        if app.textFields["手机号"].waitForExistence(timeout: 2) {
-            let phone = app.textFields["手机号"]
-            phone.tap()
-            phone.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 20))
-            phone.typeText("139\(Int.random(in: 10_000_000...99_999_999))")
-            app.buttons["开始体验"].tap()
-        }
+        registerNewAccount(in: app)
         completePregnancySetup(in: app)
 
         let libraryTab = app.tabBars.buttons["资料库"]
@@ -698,6 +614,59 @@ final class CoreJourneyUITests: XCTestCase {
             app.staticTexts["建卡当天的流程"].waitForExistence(timeout: 15),
             "存进去的条目必须出现在办事指南里，否则等于存进了看不见的地方"
         )
+    }
+
+
+    /// 注册一个全新账号。
+    ///
+    /// 服务端的 `demo-session` 免密入口已经删除，所有用例都要走真实注册：
+    /// 手机号 + 密码 + 身份。每个用例用随机手机号，互不干扰。
+    ///
+    /// 输入密码后必须先收键盘：键盘会盖住底部的提交按钮，而滑动去够它
+    /// 又会和键盘的滚动打架。收掉之后整个表单就在一屏里。
+    private func registerNewAccount(
+        in app: XCUIApplication,
+        role: String = "妈妈",
+        nickname: String? = nil
+    ) {
+        let phone = app.textFields["auth-phone"]
+        guard phone.waitForExistence(timeout: 10) else {
+            return XCTFail("注册页没有出现")
+        }
+
+        phone.tap()
+        phone.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 20))
+        phone.typeText("139\(Int.random(in: 10_000_000...99_999_999))")
+
+        let password = app.secureTextFields["auth-password"]
+        password.tap()
+        password.typeText("aim-test-password")
+
+        if let nickname {
+            let field = app.textFields["auth-nickname"]
+            field.tap()
+            field.typeText(nickname)
+        }
+        dismissKeyboard(in: app)
+
+        let rolePicker = app.buttons["auth-role"]
+        XCTAssertTrue(rolePicker.waitForExistence(timeout: 5), "注册应当能选身份")
+        rolePicker.tap()
+        let option = app.buttons[role]
+        XCTAssertTrue(option.waitForExistence(timeout: 5), "身份菜单里应当有「\(role)」")
+        option.tap()
+
+        let submit = app.buttons["auth-submit"]
+        XCTAssertTrue(submit.waitForExistence(timeout: 5))
+        XCTAssertTrue(submit.isEnabled, "手机号、密码、身份都填齐后应当可以注册")
+        submit.tap()
+    }
+
+    /// 收起键盘。表单里没有空白可点，用 return 键最稳。
+    private func dismissKeyboard(in app: XCUIApplication) {
+        if app.keyboards.count > 0 {
+            app.typeText("\n")
+        }
     }
 
     private func completePregnancySetup(in app: XCUIApplication) {
