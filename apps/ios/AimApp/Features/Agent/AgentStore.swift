@@ -13,6 +13,40 @@ final class AgentStore {
 
     var context: AgentContext?
     var activityLog: [AgentActivity] = []
+
+    /// 当前批次里全部待处理的审批。
+    ///
+    /// Eve 把同一轮里的多个工具审批打成**一个批次**下发（`input.requested` 的
+    /// `requests` 是数组），并且整批凑齐才结算。此前这里只留 `.first`，另外几条
+    /// 再也没有入口，于是整轮一直 parked：模型输出被扣住不发，批内工具一个都不
+    /// 执行——线上「让 AIM 收几道菜，卡片闪一下就没了，一道也没存」就是这么来的。
+    private(set) var pendingApprovals: [EveInputRequest] = []
+
+    /// 批次内逐条累积的决定，requestID -> 同意与否。
+    private(set) var approvalDecisions: [String: Bool] = [:]
+
+    /// 批次里还没拿到回音的那些。
+    var unansweredApprovals: [EveInputRequest] {
+        pendingApprovals.filter { approvalDecisions[$0.requestID] == nil }
+    }
+
+    /// 整批都有回音了，这时才能把响应发回 Eve。
+    var isApprovalBatchComplete: Bool {
+        !pendingApprovals.isEmpty && unansweredApprovals.isEmpty
+    }
+
+    /// 记下其中一条的决定。否决一条不代表放弃整批——剩下的仍要答完，
+    /// 否则批次不结算，已经同意的那几条也跟着卡住。
+    func recordApproval(requestID: String, approved: Bool) {
+        guard pendingApprovals.contains(where: { $0.requestID == requestID }) else { return }
+        approvalDecisions[requestID] = approved
+    }
+
+    private func beginApprovalBatch(_ requests: [EveInputRequest]) {
+        pendingApprovals = requests
+        approvalDecisions = [:]
+    }
+
     /// 撤销「新建」类操作直接调删除接口，不经过模型。
     var repository: BusinessRepositoryProtocol?
     /// 会话目录。新对话开始时要登记，回到旧对话时要顶到最前。
@@ -267,13 +301,16 @@ final class AgentStore {
         case .sessionStarted:
             break
         case .inputRequested:
-            guard let request = event.inputRequests.first else { break }
-            if let question = AgentQuestion(request: request) {
+            let requests = event.inputRequests
+            guard let first = requests.first else { break }
+            if let question = AgentQuestion(request: first) {
                 // 反问进对话流，用户在输入框或选项里回答。
                 messages.append(AgentMessage(text: question.prompt, isUser: false))
-                state = .awaitingAnswer(request)
+                state = .awaitingAnswer(first)
             } else {
-                state = .awaitingApproval(request)
+                // 一个事件可能带来整批审批，全部留住；只认第一条会让整轮 parked。
+                beginApprovalBatch(requests.filter { AgentQuestion(request: $0) == nil })
+                state = .awaitingApproval(first)
             }
         case .messageReceived:
             // 只在重放时还原用户消息。实时发送已经本地 append 过了。

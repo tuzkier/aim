@@ -37,6 +37,7 @@
 		A20000000000000000000032 /* Tests/TodayStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000032 /* Tests/TodayStoreTests.swift */; };
 		A20000000000000000000033 /* Tests/TaskDetailStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000033 /* Tests/TaskDetailStoreTests.swift */; };
 		A20000000000000000000034 /* UITests/CoreJourneyUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000034 /* UITests/CoreJourneyUITests.swift */; };
+		A20000000000000000000128 /* Tests/AgentApprovalBatchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000128 /* Tests/AgentApprovalBatchTests.swift */; };
 		A20000000000000000000035 /* Tests/AgentStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000035 /* Tests/AgentStoreTests.swift */; };
 		A20000000000000000000036 /* Tests/RecordStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000036 /* Tests/RecordStoreTests.swift */; };
 		A20000000000000000000037 /* Features/Records/RecordsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000037 /* Features/Records/RecordsView.swift */; };
@@ -136,7 +137,7 @@
 
 /* Begin PBXFileReference section */
 		A10000000000000000000100 /* Config/Endpoints.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config/Endpoints.xcconfig; sourceTree = "<group>"; };
-		A10000000000000000000101 /* Config/Endpoints.local.xcconfig.example */ = {isa = PBXFileReference; lastKnownFileType = text; path = Config/Endpoints.local.xcconfig.example; sourceTree = "<group>"; };
+		A10000000000000000000127 /* Config/Endpoints.local.xcconfig.example */ = {isa = PBXFileReference; lastKnownFileType = text; path = Config/Endpoints.local.xcconfig.example; sourceTree = "<group>"; };
 		A10000000000000000000001 /* App/AimApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/AimApp.swift; sourceTree = "<group>"; };
 		A10000000000000000000002 /* App/AppSessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/AppSessionStore.swift; sourceTree = "<group>"; };
 		A10000000000000000000003 /* Core/Networking/APIEnvironment.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Networking/APIEnvironment.swift; sourceTree = "<group>"; };
@@ -170,6 +171,7 @@
 		A10000000000000000000032 /* Tests/TodayStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/TodayStoreTests.swift; sourceTree = "<group>"; };
 		A10000000000000000000033 /* Tests/TaskDetailStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/TaskDetailStoreTests.swift; sourceTree = "<group>"; };
 		A10000000000000000000034 /* UITests/CoreJourneyUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UITests/CoreJourneyUITests.swift; sourceTree = "<group>"; };
+		A10000000000000000000128 /* Tests/AgentApprovalBatchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/AgentApprovalBatchTests.swift; sourceTree = "<group>"; };
 		A10000000000000000000035 /* Tests/AgentStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/AgentStoreTests.swift; sourceTree = "<group>"; };
 		A10000000000000000000036 /* Tests/RecordStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/RecordStoreTests.swift; sourceTree = "<group>"; };
 		A10000000000000000000037 /* Features/Records/RecordsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Records/RecordsView.swift; sourceTree = "<group>"; };
@@ -529,6 +531,7 @@
 				A10000000000000000000031 /* Tests/BusinessRepositoryTests.swift */,
 				A10000000000000000000032 /* Tests/TodayStoreTests.swift */,
 				A10000000000000000000033 /* Tests/TaskDetailStoreTests.swift */,
+				A10000000000000000000128 /* Tests/AgentApprovalBatchTests.swift */,
 				A10000000000000000000035 /* Tests/AgentStoreTests.swift */,
 				A10000000000000000000036 /* Tests/RecordStoreTests.swift */,
 				A10000000000000000000043 /* Tests/TimelineBuilderTests.swift */,
@@ -606,7 +609,7 @@
 			isa = PBXGroup;
 			children = (
 				A10000000000000000000100 /* Config/Endpoints.xcconfig */,
-				A10000000000000000000101 /* Config/Endpoints.local.xcconfig.example */,
+				A10000000000000000000127 /* Config/Endpoints.local.xcconfig.example */,
 			);
 			name = Config;
 			sourceTree = "<group>";
@@ -1454,6 +1457,7 @@
 				A20000000000000000000031 /* Tests/BusinessRepositoryTests.swift in Sources */,
 				A20000000000000000000032 /* Tests/TodayStoreTests.swift in Sources */,
 				A20000000000000000000033 /* Tests/TaskDetailStoreTests.swift in Sources */,
+				A20000000000000000000128 /* Tests/AgentApprovalBatchTests.swift in Sources */,
 				A20000000000000000000035 /* Tests/AgentStoreTests.swift in Sources */,
 				A20000000000000000000036 /* Tests/RecordStoreTests.swift in Sources */,
 				A20000000000000000000044 /* Tests/TimelineBuilderTests.swift in Sources */,
