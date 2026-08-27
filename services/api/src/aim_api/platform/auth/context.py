@@ -54,17 +54,25 @@ def authenticate(request: Request) -> ActorContext:
             status_code=status.HTTP_401_UNAUTHORIZED, detail="missing session token"
         )
 
-    token = authorization.removeprefix("Bearer ")
+    settings = request.app.state.settings
+    return verify_session_token(authorization.removeprefix("Bearer "), settings.auth_secret)
+
+
+def verify_session_token(token: str, secret: str) -> ActorContext:
+    """校验一张会话票，成立就返回它代表的身份。
+
+    从 `authenticate` 里抽出来，是因为 agent 运行时的 scope 解析也要验它，
+    而那条路上没有 FastAPI `Request`。
+    """
     parts = token.split(".")
     if len(parts) != 4 or parts[0:2] != ["aim", "v1"]:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid session token"
         )
 
-    settings = request.app.state.settings
     encoded, provided_signature = parts[2], parts[3]
     expected_signature = hmac.new(
-        settings.auth_secret.encode(), encoded.encode(), hashlib.sha256
+        secret.encode(), encoded.encode(), hashlib.sha256
     ).hexdigest()
     if not hmac.compare_digest(provided_signature, expected_signature):
         raise HTTPException(

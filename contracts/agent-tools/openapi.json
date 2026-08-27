@@ -553,6 +553,48 @@
           }
         }
       }
+    },
+    "/internal/agent-tools/resolve-session": {
+      "post": {
+        "tags": [
+          "agent-tools"
+        ],
+        "summary": "Resolve Session",
+        "description": "把一张会话票换成可信的 account / family / pregnancy scope。\n\nAgent 运行时不持有 `AUTH_SECRET`，没法自己验签，所以身份必须来这里换。\n家庭与孕期一律由服务端按账号查出——**调用方自报的 scope 一概不作数**，\n否则运行时的身份就等于谁都能自选。改动这条前请先想清楚这一点。",
+        "operationId": "resolve_session_internal_agent_tools_resolve_session_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResolveSessionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResolveSessionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1529,6 +1571,52 @@
           "name"
         ],
         "title": "RenameFamilyRequest"
+      },
+      "ResolveSessionRequest": {
+        "properties": {
+          "token": {
+            "type": "string",
+            "title": "Token"
+          }
+        },
+        "type": "object",
+        "required": [
+          "token"
+        ],
+        "title": "ResolveSessionRequest"
+      },
+      "ResolveSessionResponse": {
+        "properties": {
+          "account_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Account Id"
+          },
+          "family_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Family Id"
+          },
+          "pregnancy_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pregnancy Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "account_id",
+          "family_id",
+          "pregnancy_id"
+        ],
+        "title": "ResolveSessionResponse"
       },
       "ScheduleTaskRequest": {
         "properties": {

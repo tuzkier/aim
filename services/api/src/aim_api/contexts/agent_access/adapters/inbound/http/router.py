@@ -23,6 +23,7 @@ from aim_api.contexts.agent_access.domain.tool_invocation import ToolInvocation
 from aim_api.contexts.family.adapters.outbound.persistence.repositories import (
     SqlAlchemyFamilyRepository,
 )
+from aim_api.platform.auth.context import verify_session_token
 from aim_api.contexts.guidance.application.queries.get_guidance import (
     GetGuidanceQuery,
 )
@@ -162,7 +163,7 @@ class ListRecordsRequest(BaseModel):
     occurred_until: datetime | None = Field(default=None, alias="to")
 
 
-def _context(request: Request) -> AgentToolContext:
+def _service_credential(request: Request) -> None:
     settings = request.app.state.settings
     service_authorization = request.headers.get("service-authorization", "")
     expected = f"Bearer {settings.agent_service_secret}"
@@ -170,6 +171,10 @@ def _context(request: Request) -> AgentToolContext:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="invalid service credential"
         )
+
+
+def _context(request: Request) -> AgentToolContext:
+    _service_credential(request)
     try:
         return AgentToolContext(
             account_id=UUID(request.headers["actor-account-id"]),
@@ -623,6 +628,49 @@ async def get_guidance_endpoint(request: Request, payload: GetGuidanceRequest):
 @router.post("/undo-operation", response_model=ToolResult, include_in_schema=False)
 async def undo_operation(request: Request, payload: UndoOperationRequest):
     return await _run(request, "undo_operation", payload, _undo_operation, write=True)
+
+
+class ResolveSessionRequest(BaseModel):
+    token: str
+
+
+class ResolveSessionResponse(BaseModel):
+    account_id: UUID
+    family_id: UUID
+    pregnancy_id: UUID | None
+
+
+@router.post("/resolve-session", response_model=ResolveSessionResponse, include_in_schema=False)
+async def resolve_session(request: Request, payload: ResolveSessionRequest):
+    """把一张会话票换成可信的 account / family / pregnancy scope。
+
+    Agent 运行时不持有 `AUTH_SECRET`，没法自己验签，所以身份必须来这里换。
+    家庭与孕期一律由服务端按账号查出——**调用方自报的 scope 一概不作数**，
+    否则运行时的身份就等于谁都能自选。改动这条前请先想清楚这一点。
+    """
+    _service_credential(request)
+
+    settings = request.app.state.settings
+    actor = verify_session_token(payload.token, settings.auth_secret)
+
+    database = request.app.state.database
+    async with database.session() as session:
+        family = await SqlAlchemyFamilyRepository(session).get_first_family_for_account(
+            actor.account_id
+        )
+        if family is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="account has no family"
+            )
+        pregnancy = await SqlAlchemyPregnancyRepository(session).get_first_pregnancy_for_family(
+            family.id
+        )
+
+    return ResolveSessionResponse(
+        account_id=actor.account_id,
+        family_id=family.id,
+        pregnancy_id=pregnancy.id if pregnancy is not None else None,
+    )
 
 
 class _Payload(BaseModel):
