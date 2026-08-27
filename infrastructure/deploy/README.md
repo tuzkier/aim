@@ -1,6 +1,11 @@
 # 部署说明
 
-生产环境：阿里云 ECS `REDACTED_HOST`（Alibaba Cloud Linux 3，2C/1.8G）
+生产环境：阿里云 ECS `<部署机 IP>`（Alibaba Cloud Linux 3，2C/1.8G）
+
+> **地址不在版本库里。** 这是个公开仓库，主机地址、SSH 入口这类信息写在未跟踪的
+> `infrastructure/deploy/LOCAL.md`，iOS 端的地址写在未跟踪的
+> `apps/ios/AimApp/Config/Endpoints.local.xcconfig`。下文所有 `<部署机 IP>` 都指
+> LOCAL.md 里记的那一个。
 
 ## 目录约定（服务器）
 
@@ -42,7 +47,7 @@ Nginx 80 端口按路径前缀分流，两个服务合并在同一域名下：
 | `/api/v1/*` | api 容器 `127.0.0.1:8100` |
 | `/eve/v1/*` | eve 容器 `127.0.0.1:2210`，关闭缓冲以支持 SSE |
 
-限流：`/api/v1/auth/demo-session` 每 IP 5 次/分钟；其余接口 20 次/秒。
+限流：`/api/v1/auth/` 前缀（注册与登录）每 IP 5 次/分钟；其余接口 20 次/秒。
 
 ## iOS 接入
 
@@ -58,6 +63,16 @@ docker compose --env-file .env -f infrastructure/compose/compose.yaml up -d
 ```
 
 需要拿模拟器验线上时，加 `-remote` 启动参数。
+
+真实地址由构建期注入，不在版本库里。打真机包（或用 `-remote`）之前先做一次：
+
+```bash
+cp apps/ios/AimApp/Config/Endpoints.local.xcconfig{.example,}
+```
+
+然后填入 `AIM_REMOTE_BASE_URL`。注意 xcconfig 里 `//` 是行注释，得写成
+`http:/$()/主机/`，模板里有说明。没配置就打真机包的话，App 一启动就会崩，
+崩溃信息直接指回这一步——这比静默连错后端好排查。
 
 因为后端是纯 IP 且无 TLS，`apps/ios/AimApp/Resources/Info.plist` 里开了
 `NSAllowsArbitraryLoads`。ATS 的 `NSExceptionDomains` **只接受域名、不接受 IP**，

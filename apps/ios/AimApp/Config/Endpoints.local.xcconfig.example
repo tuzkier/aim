@@ -1,0 +1,13 @@
+// 复制本文件为同目录下的 Endpoints.local.xcconfig，填入真实地址。
+// 那个文件已被 .gitignore 排除，不要提交。
+//
+// 注意 xcconfig 把 `//` 当行注释，直接写 http://主机/ 会被当场截断成 `http:`。
+// 用 $() 把两个斜杠隔开绕过去——$() 展开为空串，不影响最终取值：
+//
+//   AIM_REMOTE_BASE_URL = http:/$()/203.0.113.10/
+//
+// 换成域名 + HTTPS 之后同理（那也是上架前必须做的，见 infrastructure/deploy/README.md）：
+//
+//   AIM_REMOTE_BASE_URL = https:/$()/api.example.com/
+
+AIM_REMOTE_BASE_URL =

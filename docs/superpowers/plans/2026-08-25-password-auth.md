@@ -19,7 +19,7 @@ demo-session。家庭角色和称呼是同一次注册流程的一部分，因�
 - token 有效期 30 天（2592000 秒）
 - 只能修改自己的成员信息
 - 后端测试跑在 conftest 的一次性库上，不碰开发库
-- iOS 模拟器与测试连本地栈，真机连 `REDACTED_HOST`
+- iOS 模拟器与测试连本地栈，真机连部署环境（地址见 `infrastructure/deploy/README.md`）
 
 ---
 

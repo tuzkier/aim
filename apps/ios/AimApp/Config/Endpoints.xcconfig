@@ -1,0 +1,10 @@
+// 后端地址的构建期注入。
+//
+// 真实地址不进版本库——这是个公开仓库。默认留空，真机构建读到空值会立刻崩溃并把
+// 你指回这里，见 APIEndpointConfiguration.remote。模拟器不读这个值，所以新克隆的
+// 仓库不做任何配置也能跑 `make ios-build` 和 `make ios-test`。
+AIM_REMOTE_BASE_URL =
+
+// 必须放在默认值之后：xcconfig 里后面的赋值覆盖前面的。
+// `#include?` 是可选包含，文件不存在时静默跳过，不会产生构建警告。
+#include? "Endpoints.local.xcconfig"

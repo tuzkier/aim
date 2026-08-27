@@ -33,12 +33,17 @@ make verify
 
 ## iOS 连接哪个后端
 
-App 默认连**部署在阿里云的验证环境** `http://REDACTED_HOST`（Nginx 按路径前缀把
-`/api/v1/*` 和 `/eve/v1/*` 分流到两个服务）。要连本地 `make dev` 起的栈，在 Xcode
-scheme 的 Run → Arguments 里加上 `-local` 启动参数即可。也可以写
-`UserDefaults` 的 `aim.apiBaseURL` / `aim.eveBaseURL` 做临时覆盖，优先级最高。
-规则见 `apps/ios/AimApp/Core/Networking/APIEndpointConfiguration.swift`，部署细节见
-`infrastructure/deploy/README.md`。
+**真机装的包连部署在阿里云的验证环境**（Nginx 按路径前缀把 `/api/v1/*` 和
+`/eve/v1/*` 分流到两个服务）；**模拟器和测试一律连本地 `make dev` 起的栈**。
+要拿模拟器验线上，在 Xcode scheme 的 Run → Arguments 里加 `-remote`；反过来让真机
+连本地栈用 `-local`。也可以写 `UserDefaults` 的 `aim.apiBaseURL` / `aim.eveBaseURL`
+做临时覆盖，优先级最高。规则见
+`apps/ios/AimApp/Core/Networking/APIEndpointConfiguration.swift`。
+
+部署环境的真实地址不在版本库里。打真机包前先复制
+`apps/ios/AimApp/Config/Endpoints.local.xcconfig.example` 为
+`Endpoints.local.xcconfig` 并填入地址，否则 App 一启动就会崩并提示这件事；
+模拟器不需要这一步。地址和部署细节见 `infrastructure/deploy/README.md`。
 
 如果 App 连到了意料之外的后端，先排查模拟器上残留的覆盖值 —— 它优先级最高，
 独立于 App 容器保存，卸载重装和 `-reset-session` 都清不掉：

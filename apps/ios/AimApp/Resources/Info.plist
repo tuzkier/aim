@@ -3,9 +3,16 @@
 <plist version="1.0">
 <dict>
 	<!--
-	  验证环境后端是 http://REDACTED_HOST（纯 IP，无 TLS）。
-	  ATS 的 NSExceptionDomains 只接受域名，不接受 IP 地址，
-	  因此这里只能整体放开明文 HTTP。
+	  验证环境后端的地址。真实值来自不进版本库的
+	  AimApp/Config/Endpoints.local.xcconfig，构建时由 Xcode 展开；
+	  未配置时展开为空串，App 在真机构建下会立刻崩溃并提示如何配置。
+	  解析规则见 Core/Networking/APIEndpointConfiguration.swift。
+	-->
+	<key>AIMRemoteBaseURL</key>
+	<string>$(AIM_REMOTE_BASE_URL)</string>
+	<!--
+	  验证环境后端是纯 IP、无 TLS。ATS 的 NSExceptionDomains 只接受域名，
+	  不接受 IP 地址，因此这里只能整体放开明文 HTTP。
 
 	  这是验证阶段的临时配置。上架 App Store 前必须：
 	  给后端配置域名 + HTTPS 证书，然后删掉整个 NSAppTransportSecurity 段。

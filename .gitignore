@@ -30,6 +30,10 @@ build/
 *.p12
 *.key
 
+# 真实部署地址不进公开仓库；两个文件都各有一份 .example / 占位版本被跟踪
+apps/ios/AimApp/Config/Endpoints.local.xcconfig
+infrastructure/deploy/LOCAL.md
+
 # Local runtime data
 infrastructure/compose/.data/
 services/agent/.workflow-data/
