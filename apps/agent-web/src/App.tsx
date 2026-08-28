@@ -296,10 +296,14 @@ export const App = () => {
     let cancelled = false;
     setRestoring(true);
     void fetchSessionEvents(stored.sessionId, context.token, context.eveOrigin)
-      .then((events) => {
+      .then((snapshot) => {
         if (cancelled) return;
         // 一条都没取到就当新对话开始：那段会话可能已经被服务端清掉了。
-        if (events.length > 0) setRestored({ session: stored, events });
+        if (!snapshot || snapshot.events.length === 0) return;
+        setRestored({
+          session: { sessionId: stored.sessionId, streamIndex: snapshot.nextIndex },
+          events: snapshot.events,
+        });
       })
       .finally(() => {
         if (!cancelled) setRestoring(false);
@@ -332,20 +336,20 @@ export const App = () => {
     setRestoring(true);
     setNotice(null);
     void fetchSessionEvents(picked.eveSessionId, context.token, context.eveOrigin)
-      .then((events) => {
-        if (events.length === 0) {
+      .then((snapshot) => {
+        if (!snapshot || snapshot.events.length === 0) {
           // 运行时升级会让旧会话的事件日志读不回来（CORRUPTED_EVENT_LOG）。
           // 目录里还留着条目，内容却没了——说清楚，别把用户丢在一个空白页面上猜。
           setNotice("这段对话的内容已不可用，可能是服务升级导致的。你可以开一段新的。");
           return;
         }
         setRestored({
-          session: { sessionId: picked.eveSessionId, streamIndex: 0 },
-          events,
+          session: { sessionId: picked.eveSessionId, streamIndex: snapshot.nextIndex },
+          events: snapshot.events,
         });
         saveSession(accountKeyFromToken(context.token), {
           sessionId: picked.eveSessionId,
-          streamIndex: 0,
+          streamIndex: snapshot.nextIndex,
         });
         void touchSession(context.token, picked.id, context.eveOrigin);
       })

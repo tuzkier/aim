@@ -26,7 +26,7 @@ export const fetchSessionEvents = async (
   // 恢复是锦上添花，不值得让人对着「正在接回上一段对话…」干等。会话 id 失效时
   // 这条流可能永远不吐 session.waiting，没有这个上限界面就再也进不去了。
   timeoutMs = 12000,
-): Promise<unknown[]> => {
+): Promise<{ events: unknown[]; nextIndex: number } | null> => {
   const abort = new AbortController();
   const timer = setTimeout(() => abort.abort(), timeoutMs);
   try {
@@ -44,12 +44,12 @@ export const fetchSessionEvents = async (
         signal: abort.signal,
       },
     );
-    if (!response.ok || !response.body) return [];
+    if (!response.ok || !response.body) return null;
 
     const rawTail = response.headers.get("x-eve-stream-tail-index");
     const tailIndex = rawTail === null ? undefined : Number(rawTail);
     // 拿不到末尾位置就别硬读——那会一直跟着活流直到超时。空历史当新对话处理。
-    if (tailIndex === undefined || !Number.isFinite(tailIndex)) return [];
+    if (tailIndex === undefined || !Number.isFinite(tailIndex)) return null;
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
@@ -80,9 +80,17 @@ export const fetchSessionEvents = async (
       }
     }
     await reader.cancel().catch(() => {});
-    return events;
+
+    // 游标要落在「已经投影过的内容之后」。写死成 0 的话，运行时以为自己还在开头：
+    // 发消息之后它从 0 重新拉，新事件被埋在几百条旧事件后面，界面要等很久才动，
+    // 用户看到的就是「发出去没反应，重进才看到回复」。
+    const lastIndex = events.reduce<number>((max, event) => {
+      const index = (event as { streamIndex?: number }).streamIndex;
+      return typeof index === "number" && index > max ? index : max;
+    }, -1);
+    return { events, nextIndex: Math.max(lastIndex + 1, tailIndex + 1) };
   } catch {
-    return [];
+    return null;
   } finally {
     clearTimeout(timer);
   }

@@ -19,11 +19,11 @@ const KEY = "aim.agent.session";
 const keyFor = (accountKey: string) => `${KEY}.${accountKey}`;
 
 /**
- * 冷启动时从 0 重放，而不是从存下的游标继续。
+ * 读回存下的游标。
  *
- * 存的是会话末尾的位置；页面重新加载后投影状态是空的，从末尾续只会得到零条事件，
- * 界面依旧空白。要把整段对话画回来，就得从头重放一遍。游标本身仍然要存——
- * 它带着 sessionId，那才是「接哪一段」的依据。
+ * 实际恢复时只用得上里面的 `sessionId`：历史要从头拉一遍才能重建投影，
+ * 而续读的位置由那次拉取的末尾算出（见 `fetchSessionEvents` 的 `nextIndex`）。
+ * 游标本身照存不误——它是「接哪一段」的依据。
  */
 export const loadSession = (accountKey: string): ClientSessionState | undefined => {
   try {
@@ -36,7 +36,7 @@ export const loadSession = (accountKey: string): ClientSessionState | undefined 
       typeof (parsed as ClientSessionState).sessionId === "string" &&
       typeof (parsed as ClientSessionState).streamIndex === "number"
     ) {
-      return { sessionId: (parsed as ClientSessionState).sessionId, streamIndex: 0 };
+      return parsed as ClientSessionState;
     }
   } catch {
     // localStorage 可能被禁用或内容损坏。恢复不了就开新的，不该因此白屏。
