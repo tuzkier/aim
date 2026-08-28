@@ -15,6 +15,15 @@ set -euo pipefail
 HOST="${1:?用法: deploy.sh <部署机 IP 或 SSH 别名>}"
 SSH_USER="${AIM_SSH_USER:-root}"
 REMOTE="${SSH_USER}@${HOST}"
+
+# 部署密钥不叫 id_rsa 这类默认名字，ssh 不会自己找到它。用 AIM_SSH_KEY 指定，
+# 不设就走 ssh 的默认发现（ssh-agent 或 ~/.ssh/config 里配好的情况）。
+SSH_OPTS=()
+if [ -n "${AIM_SSH_KEY:-}" ]; then
+  SSH_OPTS=(-i "$AIM_SSH_KEY")
+fi
+ssh_() { ssh "${SSH_OPTS[@]}" "$@"; }
+scp_() { scp "${SSH_OPTS[@]}" "$@"; }
 APP_DIR=/opt/aim/app
 COMPOSE_FILES="-f compose.yaml -f compose.prod.yaml"
 
@@ -41,10 +50,10 @@ say "打包并上传"
 TARBALL="$(mktemp -t aim-deploy)"
 trap 'rm -f "$TARBALL"' EXIT
 git archive --format=tar.gz -o "$TARBALL" HEAD
-scp -q "$TARBALL" "${REMOTE}:/tmp/aim-deploy.tar.gz"
+scp_ -q "$TARBALL" "${REMOTE}:/tmp/aim-deploy.tar.gz"
 
 say "解压到 ${APP_DIR}"
-ssh "$REMOTE" bash -euo pipefail <<REMOTE_SCRIPT
+ssh_ "$REMOTE" bash -euo pipefail <<REMOTE_SCRIPT
   mkdir -p ${APP_DIR}
   # 只删代码，保住 .env（600 权限，不在版本库）和其它运行时文件。
   find ${APP_DIR} -mindepth 1 -maxdepth 1 ! -name '.env' -exec rm -rf {} +
@@ -64,7 +73,7 @@ REMOTE_SCRIPT
 # context canceled 并清掉已下载的层，前功尽弃。
 # ---------------------------------------------------------------------------
 say "构建镜像并启动（较慢，勿中断）"
-ssh "$REMOTE" bash -euo pipefail <<REMOTE_SCRIPT
+ssh_ "$REMOTE" bash -euo pipefail <<REMOTE_SCRIPT
   cd ${APP_DIR}/infrastructure/compose
   docker compose --env-file ${APP_DIR}/.env ${COMPOSE_FILES} up -d --build
 REMOTE_SCRIPT
@@ -76,7 +85,7 @@ REMOTE_SCRIPT
 # 所以既查健康，也查未授权请求确实被拒。
 # ---------------------------------------------------------------------------
 say "等待服务就绪"
-ssh "$REMOTE" bash -euo pipefail <<REMOTE_SCRIPT
+ssh_ "$REMOTE" bash -euo pipefail <<REMOTE_SCRIPT
   cd ${APP_DIR}/infrastructure/compose
   for i in \$(seq 1 60); do
     if docker compose --env-file ${APP_DIR}/.env ${COMPOSE_FILES} ps --format '{{.Service}} {{.Health}}' \
@@ -86,7 +95,7 @@ ssh "$REMOTE" bash -euo pipefail <<REMOTE_SCRIPT
 REMOTE_SCRIPT
 
 say "验证对外接口"
-ssh "$REMOTE" bash -euo pipefail <<'REMOTE_SCRIPT'
+ssh_ "$REMOTE" bash -euo pipefail <<'REMOTE_SCRIPT'
   fail=0
   check() {
     local label="$1" expected="$2" url="$3"
@@ -108,7 +117,7 @@ ssh "$REMOTE" bash -euo pipefail <<'REMOTE_SCRIPT'
 REMOTE_SCRIPT
 
 say "验证伪造身份被拒"
-ssh "$REMOTE" bash -euo pipefail <<'REMOTE_SCRIPT'
+ssh_ "$REMOTE" bash -euo pipefail <<'REMOTE_SCRIPT'
   code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 15 \
     -H 'x-aim-account-id: 11111111-1111-1111-1111-111111111111' \
     -H 'x-aim-family-id: 22222222-2222-2222-2222-222222222222' \
