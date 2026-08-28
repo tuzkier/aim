@@ -28,6 +28,7 @@
 		A20000000000000000000020 /* Features/TaskDetail/TaskDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000020 /* Features/TaskDetail/TaskDetailView.swift */; };
 		A20000000000000000000021 /* Features/Today/TodayStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000021 /* Features/Today/TodayStore.swift */; };
 		A20000000000000000000022 /* Features/Today/TodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000022 /* Features/Today/TodayView.swift */; };
+		A20000000000000000000133 /* Resources/AgentWeb in Resources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000133 /* Resources/AgentWeb */; };
 		A20000000000000000000023 /* Resources/Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000023 /* Resources/Assets.xcassets */; };
 		A20000000000000000000024 /* Core/Auth/KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000027 /* Core/Auth/KeychainStore.swift */; };
 		A20000000000000000000025 /* Features/Records/RecordModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000028 /* Features/Records/RecordModels.swift */; };
@@ -38,13 +39,13 @@
 		A20000000000000000000033 /* Tests/TaskDetailStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000033 /* Tests/TaskDetailStoreTests.swift */; };
 		A20000000000000000000034 /* UITests/CoreJourneyUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000034 /* UITests/CoreJourneyUITests.swift */; };
 		A20000000000000000000128 /* Tests/AgentApprovalBatchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000128 /* Tests/AgentApprovalBatchTests.swift */; };
+		A20000000000000000000130 /* Features/Agent/AgentWebScheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000130 /* Features/Agent/AgentWebScheme.swift */; };
+		A20000000000000000000131 /* Features/Agent/AgentWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000131 /* Features/Agent/AgentWebView.swift */; };
 		A20000000000000000000035 /* Tests/AgentStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000035 /* Tests/AgentStoreTests.swift */; };
 		A20000000000000000000036 /* Tests/RecordStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000036 /* Tests/RecordStoreTests.swift */; };
 		A20000000000000000000037 /* Features/Records/RecordsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000037 /* Features/Records/RecordsView.swift */; };
 		A20000000000000000000038 /* Features/Records/RecordComposerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000038 /* Features/Records/RecordComposerView.swift */; };
 		A20000000000000000000039 /* Features/Records/RecordDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000039 /* Features/Records/RecordDetailView.swift */; };
-		A20000000000000000000040 /* ExyteChat in Frameworks */ = {isa = PBXBuildFile; productRef = A12000000000000000000001 /* ExyteChat */; };
-		A20000000000000000000041 /* Features/Agent/AgentChatAdapter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000040 /* Features/Agent/AgentChatAdapter.swift */; };
 		A20000000000000000000042 /* Features/Timeline/TimelineModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000041 /* Features/Timeline/TimelineModels.swift */; };
 		A20000000000000000000043 /* Features/Timeline/TimelineBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000042 /* Features/Timeline/TimelineBuilder.swift */; };
 		A20000000000000000000044 /* Tests/TimelineBuilderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000043 /* Tests/TimelineBuilderTests.swift */; };
@@ -159,6 +160,7 @@
 		A10000000000000000000020 /* Features/TaskDetail/TaskDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/TaskDetail/TaskDetailView.swift; sourceTree = "<group>"; };
 		A10000000000000000000021 /* Features/Today/TodayStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Today/TodayStore.swift; sourceTree = "<group>"; };
 		A10000000000000000000022 /* Features/Today/TodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Today/TodayView.swift; sourceTree = "<group>"; };
+		A10000000000000000000133 /* Resources/AgentWeb */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Resources/AgentWeb; sourceTree = "<group>"; };
 		A10000000000000000000023 /* Resources/Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Resources/Assets.xcassets; sourceTree = "<group>"; };
 		A10000000000000000000024 /* AimApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AimApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A10000000000000000000025 /* AimAppTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = file; path = AimAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -172,12 +174,13 @@
 		A10000000000000000000033 /* Tests/TaskDetailStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/TaskDetailStoreTests.swift; sourceTree = "<group>"; };
 		A10000000000000000000034 /* UITests/CoreJourneyUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UITests/CoreJourneyUITests.swift; sourceTree = "<group>"; };
 		A10000000000000000000128 /* Tests/AgentApprovalBatchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/AgentApprovalBatchTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000130 /* Features/Agent/AgentWebScheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Agent/AgentWebScheme.swift; sourceTree = "<group>"; };
+		A10000000000000000000131 /* Features/Agent/AgentWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Agent/AgentWebView.swift; sourceTree = "<group>"; };
 		A10000000000000000000035 /* Tests/AgentStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/AgentStoreTests.swift; sourceTree = "<group>"; };
 		A10000000000000000000036 /* Tests/RecordStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/RecordStoreTests.swift; sourceTree = "<group>"; };
 		A10000000000000000000037 /* Features/Records/RecordsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Records/RecordsView.swift; sourceTree = "<group>"; };
 		A10000000000000000000038 /* Features/Records/RecordComposerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Records/RecordComposerView.swift; sourceTree = "<group>"; };
 		A10000000000000000000039 /* Features/Records/RecordDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Records/RecordDetailView.swift; sourceTree = "<group>"; };
-		A10000000000000000000040 /* Features/Agent/AgentChatAdapter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Agent/AgentChatAdapter.swift; sourceTree = "<group>"; };
 		A10000000000000000000041 /* Features/Timeline/TimelineModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Timeline/TimelineModels.swift; sourceTree = "<group>"; };
 		A10000000000000000000042 /* Features/Timeline/TimelineBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Timeline/TimelineBuilder.swift; sourceTree = "<group>"; };
 		A10000000000000000000043 /* Tests/TimelineBuilderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/TimelineBuilderTests.swift; sourceTree = "<group>"; };
@@ -257,8 +260,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A20000000000000000000040 /* ExyteChat in Frameworks */,
-			);
+					);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		A30000000000000000000002 /* Frameworks */ = {
@@ -431,9 +433,10 @@
 			children = (
 				A10000000000000000000010 /* Features/Agent/AgentModels.swift */,
 				A10000000000000000000011 /* Features/Agent/AgentView.swift */,
+				A10000000000000000000130 /* Features/Agent/AgentWebScheme.swift */,
+				A10000000000000000000131 /* Features/Agent/AgentWebView.swift */,
 				A10000000000000000000012 /* Features/Agent/AgentStore.swift */,
-				A10000000000000000000040 /* Features/Agent/AgentChatAdapter.swift */,
-				A10000000000000000000054 /* Features/Agent/AgentChangePreview.swift */,
+						A10000000000000000000054 /* Features/Agent/AgentChangePreview.swift */,
 				A10000000000000000000055 /* Features/Agent/AgentDiffSheet.swift */,
 			);
 			name = Agent;
@@ -495,6 +498,7 @@
 		A40000000000000000000013 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				A10000000000000000000133 /* Resources/AgentWeb */,
 				A10000000000000000000023 /* Resources/Assets.xcassets */,
 				A10000000000000000000061 /* Resources/Info.plist */,
 			);
@@ -1234,9 +1238,6 @@
 			dependencies = (
 			);
 			name = AimApp;
-			packageProductDependencies = (
-				A12000000000000000000001 /* ExyteChat */,
-			);
 			productName = AimApp;
 			productReference = A10000000000000000000024 /* AimApp.app */;
 			productType = "com.apple.product-type.application";
@@ -1307,9 +1308,6 @@
 				"zh-Hans",
 			);
 			mainGroup = A40000000000000000000001 /* AimApp */;
-			packageReferences = (
-				A11000000000000000000001 /* XCRemoteSwiftPackageReference "Chat" */,
-			);
 			productRefGroup = A40000000000000000000016 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -1326,6 +1324,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A20000000000000000000133 /* Resources/AgentWeb in Resources */,
 				A20000000000000000000023 /* Resources/Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1391,6 +1390,8 @@
 				A20000000000000000000009 /* Clients/EveClient/EveEvent.swift in Sources */,
 				A20000000000000000000010 /* Features/Agent/AgentModels.swift in Sources */,
 				A20000000000000000000011 /* Features/Agent/AgentView.swift in Sources */,
+				A20000000000000000000130 /* Features/Agent/AgentWebScheme.swift in Sources */,
+				A20000000000000000000131 /* Features/Agent/AgentWebView.swift in Sources */,
 				A20000000000000000000012 /* Features/Agent/AgentStore.swift in Sources */,
 				A20000000000000000000013 /* Features/Family/FamilyStore.swift in Sources */,
 				A20000000000000000000014 /* Features/Family/FamilyView.swift in Sources */,
@@ -1407,8 +1408,7 @@
 				A20000000000000000000037 /* Features/Records/RecordsView.swift in Sources */,
 				A20000000000000000000038 /* Features/Records/RecordComposerView.swift in Sources */,
 				A20000000000000000000039 /* Features/Records/RecordDetailView.swift in Sources */,
-				A20000000000000000000041 /* Features/Agent/AgentChatAdapter.swift in Sources */,
-				A20000000000000000000042 /* Features/Timeline/TimelineModels.swift in Sources */,
+						A20000000000000000000042 /* Features/Timeline/TimelineModels.swift in Sources */,
 				A20000000000000000000043 /* Features/Timeline/TimelineBuilder.swift in Sources */,
 				A20000000000000000000045 /* Core/DesignSystem/AimMetrics.swift in Sources */,
 				A20000000000000000000046 /* Core/DesignSystem/Components/AimTimelineRail.swift in Sources */,
@@ -1676,24 +1676,7 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCRemoteSwiftPackageReference section */
-		A11000000000000000000001 /* XCRemoteSwiftPackageReference "Chat" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/exyte/Chat.git";
-			requirement = {
-				kind = exactVersion;
-				version = 3.2.8;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
 
-/* Begin XCSwiftPackageProductDependency section */
-		A12000000000000000000001 /* ExyteChat */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = A11000000000000000000001 /* XCRemoteSwiftPackageReference "Chat" */;
-			productName = ExyteChat;
-		};
-/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = A60000000000000000000001 /* Project object */;
 }

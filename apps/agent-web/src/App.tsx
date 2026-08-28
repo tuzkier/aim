@@ -5,9 +5,9 @@ import {
   MessagePrimitive,
   ThreadPrimitive,
 } from "@assistant-ui/react";
-import { useEveAgentRuntime, useEveError, useEveSession } from "@assistant-ui/eve";
+import { useEveAgentRuntime, useEveError, useEveReset, useEveSession } from "@assistant-ui/eve";
 import { accountKeyFromToken, loadNativeContext, type NativeContext } from "./bridge";
-import { loadSession, saveSession } from "./session";
+import { clearSession, loadSession, saveSession } from "./session";
 import type { ClientSessionState } from "./types";
 
 /** 冷启动时接回上一段对话所需的全部东西。 */
@@ -54,6 +54,26 @@ const UserMessage = () => (
     <MessagePrimitive.Parts />
   </div>
 );
+
+/**
+ * 把「开新对话」暴露给原生工具栏。
+ *
+ * 原生那颗按钮不该自己去猜 Web 的状态——它只发一个意图，由这里执行：
+ * 重置运行时并清掉存下的游标，否则下次冷启动又会把刚丢弃的那段接回来。
+ */
+const NewConversationBridge = ({ accountKey }: { accountKey: string }) => {
+  const reset = useEveReset();
+  useEffect(() => {
+    window.__aimNewConversation__ = () => {
+      clearSession(accountKey);
+      reset();
+    };
+    return () => {
+      delete window.__aimNewConversation__;
+    };
+  }, [reset, accountKey]);
+  return null;
+};
 
 /** 这一轮失败了。此前 turn.failed / session.failed 在界面上没有任何痕迹。 */
 const TurnError = () => {
@@ -147,6 +167,7 @@ const Conversation = ({
   return (
     <AssistantRuntimeProvider runtime={runtime}>
       <ApprovalBridge context={context}>
+        <NewConversationBridge accountKey={accountKeyFromToken(context.token)} />
         <ToolRenderers />
         <Thread />
       </ApprovalBridge>

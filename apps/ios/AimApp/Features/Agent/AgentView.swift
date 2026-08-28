@@ -1,63 +1,43 @@
-import ExyteChat
 import SwiftUI
+import WebKit
 
-/// The Agent's one persistent conversation. Every entry point in the app —
-/// the Agent tab itself, "ask about this page" icons, "analyze this record"
-/// buttons — shares this same store rather than spinning up a throwaway
-/// session, so switching to it from anywhere continues the same relationship
-/// instead of starting over.
+/// AIM 的对话面。
 ///
-/// How it's *presented* still varies with the entry point's purpose: as the
-/// Agent tab's root, there's no `onClose` and no close button, because
-/// navigating away is just switching tabs. Opened from a quick-ask entry
-/// point (header icon, focus card, "analyze this record"), it's shown as a
-/// dismissible overlay — that entry point's whole purpose is "let me stay
-/// where I am and just ask" — so pass `onClose` to get a close button back.
+/// 里面是一个装着 assistant-ui 的 WebView。换掉原来的 ExyteChat 是因为那是个纯消息
+/// 控件——`Message(id:user:status:text:)` 里没有位置放执行步骤、思考和内联审批卡。
+/// 不是配置不当，是形态不对：用户看不到「执行到哪一步」，一轮里的多个待确认项也
+/// 只能显示第一个。
+///
+/// 呈现方式仍随入口而变：作为 AIM 标签页的根时没有 `onClose`，离开就是切标签；
+/// 从「问问 AIM」这类快捷入口打开时是可关闭的浮层——那个入口的全部意义就是
+/// 「让我留在原地问一句」。
 struct AgentView: View {
     @Environment(AppSessionStore.self) private var session
+    @Environment(\.colorScheme) private var colorScheme
     @Bindable var store: AgentStore
     var onClose: (() -> Void)?
 
-    @State private var showingSessions = false
-    /// 首次进入时接着最近那段聊——孕期的问题往往是连着的（「刚才说的那个…」）。
-    @State private var hasResumed = false
+    /// 「开新对话」要调用 WebView 里注册的函数，所以得拿得到那个实例。
+    @State private var webView: WKWebView?
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                if let context = store.context {
-                    AgentContextCard(context: context)
-                        .padding(.horizontal, 16)
-                        .padding(.top, 12)
-                        .padding(.bottom, 4)
-                }
-
-                if store.messages.isEmpty {
-                    welcomeContent
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
-                    quickPromptRow
-                        .padding(.bottom, 12)
-                }
-
-                if !store.activityLog.isEmpty {
-                    activitySection
-                }
-
-                ChatView(messages: AgentChatAdapter.messages(from: store.messages)) { draft in
-                    store.draft = draft.text
-                    store.send(environment: session.environment)
-                }
-                .setAvailableInputs([.text])
-                .localization(chatLocalization)
-                .showDateHeaders(false)
-                .showMessageMenuOnLongPress(false)
-                .keyboardDismissMode(UIScrollView.KeyboardDismissMode.interactive)
-                .betweenListAndInputViewBuilder {
-                    statusView
-                }
-                .chatTheme(chatTheme)
-            }
+            AgentWebView(
+                environment: session.environment,
+                colorScheme: colorScheme,
+                onNavigate: { _ in
+                    // 流里的条目点开后应当落到原生的资料库／记录页。Web 侧目前还没有
+                    // 触发跳转的入口，等它有了再把这里接上——先留着通道，
+                    // 免得那时又要动一遍 WebView 的配置。
+                },
+                onTurnFinished: {
+                    // 一轮可能改过待办或记录。用通知广播而不是让对话面直接去刷别的 store：
+                    // 那样它就得知道全 App 有哪些页面，耦合只会越滚越大。
+                    NotificationCenter.default.post(name: .aimAgentTurnFinished, object: nil)
+                },
+                onCreate: { webView = $0 }
+            )
+            .ignoresSafeArea(.container, edges: .bottom)
             .navigationTitle("AIM")
 #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
@@ -68,267 +48,20 @@ struct AgentView: View {
                         Button("关闭", action: onClose)
                     }
                 }
-                ToolbarItem(placement: .topBarLeading) {
-                    Button {
-                        showingSessions = true
-                    } label: { Image(systemName: "clock.arrow.circlepath") }
-                        .accessibilityLabel("历史对话")
-                        .accessibilityIdentifier("agent-history")
-                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
-                        store.startNewConversation()
+                        webView?.evaluateJavaScript("window.__aimNewConversation__?.()")
                     } label: { Image(systemName: "square.and.pencil") }
                         .accessibilityLabel("新对话")
                         .accessibilityIdentifier("agent-new-conversation")
-                        .disabled(store.messages.isEmpty)
-                }
-            }
-            .sheet(isPresented: $showingSessions) {
-                if let sessions = store.sessions {
-                    AgentSessionListView(store: sessions) { picked in
-                        store.open(picked, environment: session.environment)
-                    }
-                }
-            }
-            .task {
-                // 只有 AIM 标签页会接续历史；快捷入口（onClose 非空）总是新对话。
-                guard onClose == nil, !hasResumed, let sessions = store.sessions else { return }
-                hasResumed = true
-                await sessions.load(environment: session.environment)
-                // 只在没有正在进行的对话时才接续，免得把用户手上这段顶掉。
-                if store.sessionID == nil, store.messages.isEmpty,
-                   let recent = AgentSessionSummary.mostRecent(of: sessions.sessions) {
-                    store.open(recent, environment: session.environment)
                 }
             }
             .background(Color.aimCanvas)
-            .sheet(item: pendingApproval) { request in
-                // 知识条目有自己的形态（食材、步骤、结论），字段级 diff 表达不了，
-                // 所以走专门的预览卡。
-                if let knowledge = KnowledgePreview(request: request) {
-                    KnowledgeApprovalSheet(preview: knowledge) {
-                        store.approve(request, environment: session.environment)
-                    } onDismiss: {
-                        store.cancelApproval(request, environment: session.environment)
-                    }
-                } else {
-                    AgentDiffSheet(preview: AgentChangePreview.from(request)) {
-                        store.approve(request, environment: session.environment)
-                    } onDismiss: {
-                        store.cancelApproval(request, environment: session.environment)
-                    }
-                }
-            }
-        }
-    }
-
-    private var pendingApproval: Binding<EveInputRequest?> {
-        Binding(
-            get: {
-                if case let .awaitingApproval(request) = store.state { return request }
-                return nil
-            },
-            set: { newValue in
-                if newValue == nil, case let .awaitingApproval(request) = store.state {
-                    store.cancelApproval(request, environment: session.environment)
-                }
-            }
-        )
-    }
-
-    private var welcomeContent: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Label("我在这里陪你一起理清", systemImage: "sparkles")
-                .font(.headline)
-                .foregroundStyle(Color.aimAccent)
-            Text("可以问孕期变化、最近记录或接下来要做的事。涉及计划变更时，我会先让你确认。")
-                .font(.subheadline)
-                .foregroundStyle(Color.aimTextSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .aimCard()
-    }
-
-    private let quickPrompts = ["这周还有什么要准备？", "帮我看看最近的记录", "我现在有点不舒服"]
-
-    private var quickPromptRow: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: AimMetrics.space8) {
-                ForEach(quickPrompts, id: \.self) { prompt in
-                    Button(prompt) {
-                        store.draft = prompt
-                        store.send(environment: session.environment)
-                    }
-                    .font(.subheadline)
-                    .foregroundStyle(Color.aimAccent)
-                    .padding(.horizontal, AimMetrics.space12)
-                    .padding(.vertical, AimMetrics.space8)
-                    .background(Color.aimSurface, in: Capsule())
-                    .overlay { Capsule().stroke(Color.aimAccent.opacity(0.2), lineWidth: 1) }
-                    .accessibilityIdentifier("agent-quick-prompt")
-                }
-            }
-            .padding(.horizontal, AimMetrics.space16)
-        }
-    }
-
-    private func answerOptions(_ question: AgentQuestion) -> some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: AimMetrics.space8) {
-                ForEach(question.options) { option in
-                    Button(option.label) {
-                        store.answer(
-                            optionID: option.id, label: option.label, environment: session.environment
-                        )
-                    }
-                    .font(.subheadline)
-                    .foregroundStyle(Color.aimAccent)
-                    .padding(.horizontal, AimMetrics.space12)
-                    .padding(.vertical, AimMetrics.space8)
-                    .background(Color.aimSurface, in: Capsule())
-                    .overlay { Capsule().stroke(Color.aimAccent.opacity(0.2), lineWidth: 1) }
-                    .accessibilityIdentifier("agent-answer-option-\(option.id)")
-                }
-            }
-            .padding(.horizontal, AimMetrics.space16)
-        }
-        .padding(.vertical, AimMetrics.space8)
-    }
-
-    private var activitySection: some View {
-        VStack(alignment: .leading, spacing: AimMetrics.space8) {
-            Text("最近处理").aimLabelStyle()
-            ForEach(store.activityLog.prefix(3)) { activity in
-                HStack(spacing: AimMetrics.space8) {
-                    Image(systemName: "checkmark.circle")
-                        .foregroundStyle(Color.aimSuccess)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(activity.title)
-                            .font(.subheadline)
-                            .foregroundStyle(Color.aimTextPrimary)
-                        Text(activity.occurredAt, style: .time)
-                            .font(.footnote)
-                            .foregroundStyle(Color.aimTextSecondary)
-                    }
-                    Spacer()
-                    if activity.canUndo {
-                        Button("撤销") { store.undo(activity, environment: session.environment) }
-                            .font(.footnote.weight(.medium))
-                            .foregroundStyle(Color.aimAccent)
-                    }
-                }
-            }
-        }
-        .padding(.horizontal, AimMetrics.space16)
-        .padding(.vertical, AimMetrics.space8)
-        .accessibilityIdentifier("agent-activity-log")
-    }
-
-    private var chatLocalization: ChatLocalization {
-        ChatLocalization(
-            inputPlaceholder: "告诉我你现在在担心什么",
-            signatureText: "补充说明",
-            cancelButtonText: "取消",
-            recentToggleText: "最近",
-            waitingForNetwork: "等待网络",
-            recordingText: "录音中",
-            replyToText: "回复"
-        )
-    }
-
-    private var chatTheme: ChatTheme {
-        ChatTheme(colors: .init(
-            mainBG: Color.aimCanvas,
-            mainTint: Color.aimAccent,
-            mainText: Color.aimTextPrimary,
-            mainCaptionText: Color.aimTextSecondary,
-            messageMyBG: Color.aimAccent,
-            messageMyText: Color.aimTextOnAccent,
-            messageFriendBG: Color.aimSurface,
-            messageFriendText: Color.aimTextPrimary,
-            inputBG: Color.aimSurface,
-            inputText: Color.aimTextPrimary,
-            inputPlaceholderText: Color.aimTextSecondary,
-            sendButtonBackground: Color.aimAccent
-        ))
-    }
-
-    @ViewBuilder
-    private var statusView: some View {
-        switch store.state {
-        case .awaitingApproval:
-            EmptyView()
-        case .awaitingAnswer:
-            if let question = store.pendingQuestion, !question.options.isEmpty {
-                answerOptions(question)
-            } else {
-                // 线上抓到的提问一个选项都不发，只能打字答。不写这句的话
-                // 界面看起来只是停住了，没人知道该干什么。
-                Text("直接在下面回答就行")
-                    .font(.footnote)
-                    .foregroundStyle(Color.aimTextSecondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, AimMetrics.space16)
-                    .padding(.vertical, AimMetrics.space8)
-                    .accessibilityIdentifier("agent-answer-hint")
-            }
-        case .streaming:
-            HStack(spacing: AimMetrics.space8) {
-                ProgressView().controlSize(.small)
-                Text("正在整理回答…")
-                    .font(.footnote)
-                    .foregroundStyle(Color.aimTextSecondary)
-                Spacer()
-                Button("停止") { store.stop() }
-                    .font(.footnote.weight(.medium))
-                    .foregroundStyle(Color.aimAccent)
-                    .accessibilityIdentifier("agent-stop")
-            }
-            .padding(.horizontal, AimMetrics.space16)
-            .padding(.vertical, AimMetrics.space8)
-        case .failed(let message):
-            HStack(alignment: .firstTextBaseline, spacing: AimMetrics.space8) {
-                Label(message, systemImage: "exclamationmark.triangle")
-                    .font(.footnote)
-                    .foregroundStyle(Color.aimTextSecondary)
-                Spacer()
-                Button("重试") { store.retryLast(environment: session.environment) }
-                    .font(.footnote.weight(.medium))
-                    .foregroundStyle(Color.aimAccent)
-                    .accessibilityIdentifier("agent-retry")
-            }
-            .padding(.horizontal, AimMetrics.space16)
-            .padding(.vertical, AimMetrics.space12)
-            .background(Color.aimDangerSoft)
-        default:
-            EmptyView()
         }
     }
 }
 
-private struct AgentContextCard: View {
-    let context: AgentContext
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 10) {
-            Image(systemName: "scope")
-                .foregroundStyle(Color.aimAccent)
-                .frame(width: 26, height: 26)
-                .background(Color.aimAccentSoft, in: Circle())
-            VStack(alignment: .leading, spacing: 4) {
-                Text("正在查看 · \(context.title)")
-                    .font(.subheadline.weight(.semibold))
-                Text(context.summary)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(4)
-            }
-            Spacer(minLength: 0)
-        }
-        .padding(12)
-        .background(Color.aimAccentSoft.opacity(0.62), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .accessibilityElement(children: .combine)
-        .accessibilityIdentifier("agent-current-context")
-    }
+extension Notification.Name {
+    /// Agent 结束了一轮，可能已经改过待办或记录。
+    static let aimAgentTurnFinished = Notification.Name("aim.agentTurnFinished")
 }

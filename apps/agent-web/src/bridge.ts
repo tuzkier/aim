@@ -25,6 +25,8 @@ declare global {
     __AIM_NATIVE__?: NativeContext;
     /** 原生在票据轮换后调用，Web 侧重新取一次。 */
     __aimOnContextChanged__?: (next: NativeContext) => void;
+    /** 原生工具栏的「开新对话」。由 Web 侧注册，原生只负责调用。 */
+    __aimNewConversation__?: () => void;
     webkit?: { messageHandlers?: Record<string, MessageHandler | undefined> };
   }
 }
