@@ -20,6 +20,7 @@ import { createEveTransport, fetchSessionEvents } from "./eveTransport";
 import { GenericToolView, ToolRenderers } from "./tools";
 import { ToolGroupActions } from "./tools/ToolGroup";
 import { Reasoning } from "./thread/Reasoning";
+import { MarkdownText } from "./thread/MarkdownText";
 import { HistoryPanel } from "./thread/HistoryPanel";
 import { SessionRecovery, describeError } from "./thread/SessionRecovery";
 import { registerSession, titleFrom, touchSession, type AgentSessionSummary } from "./sessions";
@@ -70,6 +71,9 @@ const AssistantMessage = () => (
   <div className="msg msg--assistant">
     <MessagePrimitive.Parts
       components={{
+        // 指令里允许模型用行内加粗和短列表，客户端就必须能渲染它们——
+        // 否则 `**待办内容**` 会带着星号摆在用户面前。
+        Text: MarkdownText,
         Reasoning,
         // 没有专用渲染器的工具走兜底：只读工具收成一行步骤，
         // 写操作至少把名字露出来。
