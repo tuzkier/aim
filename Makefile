@@ -5,7 +5,8 @@ IOS_SCHEME ?= AimApp
 IOS_DESTINATION ?= platform=iOS Simulator,name=iPhone 17 Pro
 IOS_DERIVED_DATA ?= /tmp/aim-derived-data
 COMPOSE_ENV_FILE := $(if $(wildcard .env),--env-file .env,)
-COMPOSE := docker compose $(COMPOSE_ENV_FILE) -f infrastructure/compose/compose.yaml
+# 本地带上 local profile 才会起网关；生产用系统 nginx。
+COMPOSE := docker compose $(COMPOSE_ENV_FILE) --profile local -f infrastructure/compose/compose.yaml
 
 dev:
 	$(COMPOSE) up --build

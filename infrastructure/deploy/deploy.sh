@@ -117,9 +117,13 @@ REMOTE_SCRIPT
 say "等待服务就绪"
 ssh_ "$REMOTE" bash -euo pipefail <<REMOTE_SCRIPT
   cd ${APP_DIR}/infrastructure/compose
+  # 只看有健康检查的服务。没有健康检查的服务 Health 是空串，
+  # 拿它跟 healthy 比会永远不相等，循环就白等满 5 分钟。
   for i in \$(seq 1 60); do
-    if docker compose --env-file ${APP_DIR}/.env ${COMPOSE_FILES} ps --format '{{.Service}} {{.Health}}' \
-       | grep -qv healthy; then sleep 5; else break; fi
+    pending=\$(docker compose --env-file ${APP_DIR}/.env ${COMPOSE_FILES} ps \
+      --format '{{.Health}}' | grep -c starting || true)
+    [ "\$pending" = "0" ] && break
+    sleep 5
   done
   docker compose --env-file ${APP_DIR}/.env ${COMPOSE_FILES} ps --format '{{.Service}}\t{{.Status}}'
 REMOTE_SCRIPT

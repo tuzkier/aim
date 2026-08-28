@@ -70,6 +70,9 @@ services:
   # fetch 才能边收边解。
   gateway:
     image: nginx:1.27-alpine
+    # 只在本地起。生产的网关是系统 nginx（80 端口，配置来自 nginx-aim.conf），
+    # 再起一个容器既多占那台 2C/1.8G 的资源，挂的 dist 目录在服务器上也不存在。
+    profiles: ["local"]
     ports:
       - "${AIM_GATEWAY_PORT:-8080}:80"
     volumes:
