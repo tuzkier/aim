@@ -248,3 +248,51 @@ body {
 }
 .tool-group__eyebrow { margin: 0 0 8px; font-size: 12px; color: var(--text-tertiary); }
 .tool-group__buttons { display: flex; gap: 8px; }
+
+/* ---------- 历史对话 ---------- */
+
+.history {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  background: var(--canvas);
+  display: flex;
+  flex-direction: column;
+  padding-top: env(safe-area-inset-top);
+}
+.history__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.history__title { margin: 0; font-size: 17px; font-weight: 600; }
+.history__empty { padding: 24px 16px; color: var(--text-tertiary); font-size: 15px; }
+.history__list { margin: 0; padding: 8px 0; list-style: none; overflow-y: auto; }
+.history__item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 12px 16px;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.history__item:disabled { cursor: default; }
+.history__item--current { background: var(--accent-soft); }
+.history__item-title { font-size: 15px; }
+.history__item-time { font-size: 12px; color: var(--text-tertiary); }
+
+.notice {
+  margin: 0;
+  padding: 10px 16px;
+  background: var(--accent-soft);
+  color: var(--text-secondary);
+  font-size: 13px;
+}

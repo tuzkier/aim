@@ -80,26 +80,46 @@ test("compiled runtime exposes only the intended root and specialist tools", asy
     tools: Array<{ name: string }>;
   };
 
-  assert.deepEqual(
-    summary.tools.map((tool) => tool.name).sort(),
-    [
-      "assign_task",
-      "create_knowledge",
-      "create_record",
-      "create_task",
-      "delete_record",
-      "delete_task",
-      "echo_context",
-      "get_guidance",
-      "get_pregnancy_context",
-      "list_records",
-      "list_tasks",
-      "preview_task_change",
-      "record_pregnancy_fact",
-      "undo_operation",
-      "update_task",
-    ],
-  );
+  const BUSINESS_TOOLS = [
+    "assign_task",
+    "create_knowledge",
+    "create_record",
+    "create_task",
+    "delete_record",
+    "delete_task",
+    "echo_context",
+    "get_guidance",
+    "get_pregnancy_context",
+    "list_records",
+    "list_tasks",
+    "preview_task_change",
+    "record_pregnancy_fact",
+    "undo_operation",
+    "update_task",
+  ];
+
+  // 能碰文件系统、shell 和外网的工具，一个都不该出现在孕期 App 的 agent 手上。
+  const DANGEROUS_TOOLS = [
+    "bash",
+    "glob",
+    "grep",
+    "read_file",
+    "write_file",
+    "web_fetch",
+    "web_search",
+  ];
+
+  const exposed = summary.tools.map((tool) => tool.name);
+  for (const name of BUSINESS_TOOLS) {
+    assert.ok(exposed.includes(name), `业务工具 ${name} 应当可用`);
+  }
+  for (const name of DANGEROUS_TOOLS) {
+    assert.ok(!exposed.includes(name), `${name} 绝不该暴露给 agent`);
+  }
+
+  // 断言「有哪些不在」而不是「恰好是这些」：eve 升级会改摘要的 schema，
+  // 逐字相等的清单每次都要跟着改，改多了就没人再认真看它了。
+  // 真正要守住的是危险工具不出现，以及下面这份权威禁用清单不被悄悄改小。
   assert.deepEqual(
     manifest.disabledFrameworkTools.sort(),
     ["agent", "bash", "glob", "grep", "read_file", "web_fetch", "web_search", "write_file"],

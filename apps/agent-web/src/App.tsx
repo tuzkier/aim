@@ -5,21 +5,51 @@ import {
   MessagePrimitive,
   ThreadPrimitive,
 } from "@assistant-ui/react";
-import { useEveAgentRuntime, useEveError, useEveReset, useEveSession } from "@assistant-ui/eve";
+import {
+  useEveAgentRuntime,
+  useEveError,
+  useEveEvents,
+  useEveReset,
+  useEveSession,
+} from "@assistant-ui/eve";
 import { accountKeyFromToken, loadNativeContext, type NativeContext } from "./bridge";
 import { clearSession, loadSession, saveSession } from "./session";
 import type { ClientSessionState } from "./types";
-
-/** 冷启动时接回上一段对话所需的全部东西。 */
-interface Restored {
-  session: ClientSessionState;
-  events: unknown[];
-}
 import { ApprovalBatchProvider } from "./approvals";
 import { createEveTransport, fetchSessionEvents } from "./eveTransport";
 import { GenericToolView, ToolRenderers } from "./tools";
 import { ToolGroupActions } from "./tools/ToolGroup";
 import { Reasoning } from "./thread/Reasoning";
+import { HistoryPanel } from "./thread/HistoryPanel";
+import { registerSession, titleFrom, touchSession, type AgentSessionSummary } from "./sessions";
+
+/** 冷启动或切换会话时接回一段对话所需的全部东西。 */
+interface Restored {
+  session: ClientSessionState;
+  events: unknown[];
+}
+
+/**
+ * 从事件流里取第一句用户说的话，用作会话标题。
+ *
+ * 用户回头翻历史时认的是自己问过什么，不是「对话 3」。
+ */
+const firstUserMessage = (events: readonly unknown[]): string | undefined => {
+  for (const event of events) {
+    const typed = event as { type?: string; data?: { message?: { content?: unknown } } };
+    if (typed.type !== "message.received") continue;
+    const content = typed.data?.message?.content;
+    if (typeof content === "string" && content.trim()) return content;
+    if (Array.isArray(content)) {
+      const text = content
+        .map((part) => (part as { text?: string })?.text)
+        .filter((part): part is string => typeof part === "string")
+        .join("");
+      if (text.trim()) return text;
+    }
+  }
+  return undefined;
+};
 
 /**
  * AIM 的对话面。
@@ -123,6 +153,7 @@ const ApprovalBridge = ({
   children: ReactNode;
 }) => {
   const session = useEveSession();
+  const events = useEveEvents();
   // 用 ref 而不是把 sessionId 塞进 useMemo 依赖：transport 的身份一变，
   // 攒批 effect 就会重跑，可能把已经送出的批次再送一次。
   const sessionIdRef = useRef<string | undefined>(undefined);
@@ -133,6 +164,22 @@ const ApprovalBridge = ({
   useEffect(() => {
     if (session) saveSession(accountKeyFromToken(context.token), session);
   }, [session, context.token]);
+
+  // 登记进目录，否则冷启动之后只找得回最近一段。
+  //
+  // 等到第一句话到了才登记：sessionId 出现得比 message.received 早，
+  // 一拿到 id 就登记的话标题永远是「新的对话」，翻历史时全是一样的条目。
+  // 一句话都没有的空会话本来也不值得进目录。
+  // 用 ref 记已登记过的 id：session 每收一批事件就变一次，不能每次都 POST。
+  const registeredRef = useRef(new Set<string>());
+  useEffect(() => {
+    const id = session?.sessionId;
+    if (!id || registeredRef.current.has(id)) return;
+    const opening = firstUserMessage(events);
+    if (!opening) return;
+    registeredRef.current.add(id);
+    void registerSession(context.token, id, titleFrom(opening), context.eveOrigin);
+  }, [session?.sessionId, events, context.token, context.eveOrigin]);
 
   const transport = useMemo(
     () =>
@@ -147,13 +194,30 @@ const ApprovalBridge = ({
   return <ApprovalBatchProvider transport={transport}>{children}</ApprovalBatchProvider>;
 };
 
+/**
+ * 把「历史对话」暴露给原生工具栏。面板本身在 Web 侧渲染——
+ * 切换会话要重建运行时，那是这边的事。
+ */
+const HistoryBridge = ({ onOpen }: { onOpen: () => void }) => {
+  useEffect(() => {
+    window.__aimOpenHistory__ = onOpen;
+    return () => {
+      delete window.__aimOpenHistory__;
+    };
+  }, [onOpen]);
+  return null;
+};
+
 const Conversation = ({
   context,
   restored,
+  onSwitch,
 }: {
   context: NativeContext;
   restored: Restored | null;
+  onSwitch: (session: AgentSessionSummary) => void;
 }) => {
+  const [historyOpen, setHistoryOpen] = useState(false);
   const runtime = useEveAgentRuntime({
     ...(restored
       ? { initialSession: restored.session, initialEvents: restored.events as never }
@@ -168,8 +232,21 @@ const Conversation = ({
     <AssistantRuntimeProvider runtime={runtime}>
       <ApprovalBridge context={context}>
         <NewConversationBridge accountKey={accountKeyFromToken(context.token)} />
+        <HistoryBridge onOpen={() => setHistoryOpen(true)} />
         <ToolRenderers />
         <Thread />
+        {historyOpen ? (
+          <HistoryPanel
+            token={context.token}
+            origin={context.eveOrigin}
+            currentEveSessionId={restored?.session.sessionId}
+            onPick={(picked) => {
+              setHistoryOpen(false);
+              onSwitch(picked);
+            }}
+            onClose={() => setHistoryOpen(false)}
+          />
+        ) : null}
       </ApprovalBridge>
     </AssistantRuntimeProvider>
   );
@@ -181,6 +258,7 @@ export const App = () => {
 
   const [restored, setRestored] = useState<Restored | null>(null);
   const [restoring, setRestoring] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
   // 拿到会话票之后、开始渲染对话之前，把上一段对话的事件取回来。
   // `initialEvents` 只在运行时创建那一刻生效，所以必须先取完再渲染。
@@ -221,13 +299,51 @@ export const App = () => {
     };
   }, []);
 
+  /** 切到另一段历史对话：取回它的事件，重建运行时，并把它顶到目录最前。 */
+  const switchToSession = (picked: AgentSessionSummary) => {
+    if (!context) return;
+    setRestoring(true);
+    setNotice(null);
+    void fetchSessionEvents(picked.eveSessionId, context.token, context.eveOrigin)
+      .then((events) => {
+        if (events.length === 0) {
+          // 运行时升级会让旧会话的事件日志读不回来（CORRUPTED_EVENT_LOG）。
+          // 目录里还留着条目，内容却没了——说清楚，别把用户丢在一个空白页面上猜。
+          setNotice("这段对话的内容已不可用，可能是服务升级导致的。你可以开一段新的。");
+          return;
+        }
+        setRestored({
+          session: { sessionId: picked.eveSessionId, streamIndex: 0 },
+          events,
+        });
+        saveSession(accountKeyFromToken(context.token), {
+          sessionId: picked.eveSessionId,
+          streamIndex: 0,
+        });
+        void touchSession(context.token, picked.id, context.eveOrigin);
+      })
+      .finally(() => setRestoring(false));
+  };
+
   if (error) return <div className="fatal">{error}</div>;
   if (!context) return <div className="loading">正在准备…</div>;
   if (restoring) return <div className="loading">正在接回上一段对话…</div>;
 
   return (
     <div className={`app app--${context.theme}`}>
-      <Conversation context={context} restored={restored} />
+      {notice ? (
+        <p className="notice" role="status">
+          {notice}
+        </p>
+      ) : null}
+      <Conversation
+        // key 变了运行时就重建。切换会话必须重建：initialSession / initialEvents
+        // 只在创建那一刻生效，光换 props 不会让它去接另一段。
+        key={restored?.session.sessionId ?? "new"}
+        context={context}
+        restored={restored}
+        onSwitch={switchToSession}
+      />
     </div>
   );
 };

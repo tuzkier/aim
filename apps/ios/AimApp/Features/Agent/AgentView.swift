@@ -48,6 +48,13 @@ struct AgentView: View {
                         Button("关闭", action: onClose)
                     }
                 }
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        webView?.evaluateJavaScript("window.__aimOpenHistory__?.()")
+                    } label: { Image(systemName: "clock.arrow.circlepath") }
+                        .accessibilityLabel("历史对话")
+                        .accessibilityIdentifier("agent-history")
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         webView?.evaluateJavaScript("window.__aimNewConversation__?.()")

@@ -27,6 +27,8 @@ declare global {
     __aimOnContextChanged__?: (next: NativeContext) => void;
     /** 原生工具栏的「开新对话」。由 Web 侧注册，原生只负责调用。 */
     __aimNewConversation__?: () => void;
+    /** 原生工具栏的「历史对话」。面板在 Web 侧渲染——切换会话要重建运行时。 */
+    __aimOpenHistory__?: () => void;
     webkit?: { messageHandlers?: Record<string, MessageHandler | undefined> };
   }
 }
