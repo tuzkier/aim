@@ -23,10 +23,16 @@ export const fetchSessionEvents = async (
   sessionId: string,
   token: string,
   origin = "",
+  // 恢复是锦上添花，不值得让人对着「正在接回上一段对话…」干等。会话 id 失效时
+  // 这条流可能永远不吐 session.waiting，没有这个上限界面就再也进不去了。
+  timeoutMs = 8000,
 ): Promise<unknown[]> => {
+  const abort = new AbortController();
+  const timer = setTimeout(() => abort.abort(), timeoutMs);
   try {
     const response = await fetch(`${origin}/eve/v1/session/${sessionId}/stream?from=0`, {
       headers: { accept: "application/x-ndjson", authorization: `Bearer ${token}` },
+      signal: abort.signal,
     });
     if (!response.ok || !response.body) return [];
 
@@ -60,6 +66,8 @@ export const fetchSessionEvents = async (
     return events;
   } catch {
     return [];
+  } finally {
+    clearTimeout(timer);
   }
 };
 

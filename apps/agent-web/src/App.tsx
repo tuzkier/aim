@@ -21,6 +21,7 @@ import { GenericToolView, ToolRenderers } from "./tools";
 import { ToolGroupActions } from "./tools/ToolGroup";
 import { Reasoning } from "./thread/Reasoning";
 import { HistoryPanel } from "./thread/HistoryPanel";
+import { SessionRecovery, describeError } from "./thread/SessionRecovery";
 import { registerSession, titleFrom, touchSession, type AgentSessionSummary } from "./sessions";
 
 /** 冷启动或切换会话时接回一段对话所需的全部东西。 */
@@ -105,13 +106,20 @@ const NewConversationBridge = ({ accountKey }: { accountKey: string }) => {
   return null;
 };
 
-/** 这一轮失败了。此前 turn.failed / session.failed 在界面上没有任何痕迹。 */
+/**
+ * 这一轮失败了。此前 turn.failed / session.failed 在界面上没有任何痕迹。
+ *
+ * 「会话不再活跃」不走这里——那不是错误，是「刚才那段接不上了」，
+ * 由 SessionRecovery 自动开新的一段并给出说明。
+ */
 const TurnError = () => {
   const error = useEveError();
   if (!error) return null;
+  const text = error instanceof Error ? error.message : String(error);
+  if (text.includes("session_not_active") || text.includes("no longer active")) return null;
   return (
     <div className="turn-error" role="alert">
-      {String((error as { message?: string }).message ?? error)}
+      {describeError(error)}
     </div>
   );
 };
@@ -212,10 +220,12 @@ const Conversation = ({
   context,
   restored,
   onSwitch,
+  onDiscardStoredSession,
 }: {
   context: NativeContext;
   restored: Restored | null;
   onSwitch: (session: AgentSessionSummary) => void;
+  onDiscardStoredSession: () => void;
 }) => {
   const [historyOpen, setHistoryOpen] = useState(false);
   const runtime = useEveAgentRuntime({
@@ -233,6 +243,7 @@ const Conversation = ({
       <ApprovalBridge context={context}>
         <NewConversationBridge accountKey={accountKeyFromToken(context.token)} />
         <HistoryBridge onOpen={() => setHistoryOpen(true)} />
+        <SessionRecovery onDiscardStoredSession={onDiscardStoredSession} />
         <ToolRenderers />
         <Thread />
         {historyOpen ? (
@@ -343,6 +354,10 @@ export const App = () => {
         context={context}
         restored={restored}
         onSwitch={switchToSession}
+        onDiscardStoredSession={() => {
+          clearSession(accountKeyFromToken(context.token));
+          setRestored(null);
+        }}
       />
     </div>
   );
