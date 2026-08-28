@@ -8,9 +8,14 @@ import { toolResultSchema } from "../lib/business-api/tool-result-schema.ts";
 // 档位同时在服务端的 DIRECT_EXECUTION_TOOLS 里声明，网关不看调用方的 approved 标志。
 export default defineTool({
   description:
-    "Add a new to-do to the pregnancy plan. Use this when the user asks to remember, " +
-    "plan, or schedule something. The task appears on the timeline marked as agent-created " +
-    "and the user can undo it.",
+    "Add a new to-do to the pregnancy plan — something the user intends to DO, " +
+    "at a point in time: an appointment, an errand, a reminder. " +
+    "Use this whenever the user says 待办/提醒/安排/别忘了, even when the wording " +
+    "resembles a procedure. This executes immediately and needs no confirmation; " +
+    "the user can undo it from the timeline. " +
+    "Do NOT use create_knowledge for these — that is for reference material the user " +
+    "wants to look up later, and it interrupts them with a confirmation card. " +
+    "Call get_current_time before setting dueAt for any relative date.",
   inputSchema: z.object({
     title: z.string().min(1).max(200),
     description: z.string().max(2000).optional(),

@@ -88,6 +88,7 @@ test("compiled runtime exposes only the intended root and specialist tools", asy
     "delete_record",
     "delete_task",
     "echo_context",
+    "get_current_time",
     "get_guidance",
     "get_pregnancy_context",
     "list_records",

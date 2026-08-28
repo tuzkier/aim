@@ -8,7 +8,14 @@ import { toolResultSchema } from "../lib/business-api/tool-result-schema.ts";
 // 与 create_task / create_record 的直接执行档相对。
 export default defineTool({
   description:
-    "Save a piece of pregnancy knowledge to the user's library after they confirm it. " +
+    "Save reference material to the user's library — something they will look up " +
+    "later, not something they intend to do. Recipes, whether a food is safe, how a " +
+    "procedure works. " +
+    "If the user is asking to remember, schedule or be reminded of an action, that is " +
+    "a to-do: use create_task instead. It runs without interrupting them, while this " +
+    "tool always asks for confirmation first. When in doubt between the two, prefer " +
+    "create_task — an unwanted to-do is one tap to undo, an unwanted confirmation card " +
+    "blocks the conversation. " +
     "Use form=recipe for dishes — always fill purposes with what the dish is good for " +
     "(e.g. 补铁, 缓解孕吐, 补钙), that is how the user finds it later. " +
     "Use form=food_rule for anything about how to eat: whether something is safe " +
