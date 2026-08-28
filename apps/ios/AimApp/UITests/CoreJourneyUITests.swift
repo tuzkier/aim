@@ -747,12 +747,12 @@ final class CoreJourneyUITests: XCTestCase {
         submit.tap()
     }
 
-    /// 对话面换成 WebView 之后最该守住的一条：bundle 里的页面能加载起来。
+    /// 对话面换成 WebView 之后最该守住的一条：页面能从网关加载起来。
     ///
-    /// 断言用的是欢迎语——纯前端渲染，不依赖后端。这一条过了就说明自定义 scheme
-    /// 的静态资源那半边通了：index.html、js、css 都取到了。这两步任何一步断了
+    /// 断言用的是欢迎语——纯前端渲染，不依赖 agent 回复。这一条过了就说明
+    /// 网关的 /agent/ 路由通了：index.html、js、css 都取到了。任何一步断了
     /// 界面都是白的，而单元测试看不到，因为它们都在 WKWebView 之外。
-    func testAgentSurfaceLoadsFromTheAppBundle() throws {
+    func testAgentSurfaceLoadsFromTheGateway() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-reset-session"]
         app.launch()
@@ -767,6 +767,63 @@ final class CoreJourneyUITests: XCTestCase {
         XCTAssertTrue(
             app.staticTexts["我在这里陪你一起理清"].waitForExistence(timeout: 30),
             "对话面应当加载出打包在 bundle 里的页面；空白说明自定义 scheme 没取到静态资源"
+        )
+    }
+
+    /// 真发一句并等回复。
+    ///
+    /// 只验「输入框能输入」是不够的——WKURLSchemeHandler 转发 POST 时可能拿不到
+    /// 请求体，那样页面渲染正常、输入也正常，唯独一句话都发不出去。
+    func testAgentAnswersAMessage() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-reset-session"]
+        app.launch()
+        registerNewAccount(in: app)
+        completePregnancySetup(in: app)
+
+        let agentTab = app.tabBars.buttons["AIM"]
+        XCTAssertTrue(agentTab.waitForExistence(timeout: 15))
+        agentTab.tap()
+
+        let composer = app.textViews.firstMatch
+        XCTAssertTrue(composer.waitForExistence(timeout: 30))
+        composer.tap()
+        composer.typeText("你好")
+
+        let send = app.buttons["发送"]
+        XCTAssertTrue(send.waitForExistence(timeout: 5))
+        send.tap()
+
+        // 用户那句话先要出现在流里，说明消息确实发出去了。
+        XCTAssertTrue(
+            app.staticTexts["你好"].waitForExistence(timeout: 20),
+            "发出去的消息应当出现在对话流里"
+        )
+
+        // 再等一条助手回复。轮询而不是用谓词：XCUITest 的元素谓词不支持
+        // label.length 这类键路径，而「有没有新文字出现」用计数判断最直接。
+        // 等一条助手回复。判据是「出现了一段既不是我说的话、也不是欢迎语的长文本」——
+        // 计数会随 WebView 的快照抖动，不能用来判断。
+        let noise: Set<String> = [
+            "你好",
+            "我在这里陪你一起理清",
+            "可以问孕期变化、最近记录或接下来要做的事。涉及计划变更时，我会先让你确认。",
+            "AIM", "发送", "历史对话", "新对话",
+        ]
+        let deadline = Date().addingTimeInterval(90)
+        var reply: String?
+        while Date() < deadline, reply == nil {
+            let labels = app.staticTexts.allElementsBoundByIndex.compactMap { element -> String? in
+                // 快照在流式输出期间会变，取不到就下一轮再试。
+                guard element.exists else { return nil }
+                return element.label
+            }
+            reply = labels.first { $0.count > 8 && !noise.contains($0) }
+            if reply == nil { Thread.sleep(forTimeInterval: 3) }
+        }
+        XCTAssertNotNil(
+            reply,
+            "发出去之后应当等到一条助手回复；一直没有说明请求没真正走通"
         )
     }
 

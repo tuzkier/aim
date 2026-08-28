@@ -69,14 +69,24 @@ body {
 .welcome__body { margin: 0; font-size: 15px; line-height: 1.6; }
 
 .msg {
-  padding: 10px 14px;
-  border-radius: 14px;
+  padding: 9px 13px;
+  border-radius: 16px;
   max-width: 84%;
-  white-space: pre-wrap;
-  line-height: 1.6;
+  line-height: 1.5;
   -webkit-user-select: text;
   user-select: text;
 }
+
+/* 模型输出常带首尾空行，pre-wrap 会把它们原样撑开，气泡就显得很高。
+   段落自己会换行，不需要保留原始空白。 */
+.msg > * { white-space: pre-line; }
+.msg > *:first-child { margin-top: 0; }
+.msg > *:last-child { margin-bottom: 0; }
+.msg p { margin: 0 0 8px; }
+.msg p:last-child { margin-bottom: 0; }
+/* 列表按行距收紧，默认的 1em 上下边距在气泡里太空。 */
+.msg ul, .msg ol { margin: 6px 0; padding-left: 20px; }
+.msg li { margin: 2px 0; }
 .msg--user { align-self: flex-end; background: var(--accent); color: #fff; }
 .msg--assistant { align-self: flex-start; background: var(--surface); border: 1px solid var(--line); max-width: 100%; }
 

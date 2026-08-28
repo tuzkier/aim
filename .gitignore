@@ -36,7 +36,6 @@ infrastructure/deploy/LOCAL.md
 
 # 对话面的 web 构建产物，由 make web-build 生成
 apps/agent-web/dist/
-apps/ios/AimApp/Resources/AgentWeb/
 
 # Local runtime data
 infrastructure/compose/.data/

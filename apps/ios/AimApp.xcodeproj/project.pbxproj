@@ -28,7 +28,6 @@
 		A20000000000000000000020 /* Features/TaskDetail/TaskDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000020 /* Features/TaskDetail/TaskDetailView.swift */; };
 		A20000000000000000000021 /* Features/Today/TodayStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000021 /* Features/Today/TodayStore.swift */; };
 		A20000000000000000000022 /* Features/Today/TodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000022 /* Features/Today/TodayView.swift */; };
-		A20000000000000000000133 /* Resources/AgentWeb in Resources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000133 /* Resources/AgentWeb */; };
 		A20000000000000000000023 /* Resources/Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000023 /* Resources/Assets.xcassets */; };
 		A20000000000000000000024 /* Core/Auth/KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000027 /* Core/Auth/KeychainStore.swift */; };
 		A20000000000000000000025 /* Features/Records/RecordModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000028 /* Features/Records/RecordModels.swift */; };
@@ -160,7 +159,6 @@
 		A10000000000000000000020 /* Features/TaskDetail/TaskDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/TaskDetail/TaskDetailView.swift; sourceTree = "<group>"; };
 		A10000000000000000000021 /* Features/Today/TodayStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Today/TodayStore.swift; sourceTree = "<group>"; };
 		A10000000000000000000022 /* Features/Today/TodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Today/TodayView.swift; sourceTree = "<group>"; };
-		A10000000000000000000133 /* Resources/AgentWeb */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Resources/AgentWeb; sourceTree = "<group>"; };
 		A10000000000000000000023 /* Resources/Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Resources/Assets.xcassets; sourceTree = "<group>"; };
 		A10000000000000000000024 /* AimApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AimApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A10000000000000000000025 /* AimAppTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = file; path = AimAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -498,8 +496,7 @@
 		A40000000000000000000013 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
-				A10000000000000000000133 /* Resources/AgentWeb */,
-				A10000000000000000000023 /* Resources/Assets.xcassets */,
+						A10000000000000000000023 /* Resources/Assets.xcassets */,
 				A10000000000000000000061 /* Resources/Info.plist */,
 			);
 			name = Resources;
@@ -1324,8 +1321,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A20000000000000000000133 /* Resources/AgentWeb in Resources */,
-				A20000000000000000000023 /* Resources/Assets.xcassets in Resources */,
+						A20000000000000000000023 /* Resources/Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

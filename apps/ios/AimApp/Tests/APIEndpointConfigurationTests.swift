@@ -125,8 +125,8 @@ final class APIEndpointConfigurationTests: XCTestCase {
         )
     }
 
-    /// 本地栈是两个独立端口，不是共用一个。
-    func testLocalBaseURLsUseSeparatePorts() {
+    /// 本地栈和生产一样走同一个网关端口：对话面的前端必须与 API 同源。
+    func testLocalBaseURLsShareTheGatewayPort() {
         let environment = APIEnvironment(
             baseURL: api(device: false),
             eveBaseURL: eve(device: false),
@@ -138,11 +138,11 @@ final class APIEndpointConfigurationTests: XCTestCase {
 
         XCTAssertEqual(
             environment.businessRequest(path: "/api/v1/health").url?.absoluteString,
-            "http://127.0.0.1:8100/api/v1/health"
+            "http://127.0.0.1:8080/api/v1/health"
         )
         XCTAssertEqual(
             environment.eveRequest(path: "/eve/v1/session", method: "POST").url?.absoluteString,
-            "http://127.0.0.1:2210/eve/v1/session"
+            "http://127.0.0.1:8080/eve/v1/session"
         )
     }
 }

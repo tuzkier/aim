@@ -47,8 +47,12 @@ enum APIEndpointConfiguration {
 
     /// 127.0.0.1 在模拟器上指向 Mac 本机，所以模拟器能直接连开发机的 Compose 栈。
     /// 真机上它指向手机自己，连不到——真机要连本地栈得用第 1 条覆盖成 Mac 的局域网 IP。
-    static let localAPI = URL(string: "http://127.0.0.1:8100")!
-    static let localEve = URL(string: "http://127.0.0.1:2210")!
+    ///
+    /// api 与 eve 都走本地网关的同一个端口，和生产同构。此前它们是 8100 / 2210 两个
+    /// 端口，对话面的前端因此和后端不同源——而事件流是长连接，只有同源的真实网络
+    /// 请求 fetch 才能边收边解。
+    static let localAPI = URL(string: "http://127.0.0.1:8080")!
+    static let localEve = URL(string: "http://127.0.0.1:8080")!
 
     /// 这个包是不是装在真机上。编译期决定，运行时改不了。
     static var isDeviceBuild: Bool {

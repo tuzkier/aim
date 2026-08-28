@@ -42,13 +42,6 @@ struct AgentWebView: UIViewRepresentable {
 
     func makeUIView(context: Context) -> WKWebView {
         let configuration = WKWebViewConfiguration()
-        configuration.setURLSchemeHandler(
-            AgentWebSchemeHandler(
-                apiBaseURL: environment.baseURL, eveBaseURL: environment.eveBaseURL
-            ),
-            forURLScheme: AgentWebScheme.name
-        )
-
         let controller = WKUserContentController()
         controller.addUserScript(
             WKUserScript(
@@ -67,7 +60,7 @@ struct AgentWebView: UIViewRepresentable {
         webView.scrollView.backgroundColor = .clear
         // 页面自己管滚动；再套一层会出现两条滚动条互相抢。
         webView.scrollView.bounces = true
-        webView.load(URLRequest(url: AgentWebScheme.indexURL))
+        webView.load(URLRequest(url: AgentWebScheme.indexURL(gateway: environment.baseURL)))
         onCreate(webView)
         return webView
     }
