@@ -747,6 +747,48 @@ final class CoreJourneyUITests: XCTestCase {
         submit.tap()
     }
 
+    /// 对话面换成 WebView 之后最该守住的一条：bundle 里的页面能加载起来。
+    ///
+    /// 断言用的是欢迎语——纯前端渲染，不依赖后端。这一条过了就说明自定义 scheme
+    /// 的静态资源那半边通了：index.html、js、css 都取到了。这两步任何一步断了
+    /// 界面都是白的，而单元测试看不到，因为它们都在 WKWebView 之外。
+    func testAgentSurfaceLoadsFromTheAppBundle() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-reset-session"]
+        app.launch()
+        registerNewAccount(in: app)
+        completePregnancySetup(in: app)
+
+        let agentTab = app.tabBars.buttons["AIM"]
+        XCTAssertTrue(agentTab.waitForExistence(timeout: 15))
+        agentTab.tap()
+
+        // WebView 里的文字对 XCUITest 是可见的，可以直接断言。
+        XCTAssertTrue(
+            app.staticTexts["我在这里陪你一起理清"].waitForExistence(timeout: 30),
+            "对话面应当加载出打包在 bundle 里的页面；空白说明自定义 scheme 没取到静态资源"
+        )
+    }
+
+    /// 输入框能用，说明页面不只是渲染出来了，交互也活着。
+    func testAgentComposerAcceptsInput() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-reset-session"]
+        app.launch()
+        registerNewAccount(in: app)
+        completePregnancySetup(in: app)
+
+        let agentTab = app.tabBars.buttons["AIM"]
+        XCTAssertTrue(agentTab.waitForExistence(timeout: 15))
+        agentTab.tap()
+
+        let composer = app.textViews.firstMatch
+        XCTAssertTrue(composer.waitForExistence(timeout: 30), "对话面应当有可输入的输入框")
+        composer.tap()
+        composer.typeText("你好")
+        XCTAssertTrue(app.buttons["发送"].waitForExistence(timeout: 5), "应当能看到发送按钮")
+    }
+
     /// 收起键盘。表单里没有空白可点，用 return 键最稳。
     private func dismissKeyboard(in app: XCUIApplication) {
         if app.keyboards.count > 0 {

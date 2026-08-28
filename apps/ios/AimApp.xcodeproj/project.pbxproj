@@ -549,7 +549,7 @@
 		A40000000000000000000015 /* UITests */ = {
 			isa = PBXGroup;
 			children = (
-				A10000000000000000000034 /* UITests/CoreJourneyUITests.swift */,
+						A10000000000000000000034 /* UITests/CoreJourneyUITests.swift */,
 			);
 			name = UITests;
 			sourceTree = "<group>";
@@ -1471,7 +1471,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A20000000000000000000034 /* UITests/CoreJourneyUITests.swift in Sources */,
+						A20000000000000000000034 /* UITests/CoreJourneyUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
