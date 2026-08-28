@@ -765,7 +765,7 @@ final class CoreJourneyUITests: XCTestCase {
 
         // WebView 里的文字对 XCUITest 是可见的，可以直接断言。
         XCTAssertTrue(
-            app.staticTexts["我在这里陪你一起理清"].waitForExistence(timeout: 30),
+            app.staticTexts["可以问孕期变化、最近记录或接下来要做的事。涉及计划变更时，我会先让你确认。"].waitForExistence(timeout: 30),
             "对话面应当加载出打包在 bundle 里的页面；空白说明自定义 scheme 没取到静态资源"
         )
     }

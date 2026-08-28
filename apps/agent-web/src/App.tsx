@@ -132,12 +132,11 @@ const Thread = () => (
   <ThreadPrimitive.Root className="thread">
     <ThreadPrimitive.Viewport className="thread__viewport" autoScroll>
       <ThreadPrimitive.Empty>
-        <div className="welcome">
-          <h2 className="welcome__title">我在这里陪你一起理清</h2>
-          <p className="welcome__body">
-            可以问孕期变化、最近记录或接下来要做的事。涉及计划变更时，我会先让你确认。
-          </p>
-        </div>
+        {/* 原生头部已经有「AIM · 孕期里的事，说一声就好」，这里再来一遍大标题
+            就是同一件事说两次。空态只留一句引导。 */}
+        <p className="welcome">
+          可以问孕期变化、最近记录或接下来要做的事。涉及计划变更时，我会先让你确认。
+        </p>
       </ThreadPrimitive.Empty>
       <ThreadPrimitive.Messages components={{ UserMessage, AssistantMessage }} />
       <TurnError />

@@ -23,6 +23,11 @@
 
 * { box-sizing: border-box; }
 
+/* 高度一路交给容器，不用 100dvh 自己算。
+   WebView 的 frame 已经由 SwiftUI 定好（导航栏之下、标签栏之上），
+   再用 dvh 就是第二套高度计算——两套一叠，上面空一大片、下面顶到标签栏。 */
+html, body, #root { height: 100%; }
+
 body {
   margin: 0;
   background: var(--aim-canvas);
@@ -32,13 +37,13 @@ body {
   user-select: none;
 }
 
-.app { min-height: 100dvh; background: var(--aim-canvas); color: var(--aim-text-primary); }
+.app { height: 100%; background: var(--aim-canvas); color: var(--aim-text-primary); }
 .loading, .fatal { padding: 24px; color: var(--aim-text-tertiary); }
 .fatal { color: var(--aim-danger); }
 
 /* ---------- 流 ---------- */
 
-.thread { display: flex; flex-direction: column; height: 100dvh; max-width: 720px; margin: 0 auto; }
+.thread { display: flex; flex-direction: column; height: 100%; max-width: 720px; margin: 0 auto; }
 .thread__viewport {
   flex: 1;
   overflow-y: auto;
@@ -51,9 +56,13 @@ body {
   overscroll-behavior: contain;
 }
 
-.welcome { padding: 24px 4px; color: var(--aim-text-secondary); }
-.welcome__title { margin: 0 0 8px; font-size: 17px; color: var(--aim-accent); }
-.welcome__body { margin: 0; font-size: 15px; line-height: 1.6; }
+.welcome {
+  margin: 0;
+  padding: var(--space-4) var(--space-4) var(--space-16);
+  color: var(--aim-text-tertiary);
+  font-size: 15px;
+  line-height: 1.6;
+}
 
 .msg {
   padding: 10px 14px;
@@ -202,9 +211,9 @@ body {
 .composer {
   display: flex;
   gap: 8px;
-  padding: 12px 16px;
-  /* home indicator 区域，否则发送键会被挡住。 */
-  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  /* 安全区由原生负责——WebView 待在安全区内，这里再补一次就是双份留白，
+     发送键会被推到标签栏上。 */
+  padding: var(--space-12) var(--space-16);
   border-top: 1px solid var(--aim-separator);
   background: var(--aim-surface);
 }
