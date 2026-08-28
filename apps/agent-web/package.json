@@ -8,7 +8,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@assistant-ui/eve": "^0.0.14",
+    "@assistant-ui/eve": "^0.0.15",
     "@assistant-ui/react": "^0.15.16",
     "eve": "^0.45.2",
     "react": "^19.2.8",

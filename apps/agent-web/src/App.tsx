@@ -6,9 +6,17 @@ import {
   ThreadPrimitive,
 } from "@assistant-ui/react";
 import { useEveAgentRuntime, useEveError, useEveSession } from "@assistant-ui/eve";
-import { loadNativeContext, type NativeContext } from "./bridge";
+import { accountKeyFromToken, loadNativeContext, type NativeContext } from "./bridge";
+import { loadSession, saveSession } from "./session";
+import type { ClientSessionState } from "./types";
+
+/** 冷启动时接回上一段对话所需的全部东西。 */
+interface Restored {
+  session: ClientSessionState;
+  events: unknown[];
+}
 import { ApprovalBatchProvider } from "./approvals";
-import { createEveTransport } from "./eveTransport";
+import { createEveTransport, fetchSessionEvents } from "./eveTransport";
 import { GenericToolView, ToolRenderers } from "./tools";
 import { ToolGroupActions } from "./tools/ToolGroup";
 import { Reasoning } from "./thread/Reasoning";
@@ -100,6 +108,12 @@ const ApprovalBridge = ({
   const sessionIdRef = useRef<string | undefined>(undefined);
   sessionIdRef.current = session?.sessionId;
 
+  // 游标一变就落盘。WebView 被系统回收后靠它接回原来那段对话，
+  // 否则用户刚聊到一半的内容会凭空消失——而它其实还完整地在 Eve 那边。
+  useEffect(() => {
+    if (session) saveSession(accountKeyFromToken(context.token), session);
+  }, [session, context.token]);
+
   const transport = useMemo(
     () =>
       createEveTransport({
@@ -113,8 +127,17 @@ const ApprovalBridge = ({
   return <ApprovalBatchProvider transport={transport}>{children}</ApprovalBatchProvider>;
 };
 
-const Conversation = ({ context }: { context: NativeContext }) => {
+const Conversation = ({
+  context,
+  restored,
+}: {
+  context: NativeContext;
+  restored: Restored | null;
+}) => {
   const runtime = useEveAgentRuntime({
+    ...(restored
+      ? { initialSession: restored.session, initialEvents: restored.events as never }
+      : {}),
     // host 留空 = 同源 /eve/v1/*。原生外壳里由 WKWebView 的拦截转到部署环境，
     // 开发时由 Vite 代理转到本地 Eve。两边都不需要给 Eve 配 CORS。
     ...(context.eveOrigin ? { host: context.eveOrigin } : {}),
@@ -135,6 +158,31 @@ export const App = () => {
   const [context, setContext] = useState<NativeContext | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const [restored, setRestored] = useState<Restored | null>(null);
+  const [restoring, setRestoring] = useState(false);
+
+  // 拿到会话票之后、开始渲染对话之前，把上一段对话的事件取回来。
+  // `initialEvents` 只在运行时创建那一刻生效，所以必须先取完再渲染。
+  useEffect(() => {
+    if (!context) return;
+    const stored = loadSession(accountKeyFromToken(context.token));
+    if (!stored) return;
+    let cancelled = false;
+    setRestoring(true);
+    void fetchSessionEvents(stored.sessionId, context.token, context.eveOrigin)
+      .then((events) => {
+        if (cancelled) return;
+        // 一条都没取到就当新对话开始：那段会话可能已经被服务端清掉了。
+        if (events.length > 0) setRestored({ session: stored, events });
+      })
+      .finally(() => {
+        if (!cancelled) setRestoring(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [context]);
+
   useEffect(() => {
     let cancelled = false;
     void loadNativeContext()
@@ -154,10 +202,11 @@ export const App = () => {
 
   if (error) return <div className="fatal">{error}</div>;
   if (!context) return <div className="loading">正在准备…</div>;
+  if (restoring) return <div className="loading">正在接回上一段对话…</div>;
 
   return (
     <div className={`app app--${context.theme}`}>
-      <Conversation context={context} />
+      <Conversation context={context} restored={restored} />
     </div>
   );
 };

@@ -78,6 +78,29 @@ const devFallbackContext = async (): Promise<NativeContext> => {
   return { token, theme: "light" };
 };
 
+/**
+ * 从会话票里取出账号标识，只用于给本地存储分键。
+ *
+ * 不做验签——那是服务端的事，客户端验了也不增加任何安全性。这里要的只是
+ * 「换账号后不要把上一个账号的对话接回来」这一个性质。
+ * 取不到就退回一个固定键：宁可所有账号共用一段历史被覆盖，也不能因为解析失败
+ * 就把不同账号的对话混在同一个键上。
+ */
+export const accountKeyFromToken = (token: string): string => {
+  const parts = token.split(".");
+  if (parts.length !== 4) return "unknown";
+  try {
+    const padded = parts[2] + "=".repeat((4 - (parts[2].length % 4)) % 4);
+    const payload: unknown = JSON.parse(
+      atob(padded.replace(/-/g, "+").replace(/_/g, "/")),
+    );
+    const accountId = (payload as { account_id?: unknown })?.account_id;
+    return typeof accountId === "string" ? accountId : "unknown";
+  } catch {
+    return "unknown";
+  }
+};
+
 export const loadNativeContext = async (): Promise<NativeContext> => {
   const injected = window.__AIM_NATIVE__;
   if (injected) return injected;
