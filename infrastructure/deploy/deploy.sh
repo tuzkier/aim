@@ -36,7 +36,9 @@ say "部署 ${REVISION} 到 ${REMOTE}"
 # 而 .gitignore 的规则 git archive 天然就遵守。
 # ---------------------------------------------------------------------------
 say "打包并上传"
-TARBALL="$(mktemp -t aim-deploy-XXXXXX).tar.gz"
+# mktemp 建出来的那个文件本身就是要用的目标，不能再往名字后面缀 .tar.gz——
+# 那样会写到另一个路径上，mktemp 建的空文件反而留在 /tmp 里没人清。
+TARBALL="$(mktemp -t aim-deploy)"
 trap 'rm -f "$TARBALL"' EXIT
 git archive --format=tar.gz -o "$TARBALL" HEAD
 scp -q "$TARBALL" "${REMOTE}:/tmp/aim-deploy.tar.gz"
