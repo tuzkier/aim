@@ -2,3 +2,6 @@ node_modules/
 dist/
 .env.local
 .env.*.local
+
+# 由 scripts/sync-tokens.mjs 从 iOS asset catalog 生成
+src/tokens.css

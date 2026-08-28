@@ -1,53 +1,40 @@
+@import "./tokens.css";
+
 /*
- * 配色跟原生的 AimColors 对齐：同一条菜谱在对话里和资料库里应当看起来是同一样东西。
- * 深色由原生注入 theme 决定，不用 prefers-color-scheme——WebView 的媒体查询
- * 未必跟得上 App 内的主题切换。
+ * 颜色来自 tokens.css——由 scripts/sync-tokens.mjs 从 iOS 的 asset catalog 生成。
+ * 第一版是照截图估的：accent 偏亮、canvas 偏冷、success 从橄榄变成了绿，
+ * 放进 App 里一眼就是「另一个应用」。别再手写色值。
+ *
+ * 圆角与间距对齐 AimMetrics：卡片 20、按钮 13、间距 4/8/12/16/20/28。
+ * 字号按 iOS 的文本样式：body 17、subheadline 15、footnote 13、caption 12。
  */
 :root {
-  --canvas: #faf8f6;
-  --surface: #ffffff;
-  --surface-raised: #fffdfb;
-  --line: #ece5df;
-  --line-strong: #ddd3cb;
-  --text: #2b2622;
-  --text-secondary: #6f635a;
-  --text-tertiary: #8a7f76;
-  --accent: #d97757;
-  --accent-soft: #f2e6de;
-  --accent-ink: #a35a3a;
-  --danger: #c0392b;
-  --success: #3f7d58;
+  --radius-card: 20px;
+  --radius-button: 13px;
+  --radius-bubble: 20px;
+  --space-4: 4px;
+  --space-8: 8px;
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-20: 20px;
   font-family: -apple-system, "PingFang SC", system-ui, sans-serif;
-  font-size: 16px;
-}
-
-.app--dark {
-  --canvas: #1b1815;
-  --surface: #262220;
-  --surface-raised: #2c2724;
-  --line: #3a332e;
-  --line-strong: #4a423b;
-  --text: #f0eae5;
-  --text-secondary: #b8aca3;
-  --text-tertiary: #948780;
-  --accent-soft: #3a2a22;
-  --accent-ink: #e9a184;
+  font-size: 17px;
 }
 
 * { box-sizing: border-box; }
 
 body {
   margin: 0;
-  background: var(--canvas);
-  color: var(--text);
+  background: var(--aim-canvas);
+  color: var(--aim-text-primary);
   /* WebView 里长按选中整段会盖住审批按钮；正文单独放开。 */
   -webkit-user-select: none;
   user-select: none;
 }
 
-.app { min-height: 100dvh; background: var(--canvas); color: var(--text); }
-.loading, .fatal { padding: 24px; color: var(--text-tertiary); }
-.fatal { color: var(--danger); }
+.app { min-height: 100dvh; background: var(--aim-canvas); color: var(--aim-text-primary); }
+.loading, .fatal { padding: 24px; color: var(--aim-text-tertiary); }
+.fatal { color: var(--aim-danger); }
 
 /* ---------- 流 ---------- */
 
@@ -64,13 +51,14 @@ body {
   overscroll-behavior: contain;
 }
 
-.welcome { padding: 24px 4px; color: var(--text-secondary); }
-.welcome__title { margin: 0 0 8px; font-size: 17px; color: var(--accent-ink); }
+.welcome { padding: 24px 4px; color: var(--aim-text-secondary); }
+.welcome__title { margin: 0 0 8px; font-size: 17px; color: var(--aim-accent); }
 .welcome__body { margin: 0; font-size: 15px; line-height: 1.6; }
 
 .msg {
-  padding: 9px 13px;
-  border-radius: 16px;
+  padding: 10px 14px;
+  font-size: 17px;
+  border-radius: var(--radius-bubble);
   max-width: 84%;
   line-height: 1.5;
   -webkit-user-select: text;
@@ -87,8 +75,8 @@ body {
 /* 列表按行距收紧，默认的 1em 上下边距在气泡里太空。 */
 .msg ul, .msg ol { margin: 6px 0; padding-left: 20px; }
 .msg li { margin: 2px 0; }
-.msg--user { align-self: flex-end; background: var(--accent); color: #fff; }
-.msg--assistant { align-self: flex-start; background: var(--surface); border: 1px solid var(--line); max-width: 100%; }
+.msg--user { align-self: flex-end; background: var(--aim-accent); color: #fff; }
+.msg--assistant { align-self: flex-start; background: var(--aim-surface); border: 1px solid var(--aim-separator); max-width: 100%; }
 
 /* ---------- 思考 ---------- */
 
@@ -100,18 +88,18 @@ body {
   padding: 4px 0;
   border: 0;
   background: none;
-  color: var(--text-tertiary);
+  color: var(--aim-text-tertiary);
   font: inherit;
   font-size: 13px;
   cursor: pointer;
 }
-.reasoning--running .reasoning__toggle { color: var(--accent-ink); }
+.reasoning--running .reasoning__toggle { color: var(--aim-accent); }
 .reasoning__chevron { font-size: 10px; }
 .reasoning__body {
   margin: 4px 0 0;
   padding: 8px 10px;
-  border-left: 2px solid var(--line-strong);
-  color: var(--text-secondary);
+  border-left: 2px solid var(--aim-rail);
+  color: var(--aim-text-secondary);
   font-size: 14px;
   line-height: 1.6;
   white-space: pre-wrap;
@@ -126,77 +114,77 @@ body {
   align-items: center;
   gap: 8px;
   padding: 3px 0;
-  color: var(--text-tertiary);
+  color: var(--aim-text-tertiary);
   font-size: 13px;
 }
 .step-row__dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--line-strong);
+  background: var(--aim-rail);
   flex: none;
 }
-.step-row--running .step-row__dot { background: var(--accent); animation: pulse 1.2s ease-in-out infinite; }
-.step-row__error { color: var(--danger); }
+.step-row--running .step-row__dot { background: var(--aim-accent); animation: pulse 1.2s ease-in-out infinite; }
+.step-row__error { color: var(--aim-danger); }
 
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
 /* ---------- 工具卡 ---------- */
 
 .tool-card {
-  border: 1px solid var(--line-strong);
-  border-radius: 14px;
-  padding: 14px;
-  background: var(--surface-raised);
+  border: 1px solid var(--aim-separator);
+  border-radius: var(--radius-card);
+  padding: var(--space-16);
+  background: var(--aim-surface-raised);
   margin: 6px 0;
   -webkit-user-select: text;
   user-select: text;
 }
-.tool-card__eyebrow { margin: 0 0 4px; font-size: 12px; color: var(--text-tertiary); }
+.tool-card__eyebrow { margin: 0 0 4px; font-size: 12px; color: var(--aim-text-tertiary); }
 .tool-card__title { margin: 0; font-size: 17px; font-weight: 600; }
 .tool-card__text { margin: 4px 0 0; font-size: 15px; line-height: 1.6; }
-.tool-card__meta { margin: 6px 0 0; font-size: 13px; color: var(--text-secondary); }
-.tool-card__note { margin: 8px 0 0; font-size: 13px; color: var(--text-secondary); }
+.tool-card__meta { margin: 6px 0 0; font-size: 13px; color: var(--aim-text-secondary); }
+.tool-card__note { margin: 8px 0 0; font-size: 13px; color: var(--aim-text-secondary); }
 .tool-card__section { margin-top: 10px; }
-.tool-card__label { margin: 0 0 2px; font-size: 12px; font-weight: 400; color: var(--text-tertiary); }
+.tool-card__label { margin: 0 0 2px; font-size: 12px; font-weight: 400; color: var(--aim-text-tertiary); }
 .tool-card__steps { margin: 4px 0 0; padding-left: 20px; font-size: 15px; line-height: 1.7; }
 
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; padding: 0; list-style: none; }
-.chip { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent-ink); }
+.chip { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--aim-accent-soft); color: var(--aim-accent); }
 
 .verdict { margin: 0; font-size: 16px; font-weight: 600; }
-.verdict--safe { color: var(--success); }
-.verdict--limit { color: var(--accent-ink); }
-.verdict--avoid { color: var(--danger); }
+.verdict--safe { color: var(--aim-success); }
+.verdict--limit { color: var(--aim-accent); }
+.verdict--avoid { color: var(--aim-danger); }
 
 .tool-card__disclaimer {
   margin: 12px 0 0;
   padding: 8px 10px;
   border-radius: 8px;
-  background: var(--accent-soft);
-  color: var(--text-secondary);
+  background: var(--aim-accent-soft);
+  color: var(--aim-text-secondary);
   font-size: 12px;
   line-height: 1.5;
 }
 
 .tool-card__actions { display: flex; gap: 8px; margin-top: 12px; }
-.tool-card__status { margin: 10px 0 0; font-size: 13px; color: var(--text-tertiary); }
-.tool-card__status--done { color: var(--success); }
-.tool-card__status--error { color: var(--danger); }
+.tool-card__status { margin: 10px 0 0; font-size: 13px; color: var(--aim-text-tertiary); }
+.tool-card__status--done { color: var(--aim-success); }
+.tool-card__status--error { color: var(--aim-danger); }
 
 .btn {
   padding: 8px 16px;
-  border: 1px solid var(--line-strong);
-  border-radius: 10px;
-  background: var(--surface);
-  color: var(--text);
+  border: 1px solid var(--aim-rail);
+  border-radius: var(--radius-button);
+  background: var(--aim-surface);
+  color: var(--aim-text-primary);
   font: inherit;
   font-size: 15px;
   cursor: pointer;
   /* 44pt 触控目标，跟原生一致。 */
   min-height: 40px;
 }
-.btn--primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.btn--primary { background: var(--aim-accent); color: #fff; border-color: var(--aim-accent); }
 
 /* ---------- 失败 ---------- */
 
@@ -204,8 +192,8 @@ body {
   margin: 8px 0;
   padding: 10px 12px;
   border-radius: 10px;
-  background: color-mix(in srgb, var(--danger) 10%, transparent);
-  color: var(--danger);
+  background: color-mix(in srgb, var(--aim-danger) 10%, transparent);
+  color: var(--aim-danger);
   font-size: 14px;
 }
 
@@ -217,16 +205,16 @@ body {
   padding: 12px 16px;
   /* home indicator 区域，否则发送键会被挡住。 */
   padding-bottom: max(12px, env(safe-area-inset-bottom));
-  border-top: 1px solid var(--line);
-  background: var(--surface);
+  border-top: 1px solid var(--aim-separator);
+  background: var(--aim-surface);
 }
 .composer__input {
   flex: 1;
   padding: 10px 12px;
-  border: 1px solid var(--line-strong);
-  border-radius: 12px;
-  background: var(--surface);
-  color: var(--text);
+  border: 1px solid var(--aim-rail);
+  border-radius: var(--radius-button);
+  background: var(--aim-surface);
+  color: var(--aim-text-primary);
   font: inherit;
   font-size: 16px; /* 小于 16px 时 iOS 会在聚焦时放大页面 */
   resize: none;
@@ -236,8 +224,8 @@ body {
 .composer__send {
   padding: 10px 18px;
   border: 0;
-  border-radius: 12px;
-  background: var(--accent);
+  border-radius: var(--radius-button);
+  background: var(--aim-accent);
   color: #fff;
   font: inherit;
   font-size: 15px;
@@ -246,17 +234,17 @@ body {
 .composer__send:disabled { opacity: 0.4; }
 
 .btn:disabled { opacity: 0.55; cursor: default; }
-.btn--chosen { outline: 2px solid var(--accent); outline-offset: 1px; }
-.tool-card__waiting { align-self: center; font-size: 12px; color: var(--text-tertiary); }
+.btn--chosen { outline: 2px solid var(--aim-accent); outline-offset: 1px; }
+.tool-card__waiting { align-self: center; font-size: 12px; color: var(--aim-text-tertiary); }
 
 /* ---------- 工具组：整条消息共用一对确认按钮 ---------- */
 
 .tool-group__actions {
   margin-top: 12px;
   padding-top: 12px;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--aim-separator);
 }
-.tool-group__eyebrow { margin: 0 0 8px; font-size: 12px; color: var(--text-tertiary); }
+.tool-group__eyebrow { margin: 0 0 8px; font-size: 12px; color: var(--aim-text-tertiary); }
 .tool-group__buttons { display: flex; gap: 8px; }
 
 /* ---------- 历史对话 ---------- */
@@ -265,7 +253,7 @@ body {
   position: fixed;
   inset: 0;
   z-index: 10;
-  background: var(--canvas);
+  background: var(--aim-canvas);
   display: flex;
   flex-direction: column;
   padding-top: env(safe-area-inset-top);
@@ -276,10 +264,10 @@ body {
   justify-content: space-between;
   gap: 12px;
   padding: 12px 16px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--aim-separator);
 }
 .history__title { margin: 0; font-size: 17px; font-weight: 600; }
-.history__empty { padding: 24px 16px; color: var(--text-tertiary); font-size: 15px; }
+.history__empty { padding: 24px 16px; color: var(--aim-text-tertiary); font-size: 15px; }
 .history__list { margin: 0; padding: 8px 0; list-style: none; overflow-y: auto; }
 .history__item {
   display: flex;
@@ -289,20 +277,20 @@ body {
   padding: 12px 16px;
   border: 0;
   background: none;
-  color: var(--text);
+  color: var(--aim-text-primary);
   font: inherit;
   text-align: left;
   cursor: pointer;
 }
 .history__item:disabled { cursor: default; }
-.history__item--current { background: var(--accent-soft); }
+.history__item--current { background: var(--aim-accent-soft); }
 .history__item-title { font-size: 15px; }
-.history__item-time { font-size: 12px; color: var(--text-tertiary); }
+.history__item-time { font-size: 12px; color: var(--aim-text-tertiary); }
 
 .notice {
   margin: 0;
   padding: 10px 16px;
-  background: var(--accent-soft);
-  color: var(--text-secondary);
+  background: var(--aim-accent-soft);
+  color: var(--aim-text-secondary);
   font-size: 13px;
 }
