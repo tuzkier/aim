@@ -75,6 +75,14 @@ export const createEveTransport = (options: {
   sessionId: () => string | undefined;
   token: string;
   origin?: string;
+  /**
+   * 送出之后让运行时重新跟上这一轮。
+   *
+   * 整批响应是绕过适配器直接 POST 的，适配器因此不知道发生了什么：那一轮 park
+   * 之后它的流已经收了，我们的 POST 在服务端开了新一轮，它不会自己跟上去。
+   * 结果是服务端执行完了，卡片却一直停在「待提交」。
+   */
+  onDispatched: () => void;
 }): ApprovalTransport => ({
   respondAll: async (responses) => {
     const sessionId = options.sessionId();
@@ -99,5 +107,6 @@ export const createEveTransport = (options: {
     if (!response.ok) {
       throw new Error(`回复审批失败：HTTP ${response.status}`);
     }
+    options.onDispatched();
   },
 });

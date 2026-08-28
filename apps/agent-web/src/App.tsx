@@ -155,9 +155,11 @@ const Thread = () => (
  */
 const ApprovalBridge = ({
   context,
+  runtime,
   children,
 }: {
   context: NativeContext;
+  runtime: ReturnType<typeof useEveAgentRuntime>;
   children: ReactNode;
 }) => {
   const session = useEveSession();
@@ -195,8 +197,15 @@ const ApprovalBridge = ({
         sessionId: () => sessionIdRef.current,
         token: context.token,
         origin: context.eveOrigin,
+        // resume 会跟上服务端刚开的那一轮，approval.settled 与 action.result
+        // 才会回到界面上，卡片也才会从「待提交」变成真实结果。
+        onDispatched: () => {
+          void runtime.threads.reloadMainThread().catch(() => {
+            // 跟不上不该打断：内容已经在服务端执行了，下次冷启动也能接回来。
+          });
+        },
       }),
-    [context.token, context.eveOrigin],
+    [context.token, context.eveOrigin, runtime],
   );
 
   return <ApprovalBatchProvider transport={transport}>{children}</ApprovalBatchProvider>;
@@ -240,7 +249,7 @@ const Conversation = ({
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
-      <ApprovalBridge context={context}>
+      <ApprovalBridge context={context} runtime={runtime}>
         <NewConversationBridge accountKey={accountKeyFromToken(context.token)} />
         <HistoryBridge onOpen={() => setHistoryOpen(true)} />
         <SessionRecovery onDiscardStoredSession={onDiscardStoredSession} />
