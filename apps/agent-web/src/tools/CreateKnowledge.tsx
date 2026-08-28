@@ -1,7 +1,7 @@
 import { makeAssistantToolUI } from "@assistant-ui/react";
 import { categoryTitle, formTitle, VERDICT_LABELS } from "./labels";
 import { ApprovalSlot, ToolCard, ToolStatusLine } from "./ToolCard";
-import type { ToolRenderProps } from "./types";
+import { isAwaitingApproval, type ToolRenderProps } from "./types";
 
 /**
  * 写入知识条目前的确认卡。
@@ -84,7 +84,8 @@ export const CreateKnowledgeUI = makeAssistantToolUI({
     return (
       <ToolCard>
         <p className="tool-card__eyebrow">
-          将收录到「{categoryTitle(args.category)}」· {formTitle(args.form)}
+          {isAwaitingApproval(props.approval) ? "将收录到" : "已收录到"}
+          「{categoryTitle(args.category)}」· {formTitle(args.form)}
         </p>
         <h3 className="tool-card__title">{args.title ?? "（无标题）"}</h3>
         {args.purposes?.length ? (
