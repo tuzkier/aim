@@ -38,17 +38,21 @@ interface Restored {
  */
 const firstUserMessage = (events: readonly unknown[]): string | undefined => {
   for (const event of events) {
-    const typed = event as { type?: string; data?: { message?: { content?: unknown } } };
+    const typed = event as {
+      type?: string;
+      data?: { message?: unknown; parts?: readonly { type?: string; text?: string }[] };
+    };
     if (typed.type !== "message.received") continue;
-    const content = typed.data?.message?.content;
-    if (typeof content === "string" && content.trim()) return content;
-    if (Array.isArray(content)) {
-      const text = content
-        .map((part) => (part as { text?: string })?.text)
-        .filter((part): part is string => typeof part === "string")
-        .join("");
-      if (text.trim()) return text;
-    }
+    // 载荷长这样：{ message: "你好", parts: [{ type: "text", text: "你好" }] }。
+    // 我原来读的是 data.message.content——message 是字符串，.content 永远 undefined，
+    // 于是标题取不到、会话一直没登记进目录，历史列表就永远是空的。
+    const message = typed.data?.message;
+    if (typeof message === "string" && message.trim()) return message;
+    const fromParts = (typed.data?.parts ?? [])
+      .filter((part) => part?.type === "text" && typeof part.text === "string")
+      .map((part) => part.text as string)
+      .join("");
+    if (fromParts.trim()) return fromParts;
   }
   return undefined;
 };

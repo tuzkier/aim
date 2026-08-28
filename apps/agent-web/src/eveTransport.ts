@@ -25,24 +25,40 @@ export const fetchSessionEvents = async (
   origin = "",
   // 恢复是锦上添花，不值得让人对着「正在接回上一段对话…」干等。会话 id 失效时
   // 这条流可能永远不吐 session.waiting，没有这个上限界面就再也进不去了。
-  timeoutMs = 8000,
+  timeoutMs = 12000,
 ): Promise<unknown[]> => {
   const abort = new AbortController();
   const timer = setTimeout(() => abort.abort(), timeoutMs);
   try {
-    const response = await fetch(`${origin}/eve/v1/session/${sessionId}/stream?from=0`, {
-      headers: { accept: "application/x-ndjson", authorization: `Bearer ${token}` },
-      signal: abort.signal,
-    });
+    // 有界读取靠 includeTailIndex：响应头 x-eve-stream-tail-index 给出「打开这条流
+    // 那一刻的历史末尾」，读到它就收工，不跟活流。
+    //
+    // 此前是靠「读到 session.waiting 就停」，那是错的——session.waiting 每一轮
+    // 结束都会发一次，不是整段历史的结尾。结果是只读回第一轮，后面全丢
+    //（实测：全量 347 个事件两轮，被截成 47 个事件一轮）。
+    // 中间试过 follow=false，那是客户端选项，HTTP 上不认，等于没加。
+    const response = await fetch(
+      `${origin}/eve/v1/session/${sessionId}/stream?startIndex=0&includeTailIndex=1`,
+      {
+        headers: { accept: "application/x-ndjson", authorization: `Bearer ${token}` },
+        signal: abort.signal,
+      },
+    );
     if (!response.ok || !response.body) return [];
+
+    const rawTail = response.headers.get("x-eve-stream-tail-index");
+    const tailIndex = rawTail === null ? undefined : Number(rawTail);
+    // 拿不到末尾位置就别硬读——那会一直跟着活流直到超时。空历史当新对话处理。
+    if (tailIndex === undefined || !Number.isFinite(tailIndex)) return [];
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     const events: unknown[] = [];
     let buffer = "";
     let done = false;
+    let reachedTail = tailIndex < 0;
 
-    while (!done) {
+    while (!done && !reachedTail) {
       const chunk = await reader.read();
       done = chunk.done;
       buffer += decoder.decode(chunk.value ?? new Uint8Array(), { stream: !done });
@@ -53,14 +69,15 @@ export const fetchSessionEvents = async (
         const text = line.trim();
         if (!text) continue;
         try {
-          events.push(JSON.parse(text));
+          const event = JSON.parse(text) as { streamIndex?: number };
+          events.push(event);
+          if (typeof event.streamIndex === "number" && event.streamIndex >= tailIndex) {
+            reachedTail = true;
+          }
         } catch {
           // 半行或噪声，跳过。
         }
       }
-      // 会话流在轮次之间会挂着不关。读到 session.waiting 就说明这段历史已经完整，
-      // 再等下去只会卡在一个不会结束的连接上。
-      if (events.some((e) => (e as { type?: string })?.type === "session.waiting")) break;
     }
     await reader.cancel().catch(() => {});
     return events;
