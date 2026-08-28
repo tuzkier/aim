@@ -14,6 +14,23 @@
 - `/opt/aim/backups` —— 每日 pg_dump，保留 7 天
 - `/etc/nginx/conf.d/aim.conf` —— 反向代理，来自 `nginx-aim.conf`
 
+## 部署
+
+```bash
+infrastructure/deploy/deploy.sh <部署机 IP>
+```
+
+打包当前提交（`git archive`，所以工作区必须干净）、上传、构建、起服务，然后验证：
+网关与 API 健康、**无票访问 Eve 返回 401**、**自报 `x-aim-*` 头也返回 401**。
+最后那两条是鉴权修复的核心断言——身份只能从签名会话票推导。
+
+api 与 eve 必须同批部署：eve 的鉴权依赖 api 的
+`/internal/agent-tools/resolve-session`，先起 eve 会让所有 agent 请求 401。
+脚本用一次 `compose up` 保证这个次序。
+
+> **eve 升级会让升级前创建的对话读不回来**（容器日志里的 `CORRUPTED_EVENT_LOG`）。
+> 会话目录里条目还在，内容没了。客户端会显示「这段对话的内容已不可用」，不白屏。
+
 ## 启停
 
 ```bash
