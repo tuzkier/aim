@@ -158,23 +158,3 @@ enum PregnancyDateCalculator {
         calendar.date(byAdding: .day, value: -standardGestationDays, to: date)!
     }
 }
-
-struct TaskRow: View {
-    let task: TaskItem
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: task.status == .completed ? "checkmark.circle.fill" : "circle")
-                .foregroundStyle(task.status == .completed ? Color.green : Color.aimAccent)
-            VStack(alignment: .leading, spacing: 4) {
-                Text(task.title)
-                    .font(.body.weight(.medium))
-                if let dueAt = task.dueAt {
-                    Text(dueAt, style: .date)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-        }
-    }
-}
