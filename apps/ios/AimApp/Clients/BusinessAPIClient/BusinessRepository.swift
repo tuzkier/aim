@@ -120,6 +120,7 @@ protocol BusinessRepositoryProtocol: Sendable {
     func fetchSafetyRules() async throws -> [SafetyRule]
     func fetchContentCollection(_ name: String) async throws -> ContentCollection
     func createTaskFromRecord(record: RecordItem, title: String, description: String?, dueAt: Date?) async throws -> TaskItem
+    func createTask(title: String, description: String?, dueAt: Date?, assignedMemberID: UUID?) async throws -> TaskItem
     func complete(task: TaskItem) async throws -> TaskItem
     func delay(task: TaskItem, until: Date) async throws -> TaskItem
     func schedule(task: TaskItem, at: Date) async throws -> TaskItem
@@ -254,10 +255,23 @@ actor BusinessRepository: BusinessRepositoryProtocol {
     func createTaskFromRecord(record: RecordItem, title: String, description: String?, dueAt: Date?) async throws -> TaskItem {
         let pregnancyID = try requiredPregnancyID()
         guard record.pregnancyID == pregnancyID else { throw APIError.invalidResponse }
+        return try await postTask(CreateTaskBody(
+            title: title, description: description, dueAt: dueAt,
+            assignedMemberID: nil, recordID: record.id, sourceType: "record"))
+    }
+
+    func createTask(title: String, description: String?, dueAt: Date?, assignedMemberID: UUID?) async throws -> TaskItem {
+        try await postTask(CreateTaskBody(
+            title: title, description: description, dueAt: dueAt,
+            assignedMemberID: assignedMemberID, recordID: nil, sourceType: nil))
+    }
+
+    private func postTask(_ body: CreateTaskBody) async throws -> TaskItem {
+        let pregnancyID = try requiredPregnancyID()
         let request = environment.businessRequest(
             path: "/api/v1/pregnancies/\(pregnancyID.uuidString)/tasks",
             method: "POST",
-            body: try encoder.encode(CreateTaskFromRecordBody(title: title, description: description, dueAt: dueAt, recordID: record.id))
+            body: try encoder.encode(body)
         )
         let (data, _) = try await session.aimData(for: request)
         return map(try decoder.decode(APITaskDTO.self, from: data))
@@ -402,18 +416,31 @@ private struct EmptyPlanRequest: Encodable {
     }
 }
 
-private struct CreateTaskFromRecordBody: Encodable {
+struct CreateTaskBody: Encodable {
     let title: String
     let description: String?
     let dueAt: Date?
-    let recordID: UUID
-    let sourceType = "record"
+    let assignedMemberID: UUID?
+    let recordID: UUID?
+    /// nil 时不发这个字段，服务端默认 `user`。
+    let sourceType: String?
 
     enum CodingKeys: String, CodingKey {
         case title, description
         case dueAt = "due_at"
+        case assignedMemberID = "assigned_member_id"
         case recordID = "record_id"
         case sourceType = "source_type"
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(title, forKey: .title)
+        try container.encodeIfPresent(description, forKey: .description)
+        try container.encodeIfPresent(dueAt, forKey: .dueAt)
+        try container.encodeIfPresent(assignedMemberID, forKey: .assignedMemberID)
+        try container.encodeIfPresent(recordID, forKey: .recordID)
+        try container.encodeIfPresent(sourceType, forKey: .sourceType)
     }
 }
 

@@ -69,6 +69,7 @@ private actor FailingRecordRepository: BusinessRepositoryProtocol {
         ContentCollection(id: name, source: "test", sourceURL: "", items: [])
     }
     func createTaskFromRecord(record: RecordItem, title: String, description: String?, dueAt: Date?) async throws -> TaskItem { throw APIError.invalidResponse }
+    func createTask(title: String, description: String?, dueAt: Date?, assignedMemberID: UUID?) async throws -> TaskItem { throw APIError.invalidResponse }
 
     // 这两个替身不涉及家庭编辑，实现成空操作即可；
     // 真要用到时会因为断言不成立而暴露，而不是被静默吞掉。

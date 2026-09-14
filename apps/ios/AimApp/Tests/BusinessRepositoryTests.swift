@@ -150,6 +150,29 @@ final class BusinessRepositoryTests: XCTestCase {
         }
         """.utf8)
     }
+
+    func testCreateTaskBodyUsesSnakeCaseAndOmitsNothingRequired() throws {
+        let memberID = UUID()
+        let due = Date(timeIntervalSince1970: 1_790_000_000)
+        let body = CreateTaskBody(title: "买叶酸", description: "药店", dueAt: due, assignedMemberID: memberID, recordID: nil, sourceType: nil)
+        let data = try JSONEncoder.aim.encode(body)
+        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+
+        XCTAssertEqual(json["title"] as? String, "买叶酸")
+        XCTAssertEqual(json["description"] as? String, "药店")
+        XCTAssertEqual(json["assigned_member_id"] as? String, memberID.uuidString)
+        XCTAssertNotNil(json["due_at"])
+        XCTAssertNil(json["record_id"], "手动新建不带记录")
+        XCTAssertNil(json["source_type"], "留给服务端默认的 user")
+    }
+
+    func testCreateTaskFromRecordBodyKeepsRecordSource() throws {
+        let recordID = UUID()
+        let body = CreateTaskBody(title: "复查", description: nil, dueAt: nil, assignedMemberID: nil, recordID: recordID, sourceType: "record")
+        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder.aim.encode(body)) as? [String: Any])
+        XCTAssertEqual(json["record_id"] as? String, recordID.uuidString)
+        XCTAssertEqual(json["source_type"] as? String, "record")
+    }
 }
 
 final class TaskActorMappingTests: XCTestCase {

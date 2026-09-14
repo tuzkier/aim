@@ -194,6 +194,7 @@ private final class SpyRepository: BusinessRepositoryProtocol, @unchecked Sendab
     func createRecord(draft: RecordDraft) async throws -> RecordItem { throw APIError.notConfigured }
     func updateRecord(recordID: UUID, draft: RecordDraft) async throws -> RecordItem { throw APIError.notConfigured }
     func createTaskFromRecord(record: RecordItem, title: String, description: String?, dueAt: Date?) async throws -> TaskItem { throw APIError.notConfigured }
+    func createTask(title: String, description: String?, dueAt: Date?, assignedMemberID: UUID?) async throws -> TaskItem { throw APIError.notConfigured }
     func complete(task: TaskItem) async throws -> TaskItem { throw APIError.notConfigured }
     func delay(task: TaskItem, until: Date) async throws -> TaskItem { throw APIError.notConfigured }
     func schedule(task: TaskItem, at: Date) async throws -> TaskItem { throw APIError.notConfigured }

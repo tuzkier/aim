@@ -165,6 +165,7 @@ private final class FakeLibraryRepository: BusinessRepositoryProtocol, @unchecke
     func deleteRecord(recordID: UUID) async throws {}
     func deleteTask(taskID: UUID) async throws {}
     func createTaskFromRecord(record: RecordItem, title: String, description: String?, dueAt: Date?) async throws -> TaskItem { throw APIError.notConfigured }
+    func createTask(title: String, description: String?, dueAt: Date?, assignedMemberID: UUID?) async throws -> TaskItem { throw APIError.notConfigured }
     func complete(task: TaskItem) async throws -> TaskItem { throw APIError.notConfigured }
     func delay(task: TaskItem, until: Date) async throws -> TaskItem { throw APIError.notConfigured }
     func schedule(task: TaskItem, at: Date) async throws -> TaskItem { throw APIError.notConfigured }
@@ -227,6 +228,7 @@ private final class CountingRepository: BusinessRepositoryProtocol, @unchecked S
     func deleteRecord(recordID: UUID) async throws {}
     func deleteTask(taskID: UUID) async throws {}
     func createTaskFromRecord(record: RecordItem, title: String, description: String?, dueAt: Date?) async throws -> TaskItem { throw APIError.notConfigured }
+    func createTask(title: String, description: String?, dueAt: Date?, assignedMemberID: UUID?) async throws -> TaskItem { throw APIError.notConfigured }
     func complete(task: TaskItem) async throws -> TaskItem { throw APIError.notConfigured }
     func delay(task: TaskItem, until: Date) async throws -> TaskItem { throw APIError.notConfigured }
     func schedule(task: TaskItem, at: Date) async throws -> TaskItem { throw APIError.notConfigured }
@@ -301,6 +303,7 @@ private final class DeletingRepository: BusinessRepositoryProtocol, @unchecked S
     func updateRecord(recordID: UUID, draft: RecordDraft) async throws -> RecordItem { throw APIError.notConfigured }
     func deleteTask(taskID: UUID) async throws {}
     func createTaskFromRecord(record: RecordItem, title: String, description: String?, dueAt: Date?) async throws -> TaskItem { throw APIError.notConfigured }
+    func createTask(title: String, description: String?, dueAt: Date?, assignedMemberID: UUID?) async throws -> TaskItem { throw APIError.notConfigured }
     func complete(task: TaskItem) async throws -> TaskItem { throw APIError.notConfigured }
     func delay(task: TaskItem, until: Date) async throws -> TaskItem { throw APIError.notConfigured }
     func schedule(task: TaskItem, at: Date) async throws -> TaskItem { throw APIError.notConfigured }
