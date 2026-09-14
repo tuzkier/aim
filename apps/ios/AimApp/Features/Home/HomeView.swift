@@ -7,6 +7,7 @@ import SwiftUI
 /// 完整时间线从标题 push 进去，过去的周在那边折叠。
 struct HomeView: View {
     @Environment(AppSessionStore.self) private var session
+    @Environment(\.scenePhase) private var scenePhase
     @Bindable var store: TimelineStore
     let planStore: PlanStore
     let recordStore: RecordStore
@@ -20,7 +21,7 @@ struct HomeView: View {
     @State private var delayTarget: TaskItem?
     @State private var recordPromptTask: TaskItem?
     @State private var focusDetailTask: TaskItem?
-    @State private var pendingTaskID: UUID?
+    @State private var pendingTaskIDs: Set<UUID> = []
     @State private var completedTaskID: UUID?
 
     @State private var isQuickAdding = false
@@ -53,6 +54,18 @@ struct HomeView: View {
                 guard session.pregnancyID != nil, store.weeks.isEmpty else { return }
                 await store.load()
             }
+            // `store.now` 只在 load() 里刷新。App 在后台放一夜再回来，「今天」「逾期」「接下来 7 天」
+            // 都还按昨天分组。回到前台先把 now 拨到现在——store 是 @Observable，各分组随之重算；
+            // 若日历日已经变了，孕周和服务端 as_of 也过期了，再整页重拉一次。
+            .onChange(of: scenePhase) { _, phase in
+                guard phase == .active else { return }
+                let calendar = PregnancyDateCalculator.calendar
+                let dayChanged = calendar.startOfDay(for: store.now) != calendar.startOfDay(for: .now)
+                store.now = .now
+                if dayChanged, session.pregnancyID != nil {
+                    Task { await store.load() }
+                }
+            }
             .navigationDestination(isPresented: $showingTimeline) {
                 TimelineView(store: store, planStore: planStore, recordStore: recordStore, agentStore: agentStore)
             }
@@ -60,7 +73,7 @@ struct HomeView: View {
                 TaskDetailView(task: task, repository: planStore.repository)
             }
             .sheet(isPresented: $showingTaskComposer) {
-                TaskComposerView(members: store.familyMembers, now: store.now) { draft in
+                TaskComposerView(members: store.familyMembers, now: .now) { draft in
                     let ok = await store.createTask(
                         title: draft.title, description: draft.detail,
                         dueAt: draft.dueAt, assignedMemberID: draft.assignedMemberID)
@@ -253,7 +266,7 @@ struct HomeView: View {
                 assigneeName: store.assigneeName(for: task.assignedMemberID),
                 now: store.now,
                 isOverdue: store.isOverdue(task),
-                isPending: pendingTaskID == task.id,
+                isPending: pendingTaskIDs.contains(task.id),
                 style: style
             ) {
                 Task { await complete(task) }
@@ -285,9 +298,11 @@ struct HomeView: View {
     // MARK: - 动作
 
     private func complete(_ task: TaskItem) async {
-        guard pendingTaskID == nil else { return }
-        pendingTaskID = task.id
-        defer { pendingTaskID = nil }
+        // 按任务记录请求中状态：连点两行各自转圈，互不拦截。并发的 complete 各自 reload，
+        // 拉回的是同一份数据，后到的覆盖先到的也无妨。
+        guard !pendingTaskIDs.contains(task.id) else { return }
+        pendingTaskIDs.insert(task.id)
+        defer { pendingTaskIDs.remove(task.id) }
         if await store.complete(task) {
             completedTaskID = task.id
             toast = AimToastMessage(
@@ -298,7 +313,12 @@ struct HomeView: View {
                 recordPromptTask = task
             }
         } else {
-            toast = AimToastMessage(text: store.errorMessage ?? "没能标记完成，稍后再试。", undoTitle: "", accessibilityIdentifier: "home-complete-failed")
+            toast = AimToastMessage(
+                text: store.errorMessage ?? "没能标记完成，稍后再试。",
+                undoTitle: "",
+                accessibilityIdentifier: "home-complete-failed",
+                style: .failure
+            )
         }
     }
 
@@ -311,7 +331,7 @@ struct HomeView: View {
         isQuickAddSubmitting = true
         quickAddError = nil
         defer { isQuickAddSubmitting = false }
-        if await store.createTask(title: title, dueAt: TaskDateText.endOfDay(store.now)) {
+        if await store.createTask(title: title, dueAt: TaskDateText.endOfDay(.now)) {
             // 请求期间输入框没有禁用，用户可能已经在打下一条；只有内容还是刚提交的那条才清空。
             if quickAddText.trimmingCharacters(in: .whitespacesAndNewlines) == title {
                 quickAddText = ""
