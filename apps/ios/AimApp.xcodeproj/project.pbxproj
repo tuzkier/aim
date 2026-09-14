@@ -117,8 +117,10 @@
 		A20000000000000000000099 /* Features/Library/NutritionSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000098 /* Features/Library/NutritionSection.swift */; };
 		A20000000000000000000100 /* Tests/NutritionSectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000099 /* Tests/NutritionSectionTests.swift */; };
 		A20000000000000000000135 /* Features/Home/TaskDateText.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000135 /* Features/Home/TaskDateText.swift */; };
+		A20000000000000000000134 /* Features/Home/TaskComposerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000134 /* Features/Home/TaskComposerView.swift */; };
 		A20000000000000000000133 /* Features/Home/TaskQuickAddRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000133 /* Features/Home/TaskQuickAddRow.swift */; };
 		A20000000000000000000136 /* Tests/TaskDateTextTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000136 /* Tests/TaskDateTextTests.swift */; };
+		A20000000000000000000137 /* Tests/TaskComposerViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000137 /* Tests/TaskComposerViewTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -255,8 +257,10 @@
 		A10000000000000000000098 /* Features/Library/NutritionSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Library/NutritionSection.swift; sourceTree = "<group>"; };
 		A10000000000000000000099 /* Tests/NutritionSectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/NutritionSectionTests.swift; sourceTree = "<group>"; };
 		A10000000000000000000135 /* Features/Home/TaskDateText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Home/TaskDateText.swift; sourceTree = "<group>"; };
+		A10000000000000000000134 /* Features/Home/TaskComposerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Home/TaskComposerView.swift; sourceTree = "<group>"; };
 		A10000000000000000000133 /* Features/Home/TaskQuickAddRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Home/TaskQuickAddRow.swift; sourceTree = "<group>"; };
 		A10000000000000000000136 /* Tests/TaskDateTextTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/TaskDateTextTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000137 /* Tests/TaskComposerViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/TaskComposerViewTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -513,6 +517,7 @@
 			isa = PBXGroup;
 			children = (
 				A10000000000000000000136 /* Tests/TaskDateTextTests.swift */,
+				A10000000000000000000137 /* Tests/TaskComposerViewTests.swift */,
 				A10000000000000000000099 /* Tests/NutritionSectionTests.swift */,
 				A10000000000000000000096 /* Tests/SymptomPatternTests.swift */,
 				A10000000000000000000094 /* Tests/MetricKindTests.swift */,
@@ -1184,6 +1189,7 @@
 			isa = PBXGroup;
 			children = (
 				A10000000000000000000135 /* Features/Home/TaskDateText.swift */,
+				A10000000000000000000134 /* Features/Home/TaskComposerView.swift */,
 				A10000000000000000000133 /* Features/Home/TaskQuickAddRow.swift */,
 			);
 			name = Home;
@@ -1364,6 +1370,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A20000000000000000000135 /* Features/Home/TaskDateText.swift in Sources */,
+				A20000000000000000000134 /* Features/Home/TaskComposerView.swift in Sources */,
 				A20000000000000000000133 /* Features/Home/TaskQuickAddRow.swift in Sources */,
 				A20000000000000000000102 /* Features/Agent/AgentQuestion.swift in Sources */,
 				A20000000000000000000110 /* Features/Onboarding/AuthForm.swift in Sources */,
@@ -1446,6 +1453,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A20000000000000000000136 /* Tests/TaskDateTextTests.swift in Sources */,
+				A20000000000000000000137 /* Tests/TaskComposerViewTests.swift in Sources */,
 				A20000000000000000000100 /* Tests/NutritionSectionTests.swift in Sources */,
 				A20000000000000000000097 /* Tests/SymptomPatternTests.swift in Sources */,
 				A20000000000000000000095 /* Tests/MetricKindTests.swift in Sources */,
