@@ -38,8 +38,12 @@ final class CoreJourneyUITests: XCTestCase {
         XCTAssertTrue(timelineTab.waitForExistence(timeout: 15))
         timelineTab.tap()
 
+        // 「新增记录」收进了首页右上角的「+」菜单里。
+        let addMenu = app.buttons["home-add-menu"]
+        XCTAssertTrue(addMenu.waitForExistence(timeout: 5))
+        addMenu.tap()
         let addRecord = app.buttons["新增记录"]
-        XCTAssertTrue(addRecord.waitForExistence(timeout: 5))
+        XCTAssertTrue(addRecord.waitForExistence(timeout: 3))
         addRecord.tap()
 
         let symptomType = app.buttons["record-type-symptom"]
@@ -76,13 +80,13 @@ final class CoreJourneyUITests: XCTestCase {
         XCTAssertTrue(timelineTab.waitForExistence(timeout: 15))
         timelineTab.tap()
 
-        let anyWeekHeader = app.descendants(matching: .any)
-            .matching(NSPredicate(format: "identifier BEGINSWITH 'timeline-week-header-'"))
-            .firstMatch
-        XCTAssertTrue(anyWeekHeader.waitForExistence(timeout: 8))
+        // 首页不再按周分组，以焦点卡落地作为「数据已加载」的信号。
+        let focusCard = app.descendants(matching: .any).matching(identifier: "home-focus-card").firstMatch
+        XCTAssertTrue(focusCard.waitForExistence(timeout: 15))
 
+        // 对话面自带头部、隐藏了系统导航栏，用它自己的「关闭」钮判断已打开。
         app.buttons["global-agent-button"].tap()
-        XCTAssertTrue(app.navigationBars["AIM"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["agent-close"].waitForExistence(timeout: 5))
     }
 
     func testCompletingATaskOffersToRecordTheResult() throws {
@@ -104,9 +108,22 @@ final class CoreJourneyUITests: XCTestCase {
         XCTAssertTrue(timelineTab.waitForExistence(timeout: 15))
         timelineTab.tap()
 
+        // 孕 18 周的种子任务里只有一条截止今天，它会被焦点卡吃掉，今天组
+        // 因此没有其它行。先用快速添加补一条截止今天的待办，保证有行可滑。
+        let focusCard = app.descendants(matching: .any).matching(identifier: "home-focus-card").firstMatch
+        XCTAssertTrue(focusCard.waitForExistence(timeout: 15))
+        let quickAdd = app.buttons["home-quick-add"]
+        reveal(quickAdd, in: app)
+        quickAdd.tap()
+        let quickAddField = app.textFields["home-quick-add-field"]
+        XCTAssertTrue(quickAddField.waitForExistence(timeout: 3))
+        quickAddField.typeText("测试待办\n")
+
+        // 行合并成了单个无障碍元素，checkbox 不单独暴露；对行做左滑露出「完成」
+        // 与点 checkbox 等价，而且不依赖行内按钮的命中区域。
         // .swipeActions(edge: .leading) 的「完成」按钮靠向右滑手势展开
         // （手指从左往右拖动内容，露出贴在左侧的 leading 按钮），不是 swipeLeft。
-        let taskRow = app.buttons.matching(identifier: "timeline-task-row").firstMatch
+        let taskRow = app.buttons.matching(identifier: "home-task-row").firstMatch
         XCTAssertTrue(taskRow.waitForExistence(timeout: 8))
         taskRow.swipeRight()
 
@@ -146,14 +163,12 @@ final class CoreJourneyUITests: XCTestCase {
         XCTAssertTrue(timelineTab.waitForExistence(timeout: 15))
         timelineTab.tap()
 
-        // 保存孕期信息会触发整条时间线重新拉取（多次网络往返），
-        // 先等周分组头落地，再找焦点卡，否则会在加载态上误判。
-        let anyWeekHeader = app.descendants(matching: .any)
-            .matching(NSPredicate(format: "identifier BEGINSWITH 'timeline-week-header-'"))
-            .firstMatch
-        XCTAssertTrue(anyWeekHeader.waitForExistence(timeout: 15))
+        // 保存孕期信息会触发整页重新拉取（多次网络往返），
+        // 先等焦点卡落地再找按钮，否则会在加载态上误判。
+        let focusCard = app.descendants(matching: .any).matching(identifier: "home-focus-card").firstMatch
+        XCTAssertTrue(focusCard.waitForExistence(timeout: 15))
 
-        // List 懒加载，离屏的行不在无障碍树里，需要滚动到可见范围。
+        // 焦点卡现在在首屏，reveal 第一轮就命中；保留是为了防御小屏。
         let action = app.buttons["开始处理"]
         reveal(action, in: app)
         action.tap()
@@ -166,6 +181,56 @@ final class CoreJourneyUITests: XCTestCase {
             app.navigationBars["AIM"].exists,
             "「开始处理」不应打开 Agent 对话"
         )
+    }
+
+    /// 今天组末尾的「添加待办」是最短的录入路径：点一下、打字、回车，
+    /// 新待办就落在今天组里；成功后输入框不收起，连着记几条是常态。
+    func testQuickAddCreatesATaskInTodayGroup() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-reset-session"]
+        app.launch()
+
+        registerNewAccount(in: app)
+        completePregnancySetup(in: app)
+
+        XCTAssertTrue(app.tabBars.buttons["孕期"].waitForExistence(timeout: 15))
+
+        let quickAdd = app.buttons["home-quick-add"]
+        reveal(quickAdd, in: app)
+        quickAdd.tap()
+
+        let field = app.textFields["home-quick-add-field"]
+        XCTAssertTrue(field.waitForExistence(timeout: 3))
+        let title = "买叶酸 \(Int.random(in: 100...999))"
+        field.typeText(title + "\n")
+
+        XCTAssertTrue(app.staticTexts[title].waitForExistence(timeout: 10), "新待办应出现在今天组")
+        XCTAssertTrue(field.exists, "成功后输入框应保持打开，方便连续录入")
+    }
+
+    /// 首页标题是进入完整时间线的主入口。时间线以今天所在周开头，
+    /// 筛选跟着时间线走了，返回后回到首页。
+    func testHeaderOpensTimelineWithTodayOnTop() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-reset-session"]
+        app.launch()
+
+        registerNewAccount(in: app)
+        completePregnancySetup(in: app)
+
+        let header = app.buttons["home-header-week"]
+        XCTAssertTrue(header.waitForExistence(timeout: 15))
+        header.tap()
+
+        XCTAssertTrue(app.navigationBars["孕期时间线"].waitForExistence(timeout: 5))
+        let todayHeader = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "identifier BEGINSWITH 'timeline-week-header-'"))
+            .firstMatch
+        XCTAssertTrue(todayHeader.waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["timeline-filter"].exists)
+
+        app.navigationBars["孕期时间线"].buttons.firstMatch.tap()
+        XCTAssertTrue(header.waitForExistence(timeout: 5), "返回后应回到首页")
     }
 
 
@@ -401,8 +466,12 @@ final class CoreJourneyUITests: XCTestCase {
         XCTAssertTrue(timelineTab.waitForExistence(timeout: 15))
         timelineTab.tap()
 
+        // 「新增记录」收进了首页右上角的「+」菜单里。
+        let addMenu = app.buttons["home-add-menu"]
+        XCTAssertTrue(addMenu.waitForExistence(timeout: 5))
+        addMenu.tap()
         let addRecord = app.buttons["新增记录"]
-        XCTAssertTrue(addRecord.waitForExistence(timeout: 10))
+        XCTAssertTrue(addRecord.waitForExistence(timeout: 3))
         addRecord.tap()
 
         app.buttons["record-type-checkup"].tap()
