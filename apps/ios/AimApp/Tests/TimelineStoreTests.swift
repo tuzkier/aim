@@ -135,7 +135,6 @@ final class TimelineStoreTests: XCTestCase {
             task("下周", due: at(22)),
         ])
         XCTAssertEqual(store.pastWeeks.map(\.week), [20])
-        XCTAssertFalse(store.isPastExpanded)
     }
 
     func testCreateTaskReloadsOnSuccessAndReportsFailure() async {

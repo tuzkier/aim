@@ -57,8 +57,6 @@ final class TimelineStore {
     /// as_of 是日期不是时刻，用它判断「今天 20:00 是否已过」会出错。
     var now: Date = .now
 
-    var isPastExpanded = false
-
     var currentWeek: Int? {
         weeks.first { $0.position == .current }?.week
     }

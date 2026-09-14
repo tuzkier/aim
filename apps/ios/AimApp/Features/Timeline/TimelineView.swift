@@ -15,6 +15,9 @@ struct TimelineView: View {
     @State private var delayTarget: TaskItem?
     @State private var completedTaskID: UUID?
     @State private var recordPromptTask: TaskItem?
+    /// 过去周的展开状态只在本次进入时间线期间保留（规格 §5）：放在视图里而不是 store 里，
+    /// 每次从首页 push 进来都是新视图、默认收起；进详情再返回时 @State 仍在，不会被打回。
+    @State private var isPastExpanded = false
 
     private let todayAnchor = "timeline-today"
 
@@ -74,7 +77,7 @@ struct TimelineView: View {
                     Section {
                         pastToggleRow
                     }
-                    if store.isPastExpanded {
+                    if isPastExpanded {
                         ForEach(store.pastWeeks) { week in
                             Section {
                                 rows(for: week)
@@ -95,22 +98,26 @@ struct TimelineView: View {
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
             .background(Color.aimCanvas)
+            // 筛选把过去周清空后胶囊不该还挂着；胶囊在时给列表底部留出它的高度，别盖住最后一行。
+            .safeAreaPadding(.bottom, showsBackToToday ? AimMetrics.space28 + AimMetrics.space20 : 0)
             .overlay(alignment: .bottom) {
-                if store.isPastExpanded { backToToday(proxy) }
+                if showsBackToToday { backToToday(proxy) }
             }
         }
     }
 
+    private var showsBackToToday: Bool { isPastExpanded && !store.pastWeeks.isEmpty }
+
     private var pastToggleRow: some View {
         Button {
-            withAnimation(.snappy) { store.isPastExpanded.toggle() }
+            withAnimation(.snappy) { isPastExpanded.toggle() }
         } label: {
             HStack {
                 Text(pastSummary)
                     .font(.footnote)
                     .foregroundStyle(Color.aimTextSecondary)
                 Spacer()
-                Image(systemName: store.isPastExpanded ? "chevron.up" : "chevron.down")
+                Image(systemName: isPastExpanded ? "chevron.up" : "chevron.down")
                     .font(.caption)
                     .foregroundStyle(Color.aimTextTertiary)
             }
@@ -232,7 +239,7 @@ struct TimelineView: View {
 
     private func backToToday(_ proxy: ScrollViewProxy) -> some View {
         Button {
-            withAnimation(.snappy) { store.isPastExpanded = false }
+            withAnimation(.snappy) { isPastExpanded = false }
             proxy.scrollTo(todayAnchor, anchor: .top)
         } label: {
             Label("回到今天", systemImage: "arrow.up.to.line")
