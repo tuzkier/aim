@@ -9,8 +9,14 @@ struct AimSourceBadge: View {
 }
 
 struct AimTaskRow: View {
+    enum Style { case due, upcoming }
+
     let task: TaskItem
     var assigneeName: String?
+    var now: Date = .now
+    var isOverdue = false
+    var isPending = false
+    var style: Style = .due
     var onToggle: (() -> Void)?
 
     private var isDone: Bool { task.status == .completed }
@@ -19,8 +25,9 @@ struct AimTaskRow: View {
         HStack(alignment: .top, spacing: AimMetrics.space12) {
             Button { onToggle?() } label: { checkbox }
                 .buttonStyle(.plain)
-                .disabled(onToggle == nil)
-                .accessibilityLabel(isDone ? "已完成" : "未完成")
+                .disabled(onToggle == nil || isPending || isDone)
+                .accessibilityLabel(isDone ? "已完成" : "标记完成")
+                .accessibilityIdentifier("home-task-checkbox")
 
             VStack(alignment: .leading, spacing: AimMetrics.space4) {
                 Text(task.title)
@@ -37,10 +44,18 @@ struct AimTaskRow: View {
 
     @ViewBuilder
     private var checkbox: some View {
-        if isDone {
+        if isPending {
+            ProgressView()
+                .controlSize(.small)
+                .frame(width: AimMetrics.checkboxSize, height: AimMetrics.checkboxSize)
+        } else if isDone {
             Image(systemName: "checkmark.circle.fill")
                 .font(.body)
                 .foregroundStyle(Color.aimSuccess)
+        } else if style == .upcoming {
+            Circle()
+                .stroke(Color.aimRail, style: StrokeStyle(lineWidth: AimMetrics.railDotStroke, dash: [2, 2]))
+                .frame(width: AimMetrics.checkboxSize, height: AimMetrics.checkboxSize)
         } else {
             Circle()
                 .stroke(Color.aimRail, lineWidth: AimMetrics.railDotStroke)
@@ -51,28 +66,36 @@ struct AimTaskRow: View {
     @ViewBuilder
     private var meta: some View {
         let parts = metaParts
-        if !parts.isEmpty || task.isAgentChanged {
+        if !parts.isEmpty || isOverdue || task.isAgentChanged {
             HStack(spacing: AimMetrics.space4) {
+                if isOverdue {
+                    Text("逾期")
+                        .font(.footnote)
+                        .foregroundStyle(Color.aimDanger)
+                    if !parts.isEmpty { separator }
+                }
                 if !parts.isEmpty {
                     Text(parts.joined(separator: " · "))
                         .font(.footnote)
                         .foregroundStyle(Color.aimTextSecondary)
                 }
                 if task.isAgentChanged {
-                    if !parts.isEmpty {
-                        Text("·").font(.footnote).foregroundStyle(Color.aimTextSecondary)
-                    }
+                    if isOverdue || !parts.isEmpty { separator }
                     AimSourceBadge()
                 }
             }
         }
     }
 
+    private var separator: some View {
+        Text("·").font(.footnote).foregroundStyle(Color.aimTextSecondary)
+    }
+
     private var metaParts: [String] {
         var parts: [String] = []
         if let assigneeName { parts.append(assigneeName) }
         if let date = task.dueAt ?? task.scheduledFor {
-            parts.append(date.formatted(date: .abbreviated, time: .shortened))
+            parts.append(TaskDateText.label(for: date, now: now))
         }
         return parts
     }
