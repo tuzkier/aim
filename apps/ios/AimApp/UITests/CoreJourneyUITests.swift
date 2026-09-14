@@ -124,17 +124,12 @@ final class CoreJourneyUITests: XCTestCase {
         // 重载中的列表。先等新待办的标题落地，今天组的第一行才是确定的滑动目标。
         XCTAssertTrue(app.staticTexts["测试待办"].waitForExistence(timeout: 10), "快速添加的待办应出现在今天组")
 
-        // 行合并成了单个无障碍元素，checkbox 不单独暴露；对行做左滑露出「完成」
-        // 与点 checkbox 等价，而且不依赖行内按钮的命中区域。
-        // .swipeActions(edge: .leading) 的「完成」按钮靠向右滑手势展开
-        // （手指从左往右拖动内容，露出贴在左侧的 leading 按钮），不是 swipeLeft。
+        // 行合并成了单个无障碍元素，checkbox 不单独暴露，按标识符查不到它；
+        // 只能按坐标点：checkbox 贴在行的最左侧，取行宽 6% 处、垂直居中。
+        // 这条用例覆盖的是规格 §4.3 的 checkbox 点击路径；右滑完成另有用例。
         let taskRow = app.buttons.matching(identifier: "home-task-row").firstMatch
         XCTAssertTrue(taskRow.waitForExistence(timeout: 8))
-        taskRow.swipeRight()
-
-        let completeAction = app.buttons["完成"]
-        XCTAssertTrue(completeAction.waitForExistence(timeout: 3))
-        completeAction.tap()
+        taskRow.coordinate(withNormalizedOffset: CGVector(dx: 0.06, dy: 0.5)).tap()
 
         // The toast only appears after TimelineStore.complete(_:) finishes its
         // full reload (four sequential network calls), so give it real headroom
@@ -149,6 +144,40 @@ final class CoreJourneyUITests: XCTestCase {
         app.buttons["记一下"].tap()
 
         XCTAssertTrue(app.navigationBars["新增记录"].waitForExistence(timeout: 3))
+    }
+
+    /// 右滑完成与点 checkbox 等价（规格 §4.3）。只验证滑出「完成」按钮，
+    /// 不真的点：完成路径已由 testCompletingATaskOffersToRecordTheResult 覆盖。
+    func testSwipingATaskRowRevealsCompleteAction() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-reset-session"]
+        app.launch()
+
+        registerNewAccount(in: app)
+
+        completePregnancySetup(in: app)
+
+        let timelineTab = app.tabBars.buttons["孕期"]
+        XCTAssertTrue(timelineTab.waitForExistence(timeout: 15))
+        timelineTab.tap()
+
+        let focusCard = app.descendants(matching: .any).matching(identifier: "home-focus-card").firstMatch
+        XCTAssertTrue(focusCard.waitForExistence(timeout: 15))
+        let quickAdd = app.buttons["home-quick-add"]
+        reveal(quickAdd, in: app)
+        quickAdd.tap()
+        let quickAddField = app.textFields["home-quick-add-field"]
+        XCTAssertTrue(quickAddField.waitForExistence(timeout: 3))
+        quickAddField.typeText("滑动待办\n")
+        XCTAssertTrue(app.staticTexts["滑动待办"].waitForExistence(timeout: 10), "快速添加的待办应出现在今天组")
+
+        // .swipeActions(edge: .leading) 的「完成」按钮靠向右滑手势展开
+        // （手指从左往右拖动内容，露出贴在左侧的 leading 按钮），不是 swipeLeft。
+        let taskRow = app.buttons.matching(identifier: "home-task-row").firstMatch
+        XCTAssertTrue(taskRow.waitForExistence(timeout: 8))
+        taskRow.swipeRight()
+
+        XCTAssertTrue(app.buttons["完成"].waitForExistence(timeout: 3))
     }
 
     /// 焦点卡承载的是「现在最重要」那条任务，而该任务会被 entries(in:) 从
