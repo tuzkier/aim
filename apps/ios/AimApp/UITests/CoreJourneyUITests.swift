@@ -213,6 +213,12 @@ final class CoreJourneyUITests: XCTestCase {
 
         XCTAssertTrue(app.staticTexts[title].waitForExistence(timeout: 10), "新待办应出现在今天组")
         XCTAssertTrue(field.exists, "成功后输入框应保持打开，方便连续录入")
+        // 回车默认会收键盘，提交后 List 插入新行还会再收一次焦点；行得把焦点要回来，键盘不能掉。
+        XCTAssertTrue(
+            app.keyboards.firstMatch.waitForExistence(timeout: 3),
+            "成功后键盘应仍在，连着记下一条不用再点一次输入框"
+        )
+        XCTAssertEqual(field.value(forKey: "hasKeyboardFocus") as? Bool, true, "成功后输入框应仍处于焦点")
     }
 
     /// 首页标题是进入完整时间线的主入口。时间线以今天所在周开头，

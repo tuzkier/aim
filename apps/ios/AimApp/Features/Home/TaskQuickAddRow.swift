@@ -15,6 +15,9 @@ struct TaskQuickAddRow: View {
     let onSubmit: () -> Void
 
     @FocusState private var isFocused: Bool
+    /// 回车时系统默认会收键盘、收回焦点，提交成功后 List 插入新行还会再收一次。
+    /// 从回车到提交结束这段时间里，焦点一丢就要回来，否则「连着记几条」就断了。
+    @State private var holdsFocus = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: AimMetrics.space4) {
@@ -37,7 +40,9 @@ struct TaskQuickAddRow: View {
                         .focused($isFocused)
                         .submitLabel(.done)
                         .onSubmit {
-                            if !isSubmitting { onSubmit() }
+                            guard !isSubmitting else { return }
+                            holdsFocus = true
+                            onSubmit()
                         }
                         .accessibilityLabel("添加待办")
                         .accessibilityIdentifier("home-quick-add-field")
@@ -64,13 +69,23 @@ struct TaskQuickAddRow: View {
         }
         .padding(.vertical, AimMetrics.space8)
         .onChange(of: isEditing) { _, editing in
+            if !editing { holdsFocus = false }
             isFocused = editing
         }
         .onChange(of: isFocused) { _, focused in
+            guard !focused else { return }
+            if holdsFocus || isSubmitting {
+                // 同一轮更新里直接设回去会被系统的收回覆盖，等下一轮再要。
+                Task { @MainActor in isFocused = true }
+                return
+            }
             // 失焦且没在提交、也没输入内容时收起；有内容就留着，用户可能只是切了个 App。
-            if !focused, !isSubmitting, text.trimmingCharacters(in: .whitespaces).isEmpty {
+            if text.trimmingCharacters(in: .whitespaces).isEmpty {
                 isEditing = false
             }
+        }
+        .onChange(of: isSubmitting) { _, submitting in
+            if !submitting { holdsFocus = false }
         }
     }
 }
