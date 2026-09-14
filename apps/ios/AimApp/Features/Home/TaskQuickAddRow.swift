@@ -73,10 +73,17 @@ struct TaskQuickAddRow: View {
             isFocused = editing
         }
         .onChange(of: isFocused) { _, focused in
-            guard !focused else { return }
+            if focused {
+                // 真正拿回焦点才释放保持；提交中拿回的还得守到提交结束，List 插行会再收一次。
+                if !isSubmitting { holdsFocus = false }
+                return
+            }
             if holdsFocus || isSubmitting {
-                // 同一轮更新里直接设回去会被系统的收回覆盖，等下一轮再要。
-                Task { @MainActor in isFocused = true }
+                // 同一轮更新里直接设回去会被系统的收回覆盖，等下一轮再要；行已收起就不要了。
+                Task { @MainActor in
+                    guard isEditing else { return }
+                    isFocused = true
+                }
                 return
             }
             // 失焦且没在提交、也没输入内容时收起；有内容就留着，用户可能只是切了个 App。
@@ -85,7 +92,9 @@ struct TaskQuickAddRow: View {
             }
         }
         .onChange(of: isSubmitting) { _, submitting in
-            if !submitting { holdsFocus = false }
+            // 提交结束时焦点还在才释放。焦点不在说明收回还没送到（List diff 慢、AX 大字号布局慢），
+            // 这时释放了，晚到的那次失焦就会把空行收起——正是要修的症状。留着，等拿回焦点再放。
+            if !submitting, isFocused { holdsFocus = false }
         }
     }
 }
