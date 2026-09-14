@@ -116,6 +116,8 @@
 		A20000000000000000000126 /* Features/Agent/AgentPromptText.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000125 /* Features/Agent/AgentPromptText.swift */; };
 		A20000000000000000000099 /* Features/Library/NutritionSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000098 /* Features/Library/NutritionSection.swift */; };
 		A20000000000000000000100 /* Tests/NutritionSectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000099 /* Tests/NutritionSectionTests.swift */; };
+		A20000000000000000000135 /* Features/Home/TaskDateText.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000135 /* Features/Home/TaskDateText.swift */; };
+		A20000000000000000000136 /* Tests/TaskDateTextTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000136 /* Tests/TaskDateTextTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -251,6 +253,8 @@
 		A10000000000000000000125 /* Features/Agent/AgentPromptText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Agent/AgentPromptText.swift; sourceTree = "<group>"; };
 		A10000000000000000000098 /* Features/Library/NutritionSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Library/NutritionSection.swift; sourceTree = "<group>"; };
 		A10000000000000000000099 /* Tests/NutritionSectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/NutritionSectionTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000135 /* Features/Home/TaskDateText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Home/TaskDateText.swift; sourceTree = "<group>"; };
+		A10000000000000000000136 /* Tests/TaskDateTextTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/TaskDateTextTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -382,6 +386,7 @@
 				A40000000000000000000101 /* Reserved */,
 				A40000000000000000000102 /* Records */,
 				A40000000000000000000103 /* Timeline */,
+				A40000000000000000000106 /* Home */,
 				A40000000000000000000104 /* Components */,
 			);
 			path = AimApp;
@@ -505,6 +510,7 @@
 		A40000000000000000000014 /* Tests */ = {
 			isa = PBXGroup;
 			children = (
+				A10000000000000000000136 /* Tests/TaskDateTextTests.swift */,
 				A10000000000000000000099 /* Tests/NutritionSectionTests.swift */,
 				A10000000000000000000096 /* Tests/SymptomPatternTests.swift */,
 				A10000000000000000000094 /* Tests/MetricKindTests.swift */,
@@ -1172,6 +1178,14 @@
 			name = Timeline;
 			sourceTree = "<group>";
 		};
+		A40000000000000000000106 /* Home */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000135 /* Features/Home/TaskDateText.swift */,
+			);
+			name = Home;
+			sourceTree = "<group>";
+		};
 		A40000000000000000000104 /* Components */ = {
 			isa = PBXGroup;
 			children = (
@@ -1346,6 +1360,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A20000000000000000000135 /* Features/Home/TaskDateText.swift in Sources */,
 				A20000000000000000000102 /* Features/Agent/AgentQuestion.swift in Sources */,
 				A20000000000000000000110 /* Features/Onboarding/AuthForm.swift in Sources */,
 				A20000000000000000000116 /* Features/Records/ContentTitleIndex.swift in Sources */,
@@ -1426,6 +1441,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A20000000000000000000136 /* Tests/TaskDateTextTests.swift in Sources */,
 				A20000000000000000000100 /* Tests/NutritionSectionTests.swift in Sources */,
 				A20000000000000000000097 /* Tests/SymptomPatternTests.swift in Sources */,
 				A20000000000000000000095 /* Tests/MetricKindTests.swift in Sources */,
