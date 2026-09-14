@@ -119,6 +119,11 @@ final class CoreJourneyUITests: XCTestCase {
         XCTAssertTrue(quickAddField.waitForExistence(timeout: 3))
         quickAddField.typeText("测试待办\n")
 
+        // `home-task-row` 也打在「接下来 7 天」的行上，那些行在快速添加的网络往返
+        // 结束前就已经存在，firstMatch 可能立刻命中一条 upcoming 行、甚至撞上
+        // 重载中的列表。先等新待办的标题落地，今天组的第一行才是确定的滑动目标。
+        XCTAssertTrue(app.staticTexts["测试待办"].waitForExistence(timeout: 10), "快速添加的待办应出现在今天组")
+
         // 行合并成了单个无障碍元素，checkbox 不单独暴露；对行做左滑露出「完成」
         // 与点 checkbox 等价，而且不依赖行内按钮的命中区域。
         // .swipeActions(edge: .leading) 的「完成」按钮靠向右滑手势展开
@@ -177,8 +182,10 @@ final class CoreJourneyUITests: XCTestCase {
             app.navigationBars["事项详情"].waitForExistence(timeout: 5),
             "「开始处理」应打开事项详情"
         )
+        // 对话面隐藏了系统导航栏，navigationBars["AIM"] 永远不存在、断言会空转；
+        // 用对话面自己的「关闭」钮做否定断言，和正向用例保持一致。
         XCTAssertFalse(
-            app.navigationBars["AIM"].exists,
+            app.buttons["agent-close"].exists,
             "「开始处理」不应打开 Agent 对话"
         )
     }
