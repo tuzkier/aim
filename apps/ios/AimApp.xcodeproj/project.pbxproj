@@ -117,6 +117,7 @@
 		A20000000000000000000099 /* Features/Library/NutritionSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000098 /* Features/Library/NutritionSection.swift */; };
 		A20000000000000000000100 /* Tests/NutritionSectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000099 /* Tests/NutritionSectionTests.swift */; };
 		A20000000000000000000135 /* Features/Home/TaskDateText.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000135 /* Features/Home/TaskDateText.swift */; };
+		A20000000000000000000133 /* Features/Home/TaskQuickAddRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000133 /* Features/Home/TaskQuickAddRow.swift */; };
 		A20000000000000000000136 /* Tests/TaskDateTextTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000136 /* Tests/TaskDateTextTests.swift */; };
 /* End PBXBuildFile section */
 
@@ -254,6 +255,7 @@
 		A10000000000000000000098 /* Features/Library/NutritionSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Library/NutritionSection.swift; sourceTree = "<group>"; };
 		A10000000000000000000099 /* Tests/NutritionSectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/NutritionSectionTests.swift; sourceTree = "<group>"; };
 		A10000000000000000000135 /* Features/Home/TaskDateText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Home/TaskDateText.swift; sourceTree = "<group>"; };
+		A10000000000000000000133 /* Features/Home/TaskQuickAddRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Home/TaskQuickAddRow.swift; sourceTree = "<group>"; };
 		A10000000000000000000136 /* Tests/TaskDateTextTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/TaskDateTextTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -1182,6 +1184,7 @@
 			isa = PBXGroup;
 			children = (
 				A10000000000000000000135 /* Features/Home/TaskDateText.swift */,
+				A10000000000000000000133 /* Features/Home/TaskQuickAddRow.swift */,
 			);
 			name = Home;
 			sourceTree = "<group>";
@@ -1361,6 +1364,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A20000000000000000000135 /* Features/Home/TaskDateText.swift in Sources */,
+				A20000000000000000000133 /* Features/Home/TaskQuickAddRow.swift in Sources */,
 				A20000000000000000000102 /* Features/Agent/AgentQuestion.swift in Sources */,
 				A20000000000000000000110 /* Features/Onboarding/AuthForm.swift in Sources */,
 				A20000000000000000000116 /* Features/Records/ContentTitleIndex.swift in Sources */,
