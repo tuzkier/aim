@@ -53,6 +53,12 @@ final class TimelineStore {
     var today: Date = .now
     var currentDays: Int = 0
 
+    /// 首页各分组的「现在」。与 `today`（服务端 as_of，用于孕周换算）分开：
+    /// as_of 是日期不是时刻，用它判断「今天 20:00 是否已过」会出错。
+    var now: Date = .now
+
+    var isPastExpanded = false
+
     var currentWeek: Int? {
         weeks.first { $0.position == .current }?.week
     }
@@ -69,12 +75,81 @@ final class TimelineStore {
         expandedFarWeeks.insert(week.week)
     }
 
+    // MARK: - 首页派生
+
+    var stageName: String? {
+        guard let week = currentWeek else { return nil }
+        if week <= 13 { return "孕早期" }
+        if week <= 27 { return "孕中期" }
+        return "孕晚期"
+    }
+
+    private var endOfToday: Date { TaskDateText.endOfDay(now) }
+    private var startOfToday: Date { TimelineBuilder.calendar.startOfDay(for: now) }
+
+    /// 未完成任务按截止时间升序，没有截止时间的排最后。
+    private var openTasksByDue: [TaskItem] {
+        tasks.filter(\.isOpen).sorted { lhs, rhs in
+            switch (lhs.dueAt, rhs.dueAt) {
+            case let (l?, r?): return l < r
+            case (nil, nil): return lhs.id.uuidString < rhs.id.uuidString
+            case (nil, _): return false
+            case (_, nil): return true
+            }
+        }
+    }
+
+    /// 逾期或今天截止的最早一条；没有就是所有未完成里最早的；都没有就不显示焦点卡。
     var focusTask: TaskItem? {
-        guard let current = weeks.first(where: { $0.position == .current }) else { return nil }
-        return current.entries.compactMap { entry -> TaskItem? in
-            if case let .task(item) = entry, item.isOpen { return item }
-            return nil
-        }.first
+        let open = openTasksByDue
+        if let dueSoon = open.first(where: { ($0.dueAt ?? .distantFuture) <= endOfToday }) { return dueSoon }
+        return open.first
+    }
+
+    func isOverdue(_ task: TaskItem) -> Bool {
+        guard let due = task.dueAt else { return false }
+        return due < startOfToday
+    }
+
+    /// 今天组：截止 ≤ 今天 23:59 或没有截止时间，排除焦点任务。逾期自然排在最前。
+    var todayTasks: [TaskItem] {
+        let focusID = focusTask?.id
+        return openTasksByDue.filter { task in
+            task.id != focusID && (task.dueAt.map { $0 <= endOfToday } ?? true)
+        }
+    }
+
+    var overdueCount: Int { todayTasks.filter(isOverdue).count }
+
+    /// 接下来 7 天：明天 00:00 到第 7 天 23:59。
+    var upcomingTasks: [TaskItem] {
+        let focusID = focusTask?.id
+        guard let seventh = TimelineBuilder.calendar.date(byAdding: .day, value: 7, to: startOfToday) else { return [] }
+        let windowEnd = TaskDateText.endOfDay(seventh)
+        return openTasksByDue.filter { task in
+            guard task.id != focusID, let due = task.dueAt else { return false }
+            return due > endOfToday && due <= windowEnd
+        }
+    }
+
+    var recentRecords: [RecordItem] {
+        Array(records.sorted { $0.occurredAt > $1.occurredAt }.prefix(3))
+    }
+
+    var pastWeeks: [TimelineWeek] { weeks.filter { $0.position == .past } }
+
+    @discardableResult
+    func createTask(title: String, description: String? = nil, dueAt: Date?, assignedMemberID: UUID? = nil) async -> Bool {
+        guard let repository else { return false }
+        do {
+            _ = try await repository.createTask(
+                title: title, description: description, dueAt: dueAt, assignedMemberID: assignedMemberID)
+            await load()
+            return true
+        } catch {
+            errorMessage = error.localizedDescription
+            return false
+        }
     }
 
     func assigneeName(for memberID: UUID?) -> String? {
@@ -92,6 +167,7 @@ final class TimelineStore {
             let recordsSnapshot = try await repository.fetchRecords(type: nil)
             let family = try await repository.fetchFamily()
 
+            now = .now
             today = todaySnapshot.asOf
             currentDays = todaySnapshot.days
             lastMenstrualPeriod = TimelineBuilder.lastMenstrualPeriod(
