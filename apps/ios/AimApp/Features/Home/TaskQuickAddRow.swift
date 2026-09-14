@@ -4,6 +4,9 @@ import SwiftUI
 ///
 /// 成功后不收起、不失焦——连着记几条是常态。失败时错误显示在本行下面，
 /// 输入保留，用户改一改再回车即可，不用重新打字。
+///
+/// 提交中不禁用输入框：禁用会让系统收回焦点，之后没人再把它交回来。
+/// 只在 onSubmit 里挡住重复提交即可。
 struct TaskQuickAddRow: View {
     @Binding var isEditing: Bool
     @Binding var text: String
@@ -33,8 +36,9 @@ struct TaskQuickAddRow: View {
                         .foregroundStyle(Color.aimTextPrimary)
                         .focused($isFocused)
                         .submitLabel(.done)
-                        .onSubmit(onSubmit)
-                        .disabled(isSubmitting)
+                        .onSubmit {
+                            if !isSubmitting { onSubmit() }
+                        }
                         .accessibilityLabel("添加待办")
                         .accessibilityIdentifier("home-quick-add-field")
                 } else {
