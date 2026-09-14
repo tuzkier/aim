@@ -44,7 +44,7 @@ private struct MainTabView: View {
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            TimelineView(store: timelineStore, planStore: planStore, recordStore: recordStore, agentStore: agentStore)
+            HomeView(store: timelineStore, planStore: planStore, recordStore: recordStore, agentStore: agentStore)
                 .tabItem { Label("孕期", systemImage: "heart.text.square") }
                 .tag(AimTab.timeline)
 
