@@ -1,6 +1,6 @@
 # aim
 
-孕期 AI Agent App：以 Today、计划和家庭协作为主入口，Agent 通过受控 Tools 贯穿业务功能。
+孕期 AI Agent App：以「孕期」（今天总控 + 可进入的完整时间线）、资料库、AIM 与家庭为四个主入口，Agent 通过受控 Tools 贯穿业务功能。
 
 ## 当前状态
 
