@@ -1,10 +1,17 @@
 import SwiftUI
 
 struct AimToastMessage: Equatable, Identifiable {
+    /// 成功打绿勾，失败打陶土色感叹号——同一条深底 toast 不能靠文案区分成败。
+    enum Style {
+        case success
+        case failure
+    }
+
     let id = UUID()
     let text: String
     var undoTitle: String = "撤销"
     var accessibilityIdentifier: String = "aim-toast"
+    var style: Style = .success
     var undo: (() -> Void)?
 
     static func == (lhs: AimToastMessage, rhs: AimToastMessage) -> Bool { lhs.id == rhs.id }
@@ -32,9 +39,9 @@ private struct AimToastModifier: ViewModifier {
 
     private func toast(_ message: AimToastMessage) -> some View {
         HStack(spacing: AimMetrics.space12) {
-            Image(systemName: "checkmark")
+            Image(systemName: message.style == .failure ? "exclamationmark.circle" : "checkmark")
                 .font(.footnote.weight(.semibold))
-                .foregroundStyle(Color.aimSuccess)
+                .foregroundStyle(message.style == .failure ? Color.aimDanger : Color.aimSuccess)
             Text(message.text)
                 .font(.subheadline)
                 .foregroundStyle(Color.aimTextOnAccent)
