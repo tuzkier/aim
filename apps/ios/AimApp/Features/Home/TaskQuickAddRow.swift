@@ -15,6 +15,8 @@ struct TaskQuickAddRow: View {
     let onSubmit: () -> Void
 
     @FocusState private var isFocused: Bool
+    /// 「+」图标随正文字号缩放，占位宽度也得跟着放大，否则 AX 大字号下会撞进「添加待办」。
+    @ScaledMetric(relativeTo: .body) private var iconWidth: CGFloat = AimMetrics.checkboxSize
     /// 回车时系统默认会收键盘、收回焦点，提交成功后 List 插入新行还会再收一次。
     /// 从回车到提交结束这段时间里，焦点一丢就要回来，否则「连着记几条」就断了。
     @State private var holdsFocus = false
@@ -25,12 +27,12 @@ struct TaskQuickAddRow: View {
                 if isSubmitting {
                     ProgressView()
                         .controlSize(.small)
-                        .frame(width: AimMetrics.checkboxSize, height: AimMetrics.checkboxSize)
+                        .frame(width: iconWidth, height: iconWidth)
                 } else {
                     Image(systemName: "plus")
                         .font(.body)
                         .foregroundStyle(Color.aimTextTertiary)
-                        .frame(width: AimMetrics.checkboxSize)
+                        .frame(width: iconWidth)
                 }
 
                 if isEditing {
@@ -64,7 +66,7 @@ struct TaskQuickAddRow: View {
                 Text(errorMessage)
                     .font(.footnote)
                     .foregroundStyle(Color.aimDanger)
-                    .padding(.leading, AimMetrics.checkboxSize + AimMetrics.space12)
+                    .padding(.leading, iconWidth + AimMetrics.space12)
             }
         }
         .padding(.vertical, AimMetrics.space8)

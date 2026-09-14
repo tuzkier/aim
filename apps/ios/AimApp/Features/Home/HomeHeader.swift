@@ -13,6 +13,9 @@ struct HomeHeader: View {
     let onNewRecord: () -> Void
     let onAgent: () -> Void
 
+    /// 圆钮里的图标随动态字号放大，容器也得跟着长，否则 AX 大字号下两颗钮会叠在一起。
+    @ScaledMetric(relativeTo: .subheadline) private var circleSize: CGFloat = AimMetrics.circleButtonSize
+
     var body: some View {
         HStack(alignment: .bottom) {
             Button(action: onOpenTimeline) {
@@ -60,7 +63,7 @@ struct HomeHeader: View {
         Image(systemName: symbol)
             .font(.subheadline)
             .foregroundStyle(tinted ? Color.aimAccent : Color.aimTextSecondary)
-            .frame(width: AimMetrics.circleButtonSize, height: AimMetrics.circleButtonSize)
+            .frame(width: circleSize, height: circleSize)
             .background(tinted ? Color.aimAccentSoft : Color.aimSurface, in: Circle())
             .overlay {
                 if !tinted { Circle().stroke(Color.aimSeparator, lineWidth: 1) }
