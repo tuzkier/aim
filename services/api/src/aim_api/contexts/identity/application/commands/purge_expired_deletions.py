@@ -65,6 +65,12 @@ async def _purge_one(session: AsyncSession, account_id: UUID) -> PurgeSummary:
     await session.execute(
         text("DELETE FROM family_invitations WHERE invited_by = :id"), {"id": account_id}
     )
+    # 他的私密记录：只有作者本人能看，人没了就没人能看，留着无意义。
+    # 全家可见的记录属于家庭，跟着家庭走（见下面的分支）。
+    await session.execute(
+        text("DELETE FROM records WHERE author_account_id = :id AND visibility = 'private'"),
+        {"id": account_id},
+    )
 
     family_ids = (
         (
@@ -82,8 +88,10 @@ async def _purge_one(session: AsyncSession, account_id: UUID) -> PurgeSummary:
             (
                 await session.execute(
                     text(
+                        # 只算已加入的：邀请了但没接受的人是 pending 行，
+                        # 既不该挡住整家删除，更不该继承 created_by。
                         "SELECT account_id FROM family_members "
-                        "WHERE family_id = :family AND account_id <> :id "
+                        "WHERE family_id = :family AND account_id <> :id AND status = 'active' "
                         "ORDER BY joined_at NULLS LAST, invited_at NULLS LAST"
                     ),
                     {"family": family_id, "id": account_id},

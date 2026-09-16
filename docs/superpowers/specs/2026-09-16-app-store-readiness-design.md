@@ -42,7 +42,7 @@ active ──申请注销──▶ pending_deletion ──30 天后 purge──�
 1. 删除其 `agent_sessions`（外键已 CASCADE）。
 2. 删除其发出的 `family_invitations`（`invited_by` 为 RESTRICT，必须先删）；`accepted_account_id` 已 SET NULL。
 3. 对其所在的每个家庭：
-   - 若家庭还有其它成员：`tasks.assigned_member_id = NULL`（该账号的）；若 `families.created_by` 是该账号，改为加入时间最早的其它成员；`records.author_account_id`、`pregnancies.created_by`、`pregnancy_facts.recorded_by_account_id`、`task_changes.changed_by_actor_id` 这些无外键的审计字段**保留原 UUID**——客户端只用它判断「能否编辑」，从不展示作者，保留即等价于匿名。
+   - 若家庭还有其它**已加入**（active）成员：`tasks.assigned_member_id = NULL`（该账号的）；他的 `visibility = private` 记录删除（没有别人能看，保留无意义）；`family` 记录保留；若 `families.created_by` 是该账号，改为加入时间最早的其它成员；`records.author_account_id`、`pregnancies.created_by`、`pregnancy_facts.recorded_by_account_id`、`task_changes.changed_by_actor_id` 这些无外键的审计字段**保留原 UUID**——客户端只用它判断「能否编辑」，从不展示作者，保留即等价于匿名。
    - 若该账号是家庭唯一成员：删除该家庭的 pregnancies、pregnancy_facts、records、plans、tasks、task_changes、family_invitations，再删家庭本身。
 4. 删除 `family_members`（CASCADE）与 `accounts` 行。
 

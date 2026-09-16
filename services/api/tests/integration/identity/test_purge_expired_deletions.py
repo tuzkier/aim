@@ -154,11 +154,49 @@ def test_family_with_other_members_is_kept_and_anonymized() -> None:
             headers=mother_headers,
         )
         assert assign.status_code == 200, assign.text
+        # 她还写了一条私密记录和一条全家可见的记录。
+        for visibility in ("private", "family"):
+            record = client.post(
+                f"/api/v1/pregnancies/{mother['pregnancy_id']}/records",
+                json={
+                    "type": "note",
+                    "occurred_at": "2026-09-16T08:00:00Z",
+                    "visibility": visibility,
+                    "title": visibility,
+                    "content": "c",
+                    "structured_data": {},
+                },
+                headers=mother_headers,
+            )
+            assert record.status_code == 201, record.text
         _request_deletion(client, mother)
 
     summaries = asyncio.run(_run_purge(_later()))
     mine = [s for s in summaries if s.account_id == UUID(mother["account_id"])]
     assert mine and mine[0].families_anonymized == 1 and mine[0].families_deleted == 0
+
+    # 私密记录没人能再看，删掉；全家可见的记录留给家里人。
+    author = UUID(mother["account_id"])
+    assert (
+        asyncio.run(
+            _count(
+                "SELECT count(*) FROM records "
+                "WHERE author_account_id = :author AND visibility = 'private'",
+                author=author,
+            )
+        )
+        == 0
+    )
+    assert (
+        asyncio.run(
+            _count(
+                "SELECT count(*) FROM records "
+                "WHERE author_account_id = :author AND visibility = 'family'",
+                author=author,
+            )
+        )
+        == 1
+    )
 
     family_id = UUID(mother["family_id"])
     assert (
@@ -184,6 +222,38 @@ def test_family_with_other_members_is_kept_and_anonymized() -> None:
                 "SELECT count(*) FROM tasks WHERE id = :id AND assigned_member_id IS NULL",
                 id=UUID(task["id"]),
             )
+        )
+        == 1
+    )
+
+
+def test_pending_invitee_does_not_count_as_a_remaining_member() -> None:
+    with TestClient(create_app(settings=get_settings())) as client:
+        # 爸爸先注册，这样邀请他时会立刻写入一条 pending 的成员行。
+        father = _register(client, _phone(), role="father")
+        mother = _register(client, _phone(), due_date="2027-03-01")
+        invite = client.post(
+            f"/api/v1/families/{mother['family_id']}/invitations",
+            json={"invitee_phone": father["phone"], "role": "father"},
+            headers=_auth(mother["token"]),
+        )
+        assert invite.status_code == 201, invite.text
+        # 爸爸始终没有接受。
+        _request_deletion(client, mother)
+
+    summaries = asyncio.run(_run_purge(_later()))
+    mine = [s for s in summaries if s.account_id == UUID(mother["account_id"])]
+    assert mine and mine[0].families_deleted == 1 and mine[0].families_anonymized == 0
+
+    assert (
+        asyncio.run(
+            _count("SELECT count(*) FROM families WHERE id = :id", id=UUID(mother["family_id"]))
+        )
+        == 0
+    )
+    assert (
+        asyncio.run(
+            _count("SELECT count(*) FROM accounts WHERE id = :id", id=UUID(father["account_id"]))
         )
         == 1
     )
