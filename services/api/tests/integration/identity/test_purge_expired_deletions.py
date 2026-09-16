@@ -63,6 +63,16 @@ async def _count(sql: str, **params) -> int:
         await database.dispose()
 
 
+async def _execute(sql: str, **params) -> None:
+    database = create_database(get_settings().database_url)
+    try:
+        async with database.session() as session:
+            await session.execute(text(sql), params)
+            await session.commit()
+    finally:
+        await database.dispose()
+
+
 def _later() -> datetime:
     return datetime.now(UTC) + timedelta(days=31)
 
@@ -272,3 +282,81 @@ def test_accounts_still_in_grace_and_dry_run_are_untouched() -> None:
     dry = asyncio.run(_run_purge(_later(), dry_run=True))
     assert any(s.account_id == account_id for s in dry)
     assert asyncio.run(_count("SELECT count(*) FROM accounts WHERE id = :id", id=account_id)) == 1
+
+
+def test_agent_tool_invocations_and_incoming_invitations_are_purged() -> None:
+    with TestClient(create_app(settings=get_settings())) as client:
+        session = _register(client, _phone())
+        # 另一家邀请过他：邀请按手机号匹配，没有外键，不主动删就会留下他的手机号。
+        inviter = _register(client, _phone(), due_date="2027-03-01")
+        invite = client.post(
+            f"/api/v1/families/{inviter['family_id']}/invitations",
+            json={"invitee_phone": session["phone"], "role": "father"},
+            headers=_auth(inviter["token"]),
+        )
+        assert invite.status_code == 201, invite.text
+        _request_deletion(client, session)
+
+    # 没有走 Eve 的测试替身，直接按迁移里的列写一段对话和一次工具调用。
+    account_id = UUID(session["account_id"])
+    eve_session_id = f"wrun_{uuid4().hex}"
+    now = datetime.now(UTC)
+    asyncio.run(
+        _execute(
+            "INSERT INTO agent_sessions "
+            "(id, account_id, family_id, eve_session_id, title, created_at, last_active_at) "
+            "VALUES (:id, :account, :family, :eve, :title, :now, :now)",
+            id=uuid4(),
+            account=account_id,
+            family=UUID(session["family_id"]),
+            eve=eve_session_id,
+            title="t",
+            now=now,
+        )
+    )
+    asyncio.run(
+        _execute(
+            "INSERT INTO tool_invocations "
+            "(operation_id, session_id, call_id, tool_name, request_hash, status, "
+            "result_json, created_at) "
+            "VALUES (:op, :session, :call, :tool, :hash, :status, :result, :now)",
+            op=uuid4(),
+            session=eve_session_id,
+            call="call_1",
+            tool="records.create",
+            hash="0" * 64,
+            status="succeeded",
+            result='{"title": "血压偏高"}',
+            now=now,
+        )
+    )
+
+    summaries = asyncio.run(_run_purge(_later()))
+    assert any(s.account_id == account_id for s in summaries)
+
+    assert (
+        asyncio.run(
+            _count(
+                "SELECT count(*) FROM agent_sessions WHERE eve_session_id = :eve",
+                eve=eve_session_id,
+            )
+        )
+        == 0
+    )
+    assert (
+        asyncio.run(
+            _count(
+                "SELECT count(*) FROM tool_invocations WHERE session_id = :eve", eve=eve_session_id
+            )
+        )
+        == 0
+    )
+    assert (
+        asyncio.run(
+            _count(
+                "SELECT count(*) FROM family_invitations WHERE invitee_phone = :phone",
+                phone=session["phone"],
+            )
+        )
+        == 0
+    )

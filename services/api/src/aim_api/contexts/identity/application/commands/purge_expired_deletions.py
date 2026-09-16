@@ -65,6 +65,23 @@ async def _purge_one(session: AsyncSession, account_id: UUID) -> PurgeSummary:
     await session.execute(
         text("DELETE FROM family_invitations WHERE invited_by = :id"), {"id": account_id}
     )
+    # 别人发给他的邀请按手机号匹配，没有外键，不主动删就会一直留着他的手机号。
+    phone = await session.scalar(
+        text("SELECT phone FROM accounts WHERE id = :id"), {"id": account_id}
+    )
+    await session.execute(
+        text("DELETE FROM family_invitations WHERE invitee_phone = :phone"), {"phone": phone}
+    )
+    # AIM 工具调用的结果（tool_invocations.result_json）里有记录、待办这些健康内容，
+    # 它只靠 session_id 与 agent_sessions.eve_session_id 关联，没有外键，
+    # 得赶在 agent_sessions 随账号 CASCADE 之前删，否则就成了没人认领的孤儿。
+    await session.execute(
+        text(
+            "DELETE FROM tool_invocations WHERE session_id IN "
+            "(SELECT eve_session_id FROM agent_sessions WHERE account_id = :id)"
+        ),
+        {"id": account_id},
+    )
     # 他的私密记录：只有作者本人能看，人没了就没人能看，留着无意义。
     # 全家可见的记录属于家庭，跟着家庭走（见下面的分支）。
     await session.execute(
@@ -155,6 +172,14 @@ async def _purge_one(session: AsyncSession, account_id: UUID) -> PurgeSummary:
             )
             await session.execute(
                 text("DELETE FROM family_invitations WHERE family_id = :family"),
+                {"family": family_id},
+            )
+            # 家庭里的对话会话可能是早已离开的成员留下的，同样先清它们的工具调用。
+            await session.execute(
+                text(
+                    "DELETE FROM tool_invocations WHERE session_id IN "
+                    "(SELECT eve_session_id FROM agent_sessions WHERE family_id = :family)"
+                ),
                 {"family": family_id},
             )
             await session.execute(
