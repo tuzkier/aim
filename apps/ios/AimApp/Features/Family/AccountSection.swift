@@ -129,6 +129,8 @@ private struct DeleteAccountSheet: View {
             }
         }
         .presentationDetents([.medium])
+        // 提交中下滑关掉 sheet，请求照样发出去，人却以为没提交：和「取消」一样，此时不许关。
+        .interactiveDismissDisabled(isSubmitting)
     }
 
     private func submit() async {

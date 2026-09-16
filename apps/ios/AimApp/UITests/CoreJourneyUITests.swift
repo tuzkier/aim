@@ -820,7 +820,7 @@ final class CoreJourneyUITests: XCTestCase {
         app.launchArguments = ["-reset-session"]
         app.launch()
 
-        let phone = registerNewAccountReturningPhone(in: app)
+        let phone = registerNewAccount(in: app)
         completePregnancySetup(in: app)
 
         let familyTab = app.tabBars.buttons["家庭"]
@@ -964,10 +964,6 @@ final class CoreJourneyUITests: XCTestCase {
         return phone
     }
 
-    private func registerNewAccountReturningPhone(in app: XCUIApplication) -> String {
-        registerNewAccount(in: app)
-    }
-
     /// 同意开关。SwiftUI 的 Toggle 通常直接暴露为 switch，标识符挂在它身上；
     /// 若标识符落在外层容器上，则退回到容器里的第一个 switch。
     private func consentSwitch(in app: XCUIApplication) -> XCUIElement {
@@ -995,7 +991,6 @@ final class CoreJourneyUITests: XCTestCase {
         let target = knobFrame.isNull
             ? CGPoint(x: rowFrame.maxX - 30, y: rowFrame.midY)
             : CGPoint(x: knobFrame.midX, y: knobFrame.midY)
-        print("acceptTerms: row=\(rowFrame) knob=\(knobFrame) tap=\(target)")
         app.coordinate(withNormalizedOffset: .zero)
             .withOffset(CGVector(dx: target.x, dy: target.y))
             .tap()
