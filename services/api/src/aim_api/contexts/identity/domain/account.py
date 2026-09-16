@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from uuid import UUID
 
@@ -10,6 +10,13 @@ from uuid import UUID
 class AccountStatus(StrEnum):
     active = "active"
     disabled = "disabled"
+    #: 用户申请了注销。缓冲期内登录即撤销；到期由清理脚本真正删除。
+    pending_deletion = "pending_deletion"
+
+
+#: 注销缓冲期。App Store 要求 App 内能发起注销，但不要求立即删除；
+#: 留 30 天给误操作和「删了才想起来资料还在里面」。
+DELETION_GRACE_PERIOD = timedelta(days=30)
 
 
 def normalize_phone(phone: str) -> str:
@@ -31,6 +38,7 @@ class Account:
     password_hash: str = ""
     status: AccountStatus = AccountStatus.active
     created_at: datetime | None = None
+    deletion_requested_at: datetime | None = None
 
     @classmethod
     def register(
@@ -51,3 +59,26 @@ class Account:
     def ensure_active(self) -> None:
         if self.status is not AccountStatus.active:
             raise ValueError("disabled account cannot perform family operations")
+
+    def request_deletion(self, *, now: datetime) -> None:
+        # 重复申请不刷新时间：否则用户每点一次，30 天就重新起算。
+        if self.status is AccountStatus.pending_deletion:
+            return
+        self.status = AccountStatus.pending_deletion
+        self.deletion_requested_at = now
+
+    def cancel_deletion(self) -> None:
+        self.status = AccountStatus.active
+        self.deletion_requested_at = None
+
+    def deletion_is_expired(self, *, now: datetime) -> bool:
+        if self.status is not AccountStatus.pending_deletion or self.deletion_requested_at is None:
+            return False
+        return now >= self.deletion_requested_at + DELETION_GRACE_PERIOD
+
+    def can_log_in(self, *, now: datetime) -> bool:
+        if self.status is AccountStatus.active:
+            return True
+        if self.status is AccountStatus.pending_deletion:
+            return not self.deletion_is_expired(now=now)
+        return False

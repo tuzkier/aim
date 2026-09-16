@@ -38,6 +38,7 @@ class SqlAlchemyFamilyRepository:
                 status=account.status.value,
                 password_hash=account.password_hash,
                 created_at=account.created_at,
+                deletion_requested_at=account.deletion_requested_at,
             )
             self.session.add(model)
             await self.session.flush()
@@ -53,6 +54,14 @@ class SqlAlchemyFamilyRepository:
     async def get_account_by_phone(self, phone: str) -> Account | None:
         model = await self.session.scalar(select(AccountModel).where(AccountModel.phone == phone))
         return _to_account(model) if model else None
+
+    async def save_account_status(self, account: Account) -> None:
+        model = await self.session.get(AccountModel, account.id)
+        if model is None:
+            raise ValueError("account does not exist")
+        model.status = account.status.value
+        model.deletion_requested_at = account.deletion_requested_at
+        await self.session.flush()
 
     async def get_first_family_for_account(self, account_id: UUID) -> Family | None:
         family_id = await self.session.scalar(
@@ -193,6 +202,7 @@ def _to_account(model: AccountModel) -> Account:
         password_hash=model.password_hash,
         status=AccountStatus(model.status),
         created_at=model.created_at,
+        deletion_requested_at=model.deletion_requested_at,
     )
 
 
