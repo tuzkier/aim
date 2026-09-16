@@ -289,7 +289,11 @@ async def request_deletion(payload: DeletionRequest, request: Request) -> Respon
         family_uow = SqlAlchemyFamilyUnitOfWork(session)
         account = await family_uow.repository.get_account(actor.account_id)
         hashed = account.password_hash if account is not None else _DUMMY_HASH
-        if account is None or not verify_password(payload.password, hashed):
+        # 先算哈希再看状态：停用账号也得花同样的时间，不然响应时间就把状态说出来了。
+        password_ok = verify_password(payload.password, hashed)
+        # 停用账号按「密码错」处理：否则它申请注销、再在 30 天内登录，
+        # 就会经由「撤销注销」把自己变回 active。
+        if account is None or account.status is AccountStatus.disabled or not password_ok:
             raise HTTPException(status_code=401, detail=LOGIN_FAILURE)
         account.request_deletion(now=datetime.now(UTC))
         await family_uow.repository.save_account_status(account)

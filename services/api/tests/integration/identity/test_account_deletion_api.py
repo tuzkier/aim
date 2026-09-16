@@ -41,6 +41,37 @@ def _backdate_deletion(account_id: str, days: int) -> None:
     engine.dispose()
 
 
+def _disable_account(account_id: str) -> None:
+    url = get_settings().database_url.replace("+asyncpg", "+psycopg", 1)
+    engine = create_engine(url)
+    with engine.begin() as conn:
+        conn.execute(
+            text("UPDATE accounts SET status = 'disabled' WHERE id = :id"),
+            {"id": UUID(account_id)},
+        )
+    engine.dispose()
+
+
+def test_disabled_account_cannot_request_deletion_to_reactivate_itself() -> None:
+    """停用账号申请注销再登录，会经由「撤销注销」变回 active。这条路必须堵死。"""
+    with TestClient(create_app(settings=get_settings())) as client:
+        phone = _phone()
+        session = _register(client, phone)
+        _disable_account(session["account_id"])
+
+        response = client.post(
+            "/api/v1/auth/deletion-request",
+            json={"password": PASSWORD},
+            headers=_auth(session["token"]),
+        )
+        assert response.status_code == 401
+        assert LOGIN_FAILURE in response.text
+
+        login = client.post("/api/v1/auth/login", json={"phone": phone, "password": PASSWORD})
+        assert login.status_code == 401
+        assert LOGIN_FAILURE in login.text
+
+
 def test_deletion_request_needs_the_password() -> None:
     with TestClient(create_app(settings=get_settings())) as client:
         session = _register(client, _phone())

@@ -106,9 +106,13 @@ async def ensure_account_active(database: object, account_id: UUID) -> None:
         status_value = await session.scalar(
             text("SELECT status FROM accounts WHERE id = :id"), {"id": account_id}
         )
-    # 查不到行的票放行：`POST /api/v1/families` 至今仍会为一张合法签名的票
-    # 按需建账号（免密时代留下的路径，集成测试大量依赖它）。这里只拦
-    # 「存在但不是 active」的账号——停用和注销缓冲期——那才是这层检查要堵的洞。
+    # 查不到行的票放行。一张验得过签名却查不到账号的票只有两种来路：
+    #   (a) 测试为尚不存在的账号直接签票，再靠 `POST /api/v1/families` 按需建账号；
+    #   (b) 账号已被清理脚本删掉、票却还没过期。
+    # (b) 不可能发生：任何票都签发在注销申请之前，而 SESSION_TTL_SECONDS 不超过
+    # DELETION_GRACE_PERIOD，所以票一定先于清理过期。这个不等式由
+    # tests/platform/test_session_ttl_within_deletion_grace.py 守着；改任一常量前先看它。
+    # 于是这里只拦「存在但不是 active」的账号——停用和注销缓冲期。
     if status_value is not None and status_value != "active":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="account is not active"
