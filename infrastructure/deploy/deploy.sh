@@ -55,6 +55,9 @@ npm ci --prefix apps/agent-web
 npm run build --prefix apps/agent-web
 
 say "上传前端产物到 /opt/aim/web"
+# 三个临时包都在这一个 trap 里清；先注册再 mktemp，中途失败也不会留下文件。
+# 变量用 ${X:-}：set -u 下还没赋值的名字直接展开会让 trap 自己报错。
+trap 'rm -f "${TARBALL:-}" "${WEB_TARBALL:-}" "${LEGAL_TARBALL:-}"' EXIT
 WEB_TARBALL="$(mktemp -t aim-web)"
 tar -czf "$WEB_TARBALL" -C apps/agent-web/dist .
 scp_ -q "$WEB_TARBALL" "${REMOTE}:/tmp/aim-web.tar.gz"
@@ -69,7 +72,6 @@ REMOTE_SCRIPT
 
 say "上传法律页面到 /opt/aim/legal"
 LEGAL_TARBALL="$(mktemp -t aim-legal)"
-trap 'rm -f "$TARBALL" "$WEB_TARBALL" "$LEGAL_TARBALL"' EXIT
 tar -czf "$LEGAL_TARBALL" -C apps/legal .
 scp_ -q "$LEGAL_TARBALL" "${REMOTE}:/tmp/aim-legal.tar.gz"
 ssh_ "$REMOTE" bash -euo pipefail <<'REMOTE_SCRIPT'
