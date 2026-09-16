@@ -3,6 +3,7 @@ import SwiftUI
 struct OnboardingView: View {
     @Environment(AppSessionStore.self) private var session
     @State private var store = OnboardingStore()
+    @State private var legalPage: LegalPage?
 
     var body: some View {
         NavigationStack {
@@ -64,6 +65,31 @@ struct OnboardingView: View {
                     }
                 }
 
+                if store.form.mode == .register {
+                    Section {
+                        Toggle(isOn: $store.form.agreedToTerms) {
+                            // 两个书名号各自可点；Toggle 的标签区域点击不改变开关状态，
+                            // 所以链接按钮放在标签里不会误触。
+                            HStack(spacing: 0) {
+                                Text("我已阅读并同意")
+                                Button("《用户协议》") { legalPage = .terms }
+                                    .buttonStyle(.plain)
+                                    .foregroundStyle(Color.aimAccent)
+                                    .accessibilityIdentifier("auth-open-terms")
+                                Text("和")
+                                Button("《隐私政策》") { legalPage = .privacy }
+                                    .buttonStyle(.plain)
+                                    .foregroundStyle(Color.aimAccent)
+                                    .accessibilityIdentifier("auth-open-privacy")
+                            }
+                            .font(.footnote)
+                        }
+                        .tint(Color.aimAccent)
+                        .accessibilityIdentifier("auth-consent")
+                    }
+                    .listRowBackground(Color.clear)
+                }
+
                 Section {
                     Button {
                         Task { await store.submit(using: session) }
@@ -85,6 +111,7 @@ struct OnboardingView: View {
             .navigationTitle("欢迎来到 Aim")
             .scrollContentBackground(.hidden)
             .background(Color.aimCanvas)
+            .legalPageSheet($legalPage, gateway: session.environment.baseURL)
         }
     }
 }

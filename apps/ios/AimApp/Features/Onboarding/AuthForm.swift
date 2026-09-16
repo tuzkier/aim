@@ -31,6 +31,8 @@ struct AuthForm: Equatable, Sendable {
     /// 只有注册要选；登录时角色早就定下来了。
     var role: FamilyRole?
     var nickname = ""
+    /// 注册前必须勾选「已阅读并同意用户协议与隐私政策」。
+    var agreedToTerms = false
 
     /// 去掉用户敲的空格和连字符，和后端 `normalize_phone` 对齐。
     var normalizedPhone: String { phone.filter(\.isNumber) }
@@ -48,7 +50,7 @@ struct AuthForm: Equatable, Sendable {
             // 登录不校验长度：密码规则以后变严时，老密码仍然要能登进来。
             return !password.isEmpty
         case .register:
-            return password.count >= Self.minPasswordLength && role != nil
+            return password.count >= Self.minPasswordLength && role != nil && agreedToTerms
         }
     }
 }

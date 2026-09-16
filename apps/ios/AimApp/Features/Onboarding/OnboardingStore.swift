@@ -124,6 +124,7 @@ final class OnboardingStore {
         }
         if form.password.isEmpty { return "请输入密码" }
         if form.mode == .register, form.role == nil { return "请选择你在家里的身份" }
+        if form.mode == .register, !form.agreedToTerms { return "请先阅读并同意用户协议和隐私政策" }
         return "请检查填写的内容"
     }
 }

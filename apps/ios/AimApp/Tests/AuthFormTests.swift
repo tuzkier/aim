@@ -12,9 +12,12 @@ final class AuthFormTests: XCTestCase {
         phone: String = "13800000002",
         password: String = "a-good-password",
         role: FamilyRole? = .mother,
-        nickname: String = ""
+        nickname: String = "",
+        agreedToTerms: Bool = true
     ) -> AuthForm {
-        AuthForm(mode: mode, phone: phone, password: password, role: role, nickname: nickname)
+        AuthForm(
+            mode: mode, phone: phone, password: password, role: role, nickname: nickname,
+            agreedToTerms: agreedToTerms)
     }
 
     func testAValidRegistrationCanBeSubmitted() {
@@ -62,5 +65,15 @@ final class AuthFormTests: XCTestCase {
     func testBlankNicknameIsSentAsNothing() {
         XCTAssertNil(form(nickname: "   ").submittedNickname)
         XCTAssertEqual(form(nickname: " 婆婆 ").submittedNickname, "婆婆")
+    }
+
+    /// App Store 与个人信息保护法都要求注册前明确同意。登录不用再点一次。
+    func testRegistrationRequiresAgreeingToTerms() {
+        XCTAssertFalse(form(agreedToTerms: false).canSubmit)
+        XCTAssertTrue(form(agreedToTerms: true).canSubmit)
+    }
+
+    func testLoginDoesNotRequireAgreeingAgain() {
+        XCTAssertTrue(form(mode: .login, role: nil, agreedToTerms: false).canSubmit)
     }
 }
