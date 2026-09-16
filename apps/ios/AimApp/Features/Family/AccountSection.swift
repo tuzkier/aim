@@ -4,14 +4,15 @@ import SwiftUI
 ///
 /// 注销走两步确认：先说清 30 天规则，再要一次密码。密码不是为了防别人——
 /// 手机已经解锁了——而是为了防手滑：这是全 App 唯一一个会让家人也丢数据的操作。
+///
+/// 弹层不挂在这里。`.sheet` / `.confirmationDialog` 挂在 `List` 里的 `Section` 上时，
+/// 密码页会在确认框收起的同一帧被 List 的重绘打断——弹上来又立刻退回去。
+/// 所以状态由 `FamilyView` 持有，弹层用 `accountPresentations` 挂在 `NavigationStack` 内、
+/// `List` 之外，和其它几张 sheet 一个位置。
 struct AccountSection: View {
     @Environment(AppSessionStore.self) private var session
-    let repository: BusinessRepositoryProtocol?
-    let gateway: URL
-
-    @State private var legalPage: LegalPage?
-    @State private var confirmingDeletion = false
-    @State private var enteringPassword = false
+    @Binding var legalPage: LegalPage?
+    @Binding var confirmingDeletion: Bool
 
     var body: some View {
         Section("账号") {
@@ -31,27 +32,59 @@ struct AccountSection: View {
             }
             .accessibilityIdentifier("account-delete")
         }
-        .legalPageSheet($legalPage, gateway: gateway)
-        .confirmationDialog(
-            "注销账号",
-            isPresented: $confirmingDeletion,
-            titleVisibility: .visible
-        ) {
-            // confirmationDialog 的按钮桥接成 UIAlertAction，accessibilityIdentifier 会丢；
-            // XCUITest 要用标题查：app.buttons["继续注销"]。
-            Button("继续注销", role: .destructive) { enteringPassword = true }
-                .accessibilityIdentifier("account-delete-confirm")
-            Button("取消", role: .cancel) {}
-        } message: {
-            Text("账号会立即停用。30 天内重新登录可以撤销；30 天后账号和你的个人数据将被删除。")
-        }
-        .sheet(isPresented: $enteringPassword) {
-            DeleteAccountSheet(repository: repository) {
-                enteringPassword = false
-                session.clear()
-                session.signOutNotice = "注销申请已提交。30 天内重新登录可撤销，之后数据将被删除。"
+    }
+}
+
+/// 「账号」分组的三张弹层：法律页、注销确认框、密码页。
+private struct AccountPresentations: ViewModifier {
+    @Environment(AppSessionStore.self) private var session
+    let repository: BusinessRepositoryProtocol?
+    let gateway: URL
+    @Binding var legalPage: LegalPage?
+    @Binding var confirmingDeletion: Bool
+    @Binding var enteringPassword: Bool
+
+    func body(content: Content) -> some View {
+        content
+            .legalPageSheet($legalPage, gateway: gateway)
+            .confirmationDialog(
+                "注销账号",
+                isPresented: $confirmingDeletion,
+                titleVisibility: .visible
+            ) {
+                // confirmationDialog 的按钮桥接成 UIAlertAction，accessibilityIdentifier 会丢；
+                // XCUITest 要用标题查：app.buttons["继续注销"]。
+                Button("继续注销", role: .destructive) { enteringPassword = true }
+                    .accessibilityIdentifier("account-delete-confirm")
+                Button("取消", role: .cancel) {}
+            } message: {
+                Text("账号会立即停用。30 天内重新登录可以撤销；30 天后账号和你的个人数据将被删除。")
             }
-        }
+            .sheet(isPresented: $enteringPassword) {
+                DeleteAccountSheet(repository: repository) {
+                    enteringPassword = false
+                    session.clear()
+                    session.signOutNotice = "注销申请已提交。30 天内重新登录可撤销，之后数据将被删除。"
+                }
+            }
+    }
+}
+
+extension View {
+    func accountPresentations(
+        repository: BusinessRepositoryProtocol?,
+        gateway: URL,
+        legalPage: Binding<LegalPage?>,
+        confirmingDeletion: Binding<Bool>,
+        enteringPassword: Binding<Bool>
+    ) -> some View {
+        modifier(AccountPresentations(
+            repository: repository,
+            gateway: gateway,
+            legalPage: legalPage,
+            confirmingDeletion: confirmingDeletion,
+            enteringPassword: enteringPassword
+        ))
     }
 }
 

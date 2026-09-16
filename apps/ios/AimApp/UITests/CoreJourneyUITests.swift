@@ -813,6 +813,105 @@ final class CoreJourneyUITests: XCTestCase {
             "点回历史对话，内容应当被重放回来")
     }
 
+    /// App Store 审核指南 5.1.1(v)：能注册就必须能在 App 内注销。
+    /// 30 天缓冲：注销后马上用同一账号登录，应当恢复并提示。
+    func testAccountCanBeDeletedAndRestoredWithinGracePeriod() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-reset-session"]
+        app.launch()
+
+        let phone = registerNewAccountReturningPhone(in: app)
+        completePregnancySetup(in: app)
+
+        let familyTab = app.tabBars.buttons["家庭"]
+        XCTAssertTrue(familyTab.waitForExistence(timeout: 15))
+        familyTab.tap()
+
+        let deleteButton = app.buttons["account-delete"]
+        reveal(deleteButton, in: app)
+        deleteButton.tap()
+        // confirmationDialog 的按钮桥接成 UIAlertAction，accessibilityIdentifier 会丢，只能按标题查。
+        // 同一标题在树里会出现不止一次（sheet 本身也带一份），要 firstMatch。
+        var confirm = app.sheets.buttons["继续注销"].firstMatch
+        if !confirm.waitForExistence(timeout: 5) {
+            confirm = app.buttons["继续注销"].firstMatch
+        }
+        XCTAssertTrue(confirm.waitForExistence(timeout: 5), "应当弹出注销确认")
+        confirm.tap()
+
+        let passwordField = app.secureTextFields["account-delete-password"]
+        XCTAssertTrue(passwordField.waitForExistence(timeout: 5))
+        passwordField.tap()
+        passwordField.typeText("aim-test-password")
+        let submitDeletion = app.buttons["account-delete-submit"]
+        XCTAssertTrue(submitDeletion.waitForExistence(timeout: 5))
+        submitDeletion.tap()
+
+        // 回到登录页，带一句提示。
+        let notice = app.staticTexts["auth-notice"]
+        XCTAssertTrue(notice.waitForExistence(timeout: 10), "注销后应回到登录页并提示")
+
+        // 缓冲期内登录 → 恢复。
+        selectLoginMode(in: app)
+        let phoneField = app.textFields["auth-phone"]
+        XCTAssertTrue(phoneField.waitForExistence(timeout: 5))
+        phoneField.tap()
+        phoneField.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 20))
+        phoneField.typeText(phone)
+        let password = app.secureTextFields["auth-password"]
+        password.tap()
+        password.typeText("aim-test-password")
+        dismissKeyboard(in: app)
+        let login = app.buttons["auth-submit"]
+        XCTAssertTrue(login.waitForExistence(timeout: 5))
+        XCTAssertTrue(login.isEnabled, "登录模式不需要勾同意")
+        login.tap()
+
+        let welcome = app.descendants(matching: .any).matching(identifier: "home-welcome-back").firstMatch
+        XCTAssertTrue(welcome.waitForExistence(timeout: 15), "缓冲期内登录应提示注销已取消")
+    }
+
+    /// 未勾选同意时不能注册。
+    func testRegistrationIsBlockedUntilTermsAreAccepted() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-reset-session"]
+        app.launch()
+
+        let phone = app.textFields["auth-phone"]
+        XCTAssertTrue(phone.waitForExistence(timeout: 10))
+        phone.tap()
+        phone.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 20))
+        phone.typeText("139\(Int.random(in: 10_000_000...99_999_999))")
+        let password = app.secureTextFields["auth-password"]
+        password.tap()
+        password.typeText("aim-test-password")
+        dismissKeyboard(in: app)
+        app.buttons["auth-role"].tap()
+        let mother = app.buttons["妈妈"]
+        XCTAssertTrue(mother.waitForExistence(timeout: 5))
+        mother.tap()
+
+        let submit = app.buttons["auth-submit"]
+        XCTAssertTrue(submit.waitForExistence(timeout: 5))
+        XCTAssertFalse(submit.isEnabled, "没勾同意不该能注册")
+        acceptTerms(in: app)
+        let enabled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isEnabled == true"), object: submit)
+        XCTAssertEqual(XCTWaiter.wait(for: [enabled], timeout: 3), .completed, "勾了同意就该能注册")
+    }
+
+    /// 切到登录模式。segmented picker 的段在无障碍树里是 button；
+    /// 先从带标识符的分段控件里找，找不到再退回到全局第一个「登录」按钮。
+    private func selectLoginMode(in app: XCUIApplication) {
+        let segment = app.segmentedControls["auth-mode-picker"].buttons["登录"]
+        if segment.waitForExistence(timeout: 3) {
+            segment.tap()
+            return
+        }
+        let fallback = app.buttons["登录"].firstMatch
+        XCTAssertTrue(fallback.waitForExistence(timeout: 3), "登录页应当能切到登录模式")
+        fallback.tap()
+    }
+
     /// 注册一个全新账号。
     ///
     /// 服务端的 `demo-session` 免密入口已经删除，所有用例都要走真实注册：
@@ -820,19 +919,22 @@ final class CoreJourneyUITests: XCTestCase {
     ///
     /// 输入密码后必须先收键盘：键盘会盖住底部的提交按钮，而滑动去够它
     /// 又会和键盘的滚动打架。收掉之后整个表单就在一屏里。
+    @discardableResult
     private func registerNewAccount(
         in app: XCUIApplication,
         role: String = "妈妈",
         nickname: String? = nil
-    ) {
-        let phone = app.textFields["auth-phone"]
-        guard phone.waitForExistence(timeout: 10) else {
-            return XCTFail("注册页没有出现")
+    ) -> String {
+        let phone = "139\(Int.random(in: 10_000_000...99_999_999))"
+        let phoneField = app.textFields["auth-phone"]
+        guard phoneField.waitForExistence(timeout: 10) else {
+            XCTFail("注册页没有出现")
+            return phone
         }
 
-        phone.tap()
-        phone.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 20))
-        phone.typeText("139\(Int.random(in: 10_000_000...99_999_999))")
+        phoneField.tap()
+        phoneField.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 20))
+        phoneField.typeText(phone)
 
         let password = app.secureTextFields["auth-password"]
         password.tap()
@@ -852,10 +954,55 @@ final class CoreJourneyUITests: XCTestCase {
         XCTAssertTrue(option.waitForExistence(timeout: 5), "身份菜单里应当有「\(role)」")
         option.tap()
 
+        // 注册前必须同意协议。Toggle 在无障碍树里是 switch。
+        acceptTerms(in: app)
+
         let submit = app.buttons["auth-submit"]
         XCTAssertTrue(submit.waitForExistence(timeout: 5))
-        XCTAssertTrue(submit.isEnabled, "手机号、密码、身份都填齐后应当可以注册")
+        XCTAssertTrue(submit.isEnabled, "手机号、密码、身份、同意都填齐后应当可以注册")
         submit.tap()
+        return phone
+    }
+
+    private func registerNewAccountReturningPhone(in app: XCUIApplication) -> String {
+        registerNewAccount(in: app)
+    }
+
+    /// 同意开关。SwiftUI 的 Toggle 通常直接暴露为 switch，标识符挂在它身上；
+    /// 若标识符落在外层容器上，则退回到容器里的第一个 switch。
+    private func consentSwitch(in app: XCUIApplication) -> XCUIElement {
+        let direct = app.switches["auth-consent"]
+        if direct.waitForExistence(timeout: 3) { return direct }
+        return app.descendants(matching: .any)
+            .matching(identifier: "auth-consent").firstMatch
+            .switches.firstMatch
+    }
+
+    /// 勾上同意开关。
+    ///
+    /// `auth-consent` 这个 switch 元素的框覆盖整行（标签 + 开关），它的中心点落在
+    /// 标签里的《隐私政策》链接上：按元素 `tap()` 会打开隐私页而不是拨开关。
+    /// 所以这里从来不按元素点，而是算出开关本体的中心：优先用行内嵌套的
+    /// UISwitch（无标识符、贴右侧的那个）的框，没有就取整行右缘往里 30pt。
+    private func acceptTerms(in app: XCUIApplication) {
+        let consent = consentSwitch(in: app)
+        XCTAssertTrue(consent.waitForExistence(timeout: 5), "注册页应当有同意开关")
+        guard (consent.value as? String) != "1" else { return }
+
+        let rowFrame = consent.frame
+        let knob = consent.switches.firstMatch
+        let knobFrame = knob.exists ? knob.frame : .null
+        let target = knobFrame.isNull
+            ? CGPoint(x: rowFrame.maxX - 30, y: rowFrame.midY)
+            : CGPoint(x: knobFrame.midX, y: knobFrame.midY)
+        print("acceptTerms: row=\(rowFrame) knob=\(knobFrame) tap=\(target)")
+        app.coordinate(withNormalizedOffset: .zero)
+            .withOffset(CGVector(dx: target.x, dy: target.y))
+            .tap()
+
+        let flipped = NSPredicate(format: "value == '1'")
+        let flippedExpectation = XCTNSPredicateExpectation(predicate: flipped, object: consent)
+        XCTAssertEqual(XCTWaiter.wait(for: [flippedExpectation], timeout: 3), .completed, "点击后同意开关应当打开")
     }
 
     /// 对话面换成 WebView 之后最该守住的一条：页面能从网关加载起来。

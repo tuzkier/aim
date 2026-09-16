@@ -6,6 +6,10 @@ struct FamilyView: View {
     @State private var showingInvite = false
     @State private var renamingTo: String?
     @State private var editingMyself = false
+    // 「账号」分组的弹层状态。见 AccountSection 的说明：弹层不能挂在 List 里的 Section 上。
+    @State private var legalPage: LegalPage?
+    @State private var confirmingDeletion = false
+    @State private var enteringPassword = false
 
     var body: some View {
         NavigationStack {
@@ -28,6 +32,13 @@ struct FamilyView: View {
             .sheet(isPresented: $editingMyself) {
                 EditMyMembershipSheet(store: store, member: myself)
             }
+            .accountPresentations(
+                repository: store.repository,
+                gateway: session.environment.baseURL,
+                legalPage: $legalPage,
+                confirmingDeletion: $confirmingDeletion,
+                enteringPassword: $enteringPassword
+            )
         }
     }
 
@@ -38,7 +49,7 @@ struct FamilyView: View {
                 familyHeader(family)
                 familyMembers(family)
                 inviteSection
-                AccountSection(repository: store.repository, gateway: session.environment.baseURL)
+                AccountSection(legalPage: $legalPage, confirmingDeletion: $confirmingDeletion)
             }
             .scrollContentBackground(.hidden)
             .background(Color.aimCanvas)
