@@ -280,7 +280,7 @@ class DeletionRequest(BaseModel):
 async def request_deletion(payload: DeletionRequest, request: Request) -> Response:
     """申请注销。30 天内重新登录即撤销，到期由 scripts/purge_deleted_accounts.py 删除。
 
-    只验签、不检查状态：已在缓冲期的账号再点一次应当幂等成功，而不是 401。
+    验签后只拒绝已停用的账号；缓冲期内再次申请幂等返回 204。
     """
     actor = authenticate(request)
     database: Database = request.app.state.database
