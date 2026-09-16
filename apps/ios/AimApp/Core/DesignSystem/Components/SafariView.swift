@@ -14,17 +14,3 @@ struct SafariView: UIViewControllerRepresentable {
 
     func updateUIViewController(_ controller: SFSafariViewController, context: Context) {}
 }
-
-extension LegalPage: Identifiable {
-    var id: String { rawValue }
-}
-
-extension View {
-    /// 绑定一个 `LegalPage?`，非 nil 时弹出对应页面。
-    func legalPageSheet(_ page: Binding<LegalPage?>, gateway: URL) -> some View {
-        sheet(item: page) { selected in
-            SafariView(url: AgentWebScheme.legalURL(selected, gateway: gateway))
-                .ignoresSafeArea()
-        }
-    }
-}
