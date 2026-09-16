@@ -37,6 +37,8 @@ struct AccountSection: View {
             isPresented: $confirmingDeletion,
             titleVisibility: .visible
         ) {
+            // confirmationDialog 的按钮桥接成 UIAlertAction，accessibilityIdentifier 会丢；
+            // XCUITest 要用标题查：app.buttons["继续注销"]。
             Button("继续注销", role: .destructive) { enteringPassword = true }
                 .accessibilityIdentifier("account-delete-confirm")
             Button("取消", role: .cancel) {}

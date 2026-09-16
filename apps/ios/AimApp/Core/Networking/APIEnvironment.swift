@@ -61,7 +61,11 @@ extension Notification.Name {
 }
 
 extension URLSession {
-    func aimData(for request: URLRequest) async throws -> (Data, HTTPURLResponse) {
+    /// `broadcastsUnauthorized`：401 默认视为票作废并广播 `aimSessionExpired`。
+    /// 个别端点用 401 表达别的意思（比如注销时密码不对），调用方传 false 自己处理。
+    func aimData(
+        for request: URLRequest, broadcastsUnauthorized: Bool = true
+    ) async throws -> (Data, HTTPURLResponse) {
         let (data, response) = try await data(for: request)
         guard let httpResponse = response as? HTTPURLResponse else { throw APIError.invalidResponse }
         guard 200..<300 ~= httpResponse.statusCode else {
@@ -70,7 +74,7 @@ extension URLSession {
             )
             // 在这里广播而不是让每个 store 各自判断：漏掉一处，App 就会抱着废票
             // 卡在空页面上。这是唯一一条所有业务请求都必经的通道。
-            if error.isUnauthorized {
+            if broadcastsUnauthorized, error.isUnauthorized {
                 NotificationCenter.default.post(name: .aimSessionExpired, object: nil)
             }
             throw error

@@ -329,7 +329,10 @@ actor BusinessRepository: BusinessRepositoryProtocol {
         let request = environment.businessRequest(
             path: "/api/v1/auth/deletion-request", method: "POST",
             body: try encoder.encode(Body(password: password)))
-        _ = try await session.aimData(for: request)
+        // 这个端点的 401 是「密码不对」，得留在表单里给用户看；若按票作废处理，
+        // 会话会被清掉、表单直接消失。票真过期了也只是多显示一次「密码不对」，
+        // 下一个普通请求会照常触发会话过期。
+        _ = try await session.aimData(for: request, broadcastsUnauthorized: false)
     }
 
     private func mutate<Body: Encodable>(path: String, body: Body) async throws -> TaskItem {

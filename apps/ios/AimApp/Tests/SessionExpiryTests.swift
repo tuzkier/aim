@@ -56,6 +56,25 @@ final class SessionExpiryNotificationTests: XCTestCase {
         await fulfillment(of: [expectation], timeout: 2)
     }
 
+    /// 注销要密码的端点用 401 表示「密码不对」；关掉广播后错误仍然抛出，但不会清会话。
+    func test401WithoutBroadcastStillThrowsButDoesNotExpireTheSession() async {
+        let expectation = expectation(forNotification: .aimSessionExpired, object: nil)
+        expectation.isInverted = true
+
+        var thrown: Error?
+        do {
+            _ = try await session(status: 401).aimData(for: probe, broadcastsUnauthorized: false)
+        } catch {
+            thrown = error
+        }
+
+        guard case let .http(status, _)? = thrown as? APIError else {
+            return XCTFail("应当抛出 APIError.http，实际：\(String(describing: thrown))")
+        }
+        XCTAssertEqual(status, 401)
+        await fulfillment(of: [expectation], timeout: 1)
+    }
+
     /// 别的失败不能把人踢下线——网络抖一下就退出登录是更糟的体验。
     func testOtherFailuresDoNotBroadcast() async {
         let expectation = expectation(forNotification: .aimSessionExpired, object: nil)
