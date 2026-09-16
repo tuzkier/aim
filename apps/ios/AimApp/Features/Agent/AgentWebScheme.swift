@@ -19,3 +19,22 @@ enum AgentWebScheme {
         URL(string: path, relativeTo: gateway)!.absoluteURL
     }
 }
+
+enum LegalPage: String {
+    case privacy = "privacy.html"
+    case terms = "terms.html"
+
+    var title: String {
+        switch self {
+        case .privacy: "隐私政策"
+        case .terms: "用户协议"
+        }
+    }
+}
+
+extension AgentWebScheme {
+    /// 法律页面和对话面一样由网关提供，路径对应 nginx 的 `location /legal/`。
+    static func legalURL(_ page: LegalPage, gateway: URL) -> URL {
+        URL(string: "/legal/" + page.rawValue, relativeTo: gateway)!.absoluteURL
+    }
+}

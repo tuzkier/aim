@@ -120,6 +120,8 @@
 		A20000000000000000000132 /* Features/Home/HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000132 /* Features/Home/HomeView.swift */; };
 		A20000000000000000000136 /* Tests/TaskDateTextTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000136 /* Tests/TaskDateTextTests.swift */; };
 		A20000000000000000000137 /* Tests/TaskComposerViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000137 /* Tests/TaskComposerViewTests.swift */; };
+		A20000000000000000000141 /* Tests/SessionResponseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000141 /* Tests/SessionResponseTests.swift */; };
+		A20000000000000000000142 /* Tests/LegalPagesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000142 /* Tests/LegalPagesTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -259,6 +261,8 @@
 		A10000000000000000000132 /* Features/Home/HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Home/HomeView.swift; sourceTree = "<group>"; };
 		A10000000000000000000136 /* Tests/TaskDateTextTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/TaskDateTextTests.swift; sourceTree = "<group>"; };
 		A10000000000000000000137 /* Tests/TaskComposerViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/TaskComposerViewTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000141 /* Tests/SessionResponseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/SessionResponseTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000142 /* Tests/LegalPagesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/LegalPagesTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -507,6 +511,8 @@
 			children = (
 				A10000000000000000000136 /* Tests/TaskDateTextTests.swift */,
 				A10000000000000000000137 /* Tests/TaskComposerViewTests.swift */,
+				A10000000000000000000141 /* Tests/SessionResponseTests.swift */,
+				A10000000000000000000142 /* Tests/LegalPagesTests.swift */,
 				A10000000000000000000099 /* Tests/NutritionSectionTests.swift */,
 				A10000000000000000000096 /* Tests/SymptomPatternTests.swift */,
 				A10000000000000000000094 /* Tests/MetricKindTests.swift */,
@@ -1443,6 +1449,8 @@
 			files = (
 				A20000000000000000000136 /* Tests/TaskDateTextTests.swift in Sources */,
 				A20000000000000000000137 /* Tests/TaskComposerViewTests.swift in Sources */,
+				A20000000000000000000141 /* Tests/SessionResponseTests.swift in Sources */,
+				A20000000000000000000142 /* Tests/LegalPagesTests.swift in Sources */,
 				A20000000000000000000100 /* Tests/NutritionSectionTests.swift in Sources */,
 				A20000000000000000000097 /* Tests/SymptomPatternTests.swift in Sources */,
 				A20000000000000000000095 /* Tests/MetricKindTests.swift in Sources */,

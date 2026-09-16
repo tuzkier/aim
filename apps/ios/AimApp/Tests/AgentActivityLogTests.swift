@@ -205,4 +205,5 @@ private final class SpyRepository: BusinessRepositoryProtocol, @unchecked Sendab
     // 真要用到时会因为断言不成立而暴露，而不是被静默吞掉。
     func renameFamily(to name: String) async throws {}
     func updateMyMembership(nickname: String?, role: FamilyRole?) async throws {}
+    func requestAccountDeletion(password: String) async throws { throw APIError.notConfigured }
 }

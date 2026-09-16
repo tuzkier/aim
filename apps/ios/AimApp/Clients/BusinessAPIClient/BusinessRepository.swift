@@ -128,6 +128,7 @@ protocol BusinessRepositoryProtocol: Sendable {
     func invite(phone: String, role: FamilyRole) async throws
     func renameFamily(to name: String) async throws
     func updateMyMembership(nickname: String?, role: FamilyRole?) async throws
+    func requestAccountDeletion(password: String) async throws
 }
 
 actor BusinessRepository: BusinessRepositoryProtocol {
@@ -319,6 +320,15 @@ actor BusinessRepository: BusinessRepositoryProtocol {
         let body = try encoder.encode(Body(nickname: nickname, role: role?.rawValue))
         let request = environment.businessRequest(
             path: "/api/v1/families/\(familyID.uuidString)/members/me", method: "PATCH", body: body)
+        _ = try await session.aimData(for: request)
+    }
+
+    /// 申请注销。服务端进入 30 天缓冲期，旧票立即失效，所以调用方成功后要 `session.clear()`。
+    func requestAccountDeletion(password: String) async throws {
+        struct Body: Encodable { let password: String }
+        let request = environment.businessRequest(
+            path: "/api/v1/auth/deletion-request", method: "POST",
+            body: try encoder.encode(Body(password: password)))
         _ = try await session.aimData(for: request)
     }
 
