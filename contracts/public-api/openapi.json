@@ -108,6 +108,41 @@
         }
       }
     },
+    "/api/v1/auth/deletion-request": {
+      "post": {
+        "tags": [
+          "identity"
+        ],
+        "summary": "Request Deletion",
+        "description": "申请注销。30 天内重新登录即撤销，到期由 scripts/purge_deleted_accounts.py 删除。\n\n只验签、不检查状态：已在缓冲期的账号再点一次应当幂等成功，而不是 401。",
+        "operationId": "request_deletion_api_v1_auth_deletion_request_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeletionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/families": {
       "post": {
         "tags": [
@@ -1839,6 +1874,21 @@
         ],
         "title": "DelayTaskRequest"
       },
+      "DeletionRequest": {
+        "properties": {
+          "password": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "password"
+        ],
+        "title": "DeletionRequest"
+      },
       "ExpectedVersionRequest": {
         "properties": {
           "expected_version": {
@@ -3023,6 +3073,11 @@
           "token": {
             "type": "string",
             "title": "Token"
+          },
+          "deletion_cancelled": {
+            "type": "boolean",
+            "title": "Deletion Cancelled",
+            "default": false
           }
         },
         "type": "object",

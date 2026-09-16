@@ -834,6 +834,21 @@
         ],
         "title": "DeleteTaskRequest"
       },
+      "DeletionRequest": {
+        "properties": {
+          "password": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "password"
+        ],
+        "title": "DeletionRequest"
+      },
       "ExpectedVersionRequest": {
         "properties": {
           "expected_version": {
@@ -2396,6 +2411,11 @@
           "token": {
             "type": "string",
             "title": "Token"
+          },
+          "deletion_cancelled": {
+            "type": "boolean",
+            "title": "Deletion Cancelled",
+            "default": false
           }
         },
         "type": "object",

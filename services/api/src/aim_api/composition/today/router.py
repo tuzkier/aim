@@ -12,7 +12,7 @@ from aim_api.contexts.planning.adapters.outbound.persistence.repositories import
     SqlAlchemyPlanningUnitOfWork,
 )
 from aim_api.contexts.planning.domain.errors import PlanningAccessDenied, PlanNotFound
-from aim_api.platform.auth.context import authenticate
+from aim_api.platform.auth.context import authenticate_active
 from aim_api.platform.http.errors import ForbiddenError, NotFoundError
 
 router = APIRouter(tags=["today"])
@@ -61,7 +61,7 @@ def _response(model: TodayReadModel) -> TodayResponse:
 async def get_today_endpoint(
     pregnancy_id: UUID, request: Request, as_of: date | None = Query(default=None)
 ) -> TodayResponse:
-    actor = authenticate(request)
+    actor = await authenticate_active(request)
     database = request.app.state.database
     async with database.session() as session:
         uow = SqlAlchemyPlanningUnitOfWork(session)

@@ -13,6 +13,7 @@ from aim_api.contexts.family.application.commands import create_family
 from aim_api.contexts.family.application.commands.create_family import CreateFamilyCommand
 from aim_api.contexts.family.domain.family import FamilyMemberRole
 from aim_api.contexts.guidance.application.queries.get_guidance import initial_plan_items
+from aim_api.contexts.identity.domain.account import AccountStatus
 from aim_api.contexts.planning.adapters.outbound.persistence.repositories import (
     SqlAlchemyPlanningUnitOfWork,
 )
@@ -29,7 +30,7 @@ from aim_api.contexts.pregnancy.application.commands import create_pregnancy
 from aim_api.contexts.pregnancy.application.commands.create_pregnancy import (
     CreatePregnancyCommand,
 )
-from aim_api.platform.auth.context import issue_session_token
+from aim_api.platform.auth.context import authenticate, issue_session_token
 from aim_api.platform.auth.passwords import (
     MIN_PASSWORD_LENGTH,
     hash_password,
@@ -64,6 +65,8 @@ class SessionResponse(BaseModel):
     pregnancy_id: UUID | None
     role: FamilyMemberRole
     token: str
+    #: 登录时顺手撤销了注销申请。客户端据此提示「欢迎回来」。
+    deletion_cancelled: bool = False
 
 
 async def _ensure_family_and_pregnancy(
@@ -239,6 +242,16 @@ async def login(payload: LoginRequest, request: Request) -> SessionResponse:
             # 这个接口就成了手机号枚举器。
             raise HTTPException(status_code=401, detail=LOGIN_FAILURE)
 
+        now = datetime.now(UTC)
+        if not account.can_log_in(now=now):
+            # 已停用 / 缓冲期已过：对外和「账号不存在」一模一样。
+            raise HTTPException(status_code=401, detail=LOGIN_FAILURE)
+        deletion_cancelled = account.status is AccountStatus.pending_deletion
+        if deletion_cancelled:
+            account.cancel_deletion()
+            await family_uow.repository.save_account_status(account)
+            await family_uow.commit()
+
         # 登录不建任何东西：账号既然注册过，家庭就已经存在。
         family = await family_uow.repository.get_first_family_for_account(account.id)
         if family is None:
@@ -255,4 +268,30 @@ async def login(payload: LoginRequest, request: Request) -> SessionResponse:
         pregnancy_id=pregnancy.id if pregnancy is not None else None,
         role=member.role if member is not None else FamilyMemberRole.mother,
         token=issue_session_token(account.id, account.phone, settings.auth_secret),
+        deletion_cancelled=deletion_cancelled,
     )
+
+
+class DeletionRequest(BaseModel):
+    password: str = Field(min_length=1, max_length=200)
+
+
+@router.post("/api/v1/auth/deletion-request", status_code=204)
+async def request_deletion(payload: DeletionRequest, request: Request) -> Response:
+    """申请注销。30 天内重新登录即撤销，到期由 scripts/purge_deleted_accounts.py 删除。
+
+    只验签、不检查状态：已在缓冲期的账号再点一次应当幂等成功，而不是 401。
+    """
+    actor = authenticate(request)
+    database: Database = request.app.state.database
+
+    async with database.session() as session:
+        family_uow = SqlAlchemyFamilyUnitOfWork(session)
+        account = await family_uow.repository.get_account(actor.account_id)
+        hashed = account.password_hash if account is not None else _DUMMY_HASH
+        if account is None or not verify_password(payload.password, hashed):
+            raise HTTPException(status_code=401, detail=LOGIN_FAILURE)
+        account.request_deletion(now=datetime.now(UTC))
+        await family_uow.repository.save_account_status(account)
+        await family_uow.commit()
+    return Response(status_code=204)

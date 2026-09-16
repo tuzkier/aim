@@ -31,7 +31,7 @@ from aim_api.contexts.family.domain.errors import (
     InviteeMismatch,
 )
 from aim_api.contexts.family.domain.family import Family, FamilyMemberRole
-from aim_api.platform.auth.context import ActorContext, authenticate
+from aim_api.platform.auth.context import ActorContext, authenticate_active
 from aim_api.platform.http.errors import ConflictError, ForbiddenError, NotFoundError
 
 router = APIRouter(tags=["family"])
@@ -128,13 +128,13 @@ def _translate(error: Exception) -> None:
     raise error
 
 
-def _actor(request: Request) -> ActorContext:
-    return authenticate(request)
+async def _actor(request: Request) -> ActorContext:
+    return await authenticate_active(request)
 
 
 @router.post("/api/v1/families", response_model=FamilyResponse, status_code=201)
 async def create_family_endpoint(payload: CreateFamilyRequest, request: Request) -> FamilyResponse:
-    actor = _actor(request)
+    actor = await _actor(request)
     database = request.app.state.database
     async with database.session() as session:
         uow = SqlAlchemyFamilyUnitOfWork(session)
@@ -162,7 +162,7 @@ async def create_family_endpoint(payload: CreateFamilyRequest, request: Request)
 async def invite_member_endpoint(
     family_id: UUID, payload: InviteMemberRequest, request: Request
 ) -> InvitationResponse:
-    actor = _actor(request)
+    actor = await _actor(request)
     database = request.app.state.database
     async with database.session() as session:
         uow = SqlAlchemyFamilyUnitOfWork(session)
@@ -190,7 +190,7 @@ async def invite_member_endpoint(
 
 @router.post("/api/v1/family-invitations/{token}/accept", response_model=FamilyResponse)
 async def accept_invitation_endpoint(token: str, request: Request) -> FamilyResponse:
-    actor = _actor(request)
+    actor = await _actor(request)
     database = request.app.state.database
     async with database.session() as session:
         uow = SqlAlchemyFamilyUnitOfWork(session)
@@ -211,7 +211,7 @@ async def accept_invitation_endpoint(token: str, request: Request) -> FamilyResp
 
 @router.get("/api/v1/families/{family_id}", response_model=FamilyResponse)
 async def get_family_endpoint(family_id: UUID, request: Request) -> FamilyResponse:
-    actor = _actor(request)
+    actor = await _actor(request)
     database = request.app.state.database
     async with database.session() as session:
         uow = SqlAlchemyFamilyUnitOfWork(session)
@@ -229,7 +229,7 @@ async def get_family_endpoint(family_id: UUID, request: Request) -> FamilyRespon
 async def rename_family_endpoint(
     family_id: UUID, payload: RenameFamilyRequest, request: Request
 ) -> FamilyResponse:
-    actor = _actor(request)
+    actor = await _actor(request)
     database = request.app.state.database
     async with database.session() as session:
         uow = SqlAlchemyFamilyUnitOfWork(session)
@@ -256,7 +256,7 @@ async def update_my_membership_endpoint(
     端点里没有 member_id 入口——改别人需要一套「谁能改谁」的权限模型，
     而当前没有需求支撑它。想改别人时，加的应当是那套模型，不是这个参数。
     """
-    actor = _actor(request)
+    actor = await _actor(request)
     database = request.app.state.database
     async with database.session() as session:
         uow = SqlAlchemyFamilyUnitOfWork(session)

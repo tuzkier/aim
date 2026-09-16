@@ -24,7 +24,7 @@ from aim_api.contexts.records.domain.errors import (
     RecordsDomainError,
 )
 from aim_api.contexts.records.domain.record import Record, RecordType, RecordVisibility
-from aim_api.platform.auth.context import ActorContext, authenticate
+from aim_api.platform.auth.context import ActorContext, authenticate_active
 from aim_api.platform.http.errors import ConflictError, ForbiddenError, NotFoundError
 
 router = APIRouter(tags=["records"])
@@ -97,8 +97,8 @@ def _translate(error: Exception) -> None:
     raise error
 
 
-def _actor(request: Request) -> ActorContext:
-    return authenticate(request)
+async def _actor(request: Request) -> ActorContext:
+    return await authenticate_active(request)
 
 
 async def _family_id_for_pregnancy(pregnancy_id: UUID, uow) -> UUID:
@@ -116,7 +116,7 @@ async def _family_id_for_pregnancy(pregnancy_id: UUID, uow) -> UUID:
 async def create_record_endpoint(
     pregnancy_id: UUID, payload: CreateRecordRequest, request: Request
 ) -> RecordResponse:
-    actor = _actor(request)
+    actor = await _actor(request)
     database = request.app.state.database
     async with database.session() as session:
         uow = SqlAlchemyRecordsUnitOfWork(session)
@@ -148,7 +148,7 @@ async def create_record_endpoint(
 async def list_records_endpoint(
     pregnancy_id: UUID, request: Request, type: RecordType | None = None
 ) -> RecordListResponse:
-    actor = _actor(request)
+    actor = await _actor(request)
     database = request.app.state.database
     async with database.session() as session:
         uow = SqlAlchemyRecordsUnitOfWork(session)
@@ -175,7 +175,7 @@ async def list_records_endpoint(
 async def get_record_endpoint(
     pregnancy_id: UUID, record_id: UUID, request: Request
 ) -> RecordResponse:
-    actor = _actor(request)
+    actor = await _actor(request)
     database = request.app.state.database
     async with database.session() as session:
         uow = SqlAlchemyRecordsUnitOfWork(session)
@@ -202,7 +202,7 @@ async def get_record_endpoint(
 async def update_record_endpoint(
     pregnancy_id: UUID, record_id: UUID, payload: UpdateRecordRequest, request: Request
 ) -> RecordResponse:
-    actor = _actor(request)
+    actor = await _actor(request)
     database = request.app.state.database
     async with database.session() as session:
         uow = SqlAlchemyRecordsUnitOfWork(session)
@@ -226,7 +226,7 @@ async def update_record_endpoint(
 
 @router.delete("/api/v1/pregnancies/{pregnancy_id}/records/{record_id}", status_code=204)
 async def delete_record_endpoint(pregnancy_id: UUID, record_id: UUID, request: Request) -> None:
-    actor = _actor(request)
+    actor = await _actor(request)
     database = request.app.state.database
     async with database.session() as session:
         uow = SqlAlchemyRecordsUnitOfWork(session)

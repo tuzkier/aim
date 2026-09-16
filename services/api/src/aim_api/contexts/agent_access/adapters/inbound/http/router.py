@@ -23,7 +23,7 @@ from aim_api.contexts.agent_access.domain.tool_invocation import ToolInvocation
 from aim_api.contexts.family.adapters.outbound.persistence.repositories import (
     SqlAlchemyFamilyRepository,
 )
-from aim_api.platform.auth.context import verify_session_token
+from aim_api.platform.auth.context import ensure_account_active, verify_session_token
 from aim_api.contexts.guidance.application.queries.get_guidance import (
     GetGuidanceQuery,
 )
@@ -652,6 +652,7 @@ async def resolve_session(request: Request, payload: ResolveSessionRequest):
 
     settings = request.app.state.settings
     actor = verify_session_token(payload.token, settings.auth_secret)
+    await ensure_account_active(request.app.state.database, actor.account_id)
 
     database = request.app.state.database
     async with database.session() as session:

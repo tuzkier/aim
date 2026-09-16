@@ -20,7 +20,7 @@ from aim_api.contexts.agent_access.adapters.outbound.persistence.models import (
 from aim_api.contexts.family.adapters.outbound.persistence.repositories import (
     SqlAlchemyFamilyUnitOfWork,
 )
-from aim_api.platform.auth.context import authenticate
+from aim_api.platform.auth.context import authenticate_active
 from aim_api.platform.database.session import Database
 from aim_api.platform.http.errors import NotFoundError
 
@@ -62,7 +62,7 @@ def _to_response(model: AgentSessionModel) -> SessionResponse:
 
 @router.get("/api/v1/agent/sessions", response_model=SessionListResponse)
 async def list_sessions(request: Request) -> SessionListResponse:
-    actor = authenticate(request)
+    actor = await authenticate_active(request)
     database: Database = request.app.state.database
     async with database.session() as session:
         rows = await session.scalars(
@@ -79,7 +79,7 @@ async def list_sessions(request: Request) -> SessionListResponse:
 async def create_session(
     payload: CreateSessionRequest, request: Request, response: Response
 ) -> SessionResponse:
-    actor = authenticate(request)
+    actor = await authenticate_active(request)
     database: Database = request.app.state.database
     now = datetime.now(UTC)
 
@@ -140,7 +140,7 @@ async def _own_session(session, account_id: UUID, session_id: UUID) -> AgentSess
 async def update_session(
     session_id: UUID, payload: UpdateSessionRequest, request: Request
 ) -> SessionResponse:
-    actor = authenticate(request)
+    actor = await authenticate_active(request)
     database: Database = request.app.state.database
     async with database.session() as session:
         model = await _own_session(session, actor.account_id, session_id)
@@ -154,7 +154,7 @@ async def update_session(
 
 @router.delete("/api/v1/agent/sessions/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_session(session_id: UUID, request: Request) -> Response:
-    actor = authenticate(request)
+    actor = await authenticate_active(request)
     database: Database = request.app.state.database
     async with database.session() as session:
         model = await _own_session(session, actor.account_id, session_id)
