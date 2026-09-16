@@ -100,6 +100,27 @@ cp apps/ios/AimApp/Config/Endpoints.local.xcconfig{.example,}
 卸载重装都清不掉，会让 App 静默连到别的后端。用
 `xcrun simctl spawn booted defaults delete com.aim.pregnancy` 清除。
 
+## 定时任务
+
+注销账号有 30 天缓冲期，到期删除由脚本完成。服务器上加一条 crontab（每天 04:00）：
+
+```
+0 4 * * * docker exec -i aim-api-1 python scripts/purge_deleted_accounts.py >> /var/log/aim-purge.log 2>&1
+```
+
+先用 `--dry-run` 看一眼会删哪些账号再正式启用。
+
+## 上架前清单
+
+按顺序，前两项周期最长，先启动：
+
+1. **域名 + HTTPS**：给后端配域名和证书，nginx 监听 443；`apps/ios/AimApp/Config/Endpoints.local.xcconfig` 的 `AIM_REMOTE_BASE_URL` 改成 `https://…`；然后删掉 `apps/ios/AimApp/Resources/Info.plist` 里整个 `NSAppTransportSecurity` 段。生产后端还是裸 IP 时**不能**删。
+2. **ICP 备案**：域名备案 + App 备案，主体须与 Apple 开发者账号主体一致。
+3. **Apple Developer Program** 付费账号；`apps/ios/AimApp.xcodeproj/project.pbxproj` 的 `DEVELOPMENT_TEAM` 换成该团队。
+4. 部署上面的 crontab。
+5. **App Store Connect**：隐私政策 URL 填 `https://<域名>/legal/privacy.html`；隐私标签勾选「手机号」「用户 ID」「健康与健身」「其他用户内容」，均为「与用户关联」「用于 App 功能」，不用于追踪；审核备注附一个测试账号，并说明医疗免责声明在用户协议与 AIM 页面头部两处。
+6. 每次上传新构建前递增 `CURRENT_PROJECT_VERSION`（pbxproj 里两处）。
+
 ## 安全现状
 
 登录方式是手机号 + 密码（argon2id）。**注册开放**：任何人都能创建账号——这是
