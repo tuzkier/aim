@@ -110,6 +110,24 @@ cp apps/ios/AimApp/Config/Endpoints.local.xcconfig{.example,}
 
 先用 `--dry-run` 看一眼会删哪些账号再正式启用。
 
+隐私政策承诺「AI 运行时保存的匿名对话转录会在注销后 90 天内清除」。这些转录不在
+应用数据库里，上面的脚本碰不到：它们在 `aim_eve-workflow-data` 卷（compose 里挂到
+eve 的 `/app/.eve/.workflow-data`）。Eve 的存储（`@workflow/world-local`）是平铺文件，
+不是每个会话一个目录：一段对话就是一个 `wrun_*`，其文件散在 `runs/wrun_X.json`、
+`events/wrun_X-evnt_*.json`、`steps/`、`waits/`、`streams/runs/`、`hooks/by-run/`
+里，都以 run id 作文件名前缀，另有 `hooks/tokens/`、`hooks/token-index/` 只在文件内容里
+引用 run id；`runs/wrun_X.json` 每次对话续上都会重写，mtime 就是最后活跃时间。
+所以按 run 清：找出 90 天没动过的 run，再把它名下所有文件删掉。再加一条 crontab（每天 04:10）：
+
+```
+10 4 * * * docker run --rm -v aim_eve-workflow-data:/data alpine sh -c 'find /data/runs -name "wrun_*.json" -mtime +90 | sed "s#.*/##; s#\.json\$##" | while read id; do find /data -name "$id*" -delete; grep -rl "$id" /data/hooks | xargs -r rm -f; done' >> /var/log/aim-eve-retention.log 2>&1
+```
+
+上线前在服务器上先 `docker run --rm -v aim_eve-workflow-data:/data alpine find /data/runs -name "wrun_*.json" -mtime +90 -print`
+看一眼再加 `-exec`/`-delete`。90 天按最后活跃算，注销的人不会再活跃，所以一定落在
+注销后 90 天内；Eve 升级迁移存储时会重写 `runs/*.json`，只会推迟删除，不会误删。
+`docker run` 第一次会拉 alpine 镜像，国内网络慢的话先手动 `docker pull alpine`。
+
 ## 上架前清单
 
 按顺序，前两项周期最长，先启动：
@@ -117,7 +135,7 @@ cp apps/ios/AimApp/Config/Endpoints.local.xcconfig{.example,}
 1. **域名 + HTTPS**：给后端配域名和证书，nginx 监听 443；`apps/ios/AimApp/Config/Endpoints.local.xcconfig` 的 `AIM_REMOTE_BASE_URL` 改成 `https://…`；然后删掉 `apps/ios/AimApp/Resources/Info.plist` 里整个 `NSAppTransportSecurity` 段。生产后端还是裸 IP 时**不能**删。
 2. **ICP 备案**：域名备案 + App 备案，主体须与 Apple 开发者账号主体一致。
 3. **Apple Developer Program** 付费账号；`apps/ios/AimApp.xcodeproj/project.pbxproj` 的 `DEVELOPMENT_TEAM` 换成该团队。
-4. 部署上面的 crontab。
+4. 部署上面的两条 crontab：注销账号 30 天到期删除，以及 AI 对话转录 90 天保留期清理。
 5. **App Store Connect**：隐私政策 URL 填 `https://<域名>/legal/privacy.html`；隐私标签勾选「手机号」「用户 ID」「健康与健身」「其他用户内容」，均为「与用户关联」「用于 App 功能」，不用于追踪；审核备注附一个测试账号，并说明医疗免责声明在用户协议与 AIM 页面头部两处。
 6. 每次上传新构建前递增 `CURRENT_PROJECT_VERSION`（pbxproj 里两处）。
 
