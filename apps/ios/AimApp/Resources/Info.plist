@@ -10,6 +10,9 @@
 	-->
 	<key>AIMRemoteBaseURL</key>
 	<string>$(AIM_REMOTE_BASE_URL)</string>
+	<!-- 只用系统 HTTPS/TLS，属于豁免加密；声明了就不用每次上传都答问卷。 -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<!--
 	  验证环境后端是纯 IP、无 TLS。ATS 的 NSExceptionDomains 只接受域名，
 	  不接受 IP 地址，因此这里只能整体放开明文 HTTP。

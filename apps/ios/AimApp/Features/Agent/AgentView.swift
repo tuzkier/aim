@@ -60,6 +60,11 @@ struct AgentView: View {
                 Text("孕期里的事，说一声就好")
                     .font(.caption)
                     .foregroundStyle(Color.aimTextTertiary)
+                Text("AIM 的建议不能替代医生诊断，紧急情况请立即就医")
+                    .font(.caption2)
+                    .foregroundStyle(Color.aimTextTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("agent-disclaimer")
             }
             Spacer()
             circleButton("clock.arrow.circlepath", label: "历史对话", id: "agent-history") {
