@@ -9,6 +9,10 @@ final class AppSessionStore {
     var pregnancyID: UUID?
     var bearerToken: String?
     var isOffline = false
+    /// 退出或注销后回到登录页要说一句话；登录页读一次就清掉。不持久化。
+    var signOutNotice: String?
+    /// 登录时服务端撤销了注销申请，进首页提示一次。
+    var welcomeBackNotice: String?
 
     private let defaults: UserDefaults
     private let keychain: KeychainStore

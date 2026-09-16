@@ -8,6 +8,16 @@ struct OnboardingView: View {
     var body: some View {
         NavigationStack {
             Form {
+                if let notice = session.signOutNotice {
+                    Section {
+                        Text(notice)
+                            .font(.subheadline)
+                            .foregroundStyle(Color.aimTextSecondary)
+                            .accessibilityIdentifier("auth-notice")
+                    }
+                    .listRowBackground(Color.clear)
+                }
+
                 Section {
                     Picker("方式", selection: $store.form.mode) {
                         ForEach(AuthMode.allCases) { Text($0.title).tag($0) }
@@ -112,6 +122,7 @@ struct OnboardingView: View {
             .scrollContentBackground(.hidden)
             .background(Color.aimCanvas)
             .legalPageSheet($legalPage, gateway: session.environment.baseURL)
+            .onDisappear { session.signOutNotice = nil }
         }
     }
 }

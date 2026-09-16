@@ -70,6 +70,9 @@ final class OnboardingStore {
             let request = try makeRequest(using: appSession)
             let (data, _) = try await URLSession.shared.aimData(for: request)
             let response = try JSONDecoder.aim.decode(SessionResponse.self, from: data)
+            if response.deletionCancelled {
+                appSession.welcomeBackNotice = "欢迎回来，注销申请已取消"
+            }
             appSession.configure(
                 accountID: response.accountID,
                 familyID: response.familyID,

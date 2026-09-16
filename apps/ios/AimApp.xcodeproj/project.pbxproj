@@ -57,6 +57,7 @@
 		A20000000000000000000053 /* Core/DesignSystem/Components/AimStateViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000052 /* Core/DesignSystem/Components/AimStateViews.swift */; };
 		A20000000000000000000054 /* Core/DesignSystem/Components/AimToast.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000053 /* Core/DesignSystem/Components/AimToast.swift */; };
 		A20000000000000000000139 /* Core/DesignSystem/Components/SafariView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000139 /* Core/DesignSystem/Components/SafariView.swift */; };
+		A20000000000000000000138 /* Features/Family/AccountSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000138 /* Features/Family/AccountSection.swift */; };
 		A20000000000000000000055 /* Features/Agent/AgentChangePreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000054 /* Features/Agent/AgentChangePreview.swift */; };
 		A20000000000000000000056 /* Features/Agent/AgentDiffSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000055 /* Features/Agent/AgentDiffSheet.swift */; };
 		A20000000000000000000057 /* Tests/AgentChangePreviewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000056 /* Tests/AgentChangePreviewTests.swift */; };
@@ -198,6 +199,7 @@
 		A10000000000000000000052 /* Core/DesignSystem/Components/AimStateViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/DesignSystem/Components/AimStateViews.swift; sourceTree = "<group>"; };
 		A10000000000000000000053 /* Core/DesignSystem/Components/AimToast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/DesignSystem/Components/AimToast.swift; sourceTree = "<group>"; };
 		A10000000000000000000139 /* Core/DesignSystem/Components/SafariView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/DesignSystem/Components/SafariView.swift; sourceTree = "<group>"; };
+		A10000000000000000000138 /* Features/Family/AccountSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Family/AccountSection.swift; sourceTree = "<group>"; };
 		A10000000000000000000054 /* Features/Agent/AgentChangePreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Agent/AgentChangePreview.swift; sourceTree = "<group>"; };
 		A10000000000000000000055 /* Features/Agent/AgentDiffSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Agent/AgentDiffSheet.swift; sourceTree = "<group>"; };
 		A10000000000000000000056 /* Tests/AgentChangePreviewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/AgentChangePreviewTests.swift; sourceTree = "<group>"; };
@@ -459,6 +461,7 @@
 			children = (
 				A10000000000000000000013 /* Features/Family/FamilyStore.swift */,
 				A10000000000000000000014 /* Features/Family/FamilyView.swift */,
+				A10000000000000000000138 /* Features/Family/AccountSection.swift */,
 			);
 			name = Family;
 			sourceTree = "<group>";
@@ -1440,6 +1443,7 @@
 				A20000000000000000000053 /* Core/DesignSystem/Components/AimStateViews.swift in Sources */,
 				A20000000000000000000054 /* Core/DesignSystem/Components/AimToast.swift in Sources */,
 				A20000000000000000000139 /* Core/DesignSystem/Components/SafariView.swift in Sources */,
+				A20000000000000000000138 /* Features/Family/AccountSection.swift in Sources */,
 				A20000000000000000000055 /* Features/Agent/AgentChangePreview.swift in Sources */,
 				A20000000000000000000056 /* Features/Agent/AgentDiffSheet.swift in Sources */,
 				A20000000000000000000058 /* Features/Home/HomeHeader.swift in Sources */,

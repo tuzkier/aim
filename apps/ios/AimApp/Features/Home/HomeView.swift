@@ -54,6 +54,12 @@ struct HomeView: View {
                 guard session.pregnancyID != nil, store.weeks.isEmpty else { return }
                 await store.load()
             }
+            .onAppear {
+                if let notice = session.welcomeBackNotice {
+                    toast = AimToastMessage(text: notice, undoTitle: "", accessibilityIdentifier: "home-welcome-back")
+                    session.welcomeBackNotice = nil
+                }
+            }
             // `store.now` 只在 load() 里刷新。App 在后台放一夜再回来，「今天」「逾期」「接下来 7 天」
             // 都还按昨天分组。回到前台先把 now 拨到现在——store 是 @Observable，各分组随之重算；
             // 若日历日已经变了，孕周和服务端 as_of 也过期了，再整页重拉一次。

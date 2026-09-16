@@ -38,6 +38,7 @@ struct FamilyView: View {
                 familyHeader(family)
                 familyMembers(family)
                 inviteSection
+                AccountSection(repository: store.repository, gateway: session.environment.baseURL)
             }
             .scrollContentBackground(.hidden)
             .background(Color.aimCanvas)
