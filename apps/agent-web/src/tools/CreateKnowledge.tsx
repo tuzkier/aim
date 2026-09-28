@@ -1,5 +1,6 @@
 import { makeAssistantToolUI } from "@assistant-ui/react";
 import { categoryTitle, formTitle, VERDICT_LABELS } from "./labels";
+import { OpenNative } from "./OpenNative";
 import { ApprovalSlot, ToolCard, ToolStatusLine } from "./ToolCard";
 import { isAwaitingApproval, type ToolRenderProps } from "./types";
 
@@ -105,6 +106,10 @@ export const CreateKnowledgeUI = makeAssistantToolUI({
         </p>
         <ApprovalSlot props={props} />
         <ToolStatusLine props={props} />
+        <OpenNative
+          kind="knowledge"
+          id={(props.result as { data?: { record_id?: string } } | undefined)?.data?.record_id}
+        />
       </ToolCard>
     );
   },

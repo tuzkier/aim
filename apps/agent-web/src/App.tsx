@@ -16,6 +16,7 @@ import {
 import {
   accountKeyFromToken,
   loadNativeContext,
+  notifyTurnFinished,
   type AgentEntry,
   type NativeContext,
   type PageContext,
@@ -25,7 +26,8 @@ import { ContextChip } from "./thread/ContextChip";
 import { clearSession, loadSession, saveSession } from "./session";
 import type { ClientSessionState } from "./types";
 import { ApprovalBatchProvider } from "./approvals";
-import { BizDataProvider } from "./bizData";
+import { BizDataProvider, useBizData } from "./bizData";
+import { scanTurnWrites, type WriteKind } from "./turnWrites";
 import { createEveTransport, fetchSessionEvents } from "./eveTransport";
 import { GenericToolView, ToolRenderers } from "./tools";
 import { ToolGroupActions } from "./tools/ToolGroup";
@@ -236,6 +238,31 @@ const ApprovalBridge = ({
 };
 
 /**
+ * AIM 写过东西之后让原生刷新，也让卡片用的业务数据跟上。
+ *
+ * 从挂载那一刻的事件数开始扫：接回历史对话时重放的旧事件不算新写入。
+ */
+const TurnFinishedBridge = () => {
+  const events = useEveEvents();
+  const { reload } = useBizData();
+  const seenRef = useRef<number | null>(null);
+  const stateRef = useRef({ kinds: new Set<WriteKind>() });
+  useEffect(() => {
+    if (seenRef.current === null) {
+      seenRef.current = events.length;
+      return;
+    }
+    const fresh = events.slice(seenRef.current);
+    seenRef.current = events.length;
+    for (const kinds of scanTurnWrites(fresh, stateRef.current)) {
+      notifyTurnFinished(kinds);
+      reload();
+    }
+  }, [events, reload]);
+  return null;
+};
+
+/**
  * 把「历史对话」暴露给原生工具栏。面板本身在 Web 侧渲染——
  * 切换会话要重建运行时，那是这边的事。
  */
@@ -321,6 +348,7 @@ const Conversation = ({
         <ApprovalBridge context={context} runtime={runtime}>
           <NewConversationBridge accountKey={accountKeyFromToken(context.token)} />
           <HistoryBridge onOpen={() => setHistoryOpen(true)} />
+          <TurnFinishedBridge />
           <SessionRecovery onDiscardStoredSession={onDiscardStoredSession} />
           <ToolRenderers />
           <Thread

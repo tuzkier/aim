@@ -1,6 +1,7 @@
 import { AssignTaskUI } from "./AssignTask";
 import { CompleteTaskUI } from "./CompleteTask";
 import { CreateKnowledgeUI } from "./CreateKnowledge";
+import { CreateRecordUI } from "./CreateRecord";
 import { CreateTaskUI } from "./CreateTask";
 import { RecordFactUI } from "./RecordFact";
 import { RescheduleTaskUI } from "./RescheduleTask";
@@ -18,6 +19,7 @@ export const ToolRenderers = () => (
   <>
     <CreateKnowledgeUI />
     <CreateTaskUI />
+    <CreateRecordUI />
     <CompleteTaskUI />
     <RescheduleTaskUI />
     <AssignTaskUI />

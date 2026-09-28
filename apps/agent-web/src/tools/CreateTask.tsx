@@ -1,11 +1,12 @@
 import { makeAssistantToolUI } from "@assistant-ui/react";
+import { OpenNative } from "./OpenNative";
 import { ApprovalSlot, ToolCard, ToolStatusLine } from "./ToolCard";
 import { isAwaitingApproval } from "./types";
 import type { ToolRenderProps } from "./types";
 
 type TaskArgs = {
   title?: string;
-  detail?: string;
+  description?: string;
   dueAt?: string;
   due_at?: string;
 };
@@ -36,10 +37,14 @@ export const CreateTaskUI = makeAssistantToolUI({
           {isAwaitingApproval(props.approval) ? "将新建待办" : "待办"}
         </p>
         <h3 className="tool-card__title">{args.title ?? "（无标题）"}</h3>
-        {args.detail ? <p className="tool-card__text">{args.detail}</p> : null}
+        {args.description ? <p className="tool-card__text">{args.description}</p> : null}
         {due ? <p className="tool-card__meta">{due}</p> : null}
         <ApprovalSlot props={props} />
         <ToolStatusLine props={props} />
+        <OpenNative
+          kind="task"
+          id={(props.result as { data?: { task_id?: string } } | undefined)?.data?.task_id}
+        />
       </ToolCard>
     );
   },

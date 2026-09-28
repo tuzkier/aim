@@ -8,6 +8,8 @@
  * `webkit.messageHandlers`。没有原生外壳时（浏览器里开发）走 dev 回退。
  */
 
+import type { WriteKind } from "./turnWrites";
+
 export interface PageContext {
   title: string;
   summary: string;
@@ -74,9 +76,9 @@ export const openNative = (route: { kind: "record" | "task" | "knowledge"; id: s
   handler.postMessage(route);
 };
 
-/** 告诉原生这一轮结束了，可以刷新受影响的页面。 */
-export const notifyTurnFinished = (): void => {
-  window.webkit?.messageHandlers?.aimTurnFinished?.postMessage({});
+/** 告诉原生这一轮写了哪几类东西，原生据此只刷新受影响的页面。 */
+export const notifyTurnFinished = (kinds: readonly WriteKind[]): void => {
+  window.webkit?.messageHandlers?.aimTurnFinished?.postMessage({ kinds });
 };
 
 /**
