@@ -41,9 +41,10 @@ AIM 现在「能聊」，但不是一个完善的 agent：几条端到端链路�
   - `create_task` → 删除该待办
   - `create_record` / `create_knowledge` → 删除该记录
   - `update_task`（complete / delay / schedule）、`assign_task` → 用该次写入产生的 task change 走 `undo_change`
-  - `record_pregnancy_fact` → 恢复写入前的值（结果里记录旧值）
-- 为此，`update_task`、`assign_task` 的结果 `data` 增加 `change_id`；`record_pregnancy_fact` 增加 `previous_value`。
-- 撤销时校验：原调用属于当前账号的 agent 会话（经 `agent_sessions` 表关联），目标仍在当前 pregnancy 范围内；已撤销过的再撤销返回成功（幂等）。
+  - `record_pregnancy_fact` → **本期不支持撤销**，返回「孕期信息不能撤销，直接告诉我正确的值即可」。孕期事实是按来源优先级相互覆盖的证据账本，撤销需要改覆盖规则，且该工具本就在「执行前确认」档。
+- 为此，`complete_task`、`reschedule_task`、`assign_task` 的结果 `data` 增加 `change_id`。
+- `tool_invocations` 增加 `account_id`、`family_id`、`pregnancy_id`、`undone_at`（迁移 `0009`）。撤销时校验原调用属于当前账号、目标仍在当前 pregnancy 范围内；`undone_at` 已有值时直接返回成功（幂等）。历史数据这几列为空，不能经公开接口撤销。
+- 待办在原调用之后又被改过时，撤销返回冲突「这项待办之后又被改过，不能直接撤销」。
 - `delete_task` / `delete_record` 两个 Eve 工具**不再暴露给模型**（`disableTool`），对应内部接口只供撤销用例调用。
 - 新增公开接口 `POST /api/v1/agent/operations/{operation_id}/undo`，给网页卡片上的「撤销」按钮用，与 `undo_operation` 共用同一应用层用例。
 - `undo_operation` 移出 `always()`，加入 `DIRECT_EXECUTION_TOOLS`；`update_task` 的 `complete` 动作同样直接执行——`update_task` 拆成 `complete_task`（直接）与 `reschedule_task`（`schedule` / `delay`，需确认），因为 Eve 的审批档位按工具而非按参数。
@@ -64,7 +65,7 @@ AIM 现在「能聊」，但不是一个完善的 agent：几条端到端链路�
   - `{ mode: "new", pageContext?: { title, summary } }`——快捷入口
   - `{ mode: "new", pageContext, autoSend: string }`——「分析当前记录」
 - 网页按 `entry` 决定接回还是新开；有 `pageContext` 时在输入框上方显示标签。
-- 页面上下文作为首条用户消息里的一个独立文本 part 发送，以约定标记包裹（`<page-context>…</page-context>`）。`UserMessage` 渲染时过滤该 part；会话标题取自用户自己输入的那段。
+- 页面上下文走 Eve 的 `clientContext`：`useEveAgentRuntime` 的 `prepareSend` 在标签存在期间给**每一轮**附上 `{ page: { title, summary } }`。它只进入该轮的模型调用、不写入会话历史，所以气泡里不会出现，也不需要隐藏标记；用户点 ✕ 后不再附带。重新打开一段历史对话时标签不恢复。
 - **写入后刷新**：网页从事件流判断一轮结束（含审批批次结算后的那一轮），若本轮有写工具 `completed`，调用 `notifyTurnFinished({ kinds: ["task" | "record" | "knowledge"] })`。原生 `TimelineStore`、`RecordsStore`、`LibraryStore` 订阅 `.aimAgentTurnFinished`，按 kind 各自 `load()`。
 - **跳转**：卡片上的「查看」调用 `openNative`；`AgentView.onNavigate` 在自己的 `NavigationStack` 里推入 `TaskDetailView` / `RecordDetailView` / 资料详情。
 - **标签页与快捷入口的同步**：快捷入口仍是独立的 `fullScreenCover` WebView。AIM 标签页重新出现时，原生调用 `__aimOnAppear__`；网页若发现本地存储的最近会话已不是当前这段、且当前不在生成中、输入框为空，就切到最近那段。
@@ -78,7 +79,7 @@ AIM 现在「能聊」，但不是一个完善的 agent：几条端到端链路�
 
 ### 3.5 运行保障
 
-- Agent 运行时在生产环境（`NODE_ENV=production`）下，若 `EVE_USE_MOCK_MODEL` 未显式设为 `0` 或缺少模型凭证，**启动即失败**，不再退回 mock。部署 compose 显式设置 `EVE_USE_MOCK_MODEL=0`；本地 compose 保持默认 mock。
+- 新增环境变量 `AIM_DEPLOYMENT`，只在 `compose.prod.yaml` 里设为 `production`（不能用 `NODE_ENV`：Dockerfile 对本地栈也设了 `production`）。它为 `production` 时，若 `EVE_USE_MOCK_MODEL` 不是 `0` 或缺少模型凭证，Agent 运行时**启动即失败**，不再退回 mock。本地 compose 保持默认 mock。
 - `apps/agent-web` 的 `eve` 升到与运行时一致的 `0.47.2`，`@assistant-ui/eve` 同步到兼容版本并锁定。
 
 ### 3.6 验证
@@ -167,5 +168,5 @@ AIM 现在「能聊」，但不是一个完善的 agent：几条端到端链路�
 
 - **`@assistant-ui/eve` 仍是 0.0.x。** 升级到与 eve 0.47.2 兼容的版本可能改 API；锁版本，第一期先做升级并跑通现有场景再动其它。
 - **拆分 `update_task`** 会让旧会话里的历史工具调用找不到渲染器，走通用卡兜底即可。
-- **隐藏的页面上下文 part** 依赖约定标记；若 Eve 将来支持消息级元数据，改用元数据。
+- **页面上下文不进历史**：`clientContext` 不持久化，续聊历史对话时模型看不到当初的页面内容，只能从它自己当时的回复里推断。这是有意的取舍——页面摘要可能包含大段资料，写进历史会持续占用上下文。
 - **待办的删除是硬删除。** 撤销「新建待办」即删除它，这没有问题；但本规格不给模型「删除已有待办」的能力——用户想去掉一项待办时，模型建议改期或由用户在原生页面删除。
