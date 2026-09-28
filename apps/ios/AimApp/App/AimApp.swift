@@ -76,7 +76,7 @@ private struct MainTabView: View {
                 )
             }
         }
-        .onReceive(NotificationCenter.default.publisher(for: .aimAgentTurnFinished)) { note in
+        .onReceive(NotificationCenter.default.publisher(for: .aimDataChanged)) { note in
             let kinds = Set(note.userInfo?["kinds"] as? [String] ?? ["task", "record", "knowledge"])
             Task { await refreshCoalescer?.request(kinds) }
         }

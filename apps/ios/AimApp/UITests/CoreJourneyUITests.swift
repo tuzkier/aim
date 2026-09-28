@@ -252,6 +252,41 @@ final class CoreJourneyUITests: XCTestCase {
 
     /// 首页标题是进入完整时间线的主入口。时间线以今天所在周开头，
     /// 筛选跟着时间线走了，返回后回到首页。
+    /// 加错的待办要能删掉，而不是只能标成完成——那会留下一条假的「已完成」。
+    func testATaskCanBeDeletedFromItsDetail() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-reset-session"]
+        app.launch()
+
+        registerNewAccount(in: app)
+        completePregnancySetup(in: app)
+        XCTAssertTrue(app.tabBars.buttons["孕期"].waitForExistence(timeout: 15))
+
+        let quickAdd = app.buttons["home-quick-add"]
+        reveal(quickAdd, in: app)
+        quickAdd.tap()
+        let field = app.textFields["home-quick-add-field"]
+        XCTAssertTrue(field.waitForExistence(timeout: 3))
+        let title = "加错的待办 \(Int.random(in: 100...999))"
+        field.typeText(title + "\n")
+        let row = app.staticTexts[title]
+        XCTAssertTrue(row.waitForExistence(timeout: 10))
+        dismissKeyboard(in: app)
+
+        row.tap()
+        let delete = app.buttons["task-delete"]
+        reveal(delete, in: app)
+        delete.tap()
+        let confirm = app.buttons["删除"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 3), "删除前应当再确认一次")
+        confirm.tap()
+
+        XCTAssertTrue(app.buttons["home-quick-add"].waitForExistence(timeout: 10), "删除后应回到首页")
+        let gone = NSPredicate(format: "exists == false")
+        expectation(for: gone, evaluatedWith: app.staticTexts[title])
+        waitForExpectations(timeout: 10)
+    }
+
     func testHeaderOpensTimelineWithTodayOnTop() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-reset-session"]

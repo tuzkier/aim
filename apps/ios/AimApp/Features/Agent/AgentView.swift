@@ -53,7 +53,7 @@ struct AgentView: View {
                         // 一轮可能改过待办或记录。用通知广播而不是让对话面直接去刷别的
                         // store：那样它就得知道全 App 有哪些页面，耦合只会越滚越大。
                         NotificationCenter.default.post(
-                            name: .aimAgentTurnFinished, object: nil, userInfo: ["kinds": kinds]
+                            name: .aimDataChanged, object: nil, userInfo: ["kinds": kinds]
                         )
                     },
                     onCreate: { webView = $0 }
@@ -235,6 +235,7 @@ final class AgentRefreshCoalescer {
 }
 
 extension Notification.Name {
-    /// Agent 结束了一轮，可能已经改过待办或记录。
-    static let aimAgentTurnFinished = Notification.Name("aim.agentTurnFinished")
+    /// 待办、记录或资料被改过（AIM 写入，或原生页面删除等）。
+    /// userInfo["kinds"] 是受影响的类别：task / record / knowledge。
+    static let aimDataChanged = Notification.Name("aim.dataChanged")
 }

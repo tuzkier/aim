@@ -166,6 +166,35 @@ final class AgentUndoTests: XCTestCase {
     }
 }
 
+@MainActor
+final class TaskDetailDeleteTests: XCTestCase {
+    private let task = TaskItem(
+        id: UUID(), title: "加错的待办", detail: nil, status: .todo, version: 1,
+        dueAt: nil, scheduledFor: nil, assignedMemberID: nil, changedByActor: .agent
+    )
+
+    func testDeletingCallsTheRepositoryWithTheTaskID() async {
+        let repository = SpyRepository()
+        let store = TaskDetailStore(task: task, repository: repository)
+
+        let deleted = await store.delete()
+
+        XCTAssertTrue(deleted)
+        XCTAssertEqual(repository.deletedTaskIDs, [task.id])
+    }
+
+    func testAFailedDeleteReportsAnErrorAndKeepsThePage() async {
+        let repository = SpyRepository()
+        repository.shouldFail = true
+        let store = TaskDetailStore(task: task, repository: repository)
+
+        let deleted = await store.delete()
+
+        XCTAssertFalse(deleted)
+        XCTAssertNotNil(store.errorMessage)
+    }
+}
+
 private final class SpyRepository: BusinessRepositoryProtocol, @unchecked Sendable {
     var deletedTaskIDs: [UUID] = []
     var deletedRecordIDs: [UUID] = []
