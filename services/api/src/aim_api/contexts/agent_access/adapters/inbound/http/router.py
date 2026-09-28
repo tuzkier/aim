@@ -18,6 +18,7 @@ from aim_api.contexts.agent_access.application.authorize_tool import (
     AgentToolContext,
     authorize_tool,
 )
+from aim_api.contexts.agent_access.adapters.inbound.http.operation_undo import undo_invocation
 from aim_api.contexts.agent_access.application.execute_tool import effective_request_hash
 from aim_api.contexts.agent_access.domain.tool_invocation import ToolInvocation
 from aim_api.contexts.family.adapters.outbound.persistence.repositories import (
@@ -38,17 +39,13 @@ from aim_api.contexts.planning.application.commands import (
     complete_task,
     create_task,
     delay_task,
-    delete_task,
     schedule_task,
-    undo_change,
 )
 from aim_api.contexts.planning.application.commands.assign_task import AssignTaskCommand
 from aim_api.contexts.planning.application.commands.complete_task import CompleteTaskCommand
 from aim_api.contexts.planning.application.commands.create_task import CreateTaskCommand
-from aim_api.contexts.planning.application.commands.delete_task import DeleteTaskCommand
 from aim_api.contexts.planning.application.commands.delay_task import DelayTaskCommand
 from aim_api.contexts.planning.application.commands.schedule_task import ScheduleTaskCommand
-from aim_api.contexts.planning.application.commands.undo_change import UndoChangeCommand
 from aim_api.contexts.planning.domain.task import ActorType
 from aim_api.contexts.pregnancy.adapters.outbound.persistence.repositories import (
     SqlAlchemyPregnancyRepository,
@@ -59,9 +56,8 @@ from aim_api.contexts.pregnancy.domain.fact import FactSource
 from aim_api.contexts.records.adapters.outbound.persistence.repositories import (
     SqlAlchemyRecordsUnitOfWork,
 )
-from aim_api.contexts.records.application.commands import create_record, delete_record
+from aim_api.contexts.records.application.commands import create_record
 from aim_api.contexts.records.application.commands.create_record import CreateRecordCommand
-from aim_api.contexts.records.application.commands.delete_record import DeleteRecordCommand
 from aim_api.contexts.records.domain.errors import RecordValidationError
 from aim_api.contexts.records.application.queries import list_records
 from aim_api.contexts.records.application.queries.list_records import ListRecordsQuery
@@ -119,10 +115,6 @@ class CreateTaskRequest(BaseModel):
     due_at: datetime | None = None
 
 
-class DeleteTaskRequest(BaseModel):
-    task_id: UUID
-
-
 class CreateRecordRequest(BaseModel):
     record_type: RecordType
     structured_data: dict[str, Any] = Field(default_factory=dict)
@@ -146,19 +138,13 @@ class CreateKnowledgeRequest(BaseModel):
     approved: bool = False
 
 
-class DeleteRecordRequest(BaseModel):
-    record_id: UUID
-
-
 class GetGuidanceRequest(BaseModel):
     week: int = Field(ge=0)
     region: str = "CN-ZJ-HZ"
 
 
 class UndoOperationRequest(BaseModel):
-    change_id: UUID
-    expected_version: int = Field(ge=1)
-    approved: bool = False
+    operation_id: UUID
 
 
 class ListRecordsRequest(BaseModel):
@@ -425,24 +411,6 @@ async def _create_task(session, context: AgentToolContext, body: dict[str, Any])
     return ({"task_id": str(task.id), "title": task.title}, f"已添加待办：{task.title}")
 
 
-async def _delete_task(session, context: AgentToolContext, body: dict[str, Any]):
-    """撤销「Agent 新建待办」。任务不存在时也算成功——撤销可能被重放。"""
-    uow = SqlAlchemyPlanningUnitOfWork(session)
-    task_id = UUID(body["task_id"])
-    existing = await uow.repository.get_task(task_id)
-    if existing is not None and existing.pregnancy_id != context.pregnancy_id:
-        raise ForbiddenError("task is outside the agent pregnancy scope")
-    await delete_task.execute(
-        DeleteTaskCommand(
-            task_id=task_id,
-            pregnancy_id=context.pregnancy_id,
-            account_id=context.account_id,
-        ),
-        uow,
-    )
-    return ({"task_id": str(task_id)}, "已撤销新增的待办")
-
-
 async def _create_knowledge(session, context: AgentToolContext, body: dict[str, Any]):
     """写入一条知识条目。形态决定哪些字段必填，校验在领域层。"""
     uow = SqlAlchemyRecordsUnitOfWork(session)
@@ -484,20 +452,6 @@ async def _create_record(session, context: AgentToolContext, body: dict[str, Any
         uow,
     )
     return ({"record_id": str(record.id)}, "已记录")
-
-
-async def _delete_record(session, context: AgentToolContext, body: dict[str, Any]):
-    uow = SqlAlchemyRecordsUnitOfWork(session)
-    await delete_record.execute(
-        DeleteRecordCommand(
-            record_id=UUID(body["record_id"]),
-            family_id=context.family_id,
-            account_id=context.account_id,
-            pregnancy_id=context.pregnancy_id,
-        ),
-        uow,
-    )
-    return ({"record_id": body["record_id"]}, "已撤销记录")
 
 
 def _parse_datetime(value: Any) -> datetime | None:
@@ -560,25 +514,12 @@ async def _guidance(session, context: AgentToolContext, body: dict[str, Any]):
 
 
 async def _undo_operation(session, context: AgentToolContext, body: dict[str, Any]):
-    uow = SqlAlchemyPlanningUnitOfWork(session)
-    change = await uow.repository.get_change(UUID(body["change_id"]))
-    if change is None:
-        raise ConflictError("task change does not exist")
-    task = await uow.repository.get_task(change.task_id)
-    if task is None or task.pregnancy_id != context.pregnancy_id:
-        raise ForbiddenError("change is outside the agent pregnancy scope")
-    updated = await undo_change.execute(
-        UndoChangeCommand(
-            change_id=change.id,
-            account_id=context.account_id,
-            expected_version=body["expected_version"],
-        ),
-        uow,
+    invocation = await SqlAlchemyToolInvocationRepository(session).get_by_operation(
+        UUID(body["operation_id"])
     )
-    return (
-        {"task_id": str(updated.id), "version": updated.version},
-        f"已撤销任务变更：{updated.title}",
-    )
+    if invocation is None or invocation.pregnancy_id != context.pregnancy_id:
+        raise ConflictError("没有找到这次操作，可能不是在这段孕期里做的")
+    return await undo_invocation(session, invocation, account_id=context.account_id)
 
 
 @router.post("/get-pregnancy-context", response_model=ToolResult, include_in_schema=False)
@@ -613,11 +554,6 @@ async def create_task_endpoint(request: Request, payload: CreateTaskRequest):
     return await _run(request, "create_task", payload, _create_task, write=True)
 
 
-@router.post("/delete-task", response_model=ToolResult, include_in_schema=False)
-async def delete_task_endpoint(request: Request, payload: DeleteTaskRequest):
-    return await _run(request, "delete_task", payload, _delete_task, write=True)
-
-
 @router.post("/create-knowledge", response_model=ToolResult, include_in_schema=False)
 async def create_knowledge_endpoint(request: Request, payload: CreateKnowledgeRequest):
     return await _run(request, "create_knowledge", payload, _create_knowledge, write=True)
@@ -626,11 +562,6 @@ async def create_knowledge_endpoint(request: Request, payload: CreateKnowledgeRe
 @router.post("/create-record", response_model=ToolResult, include_in_schema=False)
 async def create_record_endpoint(request: Request, payload: CreateRecordRequest):
     return await _run(request, "create_record", payload, _create_record, write=True)
-
-
-@router.post("/delete-record", response_model=ToolResult, include_in_schema=False)
-async def delete_record_endpoint(request: Request, payload: DeleteRecordRequest):
-    return await _run(request, "delete_record", payload, _delete_record, write=True)
 
 
 @router.post("/assign-task", response_model=ToolResult, include_in_schema=False)

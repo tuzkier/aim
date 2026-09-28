@@ -144,18 +144,59 @@
         }
       }
     },
-    "/internal/agent-tools/update-task": {
+    "/internal/agent-tools/complete-task": {
       "post": {
         "tags": [
           "agent-tools"
         ],
-        "summary": "Update Task",
-        "operationId": "update_task_internal_agent_tools_update_task_post",
+        "summary": "Complete Task Endpoint",
+        "operationId": "complete_task_endpoint_internal_agent_tools_complete_task_post",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateTaskRequest"
+                "$ref": "#/components/schemas/CompleteTaskToolRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/internal/agent-tools/reschedule-task": {
+      "post": {
+        "tags": [
+          "agent-tools"
+        ],
+        "summary": "Reschedule Task Endpoint",
+        "operationId": "reschedule_task_endpoint_internal_agent_tools_reschedule_task_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RescheduleTaskRequest"
               }
             }
           },
@@ -197,47 +238,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/aim_api__contexts__agent_access__adapters__inbound__http__router__CreateTaskRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ToolResult"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/internal/agent-tools/delete-task": {
-      "post": {
-        "tags": [
-          "agent-tools"
-        ],
-        "summary": "Delete Task Endpoint",
-        "operationId": "delete_task_endpoint_internal_agent_tools_delete_task_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DeleteTaskRequest"
               }
             }
           },
@@ -320,47 +320,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/aim_api__contexts__agent_access__adapters__inbound__http__router__CreateRecordRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ToolResult"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/internal/agent-tools/delete-record": {
-      "post": {
-        "tags": [
-          "agent-tools"
-        ],
-        "summary": "Delete Record Endpoint",
-        "operationId": "delete_record_endpoint_internal_agent_tools_delete_record_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DeleteRecordRequest"
               }
             }
           },
@@ -599,6 +558,26 @@
   },
   "components": {
     "schemas": {
+      "CompleteTaskToolRequest": {
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Task Id"
+          },
+          "expected_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expected Version"
+          }
+        },
+        "type": "object",
+        "required": [
+          "task_id",
+          "expected_version"
+        ],
+        "title": "CompleteTaskToolRequest"
+      },
       "CreateFamilyRequest": {
         "properties": {
           "name": {
@@ -805,34 +784,6 @@
           "due_at"
         ],
         "title": "DelayTaskRequest"
-      },
-      "DeleteRecordRequest": {
-        "properties": {
-          "record_id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Record Id"
-          }
-        },
-        "type": "object",
-        "required": [
-          "record_id"
-        ],
-        "title": "DeleteRecordRequest"
-      },
-      "DeleteTaskRequest": {
-        "properties": {
-          "task_id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Task Id"
-          }
-        },
-        "type": "object",
-        "required": [
-          "task_id"
-        ],
-        "title": "DeleteTaskRequest"
       },
       "DeletionRequest": {
         "properties": {
@@ -1587,6 +1538,46 @@
         ],
         "title": "RenameFamilyRequest"
       },
+      "RescheduleTaskRequest": {
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Task Id"
+          },
+          "expected_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expected Version"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "schedule",
+              "delay"
+            ],
+            "title": "Kind"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          },
+          "approved": {
+            "type": "boolean",
+            "title": "Approved",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "task_id",
+          "expected_version",
+          "kind",
+          "at"
+        ],
+        "title": "RescheduleTaskRequest"
+      },
       "ResolveSessionRequest": {
         "properties": {
           "token": {
@@ -1912,28 +1903,41 @@
       },
       "UndoOperationRequest": {
         "properties": {
-          "change_id": {
+          "operation_id": {
             "type": "string",
             "format": "uuid",
-            "title": "Change Id"
-          },
-          "expected_version": {
-            "type": "integer",
-            "minimum": 1.0,
-            "title": "Expected Version"
-          },
-          "approved": {
-            "type": "boolean",
-            "title": "Approved",
-            "default": false
+            "title": "Operation Id"
           }
         },
         "type": "object",
         "required": [
-          "change_id",
-          "expected_version"
+          "operation_id"
         ],
         "title": "UndoOperationRequest"
+      },
+      "UndoOperationResponse": {
+        "properties": {
+          "operation_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Operation Id"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "already_undone": {
+            "type": "boolean",
+            "title": "Already Undone"
+          }
+        },
+        "type": "object",
+        "required": [
+          "operation_id",
+          "summary",
+          "already_undone"
+        ],
+        "title": "UndoOperationResponse"
       },
       "UpdateMyMembershipRequest": {
         "properties": {
@@ -2050,77 +2054,6 @@
         },
         "type": "object",
         "title": "UpdateSessionRequest"
-      },
-      "UpdateTaskRequest": {
-        "properties": {
-          "task_id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Task Id"
-          },
-          "action": {
-            "type": "string",
-            "enum": [
-              "schedule",
-              "complete",
-              "delay"
-            ],
-            "title": "Action"
-          },
-          "expected_version": {
-            "type": "integer",
-            "minimum": 1.0,
-            "title": "Expected Version"
-          },
-          "scheduled_for": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Scheduled For"
-          },
-          "due_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Due At"
-          },
-          "approved": {
-            "type": "boolean",
-            "title": "Approved",
-            "default": false
-          },
-          "family_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Family Id"
-          }
-        },
-        "type": "object",
-        "required": [
-          "task_id",
-          "action",
-          "expected_version"
-        ],
-        "title": "UpdateTaskRequest"
       },
       "ValidationError": {
         "properties": {

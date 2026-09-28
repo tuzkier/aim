@@ -1621,6 +1621,50 @@
           }
         }
       }
+    },
+    "/api/v1/agent/operations/{operation_id}/undo": {
+      "post": {
+        "tags": [
+          "agent-operations"
+        ],
+        "summary": "Undo Operation From Card",
+        "description": "对话卡片上的「撤销」。与模型调用的 undo_operation 共用同一套反向逻辑。",
+        "operationId": "undo_operation_from_card_api_v1_agent_operations__operation_id__undo_post",
+        "parameters": [
+          {
+            "name": "operation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Operation Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UndoOperationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2846,6 +2890,30 @@
           "family_task_counts"
         ],
         "title": "TodayResponse"
+      },
+      "UndoOperationResponse": {
+        "properties": {
+          "operation_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Operation Id"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "already_undone": {
+            "type": "boolean",
+            "title": "Already Undone"
+          }
+        },
+        "type": "object",
+        "required": [
+          "operation_id",
+          "summary",
+          "already_undone"
+        ],
+        "title": "UndoOperationResponse"
       },
       "UpdateMyMembershipRequest": {
         "properties": {
