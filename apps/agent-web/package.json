@@ -12,7 +12,7 @@
   "dependencies": {
     "@assistant-ui/eve": "0.0.19",
     "@assistant-ui/react": "^0.15.22",
-    "eve": "0.47.2",
+    "eve": "0.67.2",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },
