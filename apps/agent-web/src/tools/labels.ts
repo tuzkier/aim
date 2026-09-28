@@ -61,6 +61,7 @@ export const TOOL_TITLES: Record<string, string> = {
   create_record: "新建记录",
   complete_task: "完成待办",
   reschedule_task: "改期待办",
+  delete_task: "删除待办",
   assign_task: "分派待办",
   record_pregnancy_fact: "更新孕期信息",
   undo_operation: "撤销",
@@ -97,6 +98,13 @@ const APPROVAL_COPY: Record<string, ApprovalCopy> = {
     pendingYes: "待提交：指派",
     pendingNo: "待提交：不指派",
     rejected: "没有指派",
+  },
+  delete_task: {
+    confirm: "确认删除",
+    reject: "保留",
+    pendingYes: "待提交：删除",
+    pendingNo: "待提交：保留",
+    rejected: "没有删除",
   },
   record_pregnancy_fact: {
     confirm: "确认更新",

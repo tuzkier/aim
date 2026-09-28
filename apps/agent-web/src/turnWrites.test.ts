@@ -32,3 +32,7 @@ test("approval_required results are not writes", () => {
 test("undo touches everything it might have reverted", () => {
   expect(writesIn([result("undo_operation")])).toEqual(["task", "record", "knowledge"]);
 });
+
+test("deleting a to-do refreshes the task pages", () => {
+  expect(writesIn([result("delete_task")])).toEqual(["task"]);
+});

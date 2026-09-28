@@ -6,6 +6,7 @@ export const WRITE_KINDS: Record<string, WriteKind[]> = {
   complete_task: ["task"],
   reschedule_task: ["task"],
   assign_task: ["task"],
+  delete_task: ["task"],
   create_record: ["record"],
   create_knowledge: ["knowledge"],
   // 孕期信息可能改变预产期，首页的孕周与计划跟着变。
