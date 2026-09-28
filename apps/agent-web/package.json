@@ -6,12 +6,13 @@
     "dev": "node scripts/sync-tokens.mjs && vite",
     "build": "node scripts/sync-tokens.mjs && vite build",
     "preview": "vite preview",
-    "sync-tokens": "node scripts/sync-tokens.mjs"
+    "sync-tokens": "node scripts/sync-tokens.mjs",
+    "test": "vitest run"
   },
   "dependencies": {
-    "@assistant-ui/eve": "^0.0.15",
-    "@assistant-ui/react": "^0.15.16",
-    "eve": "^0.45.2",
+    "@assistant-ui/eve": "0.0.19",
+    "@assistant-ui/react": "^0.15.22",
+    "eve": "0.47.2",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },
@@ -20,6 +21,7 @@
     "@types/react-dom": "^19.2.5",
     "@vitejs/plugin-react": "^6.1.0",
     "typescript": "^7.0.2",
-    "vite": "^8.2.2"
+    "vite": "^8.2.2",
+    "vitest": "^5.0.2"
   }
 }
