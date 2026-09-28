@@ -8,6 +8,22 @@
  * `webkit.messageHandlers`。没有原生外壳时（浏览器里开发）走 dev 回退。
  */
 
+export interface PageContext {
+  title: string;
+  summary: string;
+}
+
+/**
+ * 这次对话面是从哪里打开的。
+ *
+ * - resume：AIM 标签页，接回上一段。
+ * - new：快捷入口，开一段新的；带 pageContext 时输入框上方显示「正在看：…」，
+ *   带 autoSend 时打开就把这句话发出去（「让 Agent 分析当前记录」）。
+ */
+export type AgentEntry =
+  | { mode: "resume" }
+  | { mode: "new"; pageContext?: PageContext; autoSend?: string };
+
 export interface NativeContext {
   /** `aim.v1.…` 会话票。 */
   token: string;
@@ -18,6 +34,8 @@ export interface NativeContext {
   /** 当前家庭与孕期。卡片凭 ID 去公开 API 取真实标题和称呼，不采信模型参数。 */
   familyId?: string;
   pregnancyId?: string;
+  /** 缺省按 resume 处理。 */
+  entry?: AgentEntry;
 }
 
 type MessageHandler = { postMessage: (body: unknown) => void };
@@ -32,6 +50,8 @@ declare global {
     __aimNewConversation__?: () => void;
     /** 原生工具栏的「历史对话」。面板在 Web 侧渲染——切换会话要重建运行时。 */
     __aimOpenHistory__?: () => void;
+    /** 原生标签页重新出现时调用：若快捷入口里开了新的一段，切过去。 */
+    __aimOnAppear__?: () => void;
     webkit?: { messageHandlers?: Record<string, MessageHandler | undefined> };
   }
 }

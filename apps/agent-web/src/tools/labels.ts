@@ -43,6 +43,8 @@ export const READ_ONLY_TOOLS = new Set([
   "get_guidance",
   "get_current_time",
   "echo_context",
+  // Eve 内置：按需加载技能说明。对用户来说就是「它翻了一下操作指引」。
+  "eve:load-skill",
 ]);
 
 /** 步骤行上显示的中文工具名。读不到就退回原名，不猜。 */
@@ -52,6 +54,7 @@ export const TOOL_TITLES: Record<string, string> = {
   list_records: "查看记录",
   get_guidance: "查阅指南",
   get_current_time: "查看当前时间",
+  "eve:load-skill": "查阅操作指引",
   echo_context: "确认当前身份范围",
   create_knowledge: "收录到资料库",
   create_task: "新建待办",

@@ -13,7 +13,15 @@ import {
   useEveReset,
   useEveSession,
 } from "@assistant-ui/eve";
-import { accountKeyFromToken, loadNativeContext, type NativeContext } from "./bridge";
+import {
+  accountKeyFromToken,
+  loadNativeContext,
+  type AgentEntry,
+  type NativeContext,
+  type PageContext,
+} from "./bridge";
+import { resolveEntry, withPageContext } from "./entry";
+import { ContextChip } from "./thread/ContextChip";
 import { clearSession, loadSession, saveSession } from "./session";
 import type { ClientSessionState } from "./types";
 import { ApprovalBatchProvider } from "./approvals";
@@ -140,7 +148,7 @@ const TurnError = () => {
   );
 };
 
-const Thread = () => (
+const Thread = ({ chip }: { chip?: ReactNode }) => (
   <ThreadPrimitive.Root className="thread">
     <ThreadPrimitive.Viewport className="thread__viewport" autoScroll>
       <ThreadPrimitive.Empty>
@@ -153,6 +161,7 @@ const Thread = () => (
       <ThreadPrimitive.Messages components={{ UserMessage, AssistantMessage }} />
       <TurnError />
     </ThreadPrimitive.Viewport>
+    {chip}
     <ComposerPrimitive.Root className="composer">
       <ComposerPrimitive.Input
         className="composer__input"
@@ -242,16 +251,27 @@ const HistoryBridge = ({ onOpen }: { onOpen: () => void }) => {
 
 const Conversation = ({
   context,
+  entry,
   restored,
   onSwitch,
+  onAppearSwitch,
   onDiscardStoredSession,
 }: {
   context: NativeContext;
+  entry: AgentEntry;
   restored: Restored | null;
   onSwitch: (session: AgentSessionSummary) => void;
+  onAppearSwitch: () => void;
   onDiscardStoredSession: () => void;
 }) => {
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [page, setPage] = useState<PageContext | null>(
+    entry.mode === "new" ? (entry.pageContext ?? null) : null,
+  );
+  // prepareSend 在运行时创建时就被捕获，直接读 state 会一直是初值，所以经 ref 读。
+  const pageRef = useRef(page);
+  pageRef.current = page;
+
   const runtime = useEveAgentRuntime({
     ...(restored
       ? { initialSession: restored.session, initialEvents: restored.events as never }
@@ -260,7 +280,40 @@ const Conversation = ({
     // 开发时由 Vite 代理转到本地 Eve。两边都不需要给 Eve 配 CORS。
     ...(context.eveOrigin ? { host: context.eveOrigin } : {}),
     headers: () => ({ authorization: `Bearer ${context.token}` }),
+    prepareSend: (input) => withPageContext(input, pageRef.current),
   });
+
+  // 「让 Agent 分析当前记录」：打开就把问题发出去。只发一次——
+  // 票据轮换等原因重渲染时不能再发。
+  //
+  // 推到下一拍再发，并在 cleanup 里取消：挂载后立刻卸载（开发时 StrictMode 必然如此）
+  // 会让适配器以「运行时已卸载」为由静默丢掉这次发送，而「已发送」标记却已经立起来了。
+  const autoSentRef = useRef(false);
+  useEffect(() => {
+    if (entry.mode !== "new" || !entry.autoSend || autoSentRef.current || restored) return;
+    const text = entry.autoSend;
+    const timer = window.setTimeout(() => {
+      autoSentRef.current = true;
+      void runtime.thread.append({ role: "user", content: [{ type: "text", text }] });
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [entry, runtime, restored]);
+
+  // 从快捷入口回到标签页时跟上最近那段。回调经 ref 取最新的，免得每次渲染都重新注册。
+  const onAppearRef = useRef(onAppearSwitch);
+  onAppearRef.current = onAppearSwitch;
+  useEffect(() => {
+    if (entry.mode !== "resume") return;
+    window.__aimOnAppear__ = () => {
+      // 正在生成、或者用户已经在输入框里写了东西，就不要把人拽走。
+      if (runtime.thread.getState().isRunning) return;
+      if (runtime.thread.composer.getState().text.trim()) return;
+      onAppearRef.current();
+    };
+    return () => {
+      delete window.__aimOnAppear__;
+    };
+  }, [entry.mode, runtime]);
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
@@ -270,7 +323,9 @@ const Conversation = ({
           <HistoryBridge onOpen={() => setHistoryOpen(true)} />
           <SessionRecovery onDiscardStoredSession={onDiscardStoredSession} />
           <ToolRenderers />
-          <Thread />
+          <Thread
+            chip={page ? <ContextChip page={page} onClear={() => setPage(null)} /> : undefined}
+          />
           {historyOpen ? (
             <HistoryPanel
               token={context.token}
@@ -296,11 +351,13 @@ export const App = () => {
   const [restored, setRestored] = useState<Restored | null>(null);
   const [restoring, setRestoring] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const entry = useMemo(() => (context ? resolveEntry(context) : null), [context]);
 
   // 拿到会话票之后、开始渲染对话之前，把上一段对话的事件取回来。
   // `initialEvents` 只在运行时创建那一刻生效，所以必须先取完再渲染。
   useEffect(() => {
-    if (!context) return;
+    // 快捷入口开的是新的一段，不接回上一段。
+    if (!context || entry?.mode !== "resume") return;
     const stored = loadSession(accountKeyFromToken(context.token));
     if (!stored) return;
     let cancelled = false;
@@ -321,7 +378,7 @@ export const App = () => {
     return () => {
       cancelled = true;
     };
-  }, [context]);
+  }, [context, entry?.mode]);
 
   useEffect(() => {
     let cancelled = false;
@@ -361,13 +418,22 @@ export const App = () => {
           sessionId: picked.eveSessionId,
           streamIndex: snapshot.nextIndex,
         });
-        void touchSession(context.token, picked.id, context.eveOrigin);
+        if (picked.id) void touchSession(context.token, picked.id, context.eveOrigin);
       })
       .finally(() => setRestoring(false));
   };
 
+  /** 从快捷入口回到标签页时，切到最近那段（快捷入口会把它存成最近一段）。 */
+  const followLatestStored = () => {
+    if (!context) return;
+    const stored = loadSession(accountKeyFromToken(context.token));
+    if (!stored || stored.sessionId === restored?.session.sessionId) return;
+    // 目录 id 不知道；只影响「顶到最前」，切换本身按 Eve 会话 id 进行。
+    switchToSession({ id: "", eveSessionId: stored.sessionId } as AgentSessionSummary);
+  };
+
   if (error) return <div className="fatal">{error}</div>;
-  if (!context) return <div className="loading">正在准备…</div>;
+  if (!context || !entry) return <div className="loading">正在准备…</div>;
   if (restoring) return <div className="loading">正在接回上一段对话…</div>;
 
   return (
@@ -382,8 +448,10 @@ export const App = () => {
         // 只在创建那一刻生效，光换 props 不会让它去接另一段。
         key={restored?.session.sessionId ?? "new"}
         context={context}
+        entry={entry}
         restored={restored}
         onSwitch={switchToSession}
+        onAppearSwitch={followLatestStored}
         onDiscardStoredSession={() => {
           clearSession(accountKeyFromToken(context.token));
           setRestored(null);

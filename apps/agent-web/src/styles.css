@@ -307,3 +307,9 @@ body {
 .tool-group__error { margin: 0 0 8px; font-size: 13px; color: var(--aim-danger); }
 .btn--link { border: none; background: none; color: var(--aim-accent); padding: 0 0 0 8px; }
 .tool-card__was { color: var(--aim-text-tertiary); text-decoration: line-through; }
+.context-chip {
+  display: inline-flex; align-self: flex-start; align-items: center; gap: 6px; margin: 0 12px 6px;
+  padding: 4px 10px; border-radius: 999px; font-size: 13px;
+  background: var(--aim-accent-soft); color: var(--aim-accent);
+}
+.context-chip__clear { border: none; background: none; color: inherit; font-size: 12px; padding: 0 2px; }
