@@ -32,45 +32,30 @@ export const gateModel = mockModel({
         | {
             operationId?: string;
             data?: { task_id?: string; tasks?: Array<{ task_id?: string; version?: number }> };
-            taskId?: string;
-            status?: string;
           }
         | undefined;
-      const taskSnapshot = toolResults
-        .map((result) => result.output as { data?: { tasks?: Array<{ task_id?: string; version?: number }> } })
-        .find((output) => (output.data?.tasks?.length ?? 0) > 0)?.data?.tasks?.[0];
-      const firstTask = latest?.data?.tasks?.[0] ?? taskSnapshot;
 
       if (toolResults.length === 0) {
         return { toolCalls: [{ name: "list_tasks", input: {} }] };
-      }
-
-      if (latest?.status === "preview" && latest.taskId) {
-        return {
-          toolCalls: [
-            {
-              name: "update_task",
-              input: {
-                taskId: latest.taskId,
-                action: "delay",
-                expectedVersion: taskSnapshot?.version ?? 1,
-                dueAt: "2026-08-21T09:00:00.000Z",
-              },
-            },
-          ],
-        };
       }
 
       if (latest?.operationId && latest.data?.task_id) {
         return `Plan change result: ${JSON.stringify(latest)}`;
       }
 
+      // 读到待办后直接发起改期：确认卡本身就是预览，不再先走一次空壳预览。
+      const firstTask = latest?.data?.tasks?.[0];
       if (firstTask?.task_id) {
         return {
           toolCalls: [
             {
-              name: "preview_task_change",
-              input: { taskId: firstTask.task_id, action: "snooze" },
+              name: "reschedule_task",
+              input: {
+                taskId: firstTask.task_id,
+                expectedVersion: firstTask.version ?? 1,
+                kind: "delay",
+                at: "2026-08-21T09:00:00.000Z",
+              },
             },
           ],
         };

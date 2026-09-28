@@ -24,10 +24,7 @@ export default defineEval({
     const session = await t.target.attachSession(body.sessionId);
     session.parked();
     session.calledTool("list_tasks", { count: 1 });
-    session.calledTool("preview_task_change", { count: 1 });
-    session.requireInputRequest({ toolName: "update_task" });
-
-    const pending = session.requireInputRequest({ toolName: "update_task" });
+    const pending = session.requireInputRequest({ toolName: "reschedule_task" });
     const approvedTurn = await session.respond(
       [{ requestId: pending.requestId, optionId: "approve" }],
       {
@@ -39,7 +36,7 @@ export default defineEval({
       },
     );
     approvedTurn.succeeded();
-    approvedTurn.calledTool("update_task", { status: "completed", count: 1 });
+    approvedTurn.calledTool("reschedule_task", { status: "completed", count: 1 });
     t.succeeded();
   },
 });

@@ -4,7 +4,7 @@ import { callBusinessApi } from "../lib/business-api/client.ts";
 import { toolResultSchema } from "../lib/business-api/tool-result-schema.ts";
 
 // 「直接执行」档（时间线重设计 §6.1）：建普通待办不打断对话，写入后由客户端
-// toast 提供撤销。因此这里不设 approval —— 与 update_task 的 always() 相对。
+// toast 提供撤销。因此这里不设 approval —— 与 reschedule_task 的 always() 相对。
 // 档位同时在服务端的 DIRECT_EXECUTION_TOOLS 里声明，网关不看调用方的 approved 标志。
 export default defineTool({
   description:
