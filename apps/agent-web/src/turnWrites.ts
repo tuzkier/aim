@@ -14,35 +14,28 @@ export const WRITE_KINDS: Record<string, WriteKind[]> = {
   undo_operation: ["task", "record", "knowledge"],
 };
 
-const TURN_END = new Set(["turn.completed", "session.waiting", "turn.failed", "turn.cancelled"]);
-
 type StreamEvent = {
   type?: string;
   data?: { result?: { kind?: string; toolName?: string; output?: { status?: string } } };
 };
 
 /**
- * 扫一批新到的事件：成功完成的写工具记进本轮，轮次结束时产出并清空。
+ * 一批新到的事件里，成功完成的写工具影响到哪几类页面。
  *
+ * 写一完成就报，不等整轮结束：用户看到卡片上的「已添加」就会切回首页，
+ * 那时模型可能还在写收尾的话，等到轮次结束再刷新，首页就是旧的。
  * 只认 output.status === "completed"：approval_required 是「等确认」，还没写。
  */
-export const scanTurnWrites = (
-  events: readonly unknown[],
-  state: { kinds: Set<WriteKind> },
-): WriteKind[][] => {
-  const finished: WriteKind[][] = [];
+export const writesIn = (events: readonly unknown[]): WriteKind[] => {
+  const kinds = new Set<WriteKind>();
   for (const raw of events) {
     const event = raw as StreamEvent;
-    if (event.type === "action.result") {
-      const result = event.data?.result;
-      const kinds = result?.toolName ? WRITE_KINDS[result.toolName] : undefined;
-      if (result?.kind === "tool-result" && kinds && result.output?.status === "completed") {
-        for (const kind of kinds) state.kinds.add(kind);
-      }
-    } else if (event.type && TURN_END.has(event.type) && state.kinds.size > 0) {
-      finished.push([...state.kinds]);
-      state.kinds.clear();
+    if (event.type !== "action.result") continue;
+    const result = event.data?.result;
+    const affected = result?.toolName ? WRITE_KINDS[result.toolName] : undefined;
+    if (result?.kind === "tool-result" && affected && result.output?.status === "completed") {
+      for (const kind of affected) kinds.add(kind);
     }
   }
-  return finished;
+  return [...kinds];
 };

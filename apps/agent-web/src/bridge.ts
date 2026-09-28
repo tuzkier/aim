@@ -76,7 +76,7 @@ export const openNative = (route: { kind: "record" | "task" | "knowledge"; id: s
   handler.postMessage(route);
 };
 
-/** 告诉原生这一轮写了哪几类东西，原生据此只刷新受影响的页面。 */
+/** 告诉原生刚写了哪几类东西，原生据此只刷新受影响的页面。 */
 export const notifyTurnFinished = (kinds: readonly WriteKind[]): void => {
   window.webkit?.messageHandlers?.aimTurnFinished?.postMessage({ kinds });
 };

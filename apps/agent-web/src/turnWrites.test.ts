@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { scanTurnWrites, type WriteKind } from "./turnWrites";
+import { writesIn } from "./turnWrites";
 
 const result = (toolName: string, status = "completed") => ({
   type: "action.result",
@@ -8,38 +8,27 @@ const result = (toolName: string, status = "completed") => ({
     result: { kind: "tool-result", toolName, callId: "c", output: { status } },
   },
 });
-const end = { type: "session.waiting", data: {} };
 
-test("a turn that wrote a task and a record reports both kinds once", () => {
-  const state = { kinds: new Set<WriteKind>() };
-  const out = scanTurnWrites(
-    [result("create_task"), result("list_tasks"), result("create_record"), end],
-    state,
-  );
-  expect(out).toEqual([["task", "record"]]);
-  expect(state.kinds.size).toBe(0);
+test("a batch with a task and a record write reports both kinds once", () => {
+  expect(writesIn([result("create_task"), result("list_tasks"), result("create_record")])).toEqual([
+    "task",
+    "record",
+  ]);
 });
 
-test("read-only turns report nothing", () => {
-  expect(scanTurnWrites([result("list_tasks"), end], { kinds: new Set() })).toEqual([]);
+test("reports as soon as the write result arrives, without waiting for the turn to end", () => {
+  // 用户看到「已添加」就会切回首页，那时模型可能还在写收尾的话。
+  expect(writesIn([result("complete_task")])).toEqual(["task"]);
+});
+
+test("read-only batches report nothing", () => {
+  expect(writesIn([result("list_tasks"), { type: "session.waiting" }])).toEqual([]);
 });
 
 test("approval_required results are not writes", () => {
-  expect(
-    scanTurnWrites([result("reschedule_task", "approval_required"), end], { kinds: new Set() }),
-  ).toEqual([]);
-});
-
-test("kinds accumulate across batches until the turn ends", () => {
-  const state = { kinds: new Set<WriteKind>() };
-  expect(scanTurnWrites([result("complete_task")], state)).toEqual([]);
-  expect(scanTurnWrites([result("create_knowledge"), { type: "turn.completed" }], state)).toEqual([
-    ["task", "knowledge"],
-  ]);
+  expect(writesIn([result("reschedule_task", "approval_required")])).toEqual([]);
 });
 
 test("undo touches everything it might have reverted", () => {
-  expect(scanTurnWrites([result("undo_operation"), end], { kinds: new Set() })).toEqual([
-    ["task", "record", "knowledge"],
-  ]);
+  expect(writesIn([result("undo_operation")])).toEqual(["task", "record", "knowledge"]);
 });

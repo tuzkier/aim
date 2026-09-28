@@ -27,7 +27,7 @@ import { clearSession, loadSession, saveSession } from "./session";
 import type { ClientSessionState } from "./types";
 import { ApprovalBatchProvider } from "./approvals";
 import { BizDataProvider, useBizData } from "./bizData";
-import { scanTurnWrites, type WriteKind } from "./turnWrites";
+import { writesIn } from "./turnWrites";
 import { createEveTransport, fetchSessionEvents } from "./eveTransport";
 import { GenericToolView, ToolRenderers } from "./tools";
 import { ToolGroupActions } from "./tools/ToolGroup";
@@ -238,7 +238,7 @@ const ApprovalBridge = ({
 };
 
 /**
- * AIM 写过东西之后让原生刷新，也让卡片用的业务数据跟上。
+ * AIM 写完东西就让原生刷新，也让卡片用的业务数据跟上。
  *
  * 从挂载那一刻的事件数开始扫：接回历史对话时重放的旧事件不算新写入。
  */
@@ -246,7 +246,6 @@ const TurnFinishedBridge = () => {
   const events = useEveEvents();
   const { reload } = useBizData();
   const seenRef = useRef<number | null>(null);
-  const stateRef = useRef({ kinds: new Set<WriteKind>() });
   useEffect(() => {
     if (seenRef.current === null) {
       seenRef.current = events.length;
@@ -254,11 +253,50 @@ const TurnFinishedBridge = () => {
     }
     const fresh = events.slice(seenRef.current);
     seenRef.current = events.length;
-    for (const kinds of scanTurnWrites(fresh, stateRef.current)) {
-      notifyTurnFinished(kinds);
-      reload();
-    }
+    const kinds = writesIn(fresh);
+    if (kinds.length === 0) return;
+    notifyTurnFinished(kinds);
+    reload();
   }, [events, reload]);
+  return null;
+};
+
+/**
+ * 从快捷入口回到 AIM 标签页时，跟上快捷入口里新开的那段。
+ *
+ * 比的是运行时**当前**的会话 id，而不是页面打开时接回的那段——在本页新开的对话
+ * 没有「接回」这回事，拿它比会每次回到标签页都把当前对话重载一遍。
+ */
+const AppearBridge = ({
+  enabled,
+  accountKey,
+  runtime,
+  onSwitch,
+}: {
+  enabled: boolean;
+  accountKey: string;
+  runtime: ReturnType<typeof useEveAgentRuntime>;
+  onSwitch: (eveSessionId: string) => void;
+}) => {
+  const session = useEveSession();
+  const currentRef = useRef<string | undefined>(undefined);
+  currentRef.current = session?.sessionId;
+  const onSwitchRef = useRef(onSwitch);
+  onSwitchRef.current = onSwitch;
+  useEffect(() => {
+    if (!enabled) return;
+    window.__aimOnAppear__ = () => {
+      const stored = loadSession(accountKey);
+      if (!stored || stored.sessionId === currentRef.current) return;
+      // 正在生成、或者用户已经在输入框里写了东西，就不要把人拽走。
+      if (runtime.thread.getState().isRunning) return;
+      if (runtime.thread.composer.getState().text.trim()) return;
+      onSwitchRef.current(stored.sessionId);
+    };
+    return () => {
+      delete window.__aimOnAppear__;
+    };
+  }, [enabled, accountKey, runtime]);
   return null;
 };
 
@@ -288,7 +326,7 @@ const Conversation = ({
   entry: AgentEntry;
   restored: Restored | null;
   onSwitch: (session: AgentSessionSummary) => void;
-  onAppearSwitch: () => void;
+  onAppearSwitch: (eveSessionId: string) => void;
   onDiscardStoredSession: () => void;
 }) => {
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -326,22 +364,6 @@ const Conversation = ({
     return () => window.clearTimeout(timer);
   }, [entry, runtime, restored]);
 
-  // 从快捷入口回到标签页时跟上最近那段。回调经 ref 取最新的，免得每次渲染都重新注册。
-  const onAppearRef = useRef(onAppearSwitch);
-  onAppearRef.current = onAppearSwitch;
-  useEffect(() => {
-    if (entry.mode !== "resume") return;
-    window.__aimOnAppear__ = () => {
-      // 正在生成、或者用户已经在输入框里写了东西，就不要把人拽走。
-      if (runtime.thread.getState().isRunning) return;
-      if (runtime.thread.composer.getState().text.trim()) return;
-      onAppearRef.current();
-    };
-    return () => {
-      delete window.__aimOnAppear__;
-    };
-  }, [entry.mode, runtime]);
-
   return (
     <AssistantRuntimeProvider runtime={runtime}>
       <BizDataProvider context={context}>
@@ -349,6 +371,12 @@ const Conversation = ({
           <NewConversationBridge accountKey={accountKeyFromToken(context.token)} />
           <HistoryBridge onOpen={() => setHistoryOpen(true)} />
           <TurnFinishedBridge />
+          <AppearBridge
+            enabled={entry.mode === "resume"}
+            accountKey={accountKeyFromToken(context.token)}
+            runtime={runtime}
+            onSwitch={onAppearSwitch}
+          />
           <SessionRecovery onDiscardStoredSession={onDiscardStoredSession} />
           <ToolRenderers />
           <Thread
@@ -452,12 +480,9 @@ export const App = () => {
   };
 
   /** 从快捷入口回到标签页时，切到最近那段（快捷入口会把它存成最近一段）。 */
-  const followLatestStored = () => {
-    if (!context) return;
-    const stored = loadSession(accountKeyFromToken(context.token));
-    if (!stored || stored.sessionId === restored?.session.sessionId) return;
+  const followLatestStored = (eveSessionId: string) => {
     // 目录 id 不知道；只影响「顶到最前」，切换本身按 Eve 会话 id 进行。
-    switchToSession({ id: "", eveSessionId: stored.sessionId } as AgentSessionSummary);
+    switchToSession({ id: "", eveSessionId } as AgentSessionSummary);
   };
 
   if (error) return <div className="fatal">{error}</div>;
