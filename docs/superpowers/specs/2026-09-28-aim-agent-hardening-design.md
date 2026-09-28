@@ -66,7 +66,7 @@ AIM 现在「能聊」，但不是一个完善的 agent：几条端到端链路�
   - `{ mode: "new", pageContext, autoSend: string }`——「分析当前记录」
 - 网页按 `entry` 决定接回还是新开；有 `pageContext` 时在输入框上方显示标签。
 - 页面上下文走 Eve 的 `clientContext`：`useEveAgentRuntime` 的 `prepareSend` 在标签存在期间给**每一轮**附上 `{ page: { title, summary } }`。它只进入该轮的模型调用、不写入会话历史，所以气泡里不会出现，也不需要隐藏标记；用户点 ✕ 后不再附带。重新打开一段历史对话时标签不恢复。
-- **写入后刷新**：网页从事件流判断一轮结束（含审批批次结算后的那一轮），若本轮有写工具 `completed`，调用 `notifyTurnFinished({ kinds: ["task" | "record" | "knowledge"] })`。原生 `TimelineStore`、`RecordsStore`、`LibraryStore` 订阅 `.aimAgentTurnFinished`，按 kind 各自 `load()`。
+- **写入后刷新**：网页从事件流里看到写工具的 `action.result` 为 `completed` 就立即调用 `notifyTurnFinished({ kinds: ["task" | "record" | "knowledge"] })`，**不等整轮结束**——用户看到卡片上的「已添加」就会切回首页，那时模型可能还在写收尾的话。原生 `TimelineStore`、`RecordsStore`、`LibraryStore` 订阅 `.aimAgentTurnFinished`，按 kind 各自 `load()`。
 - **跳转**：卡片上的「查看」调用 `openNative`；`AgentView.onNavigate` 在自己的 `NavigationStack` 里推入 `TaskDetailView` / `RecordDetailView` / 资料详情。
 - **标签页与快捷入口的同步**：快捷入口仍是独立的 `fullScreenCover` WebView。AIM 标签页重新出现时，原生调用 `__aimOnAppear__`；网页若发现本地存储的最近会话已不是当前这段、且当前不在生成中、输入框为空，就切到最近那段。
 - 「让 Agent 分析当前记录」（`RecordDetailView.swift`）不再调用 `AgentStore.ask`，改为以 `autoSend` 打开对话面。
@@ -74,7 +74,8 @@ AIM 现在「能聊」，但不是一个完善的 agent：几条端到端链路�
 ### 3.4 工具层修正
 
 - `get_pregnancy_context` 增加 `members: [{ member_id, display_name, role }]`，以及当前账号自己的 `member_id`。
-- `create_record` 按 `recordType` 拆成判别联合 schema：`symptom` 要求 `symptoms: string[]` 与 `severity: 1–5`；`checkup` 的指标从固定枚举里选（与 `records/domain/record.py` 的校验一致）；其余类型保持 title/content。
+- `create_record` 的参数按类型平铺并在描述里写明各类型该填哪些：`symptom` 要求 `symptoms`（非空）与 `severity`（1–5）；`checkup` 的四个文本字段缺省为空串、指标只能取 `weight_kg` / `systolic` / `diastolic` / `fasting_glucose` / `hemoglobin`；`note` 要求 `content`。不用判别联合是因为 OpenAI 兼容的函数调用要求顶层为 object。缺字段在工具内先拦下，中文错误回到模型手里。
+- **时间参数一律为北京时间的墙上时刻**（`YYYY-MM-DDTHH:mm`，不带时区），由工具补 `+08:00`；带 `Z` 或偏移的串校验失败。验证中发现模型会把「明天下午三点」写成 `T15:00:00Z`，落库后晚 8 小时。
 - `resolve-session` 在账号尚无孕期档案时返回 `pregnancy_id: null`；工具层统一抛出中文错误「还没有建立孕期档案，请先在 App 里填写预产期或末次月经」，替换 `session-context.ts` 里的英文消息。
 
 ### 3.5 运行保障
