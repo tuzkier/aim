@@ -37,3 +37,23 @@ test("live mode fails early when the DeepSeek key is missing", () => {
     /DEEPSEEK_API_KEY/,
   );
 });
+
+test("production refuses to fall back to the mock model", () => {
+  assert.throws(
+    () => resolveAgentModelConfig({ AIM_DEPLOYMENT: "production" }),
+    /AIM_DEPLOYMENT=production/,
+  );
+  assert.throws(
+    () => resolveAgentModelConfig({ AIM_DEPLOYMENT: "production", EVE_USE_MOCK_MODEL: "1" }),
+    /AIM_DEPLOYMENT=production/,
+  );
+});
+
+test("production with a real model configured is fine", () => {
+  const config = resolveAgentModelConfig({
+    AIM_DEPLOYMENT: "production",
+    EVE_USE_MOCK_MODEL: "0",
+    DEEPSEEK_API_KEY: "k",
+  });
+  assert.equal(config.kind, "deepseek");
+});

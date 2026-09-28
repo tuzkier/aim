@@ -11,6 +11,7 @@
 
 - `/opt/aim/app` —— 代码（由 `git archive` 打包上传解压）
 - `/opt/aim/app/.env` —— 生产环境变量，权限 600，**不在版本库中**
+  - `compose.prod.yaml` 给 eve 设了 `AIM_DEPLOYMENT=production`：此时 `.env` 里必须有 `DEEPSEEK_API_KEY`，否则 eve 容器启动即退出——这是有意的，缺配置时不能静默退回 mock 模型。
 - `/opt/aim/backups` —— 每日 pg_dump，保留 7 天
 - `/etc/nginx/conf.d/aim.conf` —— 反向代理，来自 `nginx-aim.conf`
 
