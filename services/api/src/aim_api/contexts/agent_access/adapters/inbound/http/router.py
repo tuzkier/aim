@@ -228,6 +228,9 @@ async def _run(
             call_id=context.call_id,
             tool_name=tool_name,
             request_hash=request_hash,
+            account_id=context.account_id,
+            family_id=context.family_id,
+            pregnancy_id=context.pregnancy_id,
         )
         family_membership = SqlAlchemyFamilyRepository(session)
         pregnancy_ownership = SqlAlchemyPregnancyRepository(session)
