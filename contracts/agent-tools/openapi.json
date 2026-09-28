@@ -185,6 +185,47 @@
         }
       }
     },
+    "/internal/agent-tools/delete-task": {
+      "post": {
+        "tags": [
+          "agent-tools"
+        ],
+        "summary": "Delete Task Endpoint",
+        "operationId": "delete_task_endpoint_internal_agent_tools_delete_task_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteTaskToolRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/internal/agent-tools/reschedule-task": {
       "post": {
         "tags": [
@@ -784,6 +825,25 @@
           "due_at"
         ],
         "title": "DelayTaskRequest"
+      },
+      "DeleteTaskToolRequest": {
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Task Id"
+          },
+          "approved": {
+            "type": "boolean",
+            "title": "Approved",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "task_id"
+        ],
+        "title": "DeleteTaskToolRequest"
       },
       "DeletionRequest": {
         "properties": {

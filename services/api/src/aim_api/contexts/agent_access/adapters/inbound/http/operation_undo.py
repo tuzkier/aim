@@ -62,6 +62,8 @@ async def undo_invocation(
     data = invocation.result.get("data", {})
     if tool == "record_pregnancy_fact":
         raise ConflictError("孕期信息不能撤销，直接告诉我正确的值即可")
+    if tool == "delete_task":
+        raise ConflictError("删除的待办不能撤销，需要的话重新建一条")
 
     if tool in _DELETE_TASK:
         await delete_task.execute(

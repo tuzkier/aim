@@ -197,3 +197,82 @@ class TestPermissionTiersStayDistinct:
                 json={},
             )
             assert response.status_code == 404
+
+
+class TestDeleteTaskTool:
+    """AIM 加错了待办要能删掉，而不是标成完成——那会留下一条假的「已完成」。"""
+
+    def test_delete_requires_approval(self) -> None:
+        with TestClient(create_app()) as client:
+            account_id, phone, family_id, pregnancy_id, public = _scope(client)
+            task_id = client.post(
+                f"{GATEWAY}/create-task",
+                headers=_agent_headers(account_id, family_id, pregnancy_id, call_id="d1"),
+                json={"title": "加错的待办"},
+            ).json()["data"]["task_id"]
+
+            response = client.post(
+                f"{GATEWAY}/delete-task",
+                headers=_agent_headers(account_id, family_id, pregnancy_id, call_id="d2"),
+                json={"task_id": task_id},
+            )
+            assert response.status_code == 409, response.text
+            assert response.json()["error"]["code"] == "approval_required"
+
+    def test_approved_delete_removes_the_task(self) -> None:
+        with TestClient(create_app()) as client:
+            account_id, phone, family_id, pregnancy_id, public = _scope(client)
+            task_id = client.post(
+                f"{GATEWAY}/create-task",
+                headers=_agent_headers(account_id, family_id, pregnancy_id, call_id="d3"),
+                json={"title": "重复的待办"},
+            ).json()["data"]["task_id"]
+
+            response = client.post(
+                f"{GATEWAY}/delete-task",
+                headers=_agent_headers(account_id, family_id, pregnancy_id, call_id="d4"),
+                json={"task_id": task_id, "approved": True},
+            )
+            assert response.status_code == 200, response.text
+            assert response.json()["data"]["title"] == "重复的待办"
+            plan = client.get(f"/api/v1/pregnancies/{pregnancy_id}/plan", headers=public).json()
+            assert all(task["id"] != task_id for task in plan["tasks"])
+
+    def test_cannot_delete_a_task_from_another_pregnancy(self) -> None:
+        with TestClient(create_app()) as client:
+            account_id, phone, family_id, pregnancy_id, public = _scope(client)
+            other = _scope(client)
+            outsider = client.post(
+                f"{GATEWAY}/create-task",
+                headers=_agent_headers(other[0], other[2], other[3], call_id="d5"),
+                json={"title": "别人家的"},
+            ).json()["data"]["task_id"]
+
+            response = client.post(
+                f"{GATEWAY}/delete-task",
+                headers=_agent_headers(account_id, family_id, pregnancy_id, call_id="d6"),
+                json={"task_id": outsider, "approved": True},
+            )
+            assert response.status_code == 403, response.text
+
+    def test_a_deletion_cannot_be_undone_and_says_so(self) -> None:
+        with TestClient(create_app()) as client:
+            account_id, phone, family_id, pregnancy_id, public = _scope(client)
+            task_id = client.post(
+                f"{GATEWAY}/create-task",
+                headers=_agent_headers(account_id, family_id, pregnancy_id, call_id="d7"),
+                json={"title": "删了就没了"},
+            ).json()["data"]["task_id"]
+            deleted = client.post(
+                f"{GATEWAY}/delete-task",
+                headers=_agent_headers(account_id, family_id, pregnancy_id, call_id="d8"),
+                json={"task_id": task_id, "approved": True},
+            ).json()
+
+            response = client.post(
+                f"{GATEWAY}/undo-operation",
+                headers=_agent_headers(account_id, family_id, pregnancy_id, call_id="d9"),
+                json={"operation_id": deleted["operation_id"]},
+            )
+            assert response.status_code == 409, response.text
+            assert "删除的待办不能撤销" in response.json()["error"]["message"]

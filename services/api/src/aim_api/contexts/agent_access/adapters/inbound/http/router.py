@@ -35,6 +35,7 @@ from aim_api.contexts.planning.adapters.outbound.persistence.repositories import
     SqlAlchemyPlanningUnitOfWork,
 )
 from aim_api.contexts.planning.application.commands import (
+    delete_task,
     assign_task,
     complete_task,
     create_task,
@@ -45,6 +46,7 @@ from aim_api.contexts.planning.application.commands.assign_task import AssignTas
 from aim_api.contexts.planning.application.commands.complete_task import CompleteTaskCommand
 from aim_api.contexts.planning.application.commands.create_task import CreateTaskCommand
 from aim_api.contexts.planning.application.commands.delay_task import DelayTaskCommand
+from aim_api.contexts.planning.application.commands.delete_task import DeleteTaskCommand
 from aim_api.contexts.planning.application.commands.schedule_task import ScheduleTaskCommand
 from aim_api.contexts.planning.domain.task import ActorType
 from aim_api.contexts.pregnancy.adapters.outbound.persistence.repositories import (
@@ -82,6 +84,11 @@ class ToolResult(BaseModel):
 class CompleteTaskToolRequest(BaseModel):
     task_id: UUID
     expected_version: int = Field(ge=1)
+
+
+class DeleteTaskToolRequest(BaseModel):
+    task_id: UUID
+    approved: bool = False
 
 
 class RescheduleTaskRequest(BaseModel):
@@ -385,6 +392,25 @@ async def _complete_task(session, context: AgentToolContext, body: dict[str, Any
     return (await _task_write_result(uow, updated), f"已完成待办：{updated.title}")
 
 
+async def _delete_task(session, context: AgentToolContext, body: dict[str, Any]):
+    """删掉一条不该存在的待办（加错了、重复了、不需要了）。
+
+    硬删除，不能撤销，所以在「执行前确认」档。没有它时，模型只能把加错的待办
+    标成完成来「去掉」，留下一条假的完成记录。
+    """
+    uow = SqlAlchemyPlanningUnitOfWork(session)
+    task = await _task_in_scope(uow, context, UUID(body["task_id"]))
+    await delete_task.execute(
+        DeleteTaskCommand(
+            task_id=task.id,
+            pregnancy_id=context.pregnancy_id,
+            account_id=context.account_id,
+        ),
+        uow,
+    )
+    return ({"task_id": str(task.id), "title": task.title}, f"已删除待办：{task.title}")
+
+
 async def _reschedule_task(session, context: AgentToolContext, body: dict[str, Any]):
     uow = SqlAlchemyPlanningUnitOfWork(session)
     task = await _task_in_scope(uow, context, UUID(body["task_id"]))
@@ -560,6 +586,11 @@ async def list_records_endpoint(request: Request, payload: ListRecordsRequest):
 @router.post("/complete-task", response_model=ToolResult, include_in_schema=False)
 async def complete_task_endpoint(request: Request, payload: CompleteTaskToolRequest):
     return await _run(request, "complete_task", payload, _complete_task, write=True)
+
+
+@router.post("/delete-task", response_model=ToolResult, include_in_schema=False)
+async def delete_task_endpoint(request: Request, payload: DeleteTaskToolRequest):
+    return await _run(request, "delete_task", payload, _delete_task, write=True)
 
 
 @router.post("/reschedule-task", response_model=ToolResult, include_in_schema=False)
