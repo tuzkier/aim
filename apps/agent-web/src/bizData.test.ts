@@ -13,3 +13,10 @@ test("dates render in Chinese month/day with time", () => {
   expect(formatWhen(null)).toBeNull();
   expect(formatWhen("not a date")).toBeNull();
 });
+
+test("wall-clock args without an offset are read as Beijing time", () => {
+  // 工具参数是北京时间的墙上时刻（见 services/agent/agent/lib/local-time.ts）。
+  expect(formatWhen("2026-09-29T15:00")).toMatch(/15:00/);
+  expect(formatWhen("2026-09-29T15:00:00+08:00")).toMatch(/15:00/);
+  expect(formatWhen("2026-09-29T07:00:00Z")).toMatch(/15:00/);
+});

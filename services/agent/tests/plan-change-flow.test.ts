@@ -59,7 +59,7 @@ test("reschedule_task is gated and forwards server approval", async () => {
   assert.equal(typeof rescheduleTask.approval, "function");
   const request = await capture(() =>
     rescheduleTask.execute(
-      { taskId: TASK, expectedVersion: 2, kind: "delay", at: "2026-10-09T09:00:00.000Z" },
+      { taskId: TASK, expectedVersion: 2, kind: "delay", at: "2026-10-09T09:00" },
       ctx,
     ),
   );
@@ -68,7 +68,7 @@ test("reschedule_task is gated and forwards server approval", async () => {
     task_id: TASK,
     expected_version: 2,
     kind: "delay",
-    at: "2026-10-09T09:00:00.000Z",
+    at: "2026-10-09T09:00:00+08:00",
     approved: true,
   });
 });

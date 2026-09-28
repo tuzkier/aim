@@ -208,3 +208,11 @@ test("create_record rejects a symptom without symptoms before calling the API", 
     /至少写一个症状/,
   );
 });
+
+test("create_task sends the due time pinned to Beijing", async () => {
+  const { request } = await withStubbedApi({ task_id: "t1" }, () =>
+    createTask.execute({ title: "拿报告", dueAt: "2026-09-29T15:00" }, scope),
+  );
+  const body = (await request?.clone().json()) as Record<string, unknown>;
+  assert.equal(body.due_at, "2026-09-29T15:00:00+08:00");
+});

@@ -3,6 +3,7 @@ import { always } from "eve/tools/approval";
 import { z } from "zod";
 import { callBusinessApi } from "../lib/business-api/client.ts";
 import { toolResultSchema } from "../lib/business-api/tool-result-schema.ts";
+import { localDateTime, toShanghaiIso } from "../lib/local-time.ts";
 
 export default defineTool({
   description:
@@ -13,7 +14,7 @@ export default defineTool({
     taskId: z.string().uuid(),
     expectedVersion: z.number().int().min(1),
     kind: z.enum(["schedule", "delay"]),
-    at: z.string().datetime(),
+    at: localDateTime,
   }),
   outputSchema: toolResultSchema,
   approval: always(),
@@ -22,7 +23,7 @@ export default defineTool({
       task_id: taskId,
       expected_version: expectedVersion,
       kind,
-      at,
+      at: toShanghaiIso(at),
       // Eve 只在确认通过后才调用 execute。
       approved: true,
     });

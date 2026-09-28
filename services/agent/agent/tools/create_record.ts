@@ -2,6 +2,7 @@ import { defineTool } from "eve/tools";
 import { z } from "zod";
 import { callBusinessApi } from "../lib/business-api/client.ts";
 import { toolResultSchema } from "../lib/business-api/tool-result-schema.ts";
+import { localDateTime, toShanghaiIso } from "../lib/local-time.ts";
 
 // 「直接执行」档，同 create_task。
 //
@@ -78,7 +79,7 @@ export default defineTool({
     result: z.string().optional().describe("checkup only: the findings."),
     doctorAdvice: z.string().optional().describe("checkup only."),
     metrics: metrics.optional(),
-    occurredAt: z.iso.datetime().optional(),
+    occurredAt: localDateTime.optional(),
   }),
   outputSchema: toolResultSchema,
   async execute(input, ctx) {
@@ -87,7 +88,7 @@ export default defineTool({
       title: input.title,
       content: input.recordType === "note" ? input.content : undefined,
       structured_data: structuredDataFor(input),
-      occurred_at: input.occurredAt,
+      occurred_at: input.occurredAt ? toShanghaiIso(input.occurredAt) : undefined,
     });
   },
 });

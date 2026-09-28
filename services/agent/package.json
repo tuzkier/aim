@@ -13,7 +13,7 @@
     "start": "eve start",
     "typecheck": "tsc",
     "lint": "tsc --noEmit",
-    "test": "node --test tests/auth.test.ts tests/runtime-gate.test.ts tests/tools/idempotency.test.ts tests/tools/records.test.ts tests/tools/authoring.test.ts tests/plan-change-flow.test.ts tests/model-config.test.ts",
+    "test": "node --test tests/auth.test.ts tests/runtime-gate.test.ts tests/tools/idempotency.test.ts tests/tools/records.test.ts tests/tools/authoring.test.ts tests/plan-change-flow.test.ts tests/model-config.test.ts tests/local-time.test.ts",
     "eval": "eve eval"
   },
   "dependencies": {

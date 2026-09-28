@@ -34,9 +34,18 @@ const ROLE_NAMES: Record<string, string> = {
 export const memberName = (member: FamilyMember | undefined): string =>
   member?.nickname?.trim() || (member && ROLE_NAMES[member.role]) || "家人";
 
+/**
+ * 工具参数里的时间是北京时间的墙上时刻、不带时区（见 services/agent 的 local-time.ts）；
+ * 业务 API 返回的则带偏移。前者补上 +08:00，别让设备时区决定它是几点。
+ */
+export const parseWhen = (value: string): Date => {
+  const wallClock = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/.test(value);
+  return new Date(wallClock ? `${value.length === 16 ? `${value}:00` : value}+08:00` : value);
+};
+
 export const formatWhen = (iso: string | null | undefined): string | null => {
   if (!iso) return null;
-  const parsed = new Date(iso);
+  const parsed = parseWhen(iso);
   if (Number.isNaN(parsed.getTime())) return null;
   return new Intl.DateTimeFormat("zh-CN", {
     month: "long",
