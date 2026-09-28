@@ -15,6 +15,9 @@ export interface NativeContext {
   theme: "light" | "dark";
   /** Eve 的来源。原生里是部署环境，开发时留空走同源代理。 */
   eveOrigin?: string;
+  /** 当前家庭与孕期。卡片凭 ID 去公开 API 取真实标题和称呼，不采信模型参数。 */
+  familyId?: string;
+  pregnancyId?: string;
 }
 
 type MessageHandler = { postMessage: (body: unknown) => void };
@@ -78,8 +81,12 @@ const devFallbackContext = async (): Promise<NativeContext> => {
   if (!response.ok) {
     throw new Error(`开发登录失败：HTTP ${response.status}`);
   }
-  const { token } = (await response.json()) as { token: string };
-  return { token, theme: "light" };
+  const { token, family_id, pregnancy_id } = (await response.json()) as {
+    token: string;
+    family_id?: string;
+    pregnancy_id?: string | null;
+  };
+  return { token, theme: "light", familyId: family_id, pregnancyId: pregnancy_id ?? undefined };
 };
 
 /**

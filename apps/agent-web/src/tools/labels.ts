@@ -41,6 +41,7 @@ export const READ_ONLY_TOOLS = new Set([
   "list_tasks",
   "list_records",
   "get_guidance",
+  "get_current_time",
   "echo_context",
 ]);
 
@@ -50,6 +51,7 @@ export const TOOL_TITLES: Record<string, string> = {
   list_tasks: "查看待办",
   list_records: "查看记录",
   get_guidance: "查阅指南",
+  get_current_time: "查看当前时间",
   echo_context: "确认当前身份范围",
   create_knowledge: "收录到资料库",
   create_task: "新建待办",

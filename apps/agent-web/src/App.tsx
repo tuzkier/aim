@@ -17,6 +17,7 @@ import { accountKeyFromToken, loadNativeContext, type NativeContext } from "./br
 import { clearSession, loadSession, saveSession } from "./session";
 import type { ClientSessionState } from "./types";
 import { ApprovalBatchProvider } from "./approvals";
+import { BizDataProvider } from "./bizData";
 import { createEveTransport, fetchSessionEvents } from "./eveTransport";
 import { GenericToolView, ToolRenderers } from "./tools";
 import { ToolGroupActions } from "./tools/ToolGroup";
@@ -263,25 +264,27 @@ const Conversation = ({
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
-      <ApprovalBridge context={context} runtime={runtime}>
-        <NewConversationBridge accountKey={accountKeyFromToken(context.token)} />
-        <HistoryBridge onOpen={() => setHistoryOpen(true)} />
-        <SessionRecovery onDiscardStoredSession={onDiscardStoredSession} />
-        <ToolRenderers />
-        <Thread />
-        {historyOpen ? (
-          <HistoryPanel
-            token={context.token}
-            origin={context.eveOrigin}
-            currentEveSessionId={restored?.session.sessionId}
-            onPick={(picked) => {
-              setHistoryOpen(false);
-              onSwitch(picked);
-            }}
-            onClose={() => setHistoryOpen(false)}
-          />
-        ) : null}
-      </ApprovalBridge>
+      <BizDataProvider context={context}>
+        <ApprovalBridge context={context} runtime={runtime}>
+          <NewConversationBridge accountKey={accountKeyFromToken(context.token)} />
+          <HistoryBridge onOpen={() => setHistoryOpen(true)} />
+          <SessionRecovery onDiscardStoredSession={onDiscardStoredSession} />
+          <ToolRenderers />
+          <Thread />
+          {historyOpen ? (
+            <HistoryPanel
+              token={context.token}
+              origin={context.eveOrigin}
+              currentEveSessionId={restored?.session.sessionId}
+              onPick={(picked) => {
+                setHistoryOpen(false);
+                onSwitch(picked);
+              }}
+              onClose={() => setHistoryOpen(false)}
+            />
+          ) : null}
+        </ApprovalBridge>
+      </BizDataProvider>
     </AssistantRuntimeProvider>
   );
 };

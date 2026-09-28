@@ -1,5 +1,9 @@
+import { AssignTaskUI } from "./AssignTask";
+import { CompleteTaskUI } from "./CompleteTask";
 import { CreateKnowledgeUI } from "./CreateKnowledge";
 import { CreateTaskUI } from "./CreateTask";
+import { RecordFactUI } from "./RecordFact";
+import { RescheduleTaskUI } from "./RescheduleTask";
 
 /**
  * 按 toolName 注册的渲染器。
@@ -14,6 +18,10 @@ export const ToolRenderers = () => (
   <>
     <CreateKnowledgeUI />
     <CreateTaskUI />
+    <CompleteTaskUI />
+    <RescheduleTaskUI />
+    <AssignTaskUI />
+    <RecordFactUI />
   </>
 );
 
