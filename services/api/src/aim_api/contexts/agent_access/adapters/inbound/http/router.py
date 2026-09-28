@@ -268,10 +268,26 @@ async def _run(
         return JSONResponse(content=result)
 
 
+#: 称呼为空时的回退，与 iOS 家庭页一致。
+_ROLE_NAMES = {"mother": "妈妈", "father": "爸爸", "other_caregiver": "家人"}
+
+
 async def _get_context(session, context: AgentToolContext, body: dict[str, Any]):
     pregnancy = await SqlAlchemyPregnancyRepository(session).get_pregnancy(context.pregnancy_id)
     plan = await SqlAlchemyPlanningUnitOfWork(session).repository.get_plan(context.pregnancy_id)
+    family = await SqlAlchemyFamilyRepository(session).get_family(context.family_id)
     age = pregnancy.gestational_age() if pregnancy else None
+    # member_id 就是账号 ID：assign_task 的 assigned_member_id 用的正是它。
+    members = [
+        {
+            "member_id": str(member.account_id),
+            "display_name": (member.nickname or "").strip()
+            or _ROLE_NAMES.get(member.role.value, "家人"),
+            "role": member.role.value,
+        }
+        for member in (family.members.values() if family else [])
+        if member.status.value == "active"
+    ]
     return (
         {
             "family_id": str(context.family_id),
@@ -279,6 +295,8 @@ async def _get_context(session, context: AgentToolContext, body: dict[str, Any])
             "due_date": pregnancy.due_date.isoformat() if pregnancy else None,
             "gestational_age": {"weeks": age.weeks, "days": age.days} if age else None,
             "plan_id": str(plan.id) if plan else None,
+            "self_member_id": str(context.account_id),
+            "members": members,
         },
         "已读取当前孕期上下文",
     )
