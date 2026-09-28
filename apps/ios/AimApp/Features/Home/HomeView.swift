@@ -41,7 +41,8 @@ struct HomeView: View {
                     onNewTask: { showingTaskComposer = true },
                     onNewRecord: { if session.pregnancyID != nil { showingRecordComposer = true } },
                     onAgent: {
-                        agentStore.focus(context: agentContext)
+                        // 首页的 AIM 按钮不针对某一页，开一段普通的新对话，不带上下文标签。
+                        agentStore.focus(context: nil)
                         showingAgent = true
                     }
                 )
@@ -345,13 +346,5 @@ struct HomeView: View {
         } else {
             quickAddError = store.errorMessage ?? "没能保存这条待办，稍后再试。"
         }
-    }
-
-    private var agentContext: AgentContext {
-        let week = store.currentWeek.map { "孕 \($0) 周" } ?? "孕期"
-        var lines = [week]
-        if let focus = store.focusTask { lines.append("当前最重要：" + focus.title) }
-        if !store.todayTasks.isEmpty { lines.append("今天还有 \(store.todayTasks.count) 项待办") }
-        return AgentContext(title: "今天", summary: lines.joined(separator: "\n"))
     }
 }

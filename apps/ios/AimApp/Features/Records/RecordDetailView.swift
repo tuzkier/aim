@@ -40,13 +40,12 @@ struct RecordDetailView: View {
             Section {
                 Button("转为待办") { showingTaskSheet = true }
                 Button("让 Agent 分析当前记录") {
-                    agentStore.ask(
+                    agentStore.prepareAnalysis(
                         analysisPrompt(for: currentRecord),
                         context: AgentContext(
                             title: "记录",
                             summary: "\(currentRecord.type.displayName)：\(currentRecord.displayTitle)"
-                        ),
-                        environment: session.environment
+                        )
                     )
                     showingAgent = true
                 }

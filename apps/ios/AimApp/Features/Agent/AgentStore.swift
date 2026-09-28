@@ -80,14 +80,14 @@ final class AgentStore {
         self.context = context
     }
 
-    /// Bring in a new context and immediately ask a specific question —
-    /// used when the entry point already knows what to ask (e.g. "analyze
-    /// this record"). Appends to the same shared conversation.
-    func ask(_ text: String, context: AgentContext?, environment: APIEnvironment) {
-        startNewConversation()
-        self.context = context
-        draft = text
-        send(environment: environment)
+    /// 下一次从快捷入口打开对话面时要自动发出的话。对话面出现后清空。
+    var pendingAutoSend: String?
+
+    /// 「让 Agent 分析当前记录」：带着这条记录开一段新对话，并把问题直接发出去。
+    /// 由网页端发送——原来在这里调 Eve，结果是后台跑了一段用户看不见的对话。
+    func prepareAnalysis(_ text: String, context: AgentContext) {
+        focus(context: context)
+        pendingAutoSend = text
     }
 
     /// 开一段新的对话。当前这段不会丢——它已经在目录里。

@@ -40,6 +40,7 @@ private struct MainTabView: View {
     @State private var agentStore = AgentStore()
     @State private var agentSessions = AgentSessionStore()
     @State private var libraryStore = LibraryStore()
+    @State private var agentDestinations: AgentDestinations?
     @State private var selectedTab: AimTab = .timeline
 
     var body: some View {
@@ -60,9 +61,40 @@ private struct MainTabView: View {
                 .tabItem { Label("家庭", systemImage: "person.2") }
                 .tag(AimTab.family)
         }
+        .environment(agentDestinations)
+        .onAppear {
+            if agentDestinations == nil {
+                agentDestinations = AgentDestinations(
+                    planStore: planStore,
+                    recordStore: recordStore,
+                    libraryStore: libraryStore,
+                    agentStore: agentStore
+                )
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .aimAgentTurnFinished)) { note in
+            let kinds = Set(note.userInfo?["kinds"] as? [String] ?? ["task", "record", "knowledge"])
+            Task { await refresh(after: kinds) }
+        }
         .task { await reloadRepositories() }
         .onChange(of: session.pregnancyID) { _, _ in
             Task { await reloadRepositories() }
+        }
+    }
+
+    /// AIM 写过东西之后只刷新受影响的页面。首页同时显示待办和最近记录，两类都要刷它。
+    private func refresh(after kinds: Set<String>) async {
+        if kinds.contains("task") {
+            await planStore.load()
+        }
+        if kinds.contains("record") {
+            await recordStore.load()
+        }
+        if kinds.contains("task") || kinds.contains("record") {
+            await timelineStore.load()
+        }
+        if kinds.contains("record") || kinds.contains("knowledge") {
+            await libraryStore.load()
         }
     }
 
