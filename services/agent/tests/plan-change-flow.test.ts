@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import completeTask from "../agent/tools/complete_task.ts";
 import rescheduleTask from "../agent/tools/reschedule_task.ts";
+import deleteTask from "../agent/tools/delete_task.ts";
 import undoOperation from "../agent/tools/undo_operation.ts";
 
 const ctx = {
@@ -96,4 +97,12 @@ test("tools refuse to run without a pregnancy profile, in Chinese", async () => 
     () => completeTask.execute({ taskId: TASK, expectedVersion: 1 }, noPregnancy) as Promise<unknown>,
     /还没有建立孕期档案/,
   );
+});
+
+test("delete_task is gated and forwards server approval", async () => {
+  // 删除不能撤销，必须先让用户在卡片上确认。
+  assert.equal(typeof deleteTask.approval, "function");
+  const request = await capture(() => deleteTask.execute({ taskId: TASK }, ctx));
+  assert.equal(request.url, "http://api.test/internal/agent-tools/delete-task");
+  assert.deepEqual(await request.json(), { task_id: TASK, approved: true });
 });

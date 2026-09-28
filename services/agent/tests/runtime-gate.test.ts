@@ -86,6 +86,7 @@ test("compiled runtime exposes only the intended root and specialist tools", asy
     "create_knowledge",
     "create_record",
     "create_task",
+    "delete_task",
     "echo_context",
     "get_current_time",
     "get_guidance",
@@ -97,8 +98,8 @@ test("compiled runtime exposes only the intended root and specialist tools", asy
     "undo_operation",
   ];
 
-  // 撤销只走 undo_operation；这几个要么是任意删除的口子，要么是空壳。
-  const RETIRED_TOOLS = ["delete_record", "delete_task", "preview_task_change", "update_task"];
+  // 这几个要么是不经确认就能删的口子，要么是空壳。删除待办改由需确认的 delete_task 负责。
+  const RETIRED_TOOLS = ["delete_record", "preview_task_change", "update_task"];
 
   // 能碰文件系统、shell 和外网的工具，一个都不该出现在孕期 App 的 agent 手上。
   const DANGEROUS_TOOLS = [
