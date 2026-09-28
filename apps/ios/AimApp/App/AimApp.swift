@@ -41,6 +41,7 @@ private struct MainTabView: View {
     @State private var agentSessions = AgentSessionStore()
     @State private var libraryStore = LibraryStore()
     @State private var agentDestinations: AgentDestinations?
+    @State private var refreshCoalescer: AgentRefreshCoalescer?
     @State private var selectedTab: AimTab = .timeline
 
     var body: some View {
@@ -63,6 +64,9 @@ private struct MainTabView: View {
         }
         .environment(agentDestinations)
         .onAppear {
+            if refreshCoalescer == nil {
+                refreshCoalescer = AgentRefreshCoalescer { kinds in await refresh(after: kinds) }
+            }
             if agentDestinations == nil {
                 agentDestinations = AgentDestinations(
                     planStore: planStore,
@@ -74,7 +78,7 @@ private struct MainTabView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .aimAgentTurnFinished)) { note in
             let kinds = Set(note.userInfo?["kinds"] as? [String] ?? ["task", "record", "knowledge"])
-            Task { await refresh(after: kinds) }
+            Task { await refreshCoalescer?.request(kinds) }
         }
         .task { await reloadRepositories() }
         .onChange(of: session.pregnancyID) { _, _ in

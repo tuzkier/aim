@@ -207,6 +207,33 @@ final class AgentDestinations {
     }
 }
 
+/// 把一阵「AIM 写过东西」的通知合并成尽量少的刷新。
+///
+/// 刷新一轮要打好几个接口；上一轮还没跑完时又来的通知不另起一轮，而是记下类别，
+/// 等这一轮结束后按并集再跑一次。批量操作时不会把接口打到被网关限流。
+@MainActor
+final class AgentRefreshCoalescer {
+    private var pending = Set<String>()
+    private var running = false
+    private let perform: (Set<String>) async -> Void
+
+    init(perform: @escaping (Set<String>) async -> Void) {
+        self.perform = perform
+    }
+
+    func request(_ kinds: Set<String>) async {
+        pending.formUnion(kinds)
+        guard !running else { return }
+        running = true
+        while !pending.isEmpty {
+            let batch = pending
+            pending = []
+            await perform(batch)
+        }
+        running = false
+    }
+}
+
 extension Notification.Name {
     /// Agent 结束了一轮，可能已经改过待办或记录。
     static let aimAgentTurnFinished = Notification.Name("aim.agentTurnFinished")

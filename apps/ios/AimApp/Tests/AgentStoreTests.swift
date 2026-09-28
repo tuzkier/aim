@@ -121,4 +121,27 @@ final class AgentSharedSessionTests: XCTestCase {
         XCTAssertEqual(store.context?.title, "记录")
         XCTAssertTrue(store.messages.isEmpty)
     }
+
+    func testRefreshRequestsDuringARunCollapseIntoOneMorePass() async {
+        var batches: [Set<String>] = []
+        var release: CheckedContinuation<Void, Never>?
+        let coalescer = AgentRefreshCoalescer { kinds in
+            batches.append(kinds)
+            if batches.count == 1 {
+                await withCheckedContinuation { release = $0 }
+            }
+        }
+
+        let first = Task { await coalescer.request(["task"]) }
+        // 等第一轮真正挂起在 perform 里。
+        while release == nil { await Task.yield() }
+        // 第一轮还没结束时又来了 3 个通知：不该各跑一轮。
+        await coalescer.request(["task"])
+        await coalescer.request(["record"])
+        await coalescer.request(["task", "knowledge"])
+        release?.resume()
+        await first.value
+
+        XCTAssertEqual(batches, [["task"], ["task", "record", "knowledge"]])
+    }
 }

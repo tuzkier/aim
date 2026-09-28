@@ -28,6 +28,7 @@ import type { ClientSessionState } from "./types";
 import { ApprovalBatchProvider } from "./approvals";
 import { BizDataProvider, useBizData } from "./bizData";
 import { writesIn } from "./turnWrites";
+import { createWriteBatcher } from "./writeBatcher";
 import { createEveTransport, fetchSessionEvents } from "./eveTransport";
 import { GenericToolView, ToolRenderers } from "./tools";
 import { ToolGroupActions } from "./tools/ToolGroup";
@@ -245,7 +246,20 @@ const ApprovalBridge = ({
 const TurnFinishedBridge = () => {
   const events = useEveEvents();
   const { reload } = useBizData();
+  const reloadRef = useRef(reload);
+  reloadRef.current = reload;
   const seenRef = useRef<number | null>(null);
+  // 一阵写入只刷新一次：批量操作逐条通知会把原生和网页都刷爆。
+  const batcherRef = useRef<ReturnType<typeof createWriteBatcher> | null>(null);
+  batcherRef.current ??= createWriteBatcher({
+    delayMs: 600,
+    maxWaitMs: 2000,
+    flush: (kinds) => {
+      notifyTurnFinished(kinds);
+      reloadRef.current();
+    },
+  });
+  useEffect(() => () => batcherRef.current?.dispose(), []);
   useEffect(() => {
     if (seenRef.current === null) {
       seenRef.current = events.length;
@@ -253,11 +267,8 @@ const TurnFinishedBridge = () => {
     }
     const fresh = events.slice(seenRef.current);
     seenRef.current = events.length;
-    const kinds = writesIn(fresh);
-    if (kinds.length === 0) return;
-    notifyTurnFinished(kinds);
-    reload();
-  }, [events, reload]);
+    batcherRef.current?.add(writesIn(fresh));
+  }, [events]);
   return null;
 };
 
