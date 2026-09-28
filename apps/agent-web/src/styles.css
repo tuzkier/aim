@@ -303,3 +303,6 @@ body {
   color: var(--aim-text-secondary);
   font-size: 13px;
 }
+
+.tool-group__error { margin: 0 0 8px; font-size: 13px; color: var(--aim-danger); }
+.btn--link { border: none; background: none; color: var(--aim-accent); padding: 0 0 0 8px; }

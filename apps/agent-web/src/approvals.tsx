@@ -8,6 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { nextDispatch } from "./approvalBatch";
 
 /**
  * 审批批次的攒批与一次性回复。
@@ -41,6 +42,10 @@ interface ApprovalBatchValue {
   pendingCount: number;
   /** 整组已送出，正在等服务端结算。 */
   dispatching: boolean;
+  /** 最近一次提交失败的说明。为空表示没有失败。 */
+  error: string | null;
+  /** 重新提交上一次失败的那一批。 */
+  retry: () => void;
 }
 
 const ApprovalBatchContext = createContext<ApprovalBatchValue | null>(null);
@@ -60,6 +65,9 @@ export const ApprovalBatchProvider = ({
   const pendingRef = useRef(new Set<string>());
   const [decisions, setDecisions] = useState<Map<string, Decision>>(new Map());
   const [dispatching, setDispatching] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  // 递增它让攒批 effect 重跑一次：失败后决定仍在，但 effect 不会自己再触发。
+  const [attempt, setAttempt] = useState(0);
   // 已经送出过的批次，避免流重放时重复提交。
   const dispatchedRef = useRef(new Set<string>());
 
@@ -95,29 +103,22 @@ export const ApprovalBatchProvider = ({
   // 攒齐就发。放在 effect 里而不是 decide 里，是为了拿到 setState 之后的完整快照——
   // 在 decide 内部判断会用到过期的 decisions。
   useEffect(() => {
-    const pending = [...pendingRef.current];
-    if (pending.length === 0) return;
-    if (!pending.every((id) => decisions.has(id))) return;
-
-    const key = pending.slice().sort().join("|");
-    if (dispatchedRef.current.has(key)) return;
-    dispatchedRef.current.add(key);
-
-    const payload = pending.map((id) => ({
-      requestId: id,
-      approved: decisions.get(id)!.approved,
-    }));
-
+    const next = nextDispatch([...pendingRef.current], decisions, dispatchedRef.current);
+    if (!next) return;
+    dispatchedRef.current.add(next.key);
+    setError(null);
     setDispatching(true);
     void transport
-      .respondAll(payload)
-      .catch((error: unknown) => {
-        // 发送失败要允许重试，否则用户卡死在一批已决定却送不出去的卡片上。
-        dispatchedRef.current.delete(key);
-        console.error("[aim] 审批批次发送失败", error);
+      .respondAll(next.payload)
+      .catch(() => {
+        // 允许重试：不移除的话这一批永远不会再发，用户卡在一组已决定却送不出去的卡片上。
+        dispatchedRef.current.delete(next.key);
+        setError("没能提交，请检查网络后重试");
       })
       .finally(() => setDispatching(false));
-  }, [decisions, transport]);
+  }, [decisions, transport, attempt]);
+
+  const retry = useCallback(() => setAttempt((n) => n + 1), []);
 
   const value = useMemo<ApprovalBatchValue>(
     () => ({
@@ -126,8 +127,10 @@ export const ApprovalBatchProvider = ({
       decisionOf: (approvalId) => decisions.get(approvalId),
       pendingCount,
       dispatching,
+      error,
+      retry,
     }),
-    [register, decideAll, decisions, pendingCount, dispatching],
+    [register, decideAll, decisions, pendingCount, dispatching, error, retry],
   );
 
   return (

@@ -4,6 +4,7 @@ import {
   ComposerPrimitive,
   MessagePrimitive,
   ThreadPrimitive,
+  useAuiState,
 } from "@assistant-ui/react";
 import {
   useEveAgentRuntime,
@@ -19,6 +20,7 @@ import { ApprovalBatchProvider } from "./approvals";
 import { createEveTransport, fetchSessionEvents } from "./eveTransport";
 import { GenericToolView, ToolRenderers } from "./tools";
 import { ToolGroupActions } from "./tools/ToolGroup";
+import { pendingApprovalTools } from "./tools/types";
 import { Reasoning } from "./thread/Reasoning";
 import { MarkdownText } from "./thread/MarkdownText";
 import { HistoryPanel } from "./thread/HistoryPanel";
@@ -71,22 +73,27 @@ const firstUserMessage = (events: readonly unknown[]): string | undefined => {
  * 「把这三道菜收进菜谱」是一件事，不该拆成三次拍板——那既不符合用户的表达，
  * 也是批次回不齐的来源。`groupPartByType` 是 assistant-ui 为这种情况提供的原语。
  */
-const AssistantMessage = () => (
-  <div className="msg msg--assistant">
-    <MessagePrimitive.Parts
-      components={{
-        // 指令里允许模型用行内加粗和短列表，客户端就必须能渲染它们——
-        // 否则 `**待办内容**` 会带着星号摆在用户面前。
-        Text: MarkdownText,
-        Reasoning,
-        // 没有专用渲染器的工具走兜底：只读工具收成一行步骤，
-        // 写操作至少把名字露出来。
-        tools: { Fallback: GenericToolView },
-      }}
-    />
-    <ToolGroupActions />
-  </div>
-);
+const AssistantMessage = () => {
+  // 按消息算待确认项：按钮只挂在真有待确认项的那条回复下面。
+  // 逗号拼成字符串再比较——选择器每次返回新数组会让组件反复重渲染。
+  const pending = useAuiState((state) => pendingApprovalTools(state.message.parts).join(","));
+  return (
+    <div className="msg msg--assistant">
+      <MessagePrimitive.Parts
+        components={{
+          // 指令里允许模型用行内加粗和短列表，客户端就必须能渲染它们——
+          // 否则 `**待办内容**` 会带着星号摆在用户面前。
+          Text: MarkdownText,
+          Reasoning,
+          // 没有专用渲染器的工具走兜底：只读工具收成一行步骤，
+          // 写操作至少把名字露出来。
+          tools: { Fallback: GenericToolView },
+        }}
+      />
+      <ToolGroupActions toolNames={pending ? pending.split(",") : []} />
+    </div>
+  );
+};
 
 const UserMessage = () => (
   <div className="msg msg--user">

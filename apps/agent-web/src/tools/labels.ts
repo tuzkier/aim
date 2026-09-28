@@ -42,7 +42,6 @@ export const READ_ONLY_TOOLS = new Set([
   "list_records",
   "get_guidance",
   "echo_context",
-  "preview_task_change",
 ]);
 
 /** 步骤行上显示的中文工具名。读不到就退回原名，不猜。 */
@@ -51,17 +50,68 @@ export const TOOL_TITLES: Record<string, string> = {
   list_tasks: "查看待办",
   list_records: "查看记录",
   get_guidance: "查阅指南",
-  preview_task_change: "预演计划改动",
   echo_context: "确认当前身份范围",
   create_knowledge: "收录到资料库",
   create_task: "新建待办",
   create_record: "新建记录",
-  update_task: "调整待办",
+  complete_task: "完成待办",
+  reschedule_task: "改期待办",
   assign_task: "分派待办",
   record_pregnancy_fact: "更新孕期信息",
-  undo_operation: "撤销上一次改动",
-  delete_task: "删除待办",
-  delete_record: "删除记录",
+  undo_operation: "撤销",
 };
 
 export const toolTitle = (name: string): string => TOOL_TITLES[name] ?? name;
+
+type ApprovalCopy = {
+  confirm: string;
+  reject: string;
+  pendingYes: string;
+  pendingNo: string;
+  rejected: string;
+};
+
+const APPROVAL_COPY: Record<string, ApprovalCopy> = {
+  create_knowledge: {
+    confirm: "收录",
+    reject: "先不收录",
+    pendingYes: "待提交：收录",
+    pendingNo: "待提交：不收录",
+    rejected: "没有收录",
+  },
+  reschedule_task: {
+    confirm: "确认改期",
+    reject: "不改了",
+    pendingYes: "待提交：改期",
+    pendingNo: "待提交：不改期",
+    rejected: "没有改期",
+  },
+  assign_task: {
+    confirm: "确认指派",
+    reject: "不指派",
+    pendingYes: "待提交：指派",
+    pendingNo: "待提交：不指派",
+    rejected: "没有指派",
+  },
+  record_pregnancy_fact: {
+    confirm: "确认更新",
+    reject: "不更新",
+    pendingYes: "待提交：更新",
+    pendingNo: "待提交：不更新",
+    rejected: "没有更新",
+  },
+};
+
+const NEUTRAL_COPY: ApprovalCopy = {
+  confirm: "确认",
+  reject: "取消",
+  pendingYes: "待提交：确认",
+  pendingNo: "待提交：取消",
+  rejected: "已取消",
+};
+
+/** 一组待确认项共用的按钮文案。混了不同工具时用中性措辞，不猜。 */
+export const approvalCopy = (toolNames: readonly string[]): ApprovalCopy => {
+  const unique = [...new Set(toolNames)];
+  return unique.length === 1 ? (APPROVAL_COPY[unique[0]!] ?? NEUTRAL_COPY) : NEUTRAL_COPY;
+};
