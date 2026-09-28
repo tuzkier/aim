@@ -83,14 +83,18 @@ class ToolResult(BaseModel):
     data: dict[str, Any]
 
 
-class UpdateTaskRequest(BaseModel):
+class CompleteTaskToolRequest(BaseModel):
     task_id: UUID
-    action: Literal["schedule", "complete", "delay"]
     expected_version: int = Field(ge=1)
-    scheduled_for: datetime | None = None
-    due_at: datetime | None = None
+
+
+class RescheduleTaskRequest(BaseModel):
+    task_id: UUID
+    expected_version: int = Field(ge=1)
+    #: schedule = 定下具体去做的时间（例如预约好的产检）；delay = 只把截止时间往后挪。
+    kind: Literal["schedule", "delay"]
+    at: datetime
     approved: bool = False
-    family_id: UUID | None = None
 
 
 class AssignTaskRequest(BaseModel):
@@ -195,7 +199,7 @@ def _context(request: Request) -> AgentToolContext:
 # 档位在服务端声明，而不是看调用方传来的 approved 标志——否则「执行前确认」
 # 那一档等于形同虚设，任何调用方带上 approved: true 就能绕过。
 DIRECT_EXECUTION_TOOLS = frozenset(
-    {"create_task", "delete_task", "create_record", "delete_record"}
+    {"create_task", "create_record", "complete_task", "undo_operation"}
 )
 
 
@@ -344,50 +348,64 @@ async def _list_records(session, context: AgentToolContext, body: dict[str, Any]
     return ({"records": normalized, "count": len(normalized)}, f"已读取 {len(normalized)} 条孕期记录")
 
 
-async def _update_task(session, context: AgentToolContext, body: dict[str, Any]):
-    uow = SqlAlchemyPlanningUnitOfWork(session)
-    task_id = UUID(body["task_id"])
+async def _task_in_scope(uow, context: AgentToolContext, task_id: UUID):
     task = await uow.repository.get_task(task_id)
     if task is None or task.pregnancy_id != context.pregnancy_id:
         raise ForbiddenError("task is outside the agent pregnancy scope")
-    action = body["action"]
-    if action == "schedule":
-        if body.get("scheduled_for") is None:
-            raise ConflictError("scheduled_for is required")
+    return task
+
+
+async def _task_write_result(uow, updated) -> dict[str, Any]:
+    """写入结果统一带上 change_id：撤销靠它找回这次写入改了什么。"""
+    change = await uow.repository.get_change_by_version(updated.id, updated.version)
+    return {
+        "task_id": str(updated.id),
+        "title": updated.title,
+        "version": updated.version,
+        "status": updated.status.value,
+        "change_id": str(change.id) if change else None,
+    }
+
+
+async def _complete_task(session, context: AgentToolContext, body: dict[str, Any]):
+    uow = SqlAlchemyPlanningUnitOfWork(session)
+    task = await _task_in_scope(uow, context, UUID(body["task_id"]))
+    updated = await complete_task.execute(
+        CompleteTaskCommand(
+            task_id=task.id,
+            account_id=context.account_id,
+            expected_version=body["expected_version"],
+        ),
+        uow,
+    )
+    return (await _task_write_result(uow, updated), f"已完成待办：{updated.title}")
+
+
+async def _reschedule_task(session, context: AgentToolContext, body: dict[str, Any]):
+    uow = SqlAlchemyPlanningUnitOfWork(session)
+    task = await _task_in_scope(uow, context, UUID(body["task_id"]))
+    at = _parse_datetime(body["at"])
+    if body["kind"] == "schedule":
         updated = await schedule_task.execute(
             ScheduleTaskCommand(
-                task_id=task_id,
+                task_id=task.id,
                 account_id=context.account_id,
                 expected_version=body["expected_version"],
-                scheduled_for=datetime.fromisoformat(body["scheduled_for"].replace("Z", "+00:00")),
-            ),
-            uow,
-        )
-    elif action == "complete":
-        updated = await complete_task.execute(
-            CompleteTaskCommand(
-                task_id=task_id,
-                account_id=context.account_id,
-                expected_version=body["expected_version"],
+                scheduled_for=at,
             ),
             uow,
         )
     else:
-        if body.get("due_at") is None:
-            raise ConflictError("due_at is required")
         updated = await delay_task.execute(
             DelayTaskCommand(
-                task_id=task_id,
+                task_id=task.id,
                 account_id=context.account_id,
                 expected_version=body["expected_version"],
-                due_at=datetime.fromisoformat(body["due_at"].replace("Z", "+00:00")),
+                due_at=at,
             ),
             uow,
         )
-    return (
-        {"task_id": str(updated.id), "version": updated.version, "status": updated.status.value},
-        f"已更新任务：{updated.title}",
-    )
+    return (await _task_write_result(uow, updated), f"已改期：{updated.title}")
 
 
 async def _create_task(session, context: AgentToolContext, body: dict[str, Any]):
@@ -506,10 +524,7 @@ async def _assign_task(session, context: AgentToolContext, body: dict[str, Any])
         ),
         uow,
     )
-    return (
-        {"task_id": str(updated.id), "version": updated.version},
-        f"已更新任务负责人：{updated.title}",
-    )
+    return (await _task_write_result(uow, updated), f"已更新任务负责人：{updated.title}")
 
 
 async def _record_fact(session, context: AgentToolContext, body: dict[str, Any]):
@@ -583,9 +598,14 @@ async def list_records_endpoint(request: Request, payload: ListRecordsRequest):
     return await _run(request, "list_records", payload, _list_records)
 
 
-@router.post("/update-task", response_model=ToolResult, include_in_schema=False)
-async def update_task(request: Request, payload: UpdateTaskRequest):
-    return await _run(request, "update_task", payload, _update_task, write=True)
+@router.post("/complete-task", response_model=ToolResult, include_in_schema=False)
+async def complete_task_endpoint(request: Request, payload: CompleteTaskToolRequest):
+    return await _run(request, "complete_task", payload, _complete_task, write=True)
+
+
+@router.post("/reschedule-task", response_model=ToolResult, include_in_schema=False)
+async def reschedule_task_endpoint(request: Request, payload: RescheduleTaskRequest):
+    return await _run(request, "reschedule_task", payload, _reschedule_task, write=True)
 
 
 @router.post("/create-task", response_model=ToolResult, include_in_schema=False)

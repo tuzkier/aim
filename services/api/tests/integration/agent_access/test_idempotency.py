@@ -46,31 +46,32 @@ def test_write_tool_requires_approval_and_replays_same_result() -> None:
         }
         body = {
             "task_id": ultrasound_id,
-            "action": "schedule",
             "expected_version": 1,
-            "scheduled_for": "2026-08-19T09:30:00Z",
+            "kind": "schedule",
+            "at": "2026-08-19T09:30:00Z",
             "approved": True,
         }
-        first = client.post("/internal/agent-tools/update-task", headers=internal, json=body)
+        first = client.post("/internal/agent-tools/reschedule-task", headers=internal, json=body)
         assert first.status_code == 200, first.text
-        second = client.post("/internal/agent-tools/update-task", headers=internal, json=body)
+        second = client.post("/internal/agent-tools/reschedule-task", headers=internal, json=body)
         assert second.status_code == 200, second.text
         assert second.json()["operation_id"] == first.json()["operation_id"]
 
         conflict = client.post(
-            "/internal/agent-tools/update-task",
+            "/internal/agent-tools/reschedule-task",
             headers=internal,
-            json={**body, "action": "complete", "expected_version": 2},
+            json={**body, "at": "2026-08-20T09:30:00Z"},
         )
         assert conflict.status_code == 409
 
         unapproved = client.post(
-            "/internal/agent-tools/update-task",
+            "/internal/agent-tools/reschedule-task",
             headers={**internal, "Idempotency-Key": "update-materials-1"},
             json={
                 "task_id": plan["tasks"][1]["id"],
-                "action": "complete",
                 "expected_version": 1,
+                "kind": "delay",
+                "at": "2026-08-30T09:30:00Z",
                 "approved": False,
             },
         )
