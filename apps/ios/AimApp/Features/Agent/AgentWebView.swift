@@ -1,3 +1,4 @@
+import OSLog
 import SwiftUI
 import WebKit
 
@@ -78,6 +79,7 @@ struct AgentWebView: UIViewRepresentable {
         )
         controller.add(context.coordinator, name: "aimNavigate")
         controller.add(context.coordinator, name: "aimTurnFinished")
+        controller.add(context.coordinator, name: "aimLog")
         configuration.userContentController = controller
 
         let webView = WKWebView(frame: .zero, configuration: configuration)
@@ -86,6 +88,7 @@ struct AgentWebView: UIViewRepresentable {
         webView.scrollView.backgroundColor = .clear
         // 页面自己管滚动；再套一层会出现两条滚动条互相抢。
         webView.scrollView.bounces = true
+        webView.navigationDelegate = context.coordinator
         webView.load(URLRequest(url: AgentWebScheme.indexURL(gateway: environment.baseURL)))
         onCreate(webView)
         return webView
@@ -134,7 +137,7 @@ struct AgentWebView: UIViewRepresentable {
         "window.__AIM_NATIVE__ = \(payload);"
     }
 
-    final class Coordinator: NSObject, WKScriptMessageHandler {
+    final class Coordinator: NSObject, WKScriptMessageHandler, WKNavigationDelegate {
         var onNavigate: (AgentWebRoute) -> Void
         var onTurnFinished: ([String]) -> Void
         var lastPayload: String?
@@ -144,6 +147,27 @@ struct AgentWebView: UIViewRepresentable {
             self.onTurnFinished = onTurnFinished
         }
 
+        static let log = Logger(subsystem: "com.aim.pregnancy", category: "agent-web")
+
+        /// iOS 在后台回收了网页进程：不处理的话 WebView 会一直是白的。重新加载即可，
+        /// 对话内容在服务端，页面会自己接回来。
+        func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+            Self.log.error("web content process terminated, reloading")
+            webView.reload()
+        }
+
+        func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+            Self.log.error("navigation failed: \(error.localizedDescription, privacy: .public)")
+        }
+
+        func webView(
+            _ webView: WKWebView,
+            didFailProvisionalNavigation navigation: WKNavigation!,
+            withError error: Error
+        ) {
+            Self.log.error("page load failed: \(error.localizedDescription, privacy: .public)")
+        }
+
         func userContentController(
             _ userContentController: WKUserContentController, didReceive message: WKScriptMessage
         ) {
@@ -151,6 +175,10 @@ struct AgentWebView: UIViewRepresentable {
             case "aimTurnFinished":
                 let kinds = (message.body as? [String: Any])?["kinds"] as? [String] ?? []
                 onTurnFinished(kinds)
+            case "aimLog":
+                // 页面里的渲染错误和未捕获异常。真机上看不到 WebView 控制台，
+                // 「突然空白」只能靠这里事后追查（Console.app 里按 agent-web 过滤）。
+                Self.log.error("\(String(describing: message.body), privacy: .public)")
             case "aimNavigate":
                 // 只认识的路由才转发。页面里传来的东西不该被当成可信输入，
                 // 认不出来就丢掉，而不是猜。

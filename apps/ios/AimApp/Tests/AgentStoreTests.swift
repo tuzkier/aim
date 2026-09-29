@@ -1,3 +1,4 @@
+import WebKit
 import XCTest
 @testable import AimApp
 
@@ -143,5 +144,23 @@ final class AgentSharedSessionTests: XCTestCase {
         await first.value
 
         XCTAssertEqual(batches, [["task"], ["task", "record", "knowledge"]])
+    }
+
+    /// iOS 在后台回收网页进程后，WebView 会一直白着——必须自己重新加载。
+    func testWebViewReloadsWhenItsContentProcessIsKilled() {
+        let coordinator = AgentWebView.Coordinator(onNavigate: { _ in }, onTurnFinished: { _ in })
+        let webView = ReloadSpyWebView()
+
+        coordinator.webViewWebContentProcessDidTerminate(webView)
+
+        XCTAssertTrue(webView.reloaded)
+    }
+}
+
+private final class ReloadSpyWebView: WKWebView {
+    var reloaded = false
+    override func reload() -> WKNavigation? {
+        reloaded = true
+        return nil
     }
 }
