@@ -66,15 +66,18 @@ async def undo_invocation(
         raise ConflictError("删除的待办不能撤销，需要的话重新建一条")
 
     if tool in _DELETE_TASK:
-        await delete_task.execute(
-            DeleteTaskCommand(
-                task_id=UUID(data["task_id"]),
-                pregnancy_id=invocation.pregnancy_id,
-                account_id=account_id,
-            ),
-            SqlAlchemyPlanningUnitOfWork(session),
-        )
-        summary = "已撤销新建的待办"
+        # 批量新建的结果在 data.tasks 里；单条的旧记录只有 data.task_id。
+        task_ids = [t["task_id"] for t in data.get("tasks") or []] or [data["task_id"]]
+        for task_id in task_ids:
+            await delete_task.execute(
+                DeleteTaskCommand(
+                    task_id=UUID(task_id),
+                    pregnancy_id=invocation.pregnancy_id,
+                    account_id=account_id,
+                ),
+                SqlAlchemyPlanningUnitOfWork(session),
+            )
+        summary = "已撤销新建的待办" if len(task_ids) == 1 else f"已撤销新建的 {len(task_ids)} 项待办"
     elif tool in _DELETE_RECORD:
         try:
             await delete_record.execute(
@@ -91,26 +94,35 @@ async def undo_invocation(
             await session.rollback()
         summary = "已撤销新建的记录"
     elif tool in _REVERT_CHANGE:
-        change_id = data.get("change_id")
-        if not change_id:
+        change_ids = [t.get("change_id") for t in data.get("tasks") or []] or [data.get("change_id")]
+        if not all(change_ids):
             raise ConflictError("这次操作缺少变更记录，不能撤销")
-        uow = SqlAlchemyPlanningUnitOfWork(session)
-        change = await uow.repository.get_change(UUID(change_id))
-        if change is None:
-            raise ConflictError("这项待办已经不存在了")
-        try:
-            updated = await undo_change.execute(
-                UndoChangeCommand(
-                    change_id=change.id,
-                    account_id=account_id,
-                    expected_version=change.version_after,
-                ),
-                uow,
-            )
-        except (TaskVersionConflict, InvalidTaskTransition) as error:
-            await session.rollback()
-            raise ConflictError("这项待办之后又被改过，不能直接撤销") from error
-        summary = f"已撤销：{updated.title}"
+        reverted: list[str] = []
+        conflicted = 0
+        for change_id in change_ids:
+            uow = SqlAlchemyPlanningUnitOfWork(session)
+            change = await uow.repository.get_change(UUID(change_id))
+            if change is None:
+                conflicted += 1
+                continue
+            try:
+                updated = await undo_change.execute(
+                    UndoChangeCommand(
+                        change_id=change.id,
+                        account_id=account_id,
+                        expected_version=change.version_after,
+                    ),
+                    uow,
+                )
+                reverted.append(updated.title)
+            except (TaskVersionConflict, InvalidTaskTransition):
+                await session.rollback()
+                conflicted += 1
+        if not reverted:
+            raise ConflictError("这项待办之后又被改过，不能直接撤销")
+        summary = "已撤销：" + "、".join(reverted)
+        if conflicted:
+            summary += f"（{conflicted} 项之后又被改过，没有撤销）"
     else:
         raise ConflictError("这类操作不能撤销")
 

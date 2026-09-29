@@ -8,7 +8,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Request, status
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from starlette.exceptions import HTTPException
 
 from aim_api.contexts.agent_access.adapters.outbound.persistence.repositories import (
@@ -48,7 +48,12 @@ from aim_api.contexts.planning.application.commands.create_task import CreateTas
 from aim_api.contexts.planning.application.commands.delay_task import DelayTaskCommand
 from aim_api.contexts.planning.application.commands.delete_task import DeleteTaskCommand
 from aim_api.contexts.planning.application.commands.schedule_task import ScheduleTaskCommand
+from aim_api.contexts.planning.domain.errors import PlanningDomainError, TaskNotFound
 from aim_api.contexts.planning.domain.task import ActorType
+from aim_api.contexts.planning.domain.task_status import (
+    InvalidTaskTransition,
+    TaskVersionConflict,
+)
 from aim_api.contexts.pregnancy.adapters.outbound.persistence.repositories import (
     SqlAlchemyPregnancyRepository,
 )
@@ -81,14 +86,46 @@ class ToolResult(BaseModel):
     data: dict[str, Any]
 
 
-class CompleteTaskToolRequest(BaseModel):
+#: 一次批量操作的上限。再多就是模型在乱来，拆开做也更容易让用户核对。
+MAX_BATCH = 50
+
+
+def _exactly_one(batch, single, what: str) -> None:
+    if (batch is None) == (single is None):
+        raise ValueError(f"pass either a list of {what} or a single one, not both")
+
+
+class TaskVersionRef(BaseModel):
     task_id: UUID
     expected_version: int = Field(ge=1)
 
 
+class CompleteTaskToolRequest(BaseModel):
+    #: 批量形式。单条的旧形式（task_id + expected_version 平铺）仍然接受。
+    tasks: list[TaskVersionRef] | None = Field(default=None, min_length=1, max_length=MAX_BATCH)
+    task_id: UUID | None = None
+    expected_version: int | None = Field(default=None, ge=1)
+
+    @model_validator(mode="after")
+    def _one_form(self):
+        _exactly_one(self.tasks, self.task_id, "tasks")
+        if self.task_id is not None and self.expected_version is None:
+            raise ValueError("expected_version is required with task_id")
+        return self
+
+    def refs(self) -> list[TaskVersionRef]:
+        return self.tasks or [TaskVersionRef(task_id=self.task_id, expected_version=self.expected_version)]
+
+
 class DeleteTaskToolRequest(BaseModel):
-    task_id: UUID
+    task_ids: list[UUID] | None = Field(default=None, min_length=1, max_length=MAX_BATCH)
+    task_id: UUID | None = None
     approved: bool = False
+
+    @model_validator(mode="after")
+    def _one_form(self):
+        _exactly_one(self.task_ids, self.task_id, "task ids")
+        return self
 
 
 class RescheduleTaskRequest(BaseModel):
@@ -116,10 +153,23 @@ class RecordFactRequest(BaseModel):
     pregnancy_id: UUID | None = None
 
 
-class CreateTaskRequest(BaseModel):
+class TaskDraft(BaseModel):
     title: str = Field(min_length=1, max_length=200)
     description: str | None = None
     due_at: datetime | None = None
+
+
+class CreateTaskRequest(BaseModel):
+    #: 批量形式。单条的旧形式（title 等平铺）仍然接受。
+    tasks: list[TaskDraft] | None = Field(default=None, min_length=1, max_length=MAX_BATCH)
+    title: str | None = Field(default=None, min_length=1, max_length=200)
+    description: str | None = None
+    due_at: datetime | None = None
+
+    @model_validator(mode="after")
+    def _one_form(self):
+        _exactly_one(self.tasks, self.title, "tasks")
+        return self
 
 
 class CreateRecordRequest(BaseModel):
@@ -378,37 +428,73 @@ async def _task_write_result(uow, updated) -> dict[str, Any]:
     }
 
 
+def _batch_result(done: list[dict[str, Any]], failed: list[dict[str, Any]]) -> dict[str, Any]:
+    """批量结果。只有一项时顺带平铺它的字段，兼容单条调用方与旧的撤销记录。"""
+    data: dict[str, Any] = {"tasks": done, "failed": failed}
+    if len(done) == 1 and not failed:
+        data.update(done[0])
+    return data
+
+
+def _failure_reason(error: Exception) -> str:
+    if isinstance(error, TaskVersionConflict):
+        return "这项待办刚被改过，请重新读取后再试"
+    if isinstance(error, InvalidTaskTransition):
+        return "这项待办已经是完成状态"
+    if isinstance(error, (ForbiddenError, TaskNotFound)):
+        return "找不到这项待办"
+    return str(error)
+
+
 async def _complete_task(session, context: AgentToolContext, body: dict[str, Any]):
+    """完成一项或多项待办。逐项处理：某一项失败不拖累其它项，失败原因逐条返回。"""
     uow = SqlAlchemyPlanningUnitOfWork(session)
-    task = await _task_in_scope(uow, context, UUID(body["task_id"]))
-    updated = await complete_task.execute(
-        CompleteTaskCommand(
-            task_id=task.id,
-            account_id=context.account_id,
-            expected_version=body["expected_version"],
-        ),
-        uow,
-    )
-    return (await _task_write_result(uow, updated), f"已完成待办：{updated.title}")
+    refs = CompleteTaskToolRequest.model_validate(body).refs()
+    done: list[dict[str, Any]] = []
+    failed: list[dict[str, Any]] = []
+    for ref in refs:
+        try:
+            task = await _task_in_scope(uow, context, ref.task_id)
+            updated = await complete_task.execute(
+                CompleteTaskCommand(
+                    task_id=task.id,
+                    account_id=context.account_id,
+                    expected_version=ref.expected_version,
+                ),
+                uow,
+            )
+            done.append(await _task_write_result(uow, updated))
+        except (ForbiddenError, PlanningDomainError, TaskVersionConflict, InvalidTaskTransition) as error:
+            await session.rollback()
+            failed.append({"task_id": str(ref.task_id), "reason": _failure_reason(error)})
+    if not done:
+        raise ConflictError("一项都没有完成：" + "；".join(f["reason"] for f in failed))
+    titles = "、".join(t["title"] for t in done)
+    summary = f"已完成待办：{titles}" + (f"（{len(failed)} 项没有完成）" if failed else "")
+    return (_batch_result(done, failed), summary)
 
 
 async def _delete_task(session, context: AgentToolContext, body: dict[str, Any]):
-    """删掉一条不该存在的待办（加错了、重复了、不需要了）。
+    """删掉不该存在的待办（加错了、重复了、不需要了），可一次多条。
 
-    硬删除，不能撤销，所以在「执行前确认」档。没有它时，模型只能把加错的待办
-    标成完成来「去掉」，留下一条假的完成记录。
+    硬删除，不能撤销，所以在「执行前确认」档；一次确认覆盖整批。先核对整批都在
+    本段孕期里再动手——有一条越界就一条都不删，免得删到一半才报错。
+    没有它时，模型只能把加错的待办标成完成来「去掉」，留下假的完成记录。
     """
     uow = SqlAlchemyPlanningUnitOfWork(session)
-    task = await _task_in_scope(uow, context, UUID(body["task_id"]))
-    await delete_task.execute(
-        DeleteTaskCommand(
-            task_id=task.id,
-            pregnancy_id=context.pregnancy_id,
-            account_id=context.account_id,
-        ),
-        uow,
-    )
-    return ({"task_id": str(task.id), "title": task.title}, f"已删除待办：{task.title}")
+    ids = [UUID(i) for i in (body.get("task_ids") or [body["task_id"]])]
+    tasks = [await _task_in_scope(uow, context, task_id) for task_id in ids]
+    for task in tasks:
+        await delete_task.execute(
+            DeleteTaskCommand(
+                task_id=task.id,
+                pregnancy_id=context.pregnancy_id,
+                account_id=context.account_id,
+            ),
+            uow,
+        )
+    done = [{"task_id": str(task.id), "title": task.title} for task in tasks]
+    return (_batch_result(done, []), "已删除待办：" + "、".join(t["title"] for t in done))
 
 
 async def _reschedule_task(session, context: AgentToolContext, body: dict[str, Any]):
@@ -439,20 +525,29 @@ async def _reschedule_task(session, context: AgentToolContext, body: dict[str, A
 
 
 async def _create_task(session, context: AgentToolContext, body: dict[str, Any]):
-    """Agent 新建待办。actor 记为 agent，时间线据此显示「Agent 调整」。"""
+    """Agent 新建一条或多条待办。actor 记为 agent，时间线据此显示「Agent 调整」。"""
     uow = SqlAlchemyPlanningUnitOfWork(session)
-    task = await create_task.execute(
-        CreateTaskCommand(
-            pregnancy_id=context.pregnancy_id,
-            account_id=context.account_id,
-            title=body["title"],
-            description=body.get("description"),
-            due_at=_parse_datetime(body.get("due_at")),
-            changed_by_actor_type=ActorType.agent,
-        ),
-        uow,
+    drafts = body.get("tasks") or [
+        {"title": body["title"], "description": body.get("description"), "due_at": body.get("due_at")}
+    ]
+    done: list[dict[str, Any]] = []
+    for draft in drafts:
+        task = await create_task.execute(
+            CreateTaskCommand(
+                pregnancy_id=context.pregnancy_id,
+                account_id=context.account_id,
+                title=draft["title"],
+                description=draft.get("description"),
+                due_at=_parse_datetime(draft.get("due_at")),
+                changed_by_actor_type=ActorType.agent,
+            ),
+            uow,
+        )
+        done.append({"task_id": str(task.id), "title": task.title})
+    summary = (
+        f"已添加待办：{done[0]['title']}" if len(done) == 1 else f"已添加 {len(done)} 项待办"
     )
-    return ({"task_id": str(task.id), "title": task.title}, f"已添加待办：{task.title}")
+    return (_batch_result(done, []), summary)
 
 
 async def _create_knowledge(session, context: AgentToolContext, body: dict[str, Any]):

@@ -601,22 +601,48 @@
     "schemas": {
       "CompleteTaskToolRequest": {
         "properties": {
+          "tasks": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/TaskVersionRef"
+                },
+                "type": "array",
+                "maxItems": 50,
+                "minItems": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tasks"
+          },
           "task_id": {
-            "type": "string",
-            "format": "uuid",
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Task Id"
           },
           "expected_version": {
-            "type": "integer",
-            "minimum": 1.0,
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Expected Version"
           }
         },
         "type": "object",
-        "required": [
-          "task_id",
-          "expected_version"
-        ],
         "title": "CompleteTaskToolRequest"
       },
       "CreateFamilyRequest": {
@@ -828,9 +854,33 @@
       },
       "DeleteTaskToolRequest": {
         "properties": {
+          "task_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "type": "array",
+                "maxItems": 50,
+                "minItems": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Ids"
+          },
           "task_id": {
-            "type": "string",
-            "format": "uuid",
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Task Id"
           },
           "approved": {
@@ -840,9 +890,6 @@
           }
         },
         "type": "object",
-        "required": [
-          "task_id"
-        ],
         "title": "DeleteTaskToolRequest"
       },
       "DeletionRequest": {
@@ -1720,6 +1767,44 @@
         ],
         "title": "SessionListResponse"
       },
+      "TaskDraft": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "due_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title"
+        ],
+        "title": "TaskDraft"
+      },
       "TaskResponse": {
         "properties": {
           "id": {
@@ -1870,6 +1955,26 @@
           "record"
         ],
         "title": "TaskSourceType"
+      },
+      "TaskVersionRef": {
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Task Id"
+          },
+          "expected_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expected Version"
+          }
+        },
+        "type": "object",
+        "required": [
+          "task_id",
+          "expected_version"
+        ],
+        "title": "TaskVersionRef"
       },
       "TodayResponse": {
         "properties": {
@@ -2258,10 +2363,33 @@
       },
       "aim_api__contexts__agent_access__adapters__inbound__http__router__CreateTaskRequest": {
         "properties": {
+          "tasks": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/TaskDraft"
+                },
+                "type": "array",
+                "maxItems": 50,
+                "minItems": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tasks"
+          },
           "title": {
-            "type": "string",
-            "maxLength": 200,
-            "minLength": 1,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Title"
           },
           "description": {
@@ -2289,9 +2417,6 @@
           }
         },
         "type": "object",
-        "required": [
-          "title"
-        ],
         "title": "CreateTaskRequest"
       },
       "aim_api__contexts__agent_access__adapters__inbound__http__router__RecordFactRequest": {
