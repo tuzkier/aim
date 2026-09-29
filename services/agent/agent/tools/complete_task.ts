@@ -7,17 +7,22 @@ import { toolResultSchema } from "../lib/business-api/tool-result-schema.ts";
 // 做错了由 undo_operation 撤回。档位同时在服务端 DIRECT_EXECUTION_TOOLS 声明。
 export default defineTool({
   description:
-    "Mark one to-do as done when the user says it is finished. Executes immediately; " +
-    "tell the user it can be undone. Read list_tasks first to get taskId and version.",
+    "Mark one or more to-dos as done when the user says they are finished. Pass all of them " +
+    "in one call. Executes immediately; tell the user it can be undone. Read list_tasks first " +
+    "to get each taskId and version. Items that fail are listed in the result's `failed`.",
   inputSchema: z.object({
-    taskId: z.string().uuid(),
-    expectedVersion: z.number().int().min(1),
+    tasks: z
+      .array(z.object({ taskId: z.string().uuid(), expectedVersion: z.number().int().min(1) }))
+      .min(1)
+      .max(50),
   }),
   outputSchema: toolResultSchema,
-  async execute({ taskId, expectedVersion }, ctx) {
+  async execute({ tasks }, ctx) {
     return callBusinessApi(ctx, "/internal/agent-tools/complete-task", {
-      task_id: taskId,
-      expected_version: expectedVersion,
+      tasks: tasks.map(({ taskId, expectedVersion }) => ({
+        task_id: taskId,
+        expected_version: expectedVersion,
+      })),
     });
   },
 });

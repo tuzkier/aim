@@ -50,10 +50,10 @@ const TASK = "00000000-0000-4000-8000-000000000001";
 test("complete_task executes directly", async () => {
   assert.equal(completeTask.approval, undefined);
   const request = await capture(() =>
-    completeTask.execute({ taskId: TASK, expectedVersion: 1 }, ctx),
+    completeTask.execute({ tasks: [{ taskId: TASK, expectedVersion: 1 }] }, ctx),
   );
   assert.equal(request.url, "http://api.test/internal/agent-tools/complete-task");
-  assert.deepEqual(await request.json(), { task_id: TASK, expected_version: 1 });
+  assert.deepEqual(await request.json(), { tasks: [{ task_id: TASK, expected_version: 1 }] });
 });
 
 test("reschedule_task is gated and forwards server approval", async () => {
@@ -94,7 +94,11 @@ test("tools refuse to run without a pregnancy profile, in Chinese", async () => 
     },
   } as never;
   await assert.rejects(
-    () => completeTask.execute({ taskId: TASK, expectedVersion: 1 }, noPregnancy) as Promise<unknown>,
+    () =>
+      completeTask.execute(
+        { tasks: [{ taskId: TASK, expectedVersion: 1 }] },
+        noPregnancy,
+      ) as Promise<unknown>,
     /还没有建立孕期档案/,
   );
 });
@@ -102,7 +106,7 @@ test("tools refuse to run without a pregnancy profile, in Chinese", async () => 
 test("delete_task is gated and forwards server approval", async () => {
   // 删除不能撤销，必须先让用户在卡片上确认。
   assert.equal(typeof deleteTask.approval, "function");
-  const request = await capture(() => deleteTask.execute({ taskId: TASK }, ctx));
+  const request = await capture(() => deleteTask.execute({ taskIds: [TASK] }, ctx));
   assert.equal(request.url, "http://api.test/internal/agent-tools/delete-task");
-  assert.deepEqual(await request.json(), { task_id: TASK, approved: true });
+  assert.deepEqual(await request.json(), { task_ids: [TASK], approved: true });
 });

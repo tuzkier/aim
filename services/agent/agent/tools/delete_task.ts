@@ -8,15 +8,16 @@ import { toolResultSchema } from "../lib/business-api/tool-result-schema.ts";
 // 没有这个工具时，模型只能把加错的待办标成完成来「去掉」，留下假的完成记录。
 export default defineTool({
   description:
-    "Delete a to-do that should not exist: one added by mistake, a duplicate, or one the " +
-    "user no longer wants. The user confirms on a card; deletion cannot be undone. " +
-    "Never use complete_task to get rid of a wrong to-do — completing means the user did it.",
-  inputSchema: z.object({ taskId: z.string().uuid() }),
+    "Delete to-dos that should not exist: added by mistake, duplicates, or no longer wanted. " +
+    "Pass all of them in one call — the user confirms the whole batch on one card, and " +
+    "deletion cannot be undone. Never use complete_task to get rid of a wrong to-do — " +
+    "completing means the user did it.",
+  inputSchema: z.object({ taskIds: z.array(z.string().uuid()).min(1).max(50) }),
   outputSchema: toolResultSchema,
   approval: always(),
-  async execute({ taskId }, ctx) {
+  async execute({ taskIds }, ctx) {
     return callBusinessApi(ctx, "/internal/agent-tools/delete-task", {
-      task_id: taskId,
+      task_ids: taskIds,
       // Eve 只在确认通过后才调用 execute。
       approved: true,
     });

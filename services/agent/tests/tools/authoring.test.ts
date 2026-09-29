@@ -60,7 +60,7 @@ test("create_task posts the to-do without asserting its own approval", async () 
     { task_id: "11111111-1111-1111-1111-111111111111", title: "预约产检" },
     () =>
       createTask.execute(
-        { title: "预约产检", description: "本周内完成" },
+        { tasks: [{ title: "预约产检", description: "本周内完成" }, { title: "买叶酸" }] },
         scope,
       ),
   );
@@ -72,7 +72,10 @@ test("create_task posts the to-do without asserting its own approval", async () 
   // 否则「执行前确认」那一档只要带上这个标志就能绕过。
   const body = (await request?.clone().json()) as Record<string, unknown>;
   // 未提供的可选字段会被 JSON 序列化丢掉，所以断言的是实际发出的键集合。
-  assert.deepEqual(body, { title: "预约产检", description: "本周内完成" });
+  // 批量：一次调用带上全部待办，而不是一条一次。
+  assert.deepEqual(body, {
+    tasks: [{ title: "预约产检", description: "本周内完成" }, { title: "买叶酸" }],
+  });
   assert.equal("approved" in body, false);
 });
 
@@ -211,8 +214,8 @@ test("create_record rejects a symptom without symptoms before calling the API", 
 
 test("create_task sends the due time pinned to Beijing", async () => {
   const { request } = await withStubbedApi({ task_id: "t1" }, () =>
-    createTask.execute({ title: "拿报告", dueAt: "2026-09-29T15:00" }, scope),
+    createTask.execute({ tasks: [{ title: "拿报告", dueAt: "2026-09-29T15:00" }] }, scope),
   );
-  const body = (await request?.clone().json()) as Record<string, unknown>;
-  assert.equal(body.due_at, "2026-09-29T15:00:00+08:00");
+  const body = (await request?.clone().json()) as { tasks: Record<string, unknown>[] };
+  assert.equal(body.tasks[0]!.due_at, "2026-09-29T15:00:00+08:00");
 });
