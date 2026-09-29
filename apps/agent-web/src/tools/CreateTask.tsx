@@ -1,51 +1,52 @@
 import { makeAssistantToolUI } from "@assistant-ui/react";
-import { parseWhen } from "../bizData";
+import { formatWhen } from "../bizData";
 import { OpenNative } from "./OpenNative";
 import { ApprovalSlot, ToolCard, ToolStatusLine } from "./ToolCard";
-import { isAwaitingApproval } from "./types";
+import { taskDrafts, type TaskDraft } from "./taskArgs";
 import type { ToolRenderProps } from "./types";
 
-type TaskArgs = {
-  title?: string;
-  description?: string;
-  dueAt?: string;
-};
+type Args = { tasks?: TaskDraft[]; title?: string; description?: string; dueAt?: string };
+type Result = { data?: { task_id?: string } };
 
-/** 到期时间用本地时区显示。模型给的是 ISO，直接摆出来用户读不懂。 */
-const formatDue = (raw: string | undefined): string | null => {
-  if (!raw) return null;
-  const parsed = parseWhen(raw);
-  if (Number.isNaN(parsed.getTime())) return null;
-  return new Intl.DateTimeFormat("zh-CN", {
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "Asia/Shanghai",
-  }).format(parsed);
-};
-
+/**
+ * 新建待办（直接执行档，卡片渲染时通常已经做完了）。一条画详情，多条画成清单——
+ * 批量建 38 条时一张卡列全，而不是 38 张卡。
+ */
 export const CreateTaskUI = makeAssistantToolUI({
   toolName: "create_task",
-  render: (props: ToolRenderProps<TaskArgs>) => {
-    const args = props.args ?? {};
-    const due = formatDue(args.dueAt);
+  render: (props: ToolRenderProps<Args>) => {
+    const drafts = taskDrafts(props.args);
+    const single = drafts.length === 1 ? drafts[0]! : null;
     return (
       <ToolCard>
-        {/* create_task 是「直接执行」档，卡片渲染时事情通常已经做完了。
-            眉标写「将新建」而状态写「已添加」，同一张卡自相矛盾。 */}
         <p className="tool-card__eyebrow">
-          {isAwaitingApproval(props.approval) ? "将新建待办" : "待办"}
+          {drafts.length > 1 ? `新建 ${drafts.length} 项待办` : "待办"}
         </p>
-        <h3 className="tool-card__title">{args.title ?? "（无标题）"}</h3>
-        {args.description ? <p className="tool-card__text">{args.description}</p> : null}
-        {due ? <p className="tool-card__meta">{due}</p> : null}
+        {single ? (
+          <>
+            <h3 className="tool-card__title">{single.title}</h3>
+            {single.description ? <p className="tool-card__text">{single.description}</p> : null}
+            {formatWhen(single.dueAt) ? (
+              <p className="tool-card__meta">{formatWhen(single.dueAt)}</p>
+            ) : null}
+          </>
+        ) : (
+          <ul className="tool-card__list">
+            {drafts.map((draft, index) => (
+              <li key={`${draft.title}-${index}`}>
+                {draft.title}
+                {formatWhen(draft.dueAt) ? (
+                  <span className="tool-card__meta"> · {formatWhen(draft.dueAt)}</span>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        )}
         <ApprovalSlot props={props} />
         <ToolStatusLine props={props} />
-        <OpenNative
-          kind="task"
-          id={(props.result as { data?: { task_id?: string } } | undefined)?.data?.task_id}
-        />
+        {single ? (
+          <OpenNative kind="task" id={(props.result as Result | undefined)?.data?.task_id} />
+        ) : null}
       </ToolCard>
     );
   },

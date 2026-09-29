@@ -1,3 +1,4 @@
+import { AskQuestionUI } from "./AskQuestion";
 import { AssignTaskUI } from "./AssignTask";
 import { CompleteTaskUI } from "./CompleteTask";
 import { CreateKnowledgeUI } from "./CreateKnowledge";
@@ -26,6 +27,7 @@ export const ToolRenderers = () => (
     <DeleteTaskUI />
     <AssignTaskUI />
     <RecordFactUI />
+    <AskQuestionUI />
   </>
 );
 

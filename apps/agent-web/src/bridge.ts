@@ -76,6 +76,18 @@ export const openNative = (route: { kind: "record" | "task" | "knowledge"; id: s
   handler.postMessage(route);
 };
 
+/**
+ * 把页面里的异常送到原生日志。WebView 的控制台在真机上看不到，
+ * 「突然空白」这类问题只能靠它事后追查。
+ */
+export const reportToNative = (kind: string, detail: Record<string, unknown>): void => {
+  try {
+    window.webkit?.messageHandlers?.aimLog?.postMessage({ kind, ...detail });
+  } catch {
+    // 日志通道本身出问题时不能再抛——那会把兜底变成新的崩溃点。
+  }
+};
+
 /** 告诉原生刚写了哪几类东西，原生据此只刷新受影响的页面。 */
 export const notifyTurnFinished = (kinds: readonly WriteKind[]): void => {
   window.webkit?.messageHandlers?.aimTurnFinished?.postMessage({ kinds });

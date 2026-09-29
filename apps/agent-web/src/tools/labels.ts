@@ -65,6 +65,7 @@ export const TOOL_TITLES: Record<string, string> = {
   assign_task: "分派待办",
   record_pregnancy_fact: "更新孕期信息",
   undo_operation: "撤销",
+  ask_question: "向你确认",
 };
 
 export const toolTitle = (name: string): string => TOOL_TITLES[name] ?? name;

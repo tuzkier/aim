@@ -27,6 +27,7 @@ import { clearSession, loadSession, saveSession } from "./session";
 import type { ClientSessionState } from "./types";
 import { ApprovalBatchProvider } from "./approvals";
 import { BizDataProvider, useBizData } from "./bizData";
+import { ErrorBoundary, MessageFallback } from "./ErrorBoundary";
 import { writesIn } from "./turnWrites";
 import { createWriteBatcher } from "./writeBatcher";
 import { createEveTransport, fetchSessionEvents } from "./eveTransport";
@@ -91,18 +92,20 @@ const AssistantMessage = () => {
   const pending = useAuiState((state) => pendingApprovalTools(state.message.parts).join(","));
   return (
     <div className="msg msg--assistant">
-      <MessagePrimitive.Parts
-        components={{
-          // 指令里允许模型用行内加粗和短列表，客户端就必须能渲染它们——
-          // 否则 `**待办内容**` 会带着星号摆在用户面前。
-          Text: MarkdownText,
-          Reasoning,
-          // 没有专用渲染器的工具走兜底：只读工具收成一行步骤，
-          // 写操作至少把名字露出来。
-          tools: { Fallback: GenericToolView },
-        }}
-      />
-      <ToolGroupActions toolNames={pending ? pending.split(",") : []} />
+      <ErrorBoundary scope="message" fallback={() => <MessageFallback />}>
+        <MessagePrimitive.Parts
+          components={{
+            // 指令里允许模型用行内加粗和短列表，客户端就必须能渲染它们——
+            // 否则 `**待办内容**` 会带着星号摆在用户面前。
+            Text: MarkdownText,
+            Reasoning,
+            // 没有专用渲染器的工具走兜底：只读工具收成一行步骤，
+            // 写操作至少把名字露出来。
+            tools: { Fallback: GenericToolView },
+          }}
+        />
+        <ToolGroupActions toolNames={pending ? pending.split(",") : []} />
+      </ErrorBoundary>
     </div>
   );
 };
