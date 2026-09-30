@@ -178,6 +178,8 @@ class CreateRecordRequest(BaseModel):
     title: str | None = None
     content: str | None = None
     occurred_at: datetime | None = None
+    #: 用户在对话里发的图片编号，挂到这条记录上。
+    attachment_ids: list[UUID] = Field(default_factory=list, max_length=4)
 
 
 class CreateKnowledgeRequest(BaseModel):
@@ -587,10 +589,15 @@ async def _create_record(session, context: AgentToolContext, body: dict[str, Any
             structured_data=body.get("structured_data") or {},
             title=body.get("title"),
             content=body.get("content"),
+            attachment_ids=tuple(UUID(str(value)) for value in body.get("attachment_ids") or []),
         ),
         uow,
     )
-    return ({"record_id": str(record.id)}, "已记录")
+    count = len(record.attachment_refs)
+    return (
+        {"record_id": str(record.id), "attachment_count": count},
+        "已记录" + (f"，附上 {count} 张图" if count else ""),
+    )
 
 
 def _parse_datetime(value: Any) -> datetime | None:

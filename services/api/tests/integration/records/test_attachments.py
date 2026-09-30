@@ -79,3 +79,78 @@ def test_cannot_upload_into_someone_elses_pregnancy() -> None:
         _, pregnancy_id, *_ = _family(client)
         other_headers, *_ = _family(client)
         assert _upload(client, other_headers, pregnancy_id).status_code == 403
+
+
+GATEWAY = "/internal/agent-tools"
+
+
+def _agent(scope, call_id: str) -> dict[str, str]:
+    _, pregnancy_id, account_id, family_id = scope
+    return {
+        "Service-Authorization": f"Bearer {get_settings().agent_service_secret}",
+        "Actor-Account-Id": account_id,
+        "Family-Id": family_id,
+        "Pregnancy-Id": pregnancy_id,
+        "Eve-Session-Id": f"eve-attach-{account_id}",
+        "Idempotency-Key": call_id,
+    }
+
+
+def test_agent_attaches_the_report_photo_to_the_checkup_record() -> None:
+    with TestClient(create_app()) as client:
+        scope = _family(client)
+        headers, pregnancy_id, *_ = scope
+        attachment_id = _upload(client, headers, pregnancy_id).json()["id"]
+
+        created = client.post(
+            f"{GATEWAY}/create-record",
+            headers=_agent(scope, "r1"),
+            json={
+                "record_type": "checkup",
+                "structured_data": {
+                    "hospital": "杭州市妇产科医院",
+                    "exam_items": "",
+                    "result": "",
+                    "doctor_advice": "注意补铁",
+                    "metrics": {"hemoglobin": 112},
+                },
+                "attachment_ids": [attachment_id],
+            },
+        )
+        assert created.status_code == 200, created.text
+        assert created.json()["data"]["attachment_count"] == 1
+        record_id = created.json()["data"]["record_id"]
+
+        records = client.get(f"/api/v1/pregnancies/{pregnancy_id}/records", headers=headers).json()
+        record = next(r for r in records["records"] if r["id"] == record_id)
+        assert record["attachment_refs"] == [attachment_id]
+
+
+def test_a_photo_cannot_be_attached_twice_or_across_families() -> None:
+    with TestClient(create_app()) as client:
+        scope = _family(client)
+        headers, pregnancy_id, *_ = scope
+        other_headers, other_pregnancy, *_ = _family(client)
+        mine = _upload(client, headers, pregnancy_id).json()["id"]
+        theirs = _upload(client, other_headers, other_pregnancy).json()["id"]
+        agent = _agent(scope, "r2")
+        note = {"record_type": "note", "content": "存档"}
+
+        first = client.post(
+            f"{GATEWAY}/create-record", headers=agent, json={**note, "attachment_ids": [mine]}
+        )
+        assert first.status_code == 200, first.text
+        again = client.post(
+            f"{GATEWAY}/create-record",
+            headers={**agent, "Idempotency-Key": "r3"},
+            json={**note, "attachment_ids": [mine]},
+        )
+        assert again.status_code == 409
+        assert "已经挂在别的记录上" in again.json()["error"]["message"]
+        foreign = client.post(
+            f"{GATEWAY}/create-record",
+            headers={**agent, "Idempotency-Key": "r4"},
+            json={**note, "attachment_ids": [theirs]},
+        )
+        assert foreign.status_code == 409
+        assert "找不到这张图片" in foreign.json()["error"]["message"]

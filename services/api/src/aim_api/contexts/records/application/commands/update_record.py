@@ -47,7 +47,7 @@ async def execute(command: UpdateRecordCommand, uow: RecordsUnitOfWork) -> Recor
     if not isinstance(record.structured_data, dict):
         raise RecordValidationError("structured_data must be a JSON object")
     Record._validate_payload(record.record_type, record.structured_data, record.content)
-    record.assert_attachment_refs_reserved()
+    record.assert_attachment_refs_valid()
     record.updated_at = command.now or datetime.now(UTC)
     await uow.repository.save_record(record, command.account_id)
     await uow.commit()

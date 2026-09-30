@@ -77,7 +77,7 @@ class SqlAlchemyRecordsRepository:
 
     async def save_record(self, record: Record, account_id: UUID) -> None:
         record.assert_can_mutate(account_id)
-        record.assert_attachment_refs_reserved()
+        record.assert_attachment_refs_valid()
         if record.deleted_at is not None:
             raise RecordValidationError("soft-deleted records cannot be saved")
         result = await self.session.execute(
@@ -183,7 +183,7 @@ def _visibility_clause(account_id: UUID):
 
 
 def _to_model(record: Record) -> RecordModel:
-    record.assert_attachment_refs_reserved()
+    record.assert_attachment_refs_valid()
     return RecordModel(
         id=record.id,
         pregnancy_id=record.pregnancy_id,

@@ -6,6 +6,7 @@ from enum import StrEnum
 from typing import Any, ClassVar
 from uuid import UUID
 
+from aim_api.contexts.records.domain.attachment import MAX_ATTACHMENTS_PER_RECORD
 from aim_api.contexts.records.domain.errors import RecordAccessDenied, RecordValidationError
 
 
@@ -59,8 +60,7 @@ class Record:
     ) -> Record:
         if not isinstance(structured_data, dict):
             raise RecordValidationError("structured_data must be a JSON object")
-        if attachment_refs:
-            raise RecordValidationError("attachment references are reserved until uploads are supported")
+        _validate_attachment_refs(attachment_refs or [])
         cls._validate_payload(record_type, structured_data, content, title)
         structured_data = cls._with_defaults(record_type, structured_data)
         created_at = now or datetime.now(UTC)
@@ -85,9 +85,8 @@ class Record:
         if self.author_account_id != account_id:
             raise RecordAccessDenied("only the record author can mutate it")
 
-    def assert_attachment_refs_reserved(self) -> None:
-        if self.attachment_refs:
-            raise RecordValidationError("attachment references are reserved until uploads are supported")
+    def assert_attachment_refs_valid(self) -> None:
+        _validate_attachment_refs(self.attachment_refs)
 
     def is_visible_to(self, account_id: UUID) -> bool:
         return self.deleted_at is None and (
@@ -275,3 +274,17 @@ class Record:
             return
 
         raise RecordValidationError(f"unsupported record type: {record_type}")
+
+
+def _validate_attachment_refs(refs: list[str]) -> None:
+    """附件引用只能是本系统的附件编号，不能是外部地址或文件路径。
+
+    归属（同家庭、未挂到别处）由新建记录的用例查附件表核对，这里只管形状。
+    """
+    if len(refs) > MAX_ATTACHMENTS_PER_RECORD:
+        raise RecordValidationError("一条记录最多挂 4 张图片")
+    for ref in refs:
+        try:
+            UUID(ref)
+        except (TypeError, ValueError) as error:
+            raise RecordValidationError("附件引用必须是附件编号") from error

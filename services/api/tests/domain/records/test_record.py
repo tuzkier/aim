@@ -41,6 +41,13 @@ def test_record_rejects_external_attachment_references() -> None:
         make_record(attachment_refs=["uploads/symptom.jpg"])
 
 
+def test_record_accepts_attachment_ids_up_to_four() -> None:
+    ids = [str(uuid4()) for _ in range(4)]
+    assert make_record(attachment_refs=ids).attachment_refs == ids
+    with pytest.raises(RecordValidationError):
+        make_record(attachment_refs=[*ids, str(uuid4())])
+
+
 def test_record_rejects_invalid_symptom_severity() -> None:
     with pytest.raises(RecordValidationError):
         make_record(structured_data={"symptoms": ["nausea"], "severity": 6})

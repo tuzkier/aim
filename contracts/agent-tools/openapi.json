@@ -2377,6 +2377,15 @@
               }
             ],
             "title": "Occurred At"
+          },
+          "attachment_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "maxItems": 4,
+            "title": "Attachment Ids"
           }
         },
         "type": "object",
