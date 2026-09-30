@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { resolveEntry, withPageContext } from "./entry";
+import { resolveEntry, withTurnContext } from "./entry";
 
 const base = { token: "t", theme: "light" as const };
 
@@ -23,9 +23,13 @@ test("blank auto-send is dropped", () => {
 
 test("page context rides along as clientContext", () => {
   const input = { message: "能吃吗" };
-  expect(withPageContext(input, { title: "番茄炒蛋", summary: "菜谱" })).toEqual({
+  expect(withTurnContext(input, { page: { title: "番茄炒蛋", summary: "菜谱" }, images: null })).toEqual({
     message: "能吃吗",
     clientContext: { page: { title: "番茄炒蛋", summary: "菜谱" } },
   });
-  expect(withPageContext(input, null)).toBe(input);
+  expect(withTurnContext(input, { page: null, images: null })).toBe(input);
+  expect(withTurnContext(input, { page: { title: "番茄炒蛋", summary: "菜谱" }, images: "photos" })).toEqual({
+    message: "能吃吗",
+    clientContext: { page: { title: "番茄炒蛋", summary: "菜谱" }, images: "photos" },
+  });
 });

@@ -18,10 +18,18 @@ export const resolveEntry = (context: NativeContext): AgentEntry => {
 };
 
 /**
- * 标签存在期间每一轮都附上页面上下文。
+ * 每一轮附带给模型的上下文：页面标签还在时附上正在看的页面，发过图时附上图片编号。
  *
  * 用 Eve 的 clientContext：只进这一轮的模型调用、不写历史，所以气泡里不会出现，
  * 也不用在消息里藏标记。
  */
-export const withPageContext = <T extends object>(input: T, page: PageContext | null): T =>
-  page ? { ...input, clientContext: { page } } : input;
+export const withTurnContext = <T extends object>(
+  input: T,
+  context: { page: PageContext | null; images: string | null },
+): T => {
+  const clientContext: Record<string, unknown> = {};
+  if (context.page) clientContext.page = context.page;
+  // 本段对话里发过的图片编号：模型挂图时只能用这里给出的编号，不能编造。
+  if (context.images) clientContext.images = context.images;
+  return Object.keys(clientContext).length ? { ...input, clientContext } : input;
+};

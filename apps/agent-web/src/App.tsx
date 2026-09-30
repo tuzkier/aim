@@ -21,7 +21,13 @@ import {
   type NativeContext,
   type PageContext,
 } from "./bridge";
-import { resolveEntry, withPageContext } from "./entry";
+import { resolveEntry, withTurnContext } from "./entry";
+import {
+  createImageAttachmentAdapter,
+  imagesContext,
+  numberImages,
+  type UploadedImage,
+} from "./imageAttachments";
 import { ContextChip } from "./thread/ContextChip";
 import { clearSession, loadSession, saveSession } from "./session";
 import type { ClientSessionState } from "./types";
@@ -351,6 +357,41 @@ const Conversation = ({
   const pageRef = useRef(page);
   pageRef.current = page;
 
+  // 本段对话里上传成功的图片。只记在这次打开的页面里：重开旧对话后再说「把刚才那张存起来」，
+  // 模型拿不到编号，会请用户重发（见指令）。
+  const imagesRef = useRef<UploadedImage[]>([]);
+  const [attachmentError, setAttachmentError] = useState<string | null>(null);
+  const runtimeRef = useRef<ReturnType<typeof useEveAgentRuntime> | null>(null);
+  const attachmentAdapter = useMemo(
+    () =>
+      createImageAttachmentAdapter({
+        upload: async (blob) => {
+          // 网页上下文里孕期编号是可选的（还没建孕期时没有），这时存不了图。
+          if (!context.pregnancyId) throw new Error("还没有孕期信息，暂时不能发图片");
+          const response = await fetch(
+            `${context.eveOrigin ?? ""}/api/v1/pregnancies/${context.pregnancyId}/attachments`,
+            {
+              method: "POST",
+              headers: { authorization: `Bearer ${context.token}`, "content-type": "image/jpeg" },
+              body: blob,
+            },
+          );
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          return ((await response.json()) as { id: string }).id;
+        },
+        onUploaded: ({ id, order }) => {
+          // 这张图属于即将发出的那条用户消息。
+          const sent =
+            runtimeRef.current?.thread
+              .getState()
+              .messages.filter((message) => message.role === "user").length ?? 0;
+          imagesRef.current = [...imagesRef.current, { id, message: sent + 1, order }];
+        },
+        onError: setAttachmentError,
+      }),
+    [context.eveOrigin, context.pregnancyId, context.token],
+  );
+
   const runtime = useEveAgentRuntime({
     ...(restored
       ? { initialSession: restored.session, initialEvents: restored.events as never }
@@ -359,8 +400,14 @@ const Conversation = ({
     // 开发时由 Vite 代理转到本地 Eve。两边都不需要给 Eve 配 CORS。
     ...(context.eveOrigin ? { host: context.eveOrigin } : {}),
     headers: () => ({ authorization: `Bearer ${context.token}` }),
-    prepareSend: (input) => withPageContext(input, pageRef.current),
+    adapters: { attachments: attachmentAdapter },
+    prepareSend: (input) =>
+      withTurnContext(input, {
+        page: pageRef.current,
+        images: imagesContext(numberImages(imagesRef.current)),
+      }),
   });
+  runtimeRef.current = runtime;
 
   // 「让 Agent 分析当前记录」：打开就把问题发出去。只发一次——
   // 票据轮换等原因重渲染时不能再发。
