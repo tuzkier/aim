@@ -360,3 +360,69 @@ def test_agent_tool_invocations_and_incoming_invitations_are_purged() -> None:
         )
         == 0
     )
+
+
+def _upload_image(client: TestClient, headers: dict, pregnancy_id: str) -> str:
+    response = client.post(
+        f"/api/v1/pregnancies/{pregnancy_id}/attachments",
+        headers={**headers, "Content-Type": "image/jpeg"},
+        content=b"\xff\xd8\xff\xe0" + b"0" * 100,
+    )
+    assert response.status_code == 201, response.text
+    return response.json()["id"]
+
+
+def test_attachments_follow_the_family_and_private_records() -> None:
+    with TestClient(create_app(settings=get_settings())) as client:
+        # 独自一人的家庭：注销后该家庭的图片行全部消失。
+        alone = _register(client, _phone(), due_date="2027-03-01")
+        lonely_image = _upload_image(client, _auth(alone["token"]), alone["pregnancy_id"])
+        _request_deletion(client, alone)
+
+        # 多人家庭：私密记录上的图删掉，其余图留给家里人、上传人置空。
+        mother = _register(client, _phone(), due_date="2027-03-01")
+        mother_headers = _auth(mother["token"])
+        father_phone = _phone()
+        invite = client.post(
+            f"/api/v1/families/{mother['family_id']}/invitations",
+            json={"invitee_phone": father_phone, "role": "father"},
+            headers=mother_headers,
+        )
+        father = _register(client, father_phone, role="father")
+        client.post(
+            f"/api/v1/family-invitations/{invite.json()['token']}/accept",
+            headers=_auth(father["token"]),
+        )
+        private = client.post(
+            f"/api/v1/pregnancies/{mother['pregnancy_id']}/records",
+            json={
+                "type": "note",
+                "occurred_at": "2026-09-16T08:00:00Z",
+                "visibility": "private",
+                "title": "私密",
+                "content": "c",
+                "structured_data": {},
+            },
+            headers=mother_headers,
+        ).json()
+        private_image = _upload_image(client, mother_headers, mother["pregnancy_id"])
+        family_image = _upload_image(client, mother_headers, mother["pregnancy_id"])
+        asyncio.run(
+            _execute(
+                "UPDATE attachments SET record_id = :record WHERE id = :id",
+                record=UUID(private["id"]),
+                id=UUID(private_image),
+            )
+        )
+        _request_deletion(client, mother)
+
+    asyncio.run(_run_purge(_later()))
+
+    def exists(image: str, extra: str = "") -> int:
+        return asyncio.run(
+            _count(f"SELECT count(*) FROM attachments WHERE id = :id {extra}", id=UUID(image))
+        )
+
+    assert exists(lonely_image) == 0
+    assert exists(private_image) == 0
+    assert exists(family_image, "AND uploaded_by IS NULL") == 1

@@ -84,6 +84,19 @@ async def _purge_one(session: AsyncSession, account_id: UUID) -> PurgeSummary:
     )
     # 他的私密记录：只有作者本人能看，人没了就没人能看，留着无意义。
     # 全家可见的记录属于家庭，跟着家庭走（见下面的分支）。
+    # 私密记录上挂的图片同理：行在这里删，磁盘文件由每天的附件清理按「无主文件」扫掉。
+    await session.execute(
+        text(
+            "DELETE FROM attachments WHERE record_id IN (SELECT id FROM records "
+            "WHERE author_account_id = :id AND visibility = 'private')"
+        ),
+        {"id": account_id},
+    )
+    # 留在家庭里的图片不再指向一个已注销的人。
+    await session.execute(
+        text("UPDATE attachments SET uploaded_by = NULL WHERE uploaded_by = :id"),
+        {"id": account_id},
+    )
     await session.execute(
         text("DELETE FROM records WHERE author_account_id = :id AND visibility = 'private'"),
         {"id": account_id},
@@ -156,6 +169,10 @@ async def _purge_one(session: AsyncSession, account_id: UUID) -> PurgeSummary:
                     "(SELECT id FROM pregnancies WHERE family_id = :family)"
                 ),
                 {"family": family_id},
+            )
+            # 家庭的图片（含没挂到记录上的）：行在这里删，文件由每天的附件清理扫掉。
+            await session.execute(
+                text("DELETE FROM attachments WHERE family_id = :family"), {"family": family_id}
             )
             await session.execute(
                 text("DELETE FROM records WHERE family_id = :family"), {"family": family_id}

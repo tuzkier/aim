@@ -129,6 +129,17 @@ eve 的 `/app/.eve/.workflow-data`）。Eve 的存储（`@workflow/world-local`�
 注销后 90 天内；Eve 升级迁移存储时会重写 `runs/*.json`，只会推迟删除，不会误删。
 `docker run` 第一次会拉 alpine 镜像，国内网络慢的话先手动 `docker pull alpine`。
 
+用户在 AIM 里发的图片存在数据卷 `aim_attachments`（挂到 api 的 `/data/attachments`）。
+每天清理一次：没挂到记录、上传超过 90 天的；所挂记录已删除超过 30 天的；以及数据库里
+已经没有对应行的文件（注销清理只删行，文件在这里扫掉）。再加一条 crontab（每天 04:20）：
+
+```
+20 4 * * * docker exec -i aim-api-1 python scripts/purge_orphan_attachments.py >> /var/log/aim-attachments.log 2>&1
+```
+
+同样先 `--dry-run` 看一眼。每日备份脚本 `aim-backup.sh` 会把这个卷一并打包，保留 7 天。
+**`docker compose down -v` 会连同这个卷一起删掉图片。**
+
 ## 上架前清单
 
 按顺序，前两项周期最长，先启动：
@@ -136,7 +147,7 @@ eve 的 `/app/.eve/.workflow-data`）。Eve 的存储（`@workflow/world-local`�
 1. **域名 + HTTPS**：给后端配域名和证书，nginx 监听 443；`apps/ios/AimApp/Config/Endpoints.local.xcconfig` 的 `AIM_REMOTE_BASE_URL` 改成 `https://…`；然后删掉 `apps/ios/AimApp/Resources/Info.plist` 里整个 `NSAppTransportSecurity` 段。生产后端还是裸 IP 时**不能**删。
 2. **ICP 备案**：域名备案 + App 备案，主体须与 Apple 开发者账号主体一致。
 3. **Apple Developer Program** 付费账号；`apps/ios/AimApp.xcodeproj/project.pbxproj` 的 `DEVELOPMENT_TEAM` 换成该团队。
-4. 部署上面的两条 crontab：注销账号 30 天到期删除，以及 AI 对话转录 90 天保留期清理。
+4. 部署上面的三条 crontab：注销账号 30 天到期删除、AI 对话转录 90 天保留期清理、图片附件清理。
 5. **App Store Connect**：隐私政策 URL 填 `https://<域名>/legal/privacy.html`；隐私标签勾选「手机号」「用户 ID」「健康与健身」「其他用户内容」，均为「与用户关联」「用于 App 功能」，不用于追踪；审核备注附一个测试账号，并说明医疗免责声明在用户协议与 AIM 页面头部两处。
 6. 每次上传新构建前递增 `CURRENT_PROJECT_VERSION`（pbxproj 里两处）。
 

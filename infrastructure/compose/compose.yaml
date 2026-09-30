@@ -28,9 +28,13 @@ services:
       AUTH_SECRET: ${AUTH_SECRET:-aim-development-secret}
       AGENT_SERVICE_SECRET: ${AGENT_SERVICE_SECRET:-aim-agent-development-secret}
       AIM_CONTENT_ROOT: /app/content
+      AIM_ATTACHMENTS_ROOT: /data/attachments
       OTEL_ENABLED: ${OTEL_ENABLED:-false}
     ports:
       - "${AIM_API_PORT:-8100}:8000"
+    volumes:
+      # 用户在 AIM 里发的图片。实际卷名 aim_attachments，每日备份会一并打包。
+      - attachments:/data/attachments
     depends_on:
       postgres:
         condition: service_healthy
@@ -88,3 +92,4 @@ services:
 volumes:
   postgres-data:
   eve-workflow-data:
+  attachments:
