@@ -3,6 +3,24 @@ import XCTest
 
 @MainActor
 final class RecordStoreTests: XCTestCase {
+    func testAttachmentRequestCarriesTheLoginAndPointsAtTheImage() throws {
+        let environment = APIEnvironment(
+            baseURL: URL(string: "http://127.0.0.1:8100")!,
+            eveBaseURL: URL(string: "http://127.0.0.1:2210")!,
+            bearerToken: "aim.v1.token",
+            accountID: nil,
+            familyID: nil,
+            pregnancyID: nil
+        )
+        let id = "44444444-4444-4444-8444-444444444444"
+        let request = try XCTUnwrap(AttachmentRequest.make(id: id, environment: environment))
+        XCTAssertEqual(request.url?.path, "/api/v1/attachments/\(id)")
+        XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer aim.v1.token")
+        XCTAssertEqual(request.value(forHTTPHeaderField: "Accept"), "image/*")
+        // 附件引用只能是编号；不是编号的（旧数据、外部地址）一律不去请求。
+        XCTAssertNil(AttachmentRequest.make(id: "uploads/a.jpg", environment: environment))
+    }
+
     func testPreviewRecordsAreSortedNewestFirst() {
         let records = RecordStore.preview().snapshot?.records ?? []
 

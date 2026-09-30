@@ -13,6 +13,8 @@
 	<key>AIMRemoteBaseURL</key>
 	<string>$(AIM_REMOTE_BASE_URL)</string>
 	<!-- 只用系统 HTTPS/TLS，属于豁免加密；声明了就不用每次上传都答问卷。 -->
+	<key>NSCameraUsageDescription</key>
+	<string>用于拍摄产检报告等，交给 AIM 识别。</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<!--
