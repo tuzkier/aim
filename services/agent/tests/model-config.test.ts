@@ -16,14 +16,14 @@ test("deepseek mode uses the server-side OpenAI-compatible settings", () => {
     EVE_USE_MOCK_MODEL: "0",
     DEEPSEEK_API_KEY: "test-key",
     DEEPSEEK_BASE_URL: "https://api.deepseek.com",
-    AIM_AGENT_MODEL: "deepseek-chat",
+    AIM_AGENT_MODEL: "deepseek-flash",
   });
 
   assert.deepEqual(config, {
     kind: "deepseek",
     apiKey: "test-key",
     baseURL: "https://api.deepseek.com",
-    model: "deepseek-chat",
+    model: "deepseek-flash",
   });
 });
 
@@ -56,4 +56,9 @@ test("production with a real model configured is fine", () => {
     DEEPSEEK_API_KEY: "k",
   });
   assert.equal(config.kind, "deepseek");
+});
+
+test("the default model is the one that reads images", () => {
+  const config = resolveAgentModelConfig({ EVE_USE_MOCK_MODEL: "0", DEEPSEEK_API_KEY: "k" });
+  assert.equal(config.kind === "deepseek" && config.model, "deepseek-flash");
 });

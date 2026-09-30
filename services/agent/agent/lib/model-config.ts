@@ -30,6 +30,7 @@ export function resolveAgentModelConfig(env: Environment = process.env): AgentMo
     kind: "deepseek",
     apiKey,
     baseURL: (env.DEEPSEEK_BASE_URL?.trim() || "https://api.deepseek.com").replace(/\/$/, ""),
-    model: env.AIM_AGENT_MODEL?.trim() || "deepseek-chat",
+    // deepseek-flash 能读图；AIM 的图片功能依赖这一点。
+    model: env.AIM_AGENT_MODEL?.trim() || "deepseek-flash",
   };
 }

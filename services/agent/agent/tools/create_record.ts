@@ -80,6 +80,13 @@ export default defineTool({
     doctorAdvice: z.string().optional().describe("checkup only."),
     metrics: metrics.optional(),
     occurredAt: localDateTime.optional(),
+    attachmentIds: z
+      .array(z.string().uuid())
+      .max(4)
+      .optional()
+      .describe(
+        "Ids of photos the user sent that should be kept with this record, taken from the photo list in your context.",
+      ),
   }),
   outputSchema: toolResultSchema,
   async execute(input, ctx) {
@@ -89,6 +96,7 @@ export default defineTool({
       content: input.recordType === "note" ? input.content : undefined,
       structured_data: structuredDataFor(input),
       occurred_at: input.occurredAt ? toShanghaiIso(input.occurredAt) : undefined,
+      attachment_ids: input.attachmentIds?.length ? input.attachmentIds : undefined,
     });
   },
 });

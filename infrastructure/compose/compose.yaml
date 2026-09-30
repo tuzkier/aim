@@ -54,7 +54,7 @@ services:
       EVE_USE_MOCK_MODEL: ${EVE_USE_MOCK_MODEL:-1}
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
       DEEPSEEK_BASE_URL: ${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
-      AIM_AGENT_MODEL: ${AIM_AGENT_MODEL:-deepseek-chat}
+      AIM_AGENT_MODEL: ${AIM_AGENT_MODEL:-deepseek-flash}
       AIM_API_INTERNAL_URL: http://api:8000
       AGENT_SERVICE_SECRET: ${AGENT_SERVICE_SECRET:-aim-agent-development-secret}
     ports:

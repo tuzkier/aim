@@ -219,3 +219,22 @@ test("create_task sends the due time pinned to Beijing", async () => {
   const body = (await request?.clone().json()) as { tasks: Record<string, unknown>[] };
   assert.equal(body.tasks[0]!.due_at, "2026-09-29T15:00:00+08:00");
 });
+
+test("create_record forwards the photo ids to attach", async () => {
+  const id = "44444444-4444-4444-8444-444444444444";
+  const { request } = await withStubbedApi({ record_id: "r3", attachment_count: 1 }, () =>
+    createRecord.execute({ recordType: "note", content: "B 超单存档", attachmentIds: [id] }, scope),
+  );
+  const body = (await request?.clone().json()) as Record<string, unknown>;
+  assert.deepEqual(body.attachment_ids, [id]);
+});
+
+test("create_record accepts at most four photos", () => {
+  const ids = Array.from({ length: 5 }, (_, i) => `4444444${i}-4444-4444-8444-444444444444`);
+  // 对外类型是通用结构描述，实际是 zod 对象。
+  const schema = createRecord.inputSchema as unknown as {
+    safeParse(value: unknown): { success: boolean };
+  };
+  const parsed = schema.safeParse({ recordType: "note", content: "x", attachmentIds: ids });
+  assert.equal(parsed.success, false);
+});
