@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   AssistantRuntimeProvider,
-  ComposerPrimitive,
   MessagePrimitive,
   ThreadPrimitive,
   useAuiState,
@@ -43,6 +42,8 @@ import { pendingApprovalTools } from "./tools/types";
 import { Reasoning } from "./thread/Reasoning";
 import { MarkdownText } from "./thread/MarkdownText";
 import { HistoryPanel } from "./thread/HistoryPanel";
+import { Composer } from "./thread/Composer";
+import { MessageImages } from "./thread/MessageImages";
 import { SessionRecovery, describeError } from "./thread/SessionRecovery";
 import { registerSession, titleFrom, touchSession, type AgentSessionSummary } from "./sessions";
 
@@ -116,11 +117,22 @@ const AssistantMessage = () => {
   );
 };
 
-const UserMessage = () => (
-  <div className="msg msg--user">
-    <MessagePrimitive.Parts />
-  </div>
-);
+/** 图片在上、文字气泡在下；只发了图时不留一个空气泡。 */
+const UserMessage = () => {
+  const hasText = useAuiState((state) =>
+    state.message.parts.some((part) => part.type === "text" && part.text.trim() !== ""),
+  );
+  return (
+    <div className="user-turn">
+      <MessageImages />
+      {hasText ? (
+        <div className="msg msg--user">
+          <MessagePrimitive.Parts />
+        </div>
+      ) : null}
+    </div>
+  );
+};
 
 /**
  * 把「开新对话」暴露给原生工具栏。
@@ -160,28 +172,20 @@ const TurnError = () => {
   );
 };
 
-const Thread = ({ chip }: { chip?: ReactNode }) => (
+const Thread = ({ chip, attachmentError }: { chip?: ReactNode; attachmentError?: string | null }) => (
   <ThreadPrimitive.Root className="thread">
     <ThreadPrimitive.Viewport className="thread__viewport" autoScroll>
       <ThreadPrimitive.Empty>
         {/* 原生头部已经有「AIM · 孕期里的事，说一声就好」，这里再来一遍大标题
             就是同一件事说两次。空态只留一句引导。 */}
         <p className="welcome">
-          可以问孕期变化、最近记录或接下来要做的事。涉及计划变更时，我会先让你确认。
+          可以问孕期变化、最近记录或接下来要做的事，也可以拍产检单让我记下来。涉及计划变更时，我会先让你确认。
         </p>
       </ThreadPrimitive.Empty>
       <ThreadPrimitive.Messages components={{ UserMessage, AssistantMessage }} />
       <TurnError />
     </ThreadPrimitive.Viewport>
-    {chip}
-    <ComposerPrimitive.Root className="composer">
-      <ComposerPrimitive.Input
-        className="composer__input"
-        placeholder="告诉我你现在在担心什么"
-        rows={1}
-      />
-      <ComposerPrimitive.Send className="composer__send">发送</ComposerPrimitive.Send>
-    </ComposerPrimitive.Root>
+    <Composer chip={chip} error={attachmentError} />
   </ThreadPrimitive.Root>
 );
 
@@ -442,6 +446,7 @@ const Conversation = ({
           <ToolRenderers />
           <Thread
             chip={page ? <ContextChip page={page} onClear={() => setPage(null)} /> : undefined}
+            attachmentError={attachmentError}
           />
           {historyOpen ? (
             <HistoryPanel
