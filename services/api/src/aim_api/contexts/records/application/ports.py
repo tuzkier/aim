@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Protocol
 from uuid import UUID
 
+from aim_api.contexts.records.domain.attachment import Attachment
 from aim_api.contexts.records.domain.record import Record, RecordType
 
 
@@ -38,8 +39,27 @@ class PregnancyOwnershipPort(Protocol):
     async def get_pregnancy(self, pregnancy_id: UUID): ...
 
 
+class AttachmentRepositoryPort(Protocol):
+    async def add(self, attachment: Attachment) -> None: ...
+
+    async def get(self, attachment_id: UUID) -> Attachment | None: ...
+
+    async def attach(self, attachment_ids: list[UUID], record_id: UUID) -> None: ...
+
+
+class AttachmentStoragePort(Protocol):
+    def save(self, attachment_id: UUID, data: bytes) -> None: ...
+
+    def read(self, attachment_id: UUID) -> bytes | None: ...
+
+    def delete(self, attachment_id: UUID) -> None: ...
+
+    def list_files(self) -> list[tuple[UUID, float]]: ...
+
+
 class RecordsUnitOfWork(Protocol):
     repository: RecordsRepositoryPort
+    attachments: AttachmentRepositoryPort
     family_membership: FamilyMembershipPort
     pregnancy_ownership: PregnancyOwnershipPort
 
