@@ -20,6 +20,9 @@ from aim_api.contexts.guidance.adapters.inbound.http.router import router as gui
 from aim_api.contexts.identity.adapters.inbound.http.router import router as identity_router
 from aim_api.contexts.planning.adapters.inbound.http.router import router as planning_router
 from aim_api.contexts.pregnancy.adapters.inbound.http.router import router as pregnancy_router
+from aim_api.contexts.records.adapters.inbound.http.attachments_router import (
+    router as attachments_router,
+)
 from aim_api.contexts.records.adapters.inbound.http.router import router as records_router
 from aim_api.platform.config.settings import Settings, get_settings
 from aim_api.platform.database.session import Database, create_database
@@ -83,5 +86,6 @@ def create_app(*, settings: Settings | None = None, database: Database | None = 
     app.include_router(agent_tools_router)
     app.include_router(agent_sessions_router)
     app.include_router(agent_operations_router)
+    app.include_router(attachments_router)
     _configure_observability(app, resolved_database, resolved_settings)
     return app

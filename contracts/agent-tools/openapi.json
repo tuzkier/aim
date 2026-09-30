@@ -599,6 +599,30 @@
   },
   "components": {
     "schemas": {
+      "AttachmentResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "media_type": {
+            "type": "string",
+            "title": "Media Type"
+          },
+          "byte_size": {
+            "type": "integer",
+            "title": "Byte Size"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "media_type",
+          "byte_size"
+        ],
+        "title": "AttachmentResponse"
+      },
       "CompleteTaskToolRequest": {
         "properties": {
           "tasks": {
