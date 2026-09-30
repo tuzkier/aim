@@ -236,6 +236,8 @@ private struct AttachmentThumbnail: View {
         .frame(width: 96, height: 96)
         .background(Color.aimSurfaceSunken)
         .clipShape(RoundedRectangle(cornerRadius: 12))
+        // 报告单多是白底，不描边的话和白色列表行连成一片，看不出是一张图。
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.aimRail, lineWidth: 1))
         .task(id: id) {
             guard let request = AttachmentRequest.make(id: id, environment: environment),
                   let (data, response) = try? await URLSession.shared.data(for: request),
