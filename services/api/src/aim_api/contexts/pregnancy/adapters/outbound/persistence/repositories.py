@@ -62,6 +62,13 @@ class SqlAlchemyPregnancyRepository:
             facts=facts,
         )
 
+    async def save_due_date(self, pregnancy: Pregnancy) -> None:
+        await self.session.execute(
+            update(PregnancyModel)
+            .where(PregnancyModel.id == pregnancy.id)
+            .values(due_date=pregnancy.due_date, updated_at=pregnancy.updated_at)
+        )
+
     async def get_first_pregnancy_for_family(self, family_id: UUID) -> Pregnancy | None:
         model = await self.session.scalar(
             select(PregnancyModel)

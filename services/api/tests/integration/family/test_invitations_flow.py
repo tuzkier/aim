@@ -10,7 +10,7 @@ from aim_api.bootstrap import create_app
 from aim_api.platform.config.settings import get_settings
 from aim_api.platform.database.session import create_database
 
-from .helpers import add_pregnancy, invite, new_phone, register
+from family_helpers import add_pregnancy, invite, new_phone, register
 
 
 async def _rows(sql: str, **params) -> list:

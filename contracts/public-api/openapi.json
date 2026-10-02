@@ -521,6 +521,58 @@
             }
           }
         }
+      },
+      "patch": {
+        "tags": [
+          "family"
+        ],
+        "summary": "Update Pregnancy",
+        "description": "家里任何在籍成员都能改预产期；改动记入家庭动态。",
+        "operationId": "update_pregnancy_api_v1_pregnancies__pregnancy_id__patch",
+        "parameters": [
+          {
+            "name": "pregnancy_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Pregnancy Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePregnancyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PregnancyResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/pregnancies/{pregnancy_id}/facts": {
@@ -1749,6 +1801,28 @@
           }
         }
       }
+    },
+    "/api/v1/me": {
+      "get": {
+        "tags": [
+          "family"
+        ],
+        "summary": "Me",
+        "description": "当前账号在哪个家庭、哪段孕期。被移出家庭后，App 靠它找回自己的新家庭。",
+        "operationId": "me_api_v1_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2411,6 +2485,43 @@
         ],
         "title": "LoginRequest"
       },
+      "MeResponse": {
+        "properties": {
+          "account_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Account Id"
+          },
+          "family_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Family Id"
+          },
+          "pregnancy_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pregnancy Id"
+          },
+          "role": {
+            "$ref": "#/components/schemas/FamilyMemberRole"
+          }
+        },
+        "type": "object",
+        "required": [
+          "account_id",
+          "family_id",
+          "pregnancy_id",
+          "role"
+        ],
+        "title": "MeResponse"
+      },
       "PlanResponse": {
         "properties": {
           "id": {
@@ -3050,6 +3161,20 @@
         },
         "type": "object",
         "title": "UpdateMyMembershipRequest"
+      },
+      "UpdatePregnancyRequest": {
+        "properties": {
+          "due_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Due Date"
+          }
+        },
+        "type": "object",
+        "required": [
+          "due_date"
+        ],
+        "title": "UpdatePregnancyRequest"
       },
       "UpdateRecordRequest": {
         "properties": {

@@ -1360,6 +1360,43 @@
         ],
         "title": "LoginRequest"
       },
+      "MeResponse": {
+        "properties": {
+          "account_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Account Id"
+          },
+          "family_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Family Id"
+          },
+          "pregnancy_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pregnancy Id"
+          },
+          "role": {
+            "$ref": "#/components/schemas/FamilyMemberRole"
+          }
+        },
+        "type": "object",
+        "required": [
+          "account_id",
+          "family_id",
+          "pregnancy_id",
+          "role"
+        ],
+        "title": "MeResponse"
+      },
       "PlanResponse": {
         "properties": {
           "id": {
@@ -2155,6 +2192,20 @@
         },
         "type": "object",
         "title": "UpdateMyMembershipRequest"
+      },
+      "UpdatePregnancyRequest": {
+        "properties": {
+          "due_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Due Date"
+          }
+        },
+        "type": "object",
+        "required": [
+          "due_date"
+        ],
+        "title": "UpdatePregnancyRequest"
       },
       "UpdateRecordRequest": {
         "properties": {
