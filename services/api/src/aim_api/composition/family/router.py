@@ -5,15 +5,29 @@
 
 from __future__ import annotations
 
+from dataclasses import asdict
 from datetime import UTC, date, datetime
 from uuid import UUID
 
-from fastapi import APIRouter, Request, Response
+from fastapi import APIRouter, Query, Request, Response
+from sqlalchemy import select
 from pydantic import BaseModel
 
 from aim_api.contexts.family.adapters.inbound.http.router import (
+    FamilyMemberResponse,
     FamilyResponse,
     _family_response,
+)
+from aim_api.contexts.planning.adapters.inbound.http.router import TaskResponse, _task_response
+from aim_api.contexts.planning.adapters.outbound.persistence.models import TaskModel
+from aim_api.contexts.planning.adapters.outbound.persistence.repositories import _to_task
+from aim_api.contexts.pregnancy.adapters.outbound.persistence.models import PregnancyModel
+from aim_api.contexts.records.adapters.inbound.http.router import (
+    RecordResponse,
+    _response as record_response,
+)
+from aim_api.contexts.records.adapters.outbound.persistence.repositories import (
+    SqlAlchemyRecordsUnitOfWork,
 )
 from aim_api.contexts.family.adapters.outbound.persistence.repositories import (
     SqlAlchemyFamilyRepository,
@@ -21,6 +35,7 @@ from aim_api.contexts.family.adapters.outbound.persistence.repositories import (
 from aim_api.contexts.family.application.token import hash_invitation_token
 from aim_api.contexts.identity.domain.account import Account
 from aim_api.contexts.family.domain.events import FamilyEvent, FamilyEventKind
+from aim_api.composition.family.activity import family_activity
 from aim_api.composition.family.membership import (
     create_empty_family,
     delete_family,
@@ -391,3 +406,96 @@ async def accept_invitation_by_token(token: str, request: Request) -> FamilyResp
             raise ConflictError(reason)
         family = await join_family(session, actor, invitation, now)
         return _family_response(family)
+
+
+# ---------------------------------------------------------------------------
+# 成员详情与家庭动态
+# ---------------------------------------------------------------------------
+
+
+class ActivityItemResponse(BaseModel):
+    id: str
+    kind: str
+    actor_name: str
+    title: str
+    target_type: str | None
+    target_id: UUID | None
+    target_deleted: bool
+    via_agent: bool
+    created_at: datetime
+
+
+class ActivityResponse(BaseModel):
+    items: list[ActivityItemResponse]
+    #: 下一页的 before 参数；没有更早的了就是 null。
+    next_before: datetime | None
+
+
+class MemberDetailResponse(BaseModel):
+    member: FamilyMemberResponse
+    open_tasks: list[TaskResponse]
+    recent_records: list[RecordResponse]
+
+
+async def _member_family(session, family_id: UUID, account_id: UUID) -> Family:
+    families = SqlAlchemyFamilyRepository(session)
+    family = await families.get_family(family_id)
+    if family is None or not await families.is_active_member(family_id, account_id):
+        raise ForbiddenError("不是这个家庭的成员")
+    return family
+
+
+@router.get("/api/v1/families/{family_id}/activity", response_model=ActivityResponse)
+async def activity(
+    family_id: UUID,
+    request: Request,
+    before: datetime | None = None,
+    limit: int = Query(default=20, ge=1, le=50),
+) -> ActivityResponse:
+    actor = await authenticate_active(request)
+    async with request.app.state.database.session() as session:
+        family = await _member_family(session, family_id, actor.account_id)
+        names = {
+            account_id: _display_name(member)
+            for account_id, member in family.members.items()
+            if member.status is FamilyMemberStatus.active
+        }
+        items = await family_activity(session, family_id, names, before=before, limit=limit)
+    return ActivityResponse(
+        items=[ActivityItemResponse(**asdict(item)) for item in items],
+        next_before=items[-1].created_at if len(items) == limit else None,
+    )
+
+
+@router.get(
+    "/api/v1/families/{family_id}/members/{account_id}", response_model=MemberDetailResponse
+)
+async def member_detail(family_id: UUID, account_id: UUID, request: Request) -> MemberDetailResponse:
+    """一位家人：TA 负责的未完成待办、TA 最近记的（当前用户看得到的）5 条记录。"""
+    actor = await authenticate_active(request)
+    async with request.app.state.database.session() as session:
+        family = await _member_family(session, family_id, actor.account_id)
+        member = family.members.get(account_id)
+        if member is None or member.status is not FamilyMemberStatus.active:
+            raise NotFoundError("TA 已经不在家庭里了")
+        task_models = await session.scalars(
+            select(TaskModel)
+            .where(
+                TaskModel.pregnancy_id.in_(
+                    select(PregnancyModel.id).where(PregnancyModel.family_id == family_id)
+                ),
+                TaskModel.assigned_member_id == account_id,
+                TaskModel.status != "done",
+            )
+            .order_by(TaskModel.due_at.asc().nulls_last(), TaskModel.created_at)
+        )
+        visible = await SqlAlchemyRecordsUnitOfWork(session).repository.list_visible_records(
+            family_id, actor.account_id
+        )
+        records = [record for record in visible if record.author_account_id == account_id][:5]
+        member_response = _family_response(family).members
+        return MemberDetailResponse(
+            member=next(m for m in member_response if m.account_id == account_id),
+            open_tasks=[_task_response(_to_task(model)) for model in task_models],
+            recent_records=[record_response(record) for record in records],
+        )

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from fastapi import APIRouter, Request
@@ -72,6 +72,19 @@ class FamilyMemberResponse(BaseModel):
     status: str
     invited_at: datetime | None
     joined_at: datetime | None
+    #: 管理员 = 家庭创建人，只有他能移出别人。
+    is_admin: bool = False
+
+
+class FamilyInvitationResponse(BaseModel):
+    id: UUID
+    #: 打码后的手机号，如 138****5678。
+    phone_masked: str
+    role: FamilyMemberRole
+    invited_by: UUID
+    expires_at: datetime
+    #: pending / declined / expired
+    status: str
 
 
 class FamilyResponse(BaseModel):
@@ -80,6 +93,8 @@ class FamilyResponse(BaseModel):
     created_by: UUID
     created_at: datetime
     members: list[FamilyMemberResponse]
+    #: 还没处理完的邀请（含过期 7 天内的），只在读取家庭时给出。
+    invitations: list[FamilyInvitationResponse] = []
 
 
 class InvitationResponse(BaseModel):
@@ -104,10 +119,37 @@ def _family_response(family: Family) -> FamilyResponse:
                 status=member.status.value,
                 invited_at=member.invited_at,
                 joined_at=member.joined_at,
+                is_admin=member.account_id == family.created_by,
             )
             for member in family.members.values()
         ],
     )
+
+
+def mask_phone(phone: str) -> str:
+    return f"{phone[:3]}****{phone[-4:]}" if len(phone) >= 7 else phone
+
+
+def _invitation_responses(invitations, now: datetime) -> list[FamilyInvitationResponse]:
+    """待处理与暂不的邀请照列；过期的再列 7 天，方便一键重发。"""
+    result = []
+    for invitation in invitations:
+        if invitation.status.value not in ("pending", "declined", "expired"):
+            continue
+        expired = now >= invitation.expires_at or invitation.status.value == "expired"
+        if expired and now - invitation.expires_at > timedelta(days=7):
+            continue
+        result.append(
+            FamilyInvitationResponse(
+                id=invitation.id,
+                phone_masked=mask_phone(invitation.invitee_phone),
+                role=invitation.role,
+                invited_by=invitation.invited_by,
+                expires_at=invitation.expires_at,
+                status="expired" if expired else invitation.status.value,
+            )
+        )
+    return result
 
 
 def _translate(error: Exception) -> None:
@@ -196,10 +238,13 @@ async def get_family_endpoint(family_id: UUID, request: Request) -> FamilyRespon
             family = await get_family.execute(
                 GetFamilyQuery(family_id=family_id, account_id=actor.account_id), uow
             )
+            invitations = await uow.repository.list_invitations_for_family(family_id)
         except Exception as error:
             await uow.rollback()
             _translate(error)
-        return _family_response(family)
+        response = _family_response(family)
+        response.invitations = _invitation_responses(invitations, datetime.now(UTC))
+        return response
 
 
 @router.patch("/api/v1/families/{family_id}", response_model=FamilyResponse)

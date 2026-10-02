@@ -599,6 +599,104 @@
   },
   "components": {
     "schemas": {
+      "ActivityItemResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "actor_name": {
+            "type": "string",
+            "title": "Actor Name"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "target_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Type"
+          },
+          "target_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Id"
+          },
+          "target_deleted": {
+            "type": "boolean",
+            "title": "Target Deleted"
+          },
+          "via_agent": {
+            "type": "boolean",
+            "title": "Via Agent"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "actor_name",
+          "title",
+          "target_type",
+          "target_id",
+          "target_deleted",
+          "via_agent",
+          "created_at"
+        ],
+        "title": "ActivityItemResponse"
+      },
+      "ActivityResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ActivityItemResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "next_before": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Before"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "next_before"
+        ],
+        "title": "ActivityResponse"
+      },
       "AttachmentResponse": {
         "properties": {
           "id": {
@@ -1005,6 +1103,46 @@
         ],
         "title": "FactSource"
       },
+      "FamilyInvitationResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "phone_masked": {
+            "type": "string",
+            "title": "Phone Masked"
+          },
+          "role": {
+            "$ref": "#/components/schemas/FamilyMemberRole"
+          },
+          "invited_by": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Invited By"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "phone_masked",
+          "role",
+          "invited_by",
+          "expires_at",
+          "status"
+        ],
+        "title": "FamilyInvitationResponse"
+      },
       "FamilyMemberResponse": {
         "properties": {
           "account_id": {
@@ -1053,6 +1191,11 @@
               }
             ],
             "title": "Joined At"
+          },
+          "is_admin": {
+            "type": "boolean",
+            "title": "Is Admin",
+            "default": false
           }
         },
         "type": "object",
@@ -1102,6 +1245,14 @@
             },
             "type": "array",
             "title": "Members"
+          },
+          "invitations": {
+            "items": {
+              "$ref": "#/components/schemas/FamilyInvitationResponse"
+            },
+            "type": "array",
+            "title": "Invitations",
+            "default": []
           }
         },
         "type": "object",
@@ -1396,6 +1547,34 @@
           "role"
         ],
         "title": "MeResponse"
+      },
+      "MemberDetailResponse": {
+        "properties": {
+          "member": {
+            "$ref": "#/components/schemas/FamilyMemberResponse"
+          },
+          "open_tasks": {
+            "items": {
+              "$ref": "#/components/schemas/TaskResponse"
+            },
+            "type": "array",
+            "title": "Open Tasks"
+          },
+          "recent_records": {
+            "items": {
+              "$ref": "#/components/schemas/RecordResponse"
+            },
+            "type": "array",
+            "title": "Recent Records"
+          }
+        },
+        "type": "object",
+        "required": [
+          "member",
+          "open_tasks",
+          "recent_records"
+        ],
+        "title": "MemberDetailResponse"
       },
       "MyInvitationResponse": {
         "properties": {

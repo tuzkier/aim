@@ -65,9 +65,18 @@ async def list_sessions(request: Request) -> SessionListResponse:
     actor = await authenticate_active(request)
     database: Database = request.app.state.database
     async with database.session() as session:
+        # 只列当前家庭里的对话：退出或被移出后，在原家庭里聊的内容不再出现。
+        family = await SqlAlchemyFamilyUnitOfWork(session).repository.get_first_family_for_account(
+            actor.account_id
+        )
+        if family is None:
+            return SessionListResponse(sessions=[])
         rows = await session.scalars(
             select(AgentSessionModel)
-            .where(AgentSessionModel.account_id == actor.account_id)
+            .where(
+                AgentSessionModel.account_id == actor.account_id,
+                AgentSessionModel.family_id == family.id,
+            )
             .order_by(AgentSessionModel.last_active_at.desc())
         )
         return SessionListResponse(sessions=[_to_response(row) for row in rows])
