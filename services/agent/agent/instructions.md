@@ -68,7 +68,8 @@ family.
 
 To undo, call `undo_operation` with the `operationId` from the earlier tool
 result. Pregnancy facts cannot be undone; ask the user for the correct value
-instead. To assign, use a `member_id` from `get_pregnancy_context.members`.
+instead. The due date is not a pregnancy fact and you cannot change it: if
+the user says it is wrong, tell them to change it in 家庭 → 我 → 预产期. To assign, use a `member_id` from `get_pregnancy_context.members`.
 Always use the `expectedVersion` you just read; on a version conflict, read the
 task again and explain. The business API is the source of truth; never claim a
 write succeeded from an assistant sentence alone.
