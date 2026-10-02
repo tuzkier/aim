@@ -10,11 +10,9 @@ from aim_api.contexts.family.adapters.outbound.persistence.repositories import (
     SqlAlchemyFamilyUnitOfWork,
 )
 from aim_api.contexts.family.application.commands import (
-    accept_invitation,
     create_family,
     invite_member,
 )
-from aim_api.contexts.family.application.commands.accept_invitation import AcceptInvitationCommand
 from aim_api.contexts.family.application.commands.create_family import CreateFamilyCommand
 from aim_api.contexts.family.application.commands.invite_member import InviteMemberCommand
 from aim_api.contexts.family.application.ports import PersistenceConflict
@@ -186,27 +184,6 @@ async def invite_member_endpoint(
             expires_at=result.invitation.expires_at,
             token=result.token,
         )
-
-
-@router.post("/api/v1/family-invitations/{token}/accept", response_model=FamilyResponse)
-async def accept_invitation_endpoint(token: str, request: Request) -> FamilyResponse:
-    actor = await _actor(request)
-    database = request.app.state.database
-    async with database.session() as session:
-        uow = SqlAlchemyFamilyUnitOfWork(session)
-        try:
-            family = await accept_invitation.execute(
-                AcceptInvitationCommand(
-                    invitation_token=token,
-                    account_id=actor.account_id,
-                    phone=actor.phone,
-                ),
-                uow,
-            )
-        except Exception as error:
-            await uow.rollback()
-            _translate(error)
-        return _family_response(family)
 
 
 @router.get("/api/v1/families/{family_id}", response_model=FamilyResponse)

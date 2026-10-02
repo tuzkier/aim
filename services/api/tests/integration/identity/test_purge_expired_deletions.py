@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from uuid import UUID, uuid4
 
 from fastapi.testclient import TestClient
@@ -102,12 +102,28 @@ def test_sole_member_family_is_deleted_entirely() -> None:
             headers=headers,
         )
         assert record.status_code == 201, record.text
+        # 改一次预产期，让家庭动态里有一条事件，验证它也一起被删。
+        moved = client.patch(
+            f"/api/v1/pregnancies/{pregnancy_id}",
+            json={"due_date": (date.today() + timedelta(days=100)).isoformat()},
+            headers=headers,
+        )
+        assert moved.status_code == 200, moved.text
         _request_deletion(client, session)
 
     summaries = asyncio.run(_run_purge(_later()))
     mine = [s for s in summaries if s.account_id == UUID(session["account_id"])]
     assert len(mine) == 1
     assert mine[0].families_deleted == 1 and mine[0].families_anonymized == 0
+    assert (
+        asyncio.run(
+            _count(
+                "SELECT count(*) FROM family_events WHERE family_id = :id",
+                id=UUID(session["family_id"]),
+            )
+        )
+        == 0
+    )
 
     account_id = UUID(session["account_id"])
     assert asyncio.run(_count("SELECT count(*) FROM accounts WHERE id = :id", id=account_id)) == 0

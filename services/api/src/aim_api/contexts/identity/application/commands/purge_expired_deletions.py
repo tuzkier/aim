@@ -14,6 +14,8 @@ from uuid import UUID
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from aim_api.composition.family.membership import delete_family
+
 from aim_api.contexts.identity.domain.account import DELETION_GRACE_PERIOD, AccountStatus
 
 
@@ -148,63 +150,8 @@ async def _purge_one(session: AsyncSession, account_id: UUID) -> PurgeSummary:
             )
             families_anonymized += 1
         else:
-            # 唯一成员：整个家庭一起走。顺序按依赖：先叶子表，最后 families。
-            await session.execute(
-                text(
-                    "DELETE FROM task_changes WHERE task_id IN (SELECT id FROM tasks "
-                    "WHERE pregnancy_id IN (SELECT id FROM pregnancies WHERE family_id = :family))"
-                ),
-                {"family": family_id},
-            )
-            await session.execute(
-                text(
-                    "DELETE FROM tasks WHERE pregnancy_id IN "
-                    "(SELECT id FROM pregnancies WHERE family_id = :family)"
-                ),
-                {"family": family_id},
-            )
-            await session.execute(
-                text(
-                    "DELETE FROM pregnancy_plans WHERE pregnancy_id IN "
-                    "(SELECT id FROM pregnancies WHERE family_id = :family)"
-                ),
-                {"family": family_id},
-            )
-            # 家庭的图片（含没挂到记录上的）：行在这里删，文件由每天的附件清理扫掉。
-            await session.execute(
-                text("DELETE FROM attachments WHERE family_id = :family"), {"family": family_id}
-            )
-            await session.execute(
-                text("DELETE FROM records WHERE family_id = :family"), {"family": family_id}
-            )
-            await session.execute(
-                text(
-                    "DELETE FROM pregnancy_facts WHERE pregnancy_id IN "
-                    "(SELECT id FROM pregnancies WHERE family_id = :family)"
-                ),
-                {"family": family_id},
-            )
-            await session.execute(
-                text("DELETE FROM pregnancies WHERE family_id = :family"), {"family": family_id}
-            )
-            await session.execute(
-                text("DELETE FROM family_invitations WHERE family_id = :family"),
-                {"family": family_id},
-            )
-            # 家庭里的对话会话可能是早已离开的成员留下的，同样先清它们的工具调用。
-            await session.execute(
-                text(
-                    "DELETE FROM tool_invocations WHERE session_id IN "
-                    "(SELECT eve_session_id FROM agent_sessions WHERE family_id = :family)"
-                ),
-                {"family": family_id},
-            )
-            await session.execute(
-                text("DELETE FROM agent_sessions WHERE family_id = :family"), {"family": family_id}
-            )
-            await session.execute(
-                text("DELETE FROM families WHERE id = :family"), {"family": family_id}
-            )
+            # 唯一成员：整个家庭一起走（与「接受邀请时删除原家庭」共用同一套清理）。
+            await delete_family(session, family_id)
             families_deleted += 1
 
     # family_members 与 agent_sessions 对 accounts 是 CASCADE，随账号一起删。

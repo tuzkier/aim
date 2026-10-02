@@ -49,6 +49,13 @@ def add_pregnancy(client: TestClient, person: Person, *, weeks_from_now: int = 1
     )
     assert response.status_code == 201, response.text
     person.pregnancy_id = response.json()["id"]
+    # 和 App 一样，建孕期后生成初始计划（模板待办）。
+    plan = client.post(
+        f"/api/v1/pregnancies/{person.pregnancy_id}/plan",
+        json={"as_of": date.today().isoformat()},
+        headers=person.headers,
+    )
+    assert plan.status_code in (200, 201), plan.text
     return person.pregnancy_id
 
 
@@ -60,3 +67,55 @@ def invite(client: TestClient, inviter: Person, phone: str, role: str = "father"
     )
     assert response.status_code == 201, response.text
     return response.json()["invitation_id"]
+
+
+def add_record(client: TestClient, person: Person, *, visibility: str = "family") -> str:
+    response = client.post(
+        f"/api/v1/pregnancies/{person.pregnancy_id}/records",
+        json={
+            "type": "note",
+            "occurred_at": "2026-09-16T08:00:00Z",
+            "visibility": visibility,
+            "title": visibility,
+            "content": "c",
+            "structured_data": {},
+        },
+        headers=person.headers,
+    )
+    assert response.status_code == 201, response.text
+    return response.json()["id"]
+
+
+def add_task(client: TestClient, person: Person, title: str, *, assignee: str | None = None) -> str:
+    response = client.post(
+        f"/api/v1/pregnancies/{person.pregnancy_id}/tasks",
+        json={"title": title},
+        headers=person.headers,
+    )
+    assert response.status_code == 201, response.text
+    task = response.json()
+    if assignee:
+        assigned = client.post(
+            f"/api/v1/tasks/{task['id']}/assign",
+            json={"expected_version": task["version"], "assigned_member_id": assignee},
+            headers=person.headers,
+        )
+        assert assigned.status_code == 200, assigned.text
+    return task["id"]
+
+
+def my_invitations(client: TestClient, person: Person) -> list[dict]:
+    response = client.get("/api/v1/me/invitations", headers=person.headers)
+    assert response.status_code == 200, response.text
+    return response.json()["invitations"]
+
+
+def join(client: TestClient, inviter: Person, invitee: Person, role: str = "father") -> None:
+    """inviter 邀请 invitee，invitee 接受；之后 invitee 的家庭与孕期换成 inviter 的。"""
+    invitation_id = invite(client, inviter, invitee.phone, role)
+    response = client.post(
+        f"/api/v1/me/invitations/{invitation_id}/accept", headers=invitee.headers
+    )
+    assert response.status_code == 200, response.text
+    invitee.family_id = response.json()["family_id"]
+    invitee.pregnancy_id = response.json()["pregnancy_id"]
