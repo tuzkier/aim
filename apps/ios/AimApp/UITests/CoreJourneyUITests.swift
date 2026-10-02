@@ -802,6 +802,65 @@ final class CoreJourneyUITests: XCTestCase {
     }
 
 
+    /// 邀请此前走不通：被邀请的人在 App 里看不到邀请。这条守的是按手机号走完整条路：
+    /// A 发邀请 → 退出 → B 用该号注册 → 在填写预产期页看到邀请 → 加入 → 家庭页里有两个人。
+    func testInviteeJoinsByPhone() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-reset-session"]
+        app.launch()
+        registerNewAccount(in: app, nickname: "阿敏")
+        completePregnancySetup(in: app)
+
+        let familyTab = app.tabBars.buttons["家庭"]
+        XCTAssertTrue(familyTab.waitForExistence(timeout: 15))
+        familyTab.tap()
+        let invite = app.buttons["family-invite"]
+        reveal(invite, in: app)
+        invite.tap()
+
+        let inviteePhone = "137\(Int.random(in: 10_000_000...99_999_999))"
+        let phoneField = app.textFields["invite-phone"]
+        XCTAssertTrue(phoneField.waitForExistence(timeout: 8))
+        phoneField.tap()
+        phoneField.typeText(inviteePhone)
+        app.buttons["invite-send"].tap()
+        XCTAssertTrue(app.staticTexts["邀请已发出"].waitForExistence(timeout: 10))
+        app.buttons["完成"].tap()
+        XCTAssertTrue(
+            app.buttons["family-invitation-row"].waitForExistence(timeout: 10),
+            "成员列表里应当出现「等待加入」的一行")
+
+        let profile = app.buttons["profile-entry"]
+        reveal(profile, in: app)
+        profile.tap()
+        let signOut = app.buttons["account-sign-out"]
+        reveal(signOut, in: app)
+        signOut.tap()
+
+        XCTAssertTrue(app.textFields["auth-phone"].waitForExistence(timeout: 10))
+        // 登录页可能停在登录模式：切回注册。
+        let registerSegment = app.segmentedControls["auth-mode-picker"].buttons["注册"]
+        if registerSegment.waitForExistence(timeout: 3) { registerSegment.tap() }
+        registerNewAccount(in: app, role: "爸爸", phone: inviteePhone)
+
+        let invitationRow = app.buttons["setup-invitation-row"]
+        XCTAssertTrue(invitationRow.waitForExistence(timeout: 15), "填写预产期页顶部应当列出家人的邀请")
+        invitationRow.tap()
+        let accept = app.buttons["invitation-accept"]
+        XCTAssertTrue(accept.waitForExistence(timeout: 8))
+        accept.tap()
+        var confirm = app.sheets.buttons["加入"].firstMatch
+        if !confirm.waitForExistence(timeout: 5) {
+            confirm = app.buttons["加入"].firstMatch
+        }
+        confirm.tap()
+
+        XCTAssertTrue(familyTab.waitForExistence(timeout: 20), "加入后共享对方的孕期，直接进主界面")
+        familyTab.tap()
+        XCTAssertTrue(app.staticTexts["阿敏"].waitForExistence(timeout: 15), "应当看到邀请人")
+        XCTAssertEqual(app.buttons.matching(identifier: "family-member-row").count, 2)
+    }
+
     /// AIM 的会话此前只活在内存里，App 一重启就找不回来。这条守的是「翻得回去」：
     /// 问一句 → 开新对话 → 从历史列表把刚才那段找回来。
     func testAPastConversationCanBeReopenedFromHistory() throws {
@@ -861,6 +920,10 @@ final class CoreJourneyUITests: XCTestCase {
         let familyTab = app.tabBars.buttons["家庭"]
         XCTAssertTrue(familyTab.waitForExistence(timeout: 15))
         familyTab.tap()
+        // 账号设置在个人资料页里：家庭页顶部的「我」卡片进去。
+        let profile = app.buttons["profile-entry"]
+        XCTAssertTrue(profile.waitForExistence(timeout: 10))
+        profile.tap()
 
         let deleteButton = app.buttons["account-delete"]
         reveal(deleteButton, in: app)
@@ -958,9 +1021,10 @@ final class CoreJourneyUITests: XCTestCase {
     private func registerNewAccount(
         in app: XCUIApplication,
         role: String = "妈妈",
-        nickname: String? = nil
+        nickname: String? = nil,
+        phone fixedPhone: String? = nil
     ) -> String {
-        let phone = "139\(Int.random(in: 10_000_000...99_999_999))"
+        let phone = fixedPhone ?? "139\(Int.random(in: 10_000_000...99_999_999))"
         let phoneField = app.textFields["auth-phone"]
         guard phoneField.waitForExistence(timeout: 10) else {
             XCTFail("注册页没有出现")
