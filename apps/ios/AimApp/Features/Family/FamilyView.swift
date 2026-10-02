@@ -1,44 +1,45 @@
 import SwiftUI
 
+/// 家庭页：「我」卡片（进个人资料）、家庭卡片、成员与待处理邀请、家庭动态。
 struct FamilyView: View {
     @Environment(AppSessionStore.self) private var session
     @Bindable var store: FamilyStore
     @State private var showingInvite = false
     @State private var renamingTo: String?
-    @State private var editingMyself = false
-    // 「账号」分组的弹层状态。见 AccountSection 的说明：弹层不能挂在 List 里的 Section 上。
-    @State private var legalPage: LegalPage?
-    @State private var confirmingDeletion = false
-    @State private var enteringPassword = false
+    @State private var openInvitation: FamilyInvitation?
+    @State private var path = NavigationPath()
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             familyContent
-            .navigationTitle("家庭")
-            .background(Color.aimCanvas)
-            .refreshable { await store.load() }
-            .task {
-                if store.snapshot == nil { await store.load() }
-            }
-            .sheet(isPresented: $showingInvite) {
-                InviteMemberSheet(store: store)
-            }
-            .sheet(item: Binding(
-                get: { renamingTo.map(RenameTarget.init(name:)) },
-                set: { renamingTo = $0?.name }
-            )) { target in
-                RenameFamilySheet(store: store, name: target.name)
-            }
-            .sheet(isPresented: $editingMyself) {
-                EditMyMembershipSheet(store: store, member: myself)
-            }
-            .accountPresentations(
-                repository: store.repository,
-                gateway: session.environment.baseURL,
-                legalPage: $legalPage,
-                confirmingDeletion: $confirmingDeletion,
-                enteringPassword: $enteringPassword
-            )
+                .navigationTitle("家庭")
+                .background(Color.aimCanvas)
+                .refreshable { await store.load() }
+                .task {
+                    if store.snapshot == nil { await store.load() }
+                }
+                .navigationDestination(for: FamilyRoute.self) { route in
+                    switch route {
+                    case .profile:
+                        ProfileView(store: store)
+                    case let .member(member):
+                        MemberDetailView(store: store, member: member)
+                    case let .destination(target):
+                        AgentDestinationView(target: target)
+                    }
+                }
+                .sheet(isPresented: $showingInvite) {
+                    InviteMemberSheet(store: store)
+                }
+                .sheet(item: Binding(
+                    get: { renamingTo.map(RenameTarget.init(name:)) },
+                    set: { renamingTo = $0?.name }
+                )) { target in
+                    RenameFamilySheet(store: store, name: target.name)
+                }
+                .sheet(item: $openInvitation) { invitation in
+                    InvitationDetailSheet(store: store, invitation: invitation)
+                }
         }
     }
 
@@ -46,18 +47,14 @@ struct FamilyView: View {
     private var familyContent: some View {
         if let family = store.snapshot {
             List {
-                familyHeader(family)
-                familyMembers(family)
-                inviteSection
-                AccountSection(legalPage: $legalPage, confirmingDeletion: $confirmingDeletion)
+                meCard
+                familyCard(family)
+                membersSection(family)
+                FamilyActivitySection(store: store) { path.append(FamilyRoute.destination($0)) }
             }
             .scrollContentBackground(.hidden)
             .background(Color.aimCanvas)
-#if os(iOS)
             .listStyle(.insetGrouped)
-#else
-            .listStyle(.inset)
-#endif
         } else if store.isLoading {
             ProgressView("正在加载家庭")
         } else if let errorMessage = store.errorMessage {
@@ -67,135 +64,156 @@ struct FamilyView: View {
         }
     }
 
-    private func familyHeader(_ family: FamilySnapshot) -> some View {
+    private var myself: FamilyMember? {
+        guard let accountID = session.accountID else { return nil }
+        return store.snapshot?.members.first { $0.accountID == accountID }
+    }
+
+    private var meCard: some View {
         Section {
-            VStack(alignment: .leading, spacing: 8) {
+            NavigationLink(value: FamilyRoute.profile) {
+                HStack(spacing: AimMetrics.space12) {
+                    MemberAvatar(name: myself?.displayName ?? "我", size: 44, highlighted: true)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text([myself?.displayName, myself?.role.displayName].compactMap { $0 }.uniqued().joined(separator: " · "))
+                            .font(.body.weight(.semibold))
+                        Text("个人资料与账号设置")
+                            .font(.caption)
+                            .foregroundStyle(Color.aimTextSecondary)
+                    }
+                }
+                .padding(.vertical, AimMetrics.space4)
+            }
+            .accessibilityIdentifier("profile-entry")
+        }
+    }
+
+    private func familyCard(_ family: FamilySnapshot) -> some View {
+        Section {
+            VStack(alignment: .leading, spacing: AimMetrics.space12) {
                 HStack(alignment: .firstTextBaseline) {
                     Text(family.name).font(.title2.weight(.semibold))
                     Spacer()
                     Button("改名") { renamingTo = family.name }
                         .font(.subheadline.weight(.medium))
                         .foregroundStyle(Color.aimAccent)
+                        .buttonStyle(.plain)
                         .accessibilityIdentifier("family-rename")
                 }
-                Text("成员各自有账号，但共享同一份孕期计划和待办。")
-                    .font(.subheadline)
-                    .foregroundStyle(Color.aimTextSecondary)
+                if let pregnancy = store.pregnancy {
+                    let elapsed = pregnancy.weeks * 7 + pregnancy.days
+                    let remaining = max(0, PregnancyDateCalculator.standardGestationDays - elapsed)
+                    Text("孕 \(pregnancy.weeks) 周 +\(pregnancy.days) 天 · 距预产期 \(remaining) 天")
+                        .font(.subheadline)
+                        .foregroundStyle(Color.aimTextSecondary)
+                    ProgressView(value: Double(min(elapsed, 280)), total: 280)
+                        .tint(Color.aimAccent)
+                        .accessibilityLabel("孕期进度")
+                } else {
+                    Text("还没有孕期信息").font(.subheadline).foregroundStyle(Color.aimTextSecondary)
+                }
+                HStack(spacing: -6) {
+                    ForEach(family.members) { member in
+                        MemberAvatar(name: member.displayName, size: 30, highlighted: member.accountID == session.accountID)
+                            .overlay(Circle().stroke(Color.aimSurface, lineWidth: 2))
+                    }
+                    Button { showingInvite = true } label: {
+                        Image(systemName: "plus")
+                            .font(.system(size: 13, weight: .semibold))
+                            .frame(width: 30, height: 30)
+                            .background(Color.aimSurfaceSunken, in: Circle())
+                            .overlay(Circle().stroke(Color.aimRail, style: StrokeStyle(lineWidth: 1, dash: [3])))
+                            .foregroundStyle(Color.aimTextSecondary)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.leading, AimMetrics.space12)
+                    .accessibilityLabel("邀请家人")
+                }
             }
             .aimCard()
         }
         .listRowBackground(Color.clear)
-        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 10, trailing: 16))
+        .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
     }
 
-    private func familyMembers(_ family: FamilySnapshot) -> some View {
+    private func membersSection(_ family: FamilySnapshot) -> some View {
         Section("家庭成员") {
             ForEach(family.members) { member in
-                familyMemberRow(member)
+                NavigationLink(value: FamilyRoute.member(member)) {
+                    memberRow(member)
+                }
+                .accessibilityIdentifier("family-member-row")
             }
+            ForEach(family.invitations) { invitation in
+                Button { openInvitation = invitation } label: {
+                    invitationRow(invitation)
+                }
+                .accessibilityIdentifier("family-invitation-row")
+            }
+            Button { showingInvite = true } label: {
+                Label("邀请家人", systemImage: "person.badge.plus")
+            }
+            .accessibilityIdentifier("family-invite")
         }
     }
 
-    private func familyMemberRow(_ member: FamilyMember) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: member.role == .mother ? "person.crop.circle.fill" : "person.circle.fill")
-                .font(.title2)
-                .foregroundStyle(member.role == .mother ? Color.aimAccent : Color.aimTextSecondary)
-            VStack(alignment: .leading, spacing: 3) {
-                // 称呼在前，角色退到副标题：两个「其他家人」只显示角色的话，
-                // 在列表里完全分不出谁是谁。
+    private func memberRow(_ member: FamilyMember) -> some View {
+        HStack(spacing: AimMetrics.space12) {
+            MemberAvatar(name: member.displayName, size: 36, highlighted: member.accountID == session.accountID)
+            VStack(alignment: .leading, spacing: 2) {
                 Text(member.displayName).font(.body.weight(.medium))
-                Text(member.nickname == nil
-                     ? statusText(member)
-                     : "\(member.role.displayName) · \(statusText(member))")
+                Text(([member.nickname == nil ? nil : member.role.displayName, member.isAdmin ? "管理员" : nil]
+                        .compactMap { $0 }).joined(separator: " · "))
                     .font(.caption)
                     .foregroundStyle(Color.aimTextSecondary)
             }
-        }
-        .accessibilityIdentifier("family-member-row")
-    }
-
-    private func statusText(_ member: FamilyMember) -> String {
-        let base = member.status == "active" ? "已加入" : "等待确认"
-        guard let count = store.openTaskCount(for: member.accountID), count > 0 else { return base }
-        return "\(base) · \(count) 项待办"
-    }
-
-    private var inviteSection: some View {
-        Section {
-            Button { editingMyself = true } label: {
-                Label("改我的称呼和身份", systemImage: "person.text.rectangle")
+            Spacer()
+            if let count = store.openTaskCount(for: member.accountID), count > 0 {
+                Text("\(count) 项待办").font(.caption).foregroundStyle(Color.aimTextSecondary)
             }
-            .accessibilityIdentifier("family-edit-me")
-
-            Button { showingInvite = true } label: {
-                Label("邀请家庭成员", systemImage: "person.badge.plus")
-            }
-        } footer: {
-            // 只能改自己：改别人需要一套「谁能改谁」的权限模型，当前没有需求支撑它。
-            Text("只能修改你自己的称呼和身份。")
         }
     }
 
-    /// 当前登录的这个人。找不到时（数据还没加载完）用一个空壳，
-    /// 让编辑面板仍然能打开并填写。
-    private var myself: FamilyMember? {
-        guard let accountID = session.accountID else { return nil }
-        return store.snapshot?.members.first { $0.accountID == accountID }
+    private func invitationRow(_ invitation: FamilyInvitation) -> some View {
+        HStack(spacing: AimMetrics.space12) {
+            Image(systemName: "envelope")
+                .frame(width: 36, height: 36)
+                .background(Color.aimSurfaceSunken, in: Circle())
+                .foregroundStyle(Color.aimTextSecondary)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(invitation.phoneMasked).foregroundStyle(Color.aimTextPrimary)
+                Text("\(invitation.role.displayName) · \(invitation.isExpired ? "已过期" : "等待加入")")
+                    .font(.caption)
+                    .foregroundStyle(invitation.isExpired ? Color.aimDanger : Color.aimTextSecondary)
+            }
+            Spacer()
+        }
     }
 }
 
-private struct InviteMemberSheet: View {
-    @Environment(\.dismiss) private var dismiss
-    @Bindable var store: FamilyStore
-    @State private var phone = ""
-    @State private var role: FamilyRole = .father
-    @State private var isSubmitting = false
-    @State private var errorMessage: String?
+/// 家庭页内的跳转目标。
+enum FamilyRoute: Hashable {
+    case profile
+    case member(FamilyMember)
+    case destination(AgentDestination)
 
-    var body: some View {
-        NavigationStack {
-            Form {
-                Section("邀请谁加入") {
-                    TextField("手机号", text: $phone)
-#if os(iOS)
-                        .keyboardType(.phonePad)
-#endif
-                    Picker("账号身份", selection: $role) {
-                        ForEach(FamilyRole.allCases, id: \.self) { Text($0.displayName).tag($0) }
-                    }
-                }
-                if let errorMessage {
-                    Section { Text(errorMessage).foregroundStyle(Color.aimDanger) }
-                }
-            }
-            .navigationTitle("邀请成员")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("取消") { dismiss() }.disabled(isSubmitting)
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    if isSubmitting {
-                        ProgressView()
-                    } else {
-                        Button("发送") { Task { await submit() } }
-                            .disabled(phone.filter(\.isNumber).count < 6)
-                    }
-                }
-            }
+    static func == (lhs: Self, rhs: Self) -> Bool { lhs.key == rhs.key }
+    func hash(into hasher: inout Hasher) { hasher.combine(key) }
+
+    private var key: String {
+        switch self {
+        case .profile: "profile"
+        case let .member(member): "member-\(member.accountID)"
+        case let .destination(target): target.id
         }
-        .presentationDetents([.medium])
     }
+}
 
-    private func submit() async {
-        isSubmitting = true
-        errorMessage = nil
-        defer { isSubmitting = false }
-        if await store.invite(phone: phone, role: role) {
-            dismiss()
-        } else {
-            errorMessage = store.errorMessage ?? "邀请没有发出去，稍后再试。"
-        }
+private extension Array where Element: Hashable {
+    /// 称呼留空时 displayName 就是身份名，避免显示成「妈妈 · 妈妈」。
+    func uniqued() -> [Element] {
+        var seen = Set<Element>()
+        return filter { seen.insert($0).inserted }
     }
 }
 
@@ -247,69 +265,6 @@ private struct RenameFamilySheet: View {
         errorMessage = nil
         defer { isSubmitting = false }
         if await store.rename(to: name.trimmingCharacters(in: .whitespaces)) {
-            dismiss()
-        } else {
-            errorMessage = store.errorMessage ?? "没改成，稍后再试。"
-        }
-    }
-}
-
-/// 改自己的称呼和身份。注册时选错身份此前没有任何补救路径。
-private struct EditMyMembershipSheet: View {
-    @Environment(\.dismiss) private var dismiss
-    @Bindable var store: FamilyStore
-    let member: FamilyMember?
-
-    @State private var nickname = ""
-    @State private var role: FamilyRole = .mother
-    @State private var isSubmitting = false
-    @State private var errorMessage: String?
-
-    var body: some View {
-        NavigationStack {
-            Form {
-                Section {
-                    TextField("家里怎么称呼你", text: $nickname)
-                        .accessibilityIdentifier("my-nickname-field")
-                    Picker("你的身份", selection: $role) {
-                        ForEach(FamilyRole.allCases, id: \.self) { Text($0.displayName).tag($0) }
-                    }
-                    .accessibilityIdentifier("my-role-picker")
-                } footer: {
-                    Text("称呼留空时，列表里会显示你的身份。")
-                }
-                if let errorMessage {
-                    Section { Text(errorMessage).foregroundStyle(Color.aimDanger) }
-                }
-            }
-            .navigationTitle("我的信息")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("取消") { dismiss() }.disabled(isSubmitting)
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    if isSubmitting {
-                        ProgressView()
-                    } else {
-                        Button("保存") { Task { await submit() } }
-                            .accessibilityIdentifier("my-profile-save")
-                    }
-                }
-            }
-            .onAppear {
-                nickname = member?.nickname ?? ""
-                role = member?.role ?? .mother
-            }
-        }
-        .presentationDetents([.medium])
-    }
-
-    private func submit() async {
-        isSubmitting = true
-        errorMessage = nil
-        defer { isSubmitting = false }
-        let trimmed = nickname.trimmingCharacters(in: .whitespacesAndNewlines)
-        if await store.updateMyself(nickname: trimmed.isEmpty ? nil : trimmed, role: role) {
             dismiss()
         } else {
             errorMessage = store.errorMessage ?? "没改成，稍后再试。"

@@ -87,3 +87,106 @@ struct DueDateDraft: Equatable {
         }
     }
 }
+
+/// 改预产期面板。三种填法任选，实时显示换算结果；超出范围不能保存。
+struct DueDateEditorSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @Bindable var store: FamilyStore
+    let currentDueDate: Date?
+    @State private var draft: DueDateDraft
+    @State private var isSubmitting = false
+    @State private var errorMessage: String?
+
+    init(store: FamilyStore, currentDueDate: Date?) {
+        self.store = store
+        self.currentDueDate = currentDueDate
+        _draft = State(initialValue: DueDateDraft(currentDueDate: currentDueDate))
+    }
+
+    private var unchanged: Bool {
+        guard let currentDueDate else { return false }
+        return PregnancyDateCalculator.calendar.isDate(currentDueDate, inSameDayAs: draft.dueDate)
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    Picker("填写方式", selection: Binding(
+                        get: { draft.mode },
+                        set: { draft.switchMode(to: $0) }
+                    )) {
+                        ForEach(DueDateInputMode.allCases, id: \.self) { Text($0.title).tag($0) }
+                    }
+                    .pickerStyle(.segmented)
+                    .accessibilityIdentifier("due-date-mode")
+
+                    switch draft.mode {
+                    case .dueDate, .lastMenstrualPeriod:
+                        DatePicker(draft.mode.title, selection: $draft.date, displayedComponents: .date)
+                            .datePickerStyle(.wheel)
+                            .labelsHidden()
+                            .environment(\.locale, Locale(identifier: "zh_CN"))
+                            .frame(maxWidth: .infinity)
+                    case .currentWeek:
+                        HStack(spacing: 0) {
+                            Picker("周", selection: $draft.weeks) {
+                                ForEach(0...42, id: \.self) { Text("\($0) 周").tag($0) }
+                            }
+                            Picker("天", selection: $draft.days) {
+                                ForEach(0...6, id: \.self) { Text("\($0) 天").tag($0) }
+                            }
+                        }
+                        .pickerStyle(.wheel)
+                        .frame(height: 160)
+                    }
+                } footer: {
+                    Text("三种填法都按孕 40 周（280 天）换算，保存的是预产期。")
+                }
+
+                Section {
+                    if let message = draft.validationMessage {
+                        Text(message).foregroundStyle(Color.aimDanger)
+                    } else if let gestation = draft.gestation {
+                        Text("对应预产期 \(draft.dueDate.aimLongDate)，现在孕 \(gestation.weeks) 周 +\(gestation.days) 天")
+                            .accessibilityIdentifier("due-date-summary")
+                    }
+                    if let errorMessage {
+                        Text(errorMessage).foregroundStyle(Color.aimDanger)
+                    }
+                }
+            }
+            .navigationTitle("修改预产期")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消") { dismiss() }.disabled(isSubmitting)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    if isSubmitting {
+                        ProgressView()
+                    } else {
+                        Button("保存") { Task { await save() } }
+                            .disabled(draft.validationMessage != nil || unchanged)
+                            .accessibilityIdentifier("due-date-save")
+                    }
+                }
+            }
+        }
+        .presentationDetents([.large])
+        .interactiveDismissDisabled(isSubmitting)
+    }
+
+    private func save() async {
+        isSubmitting = true
+        errorMessage = nil
+        defer { isSubmitting = false }
+        if await store.updateDueDate(draft.dueDate) {
+            // 首页孕周、时间轴跟着预产期变，通知它们重新加载。
+            NotificationCenter.default.post(name: .aimDataChanged, object: nil, userInfo: ["kinds": ["task"]])
+            dismiss()
+        } else {
+            errorMessage = store.errorMessage ?? "没改成，稍后再试。"
+        }
+    }
+}

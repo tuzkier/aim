@@ -43,6 +43,7 @@ private struct MainTabView: View {
     @State private var agentDestinations: AgentDestinations?
     @State private var refreshCoalescer: AgentRefreshCoalescer?
     @State private var selectedTab: AimTab = .timeline
+    @State private var invitationPrompt = InvitationPromptStore()
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -84,6 +85,33 @@ private struct MainTabView: View {
         .onChange(of: session.pregnancyID) { _, _ in
             Task { await reloadRepositories() }
         }
+        .onChange(of: session.familyID) { _, _ in
+            Task { await reloadRepositories() }
+        }
+        // 家人发来的邀请：进入主界面时查一次，没「暂不」过的逐条弹出。
+        .sheet(item: Binding(
+            get: { invitationPrompt.current },
+            set: { if $0 == nil { invitationPrompt.current = nil } }
+        )) { invitation in
+            InvitationDecisionSheet(invitation: invitation, repository: familyStore.repository) {
+                if let repository = familyStore.repository {
+                    Task { await invitationPrompt.next(using: repository) }
+                }
+            }
+        }
+        // 被管理员移出：家庭接口开始返回 403。找回自己的新家庭并切过去。
+        .onChange(of: familyStore.lostMembership) { _, lost in
+            guard lost, let repository = familyStore.repository else { return }
+            Task { await recoverFromRemoval(using: repository) }
+        }
+    }
+
+    private func recoverFromRemoval(using repository: BusinessRepositoryProtocol) async {
+        let oldName = familyStore.snapshot?.name
+        guard let me = try? await repository.fetchMe(), me.familyID != session.familyID else { return }
+        familyStore.lostMembership = false
+        session.familyNotice = oldName.map { "你已不在「\($0)」里" } ?? "你已不在原来的家庭里"
+        session.switchFamily(familyID: me.familyID, pregnancyID: me.pregnancyID)
     }
 
     /// AIM 写过东西之后只刷新受影响的页面。首页同时显示待办和最近记录，两类都要刷它。
@@ -124,5 +152,6 @@ private struct MainTabView: View {
         await recordStore.load()
         await familyStore.load()
         await libraryStore.load()
+        await invitationPrompt.check(using: repository)
     }
 }

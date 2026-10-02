@@ -75,23 +75,8 @@ struct AgentView: View {
         }
     }
 
-    @ViewBuilder
     private func destinationView(_ target: AgentDestination) -> some View {
-        switch target {
-        case let .task(task):
-            TaskDetailView(task: task, repository: destinations?.planStore.repository)
-        case let .record(record):
-            if let destinations {
-                RecordDetailView(
-                    record: record,
-                    store: destinations.recordStore,
-                    planStore: destinations.planStore,
-                    agentStore: destinations.agentStore
-                )
-            }
-        case let .knowledge(entry):
-            KnowledgeDetailView(entry: entry, agentStore: nil)
-        }
+        AgentDestinationView(target: target)
     }
 
     /// 与 `LibraryView.header` 同一形态。
@@ -142,6 +127,30 @@ struct AgentView: View {
         .buttonStyle(.plain)
         .accessibilityLabel(label)
         .accessibilityIdentifier(id)
+    }
+}
+
+/// 按目标显示原生详情页。AIM 对话卡片、家庭动态、成员详情共用。
+struct AgentDestinationView: View {
+    @Environment(AgentDestinations.self) private var destinations: AgentDestinations?
+    let target: AgentDestination
+
+    var body: some View {
+        switch target {
+        case let .task(task):
+            TaskDetailView(task: task, repository: destinations?.planStore.repository)
+        case let .record(record):
+            if let destinations {
+                RecordDetailView(
+                    record: record,
+                    store: destinations.recordStore,
+                    planStore: destinations.planStore,
+                    agentStore: destinations.agentStore
+                )
+            }
+        case let .knowledge(entry):
+            KnowledgeDetailView(entry: entry, agentStore: nil)
+        }
     }
 }
 

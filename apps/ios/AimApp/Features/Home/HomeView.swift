@@ -59,6 +59,9 @@ struct HomeView: View {
                 if let notice = session.welcomeBackNotice {
                     toast = AimToastMessage(text: notice, undoTitle: "", accessibilityIdentifier: "home-welcome-back")
                     session.welcomeBackNotice = nil
+                } else if let notice = session.familyNotice {
+                    toast = AimToastMessage(text: notice, undoTitle: "", accessibilityIdentifier: "home-family-notice")
+                    session.familyNotice = nil
                 }
             }
             // `store.now` 只在 load() 里刷新。App 在后台放一夜再回来，「今天」「逾期」「接下来 7 天」
