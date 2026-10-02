@@ -125,6 +125,12 @@
 		A20000000000000000000141 /* Tests/SessionResponseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000141 /* Tests/SessionResponseTests.swift */; };
 		A20000000000000000000142 /* Tests/LegalPagesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000142 /* Tests/LegalPagesTests.swift */; };
 		A20000000000000000000140 /* Resources/PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000140 /* Resources/PrivacyInfo.xcprivacy */; };
+		A20000000000000000000143 /* Features/Family/ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000143 /* Features/Family/ProfileView.swift */; };
+		A20000000000000000000144 /* Features/Family/DueDateEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000144 /* Features/Family/DueDateEditor.swift */; };
+		A20000000000000000000145 /* Features/Family/MemberDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000145 /* Features/Family/MemberDetailView.swift */; };
+		A20000000000000000000146 /* Features/Family/FamilyActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000146 /* Features/Family/FamilyActivityView.swift */; };
+		A20000000000000000000147 /* Features/Family/InvitationViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000147 /* Features/Family/InvitationViews.swift */; };
+		A20000000000000000000148 /* Tests/FamilyProfileTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000148 /* Tests/FamilyProfileTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -269,6 +275,12 @@
 		A10000000000000000000141 /* Tests/SessionResponseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/SessionResponseTests.swift; sourceTree = "<group>"; };
 		A10000000000000000000142 /* Tests/LegalPagesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/LegalPagesTests.swift; sourceTree = "<group>"; };
 		A10000000000000000000140 /* Resources/PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Resources/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		A10000000000000000000143 /* Features/Family/ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Family/ProfileView.swift; sourceTree = "<group>"; };
+		A10000000000000000000144 /* Features/Family/DueDateEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Family/DueDateEditor.swift; sourceTree = "<group>"; };
+		A10000000000000000000145 /* Features/Family/MemberDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Family/MemberDetailView.swift; sourceTree = "<group>"; };
+		A10000000000000000000146 /* Features/Family/FamilyActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Family/FamilyActivityView.swift; sourceTree = "<group>"; };
+		A10000000000000000000147 /* Features/Family/InvitationViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Family/InvitationViews.swift; sourceTree = "<group>"; };
+		A10000000000000000000148 /* Tests/FamilyProfileTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/FamilyProfileTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -464,6 +476,11 @@
 				A10000000000000000000013 /* Features/Family/FamilyStore.swift */,
 				A10000000000000000000014 /* Features/Family/FamilyView.swift */,
 				A10000000000000000000138 /* Features/Family/AccountSection.swift */,
+				A10000000000000000000147 /* Features/Family/InvitationViews.swift */,
+				A10000000000000000000146 /* Features/Family/FamilyActivityView.swift */,
+				A10000000000000000000145 /* Features/Family/MemberDetailView.swift */,
+				A10000000000000000000144 /* Features/Family/DueDateEditor.swift */,
+				A10000000000000000000143 /* Features/Family/ProfileView.swift */,
 			);
 			name = Family;
 			sourceTree = "<group>";
@@ -543,6 +560,7 @@
 				A10000000000000000000067 /* Tests/LibraryCatalogTests.swift */,
 				A10000000000000000000065 /* Tests/AgentActivityLogTests.swift */,
 				A10000000000000000000063 /* Tests/PregnancySetupModelTests.swift */,
+				A10000000000000000000148 /* Tests/FamilyProfileTests.swift */,
 				A10000000000000000000062 /* Tests/APIEndpointConfigurationTests.swift */,
 				A10000000000000000000030 /* Tests/EveClientTests.swift */,
 				A10000000000000000000031 /* Tests/BusinessRepositoryTests.swift */,
@@ -1448,6 +1466,11 @@
 				A20000000000000000000054 /* Core/DesignSystem/Components/AimToast.swift in Sources */,
 				A20000000000000000000139 /* Core/DesignSystem/Components/SafariView.swift in Sources */,
 				A20000000000000000000138 /* Features/Family/AccountSection.swift in Sources */,
+				A20000000000000000000147 /* Features/Family/InvitationViews.swift in Sources */,
+				A20000000000000000000146 /* Features/Family/FamilyActivityView.swift in Sources */,
+				A20000000000000000000145 /* Features/Family/MemberDetailView.swift in Sources */,
+				A20000000000000000000144 /* Features/Family/DueDateEditor.swift in Sources */,
+				A20000000000000000000143 /* Features/Family/ProfileView.swift in Sources */,
 				A20000000000000000000055 /* Features/Agent/AgentChangePreview.swift in Sources */,
 				A20000000000000000000056 /* Features/Agent/AgentDiffSheet.swift in Sources */,
 				A20000000000000000000058 /* Features/Home/HomeHeader.swift in Sources */,
@@ -1485,6 +1508,7 @@
 				A20000000000000000000068 /* Tests/LibraryCatalogTests.swift in Sources */,
 				A20000000000000000000065 /* Tests/AgentActivityLogTests.swift in Sources */,
 				A20000000000000000000063 /* Tests/PregnancySetupModelTests.swift in Sources */,
+				A20000000000000000000148 /* Tests/FamilyProfileTests.swift in Sources */,
 				A20000000000000000000062 /* Tests/APIEndpointConfigurationTests.swift in Sources */,
 				A20000000000000000000030 /* Tests/EveClientTests.swift in Sources */,
 				A20000000000000000000031 /* Tests/BusinessRepositoryTests.swift in Sources */,

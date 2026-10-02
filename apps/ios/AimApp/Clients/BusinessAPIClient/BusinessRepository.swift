@@ -77,6 +77,8 @@ struct FamilyMember: Identifiable, Codable, Equatable, Sendable {
     let nickname: String?
     let status: String
     let joinedAt: Date?
+    /// 管理员 = 家庭创建人，只有他能移出别人。
+    var isAdmin = false
 
     var displayName: String {
         guard let nickname, !nickname.trimmingCharacters(in: .whitespaces).isEmpty else {
@@ -105,6 +107,120 @@ struct FamilySnapshot: Identifiable, Codable, Equatable, Sendable {
     let id: UUID
     let name: String
     let members: [FamilyMember]
+    /// 还没处理完的邀请（含过期 7 天内的，方便重发）。
+    var invitations: [FamilyInvitation] = []
+
+    var admin: FamilyMember? { members.first(where: \.isAdmin) }
+}
+
+/// 家里发出去、还没被接受的邀请。
+struct FamilyInvitation: Identifiable, Codable, Equatable, Sendable {
+    enum Status: String, Codable, Sendable {
+        case pending, declined, expired
+    }
+
+    let id: UUID
+    /// 打码后的手机号，如 138****5678。
+    let phoneMasked: String
+    let role: FamilyRole
+    let invitedBy: UUID
+    let expiresAt: Date
+    let status: Status
+
+    var isExpired: Bool { status == .expired }
+}
+
+/// 发给我的邀请。
+struct MyInvitation: Identifiable, Codable, Equatable, Sendable {
+    let id: UUID
+    let familyID: UUID
+    let familyName: String
+    let inviterName: String
+    let role: FamilyRole
+    let expiresAt: Date
+    /// pending 或 declined（点过「暂不」）。
+    let status: String
+    let canAccept: Bool
+    let blockedReason: String?
+
+    var wasDeclined: Bool { status == "declined" }
+}
+
+/// 当前账号所在的家庭与孕期。接受邀请、退出、被移出后据此切换会话。
+struct MeSnapshot: Codable, Equatable, Sendable {
+    let familyID: UUID
+    let pregnancyID: UUID?
+}
+
+struct PregnancySummary: Codable, Equatable, Sendable {
+    let id: UUID
+    let dueDate: Date
+    let weeks: Int
+    let days: Int
+}
+
+struct MemberDetail: Equatable, Sendable {
+    let member: FamilyMember
+    let openTasks: [TaskItem]
+    let recentRecords: [RecordItem]
+}
+
+struct FamilyActivityItem: Identifiable, Codable, Equatable, Sendable {
+    enum Kind: String, Codable, Sendable {
+        case taskCreated = "task_created"
+        case taskCompleted = "task_completed"
+        case recordCreated = "record_created"
+        case memberJoined = "member_joined"
+        case memberLeft = "member_left"
+        case memberRemoved = "member_removed"
+        case dueDateChanged = "due_date_changed"
+        case unknown
+
+        init(from decoder: Decoder) throws {
+            let raw = try decoder.singleValueContainer().decode(String.self)
+            self = Kind(rawValue: raw) ?? .unknown
+        }
+    }
+
+    let id: String
+    let kind: Kind
+    let actorName: String
+    let title: String
+    let targetType: String?
+    let targetID: UUID?
+    let targetDeleted: Bool
+    let viaAgent: Bool
+    let createdAt: Date
+
+    /// 动态里的一句话，如「老王 完成了「买产褥垫」」。
+    var sentence: String {
+        switch kind {
+        case .taskCreated: "\(actorName)\(viaAgent ? " 通过 AIM" : "") 新建了「\(title)」"
+        case .taskCompleted: "\(actorName) 完成了「\(title)」"
+        case .recordCreated: "\(actorName) 记了「\(title)」"
+        case .memberJoined: "\(actorName) 加入了家庭"
+        case .memberLeft: "\(actorName) 退出了家庭"
+        case .memberRemoved: "\(actorName) 把 \(title) 移出了家庭"
+        case .dueDateChanged: "\(actorName) 把预产期改为 \(title)"
+        case .unknown: "\(actorName) 有一条新动态"
+        }
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, kind, title
+        case actorName = "actor_name"
+        case targetType = "target_type"
+        case targetID = "target_id"
+        case targetDeleted = "target_deleted"
+        case viaAgent = "via_agent"
+        case createdAt = "created_at"
+    }
+}
+
+struct FamilyActivityPage: Equatable, Sendable {
+    let items: [FamilyActivityItem]
+    /// 下一页的起点，原样传回服务端（保留微秒，不经 Date 转换以免丢精度）；没有更早的了就是 nil。
+    let nextBefore: String?
 }
 
 protocol BusinessRepositoryProtocol: Sendable {
@@ -129,6 +245,32 @@ protocol BusinessRepositoryProtocol: Sendable {
     func renameFamily(to name: String) async throws
     func updateMyMembership(nickname: String?, role: FamilyRole?) async throws
     func requestAccountDeletion(password: String) async throws
+    func fetchPregnancy() async throws -> PregnancySummary?
+    func updateDueDate(_ dueDate: Date) async throws -> PregnancySummary
+    func fetchMemberDetail(accountID: UUID) async throws -> MemberDetail
+    func fetchActivity(before: String?) async throws -> FamilyActivityPage
+    func revokeInvitation(id: UUID) async throws
+    func fetchMyInvitations() async throws -> [MyInvitation]
+    func acceptInvitation(id: UUID) async throws -> MeSnapshot
+    func declineInvitation(id: UUID) async throws
+    func leaveFamily() async throws -> MeSnapshot
+    func removeMember(accountID: UUID) async throws
+    func fetchMe() async throws -> MeSnapshot
+}
+
+/// 新加的家庭接口给出默认实现：只关心别的接口的测试替身不必逐个补齐。
+extension BusinessRepositoryProtocol {
+    func fetchPregnancy() async throws -> PregnancySummary? { throw APIError.notConfigured }
+    func updateDueDate(_ dueDate: Date) async throws -> PregnancySummary { throw APIError.notConfigured }
+    func fetchMemberDetail(accountID: UUID) async throws -> MemberDetail { throw APIError.notConfigured }
+    func fetchActivity(before: String?) async throws -> FamilyActivityPage { throw APIError.notConfigured }
+    func revokeInvitation(id: UUID) async throws { throw APIError.notConfigured }
+    func fetchMyInvitations() async throws -> [MyInvitation] { throw APIError.notConfigured }
+    func acceptInvitation(id: UUID) async throws -> MeSnapshot { throw APIError.notConfigured }
+    func declineInvitation(id: UUID) async throws { throw APIError.notConfigured }
+    func leaveFamily() async throws -> MeSnapshot { throw APIError.notConfigured }
+    func removeMember(accountID: UUID) async throws { throw APIError.notConfigured }
+    func fetchMe() async throws -> MeSnapshot { throw APIError.notConfigured }
 }
 
 actor BusinessRepository: BusinessRepositoryProtocol {
@@ -335,6 +477,92 @@ actor BusinessRepository: BusinessRepositoryProtocol {
         _ = try await session.aimData(for: request, broadcastsUnauthorized: false)
     }
 
+    // MARK: 个人资料与家庭
+
+    func fetchPregnancy() async throws -> PregnancySummary? {
+        guard let pregnancyID = environment.pregnancyID else { return nil }
+        let request = environment.businessRequest(path: "/api/v1/pregnancies/\(pregnancyID.uuidString)")
+        let (data, _) = try await session.aimData(for: request)
+        return try decoder.decode(PregnancyDTO.self, from: data).summary
+    }
+
+    func updateDueDate(_ dueDate: Date) async throws -> PregnancySummary {
+        let pregnancyID = try requiredPregnancyID()
+        let body = try encoder.encode(CreatePregnancyBody(dueDate: Self.dateOnlyFormatter.string(from: dueDate)))
+        let request = environment.businessRequest(
+            path: "/api/v1/pregnancies/\(pregnancyID.uuidString)", method: "PATCH", body: body)
+        let (data, _) = try await session.aimData(for: request)
+        return try decoder.decode(PregnancyDTO.self, from: data).summary
+    }
+
+    func fetchMemberDetail(accountID: UUID) async throws -> MemberDetail {
+        let familyID = try requiredFamilyID()
+        let request = environment.businessRequest(
+            path: "/api/v1/families/\(familyID.uuidString)/members/\(accountID.uuidString)")
+        let (data, _) = try await session.aimData(for: request)
+        let dto = try decoder.decode(MemberDetailDTO.self, from: data)
+        return MemberDetail(
+            member: map(dto.member),
+            openTasks: dto.openTasks.map(map),
+            recentRecords: dto.recentRecords.map(RecordItem.init(dto:)))
+    }
+
+    func fetchActivity(before: String?) async throws -> FamilyActivityPage {
+        let familyID = try requiredFamilyID()
+        var path = "/api/v1/families/\(familyID.uuidString)/activity"
+        if let before {
+            path += "?before=\(before.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? before)"
+        }
+        let (data, _) = try await session.aimData(for: environment.businessRequest(path: path))
+        let dto = try decoder.decode(ActivityPageDTO.self, from: data)
+        return FamilyActivityPage(items: dto.items, nextBefore: dto.nextBefore)
+    }
+
+    func revokeInvitation(id: UUID) async throws {
+        let familyID = try requiredFamilyID()
+        let request = environment.businessRequest(
+            path: "/api/v1/families/\(familyID.uuidString)/invitations/\(id.uuidString)", method: "DELETE")
+        _ = try await session.aimData(for: request)
+    }
+
+    func fetchMyInvitations() async throws -> [MyInvitation] {
+        let (data, _) = try await session.aimData(for: environment.businessRequest(path: "/api/v1/me/invitations"))
+        return try decoder.decode(MyInvitationsDTO.self, from: data).invitations.map(\.model)
+    }
+
+    func acceptInvitation(id: UUID) async throws -> MeSnapshot {
+        let request = environment.businessRequest(
+            path: "/api/v1/me/invitations/\(id.uuidString)/accept", method: "POST")
+        let (data, _) = try await session.aimData(for: request)
+        return try decoder.decode(MeDTO.self, from: data).snapshot
+    }
+
+    func declineInvitation(id: UUID) async throws {
+        let request = environment.businessRequest(
+            path: "/api/v1/me/invitations/\(id.uuidString)/decline", method: "POST")
+        _ = try await session.aimData(for: request)
+    }
+
+    func leaveFamily() async throws -> MeSnapshot {
+        let familyID = try requiredFamilyID()
+        let request = environment.businessRequest(
+            path: "/api/v1/families/\(familyID.uuidString)/members/me/leave", method: "POST")
+        let (data, _) = try await session.aimData(for: request)
+        return try decoder.decode(MeDTO.self, from: data).snapshot
+    }
+
+    func removeMember(accountID: UUID) async throws {
+        let familyID = try requiredFamilyID()
+        let request = environment.businessRequest(
+            path: "/api/v1/families/\(familyID.uuidString)/members/\(accountID.uuidString)", method: "DELETE")
+        _ = try await session.aimData(for: request)
+    }
+
+    func fetchMe() async throws -> MeSnapshot {
+        let (data, _) = try await session.aimData(for: environment.businessRequest(path: "/api/v1/me"))
+        return try decoder.decode(MeDTO.self, from: data).snapshot
+    }
+
     private func mutate<Body: Encodable>(path: String, body: Body) async throws -> TaskItem {
         let data = try encoder.encode(body)
         let request = environment.businessRequest(path: path, method: "POST", body: data)
@@ -375,14 +603,29 @@ actor BusinessRepository: BusinessRepositoryProtocol {
     }
 
     private func map(_ dto: APIFamilyDTO) -> FamilySnapshot {
-        FamilySnapshot(id: dto.id, name: dto.name, members: dto.members.map { member in
-            FamilyMember(
-                accountID: member.accountID,
-                role: FamilyRole(rawValue: member.role) ?? .otherCaregiver,
-                nickname: member.nickname,
-                status: member.status,
-                joinedAt: member.joinedAt)
-        })
+        FamilySnapshot(
+            id: dto.id,
+            name: dto.name,
+            members: dto.members.map(map),
+            invitations: (dto.invitations ?? []).map { invitation in
+                FamilyInvitation(
+                    id: invitation.id,
+                    phoneMasked: invitation.phoneMasked,
+                    role: FamilyRole(rawValue: invitation.role) ?? .otherCaregiver,
+                    invitedBy: invitation.invitedBy,
+                    expiresAt: invitation.expiresAt,
+                    status: FamilyInvitation.Status(rawValue: invitation.status) ?? .pending)
+            })
+    }
+
+    private func map(_ member: APIFamilyMemberDTO) -> FamilyMember {
+        FamilyMember(
+            accountID: member.accountID,
+            role: FamilyRole(rawValue: member.role) ?? .otherCaregiver,
+            nickname: member.nickname,
+            status: member.status,
+            joinedAt: member.joinedAt,
+            isAdmin: member.isAdmin ?? false)
     }
 
     private func validate(_ draft: RecordDraft) throws {
@@ -488,4 +731,91 @@ extension JSONEncoder {
         encoder.dateEncodingStrategy = .iso8601
         return encoder
     }
+}
+
+
+// MARK: - 个人资料与家庭接口的返回结构
+
+private struct PregnancyDTO: Decodable {
+    struct Age: Decodable { let weeks: Int; let days: Int }
+    let id: UUID
+    let dueDate: Date
+    let gestationalAge: Age
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case dueDate = "due_date"
+        case gestationalAge = "gestational_age"
+    }
+
+    var summary: PregnancySummary {
+        PregnancySummary(id: id, dueDate: dueDate, weeks: gestationalAge.weeks, days: gestationalAge.days)
+    }
+}
+
+private struct MemberDetailDTO: Decodable {
+    let member: APIFamilyMemberDTO
+    let openTasks: [APITaskDTO]
+    let recentRecords: [APIRecordDTO]
+
+    enum CodingKeys: String, CodingKey {
+        case member
+        case openTasks = "open_tasks"
+        case recentRecords = "recent_records"
+    }
+}
+
+private struct ActivityPageDTO: Decodable {
+    let items: [FamilyActivityItem]
+    let nextBefore: String?
+
+    enum CodingKeys: String, CodingKey {
+        case items
+        case nextBefore = "next_before"
+    }
+}
+
+private struct MyInvitationsDTO: Decodable {
+    struct Item: Decodable {
+        let id: UUID
+        let familyID: UUID
+        let familyName: String
+        let inviterName: String
+        let role: String
+        let expiresAt: Date
+        let status: String
+        let canAccept: Bool
+        let blockedReason: String?
+
+        enum CodingKeys: String, CodingKey {
+            case id, role, status
+            case familyID = "family_id"
+            case familyName = "family_name"
+            case inviterName = "inviter_name"
+            case expiresAt = "expires_at"
+            case canAccept = "can_accept"
+            case blockedReason = "blocked_reason"
+        }
+
+        var model: MyInvitation {
+            MyInvitation(
+                id: id, familyID: familyID, familyName: familyName, inviterName: inviterName,
+                role: FamilyRole(rawValue: role) ?? .otherCaregiver, expiresAt: expiresAt,
+                status: status, canAccept: canAccept, blockedReason: blockedReason)
+        }
+    }
+
+    let invitations: [Item]
+}
+
+private struct MeDTO: Decodable {
+    let familyID: UUID
+    let pregnancyID: UUID?
+
+    enum CodingKeys: String, CodingKey {
+        case familyID = "family_id"
+        case pregnancyID = "pregnancy_id"
+    }
+
+    var snapshot: MeSnapshot { MeSnapshot(familyID: familyID, pregnancyID: pregnancyID) }
 }
