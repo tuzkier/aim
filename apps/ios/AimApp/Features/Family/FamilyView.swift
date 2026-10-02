@@ -162,7 +162,9 @@ struct FamilyView: View {
             MemberAvatar(name: member.displayName, size: 36, highlighted: member.accountID == session.accountID)
             VStack(alignment: .leading, spacing: 2) {
                 Text(member.displayName).font(.body.weight(.medium))
-                Text(([member.nickname == nil ? nil : member.role.displayName, member.isAdmin ? "管理员" : nil]
+                Text(([member.accountID == session.accountID ? "我" : nil,
+                       member.nickname == nil ? nil : member.role.displayName,
+                       member.isAdmin ? "管理员" : nil]
                         .compactMap { $0 }).joined(separator: " · "))
                     .font(.caption)
                     .foregroundStyle(Color.aimTextSecondary)

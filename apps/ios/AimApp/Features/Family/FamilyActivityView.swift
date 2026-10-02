@@ -31,34 +31,38 @@ struct FamilyActivitySection: View {
 
     @ViewBuilder
     private func row(_ item: FamilyActivityItem) -> some View {
-        let openable = item.targetID != nil && !item.targetDeleted
-        Button {
-            Task { await open(item) }
-        } label: {
-            HStack(alignment: .top, spacing: AimMetrics.space12) {
-                Image(systemName: icon(for: item.kind))
-                    .font(.system(size: 15))
-                    .foregroundStyle(item.kind == .taskCompleted ? Color.aimSuccess : Color.aimTextSecondary)
-                    .frame(width: 22)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(item.sentence)
-                        .font(.subheadline)
-                        .foregroundStyle(item.targetDeleted ? Color.aimTextTertiary : Color.aimTextPrimary)
-                        .strikethrough(item.targetDeleted)
-                        .multilineTextAlignment(.leading)
-                    Text(item.createdAt, format: .relative(presentation: .named))
-                        .font(.caption)
-                        .foregroundStyle(Color.aimTextTertiary)
-                }
-                Spacer(minLength: 0)
-                if opening == item.id {
-                    ProgressView()
-                }
+        // 成员进出、改预产期没有可打开的页面：照常显示，不做成禁用的按钮（禁用态会整行发灰）。
+        if item.targetID != nil && !item.targetDeleted {
+            Button { Task { await open(item) } } label: { content(item) }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("family-activity-row")
+        } else {
+            content(item).accessibilityIdentifier("family-activity-row")
+        }
+    }
+
+    private func content(_ item: FamilyActivityItem) -> some View {
+        HStack(alignment: .top, spacing: AimMetrics.space12) {
+            Image(systemName: icon(for: item.kind))
+                .font(.system(size: 15))
+                .foregroundStyle(item.kind == .taskCompleted ? Color.aimSuccess : Color.aimTextSecondary)
+                .frame(width: 22)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(item.sentence)
+                    .font(.subheadline)
+                    .foregroundStyle(item.targetDeleted ? Color.aimTextTertiary : Color.aimTextPrimary)
+                    .strikethrough(item.targetDeleted)
+                    .multilineTextAlignment(.leading)
+                Text(item.createdAt.formatted(.relative(presentation: .named).locale(Locale(identifier: "zh_CN"))))
+                    .font(.caption)
+                    .foregroundStyle(Color.aimTextTertiary)
+            }
+            Spacer(minLength: 0)
+            if opening == item.id {
+                ProgressView()
             }
         }
-        .buttonStyle(.plain)
-        .disabled(!openable)
-        .accessibilityIdentifier("family-activity-row")
+        .contentShape(Rectangle())
     }
 
     private func icon(for kind: FamilyActivityItem.Kind) -> String {

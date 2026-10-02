@@ -26,12 +26,13 @@ struct ProfileView: View {
                 Button { editingMyself = true } label: {
                     LabeledContent("称呼", value: myself?.nickname?.isEmpty == false ? myself!.nickname! : "未设置")
                 }
+                .foregroundStyle(Color.aimTextPrimary)
                 .accessibilityIdentifier("profile-edit-me")
                 Button { editingMyself = true } label: {
                     LabeledContent("身份", value: myself?.role.displayName ?? "—")
                 }
+                .foregroundStyle(Color.aimTextPrimary)
             }
-            .foregroundStyle(Color.aimTextPrimary)
 
             pregnancySection
 
@@ -83,7 +84,9 @@ struct ProfileView: View {
             VStack(spacing: AimMetrics.space8) {
                 MemberAvatar(name: myself?.displayName ?? "我", size: 64, highlighted: true)
                 Text(myself?.displayName ?? "我").font(.title3.weight(.semibold))
-                Text([myself?.role.displayName, session.maskedPhone].compactMap { $0 }.joined(separator: " · "))
+                // 没设称呼时名字就是身份名，不再重复一遍。
+                Text([myself?.nickname == nil ? nil : myself?.role.displayName, session.maskedPhone]
+                        .compactMap { $0 }.joined(separator: " · "))
                     .font(.subheadline)
                     .foregroundStyle(Color.aimTextSecondary)
             }
