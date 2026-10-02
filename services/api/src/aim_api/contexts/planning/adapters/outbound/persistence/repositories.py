@@ -154,6 +154,9 @@ def _to_task_model(task: Task) -> TaskModel:
         source_id=task.source_id,
         changed_by_actor_type=task.changed_by_actor_type.value,
         changed_by_actor_id=task.changed_by_actor_id,
+        # 只在新建时用到这个转换，此刻的改动人就是创建人。
+        created_by_actor_type=task.changed_by_actor_type.value,
+        created_by_actor_id=task.changed_by_actor_id,
         version=task.version,
         scheduled_for=task.scheduled_for,
         due_at=task.due_at,

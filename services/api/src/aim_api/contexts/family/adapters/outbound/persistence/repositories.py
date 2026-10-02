@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from aim_api.contexts.family.adapters.outbound.persistence.models import (
     AccountModel,
+    FamilyEventModel,
     FamilyInvitationModel,
     FamilyMemberModel,
     FamilyModel,
@@ -21,7 +22,8 @@ from aim_api.contexts.family.domain.family import (
     FamilyMemberStatus,
 )
 from aim_api.contexts.family.domain.errors import FamilyMemberNotFound, FamilyNotFound
-from aim_api.contexts.family.domain.invitation import Invitation, InvitationStatus
+from aim_api.contexts.family.domain.events import FamilyEvent
+from aim_api.contexts.family.domain.invitation import OPEN_STATUSES, Invitation, InvitationStatus
 from aim_api.contexts.identity.domain.account import Account, AccountStatus
 
 
@@ -175,6 +177,52 @@ class SqlAlchemyFamilyRepository:
                 status=invitation.status.value,
                 accepted_account_id=invitation.accepted_account_id,
                 accepted_at=invitation.accepted_at,
+            )
+        )
+
+
+    async def get_invitation(self, invitation_id: UUID) -> Invitation | None:
+        model = await self.session.get(FamilyInvitationModel, invitation_id)
+        return _to_invitation(model) if model else None
+
+    async def list_invitations_for_family(self, family_id: UUID) -> list[Invitation]:
+        rows = await self.session.scalars(
+            select(FamilyInvitationModel)
+            .where(FamilyInvitationModel.family_id == family_id)
+            .order_by(FamilyInvitationModel.created_at.desc())
+        )
+        return [_to_invitation(row) for row in rows]
+
+    async def list_invitations_for_phone(self, phone: str) -> list[Invitation]:
+        rows = await self.session.scalars(
+            select(FamilyInvitationModel)
+            .where(FamilyInvitationModel.invitee_phone == phone)
+            .order_by(FamilyInvitationModel.created_at)
+        )
+        return [_to_invitation(row) for row in rows]
+
+    async def revoke_open_invitations(self, family_id: UUID, phone: str) -> None:
+        """同一家庭、同一号码只留一条有效邀请：再邀请时把旧的作废。"""
+        await self.session.execute(
+            update(FamilyInvitationModel)
+            .where(
+                FamilyInvitationModel.family_id == family_id,
+                FamilyInvitationModel.invitee_phone == phone,
+                FamilyInvitationModel.status.in_([s.value for s in OPEN_STATUSES]),
+            )
+            .values(status=InvitationStatus.revoked.value)
+        )
+
+    async def add_event(self, event: FamilyEvent) -> None:
+        self.session.add(
+            FamilyEventModel(
+                id=event.id,
+                family_id=event.family_id,
+                kind=event.kind.value,
+                actor_account_id=event.actor_account_id,
+                subject_account_id=event.subject_account_id,
+                payload=event.payload,
+                created_at=event.created_at,
             )
         )
 

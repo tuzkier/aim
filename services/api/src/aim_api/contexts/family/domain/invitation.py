@@ -18,6 +18,17 @@ class InvitationStatus(StrEnum):
     pending = "pending"
     accepted = "accepted"
     expired = "expired"
+    #: 被邀请人点了「暂不」。只是不再自动弹出，过期前仍可接受。
+    declined = "declined"
+    #: 邀请人或管理员撤回，或同一号码被重新邀请时旧邀请作废。
+    revoked = "revoked"
+
+
+#: 被邀请人还能接受的状态。
+OPEN_STATUSES = frozenset({InvitationStatus.pending, InvitationStatus.declined})
+
+#: 邀请有效期。被邀请人往往要先装 App、再注册，24 小时来不及。
+INVITATION_TTL = timedelta(days=7)
 
 
 def normalize_invitee_phone(phone: str) -> str:
@@ -82,7 +93,7 @@ class Invitation:
             role=role,
             token_hash=token_hash,
             created_at=created,
-            expires_at=created + timedelta(hours=24),
+            expires_at=created + INVITATION_TTL,
         )
 
     def invited_event(self) -> FamilyMemberInvited:
@@ -94,13 +105,28 @@ class Invitation:
             expires_at=self.expires_at,
         )
 
+    def is_open(self, now: datetime | None = None) -> bool:
+        return self.status in OPEN_STATUSES and (now or datetime.now(UTC)) < self.expires_at
+
+    def decline(self) -> None:
+        if self.status is not InvitationStatus.pending:
+            raise InvitationExpired("only a pending invitation can be declined")
+        self.status = InvitationStatus.declined
+
+    def revoke(self) -> None:
+        if self.status not in OPEN_STATUSES:
+            raise InvitationExpired("invitation is no longer open")
+        self.status = InvitationStatus.revoked
+
     def accept(
         self, account_id: UUID, account_phone: str, now: datetime | None = None
     ) -> FamilyMemberJoined:
         accepted_at = now or datetime.now(UTC)
-        if self.status is not InvitationStatus.pending:
+        if self.status not in OPEN_STATUSES:
             if self.status is InvitationStatus.accepted:
                 raise InvitationUsed("invitation can only be accepted once")
+            if self.status is InvitationStatus.revoked:
+                raise InvitationExpired("invitation was revoked")
             raise InvitationExpired("invitation has expired")
         if accepted_at >= self.expires_at:
             self.status = InvitationStatus.expired
