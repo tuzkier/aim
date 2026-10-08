@@ -10,7 +10,7 @@ final class CoreJourneyUITests: XCTestCase {
 
         completePregnancySetup(in: app)
 
-        let timelineTab = app.tabBars.buttons["孕期"]
+        let timelineTab = app.tabBars.buttons["待办"]
         XCTAssertTrue(timelineTab.waitForExistence(timeout: 15))
         timelineTab.tap()
 
@@ -34,7 +34,7 @@ final class CoreJourneyUITests: XCTestCase {
 
         completePregnancySetup(in: app)
 
-        let timelineTab = app.tabBars.buttons["孕期"]
+        let timelineTab = app.tabBars.buttons["待办"]
         XCTAssertTrue(timelineTab.waitForExistence(timeout: 15))
         timelineTab.tap()
 
@@ -76,7 +76,7 @@ final class CoreJourneyUITests: XCTestCase {
 
         completePregnancySetup(in: app)
 
-        let timelineTab = app.tabBars.buttons["孕期"]
+        let timelineTab = app.tabBars.buttons["待办"]
         XCTAssertTrue(timelineTab.waitForExistence(timeout: 15))
         timelineTab.tap()
 
@@ -104,7 +104,7 @@ final class CoreJourneyUITests: XCTestCase {
 
         completePregnancySetup(in: app)
 
-        let timelineTab = app.tabBars.buttons["孕期"]
+        let timelineTab = app.tabBars.buttons["待办"]
         XCTAssertTrue(timelineTab.waitForExistence(timeout: 15))
         timelineTab.tap()
 
@@ -157,7 +157,7 @@ final class CoreJourneyUITests: XCTestCase {
 
         completePregnancySetup(in: app)
 
-        let timelineTab = app.tabBars.buttons["孕期"]
+        let timelineTab = app.tabBars.buttons["待办"]
         XCTAssertTrue(timelineTab.waitForExistence(timeout: 15))
         timelineTab.tap()
 
@@ -193,7 +193,7 @@ final class CoreJourneyUITests: XCTestCase {
 
         completePregnancySetup(in: app)
 
-        let timelineTab = app.tabBars.buttons["孕期"]
+        let timelineTab = app.tabBars.buttons["待办"]
         XCTAssertTrue(timelineTab.waitForExistence(timeout: 15))
         timelineTab.tap()
 
@@ -228,8 +228,9 @@ final class CoreJourneyUITests: XCTestCase {
 
         registerNewAccount(in: app)
         completePregnancySetup(in: app)
+        openTasksTab(in: app)
 
-        XCTAssertTrue(app.tabBars.buttons["孕期"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.tabBars.buttons["待办"].waitForExistence(timeout: 15))
 
         let quickAdd = app.buttons["home-quick-add"]
         reveal(quickAdd, in: app)
@@ -260,7 +261,8 @@ final class CoreJourneyUITests: XCTestCase {
 
         registerNewAccount(in: app)
         completePregnancySetup(in: app)
-        XCTAssertTrue(app.tabBars.buttons["孕期"].waitForExistence(timeout: 15))
+        openTasksTab(in: app)
+        XCTAssertTrue(app.tabBars.buttons["待办"].waitForExistence(timeout: 15))
 
         let quickAdd = app.buttons["home-quick-add"]
         reveal(quickAdd, in: app)
@@ -294,6 +296,7 @@ final class CoreJourneyUITests: XCTestCase {
 
         registerNewAccount(in: app)
         completePregnancySetup(in: app)
+        openTasksTab(in: app)
 
         let header = app.buttons["home-header-week"]
         XCTAssertTrue(header.waitForExistence(timeout: 15))
@@ -539,7 +542,7 @@ final class CoreJourneyUITests: XCTestCase {
 
         completePregnancySetup(in: app)
 
-        let timelineTab = app.tabBars.buttons["孕期"]
+        let timelineTab = app.tabBars.buttons["待办"]
         XCTAssertTrue(timelineTab.waitForExistence(timeout: 15))
         timelineTab.tap()
 
@@ -685,7 +688,7 @@ final class CoreJourneyUITests: XCTestCase {
         // 不点任何东西，录入界面就应该自己出现，且底部 Tab 还进不去。
         let save = app.buttons["pregnancy-setup-save"]
         XCTAssertTrue(save.waitForExistence(timeout: 10), "登录后应直接进入孕期信息录入")
-        XCTAssertFalse(app.tabBars.buttons["孕期"].exists, "填完之前不应能进入主界面")
+        XCTAssertFalse(app.tabBars.buttons["待办"].exists, "填完之前不应能进入主界面")
 
         // 没选日期 → 不能保存。
         XCTAssertFalse(save.isEnabled, "未选择日期时不应允许保存")
@@ -705,7 +708,7 @@ final class CoreJourneyUITests: XCTestCase {
         save.tap()
 
         XCTAssertTrue(
-            app.tabBars.buttons["孕期"].waitForExistence(timeout: 15),
+            app.tabBars.buttons["待办"].waitForExistence(timeout: 15),
             "保存后应进入主界面"
         )
     }
@@ -801,6 +804,33 @@ final class CoreJourneyUITests: XCTestCase {
         )
     }
 
+
+    /// 首页：启动停在首页，孕周主卡点开本周详情能翻周，「全部 N 项」切到待办。
+    func testHomeShowsTheWeekAndOpensDetail() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-reset-session"]
+        app.launch()
+        registerNewAccount(in: app, nickname: "阿敏")
+        completePregnancySetup(in: app)
+
+        let greeting = app.staticTexts["home-greeting"]
+        XCTAssertTrue(greeting.waitForExistence(timeout: 15), "启动后应停在首页")
+        XCTAssertTrue(greeting.label.contains("阿敏"), "问候里应当用家里的称呼")
+
+        let hero = app.buttons["home-hero"]
+        XCTAssertTrue(hero.waitForExistence(timeout: 10), "首页应当有孕周主卡")
+        hero.tap()
+        XCTAssertTrue(app.navigationBars["第 18 周"].waitForExistence(timeout: 8), "主卡点开应是当前这一周")
+        XCTAssertTrue(app.staticTexts["这是你现在所在的一周"].exists)
+        app.buttons["week-next"].tap()
+        XCTAssertTrue(app.navigationBars["第 19 周"].waitForExistence(timeout: 5), "应当能翻到下一周")
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+
+        let all = app.buttons["home-today-all"]
+        reveal(all, in: app)
+        all.tap()
+        XCTAssertTrue(app.buttons["home-header-week"].waitForExistence(timeout: 8), "「全部」应切到待办标签")
+    }
 
     /// 邀请此前走不通：被邀请的人在 App 里看不到邀请。这条守的是按手机号走完整条路：
     /// A 发邀请 → 退出 → B 用该号注册 → 在填写预产期页看到邀请 → 加入 → 家庭页里有两个人。
@@ -1117,7 +1147,7 @@ final class CoreJourneyUITests: XCTestCase {
 
         // WebView 里的文字对 XCUITest 是可见的，可以直接断言。
         XCTAssertTrue(
-            app.staticTexts["可以问孕期变化、最近记录或接下来要做的事。涉及计划变更时，我会先让你确认。"].waitForExistence(timeout: 30),
+            app.staticTexts["可以问孕期变化、最近记录或接下来要做的事，也可以拍产检单让我记下来。涉及计划变更时，我会先让你确认。"].waitForExistence(timeout: 30),
             "对话面应当加载出打包在 bundle 里的页面；空白说明自定义 scheme 没取到静态资源"
         )
     }
@@ -1203,6 +1233,13 @@ final class CoreJourneyUITests: XCTestCase {
         if app.keyboards.count > 0 {
             app.typeText("\n")
         }
+    }
+
+    /// 启动默认停在首页；待办相关的用例先切到「待办」标签。
+    private func openTasksTab(in app: XCUIApplication) {
+        let tab = app.tabBars.buttons["待办"]
+        XCTAssertTrue(tab.waitForExistence(timeout: 15))
+        tab.tap()
     }
 
     private func completePregnancySetup(in app: XCUIApplication) {

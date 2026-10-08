@@ -44,6 +44,16 @@ struct HomeDashboardView: View {
             .background(Color.aimCanvas)
             .refreshable { await store.load() }
             .task { await store.load() }
+            // 「欢迎回来」「已加入某某家庭」这类一次性提示：启动默认进首页，就在这里显示。
+            .onAppear {
+                if let notice = session.welcomeBackNotice {
+                    toast = AimToastMessage(text: notice, undoTitle: "", accessibilityIdentifier: "home-welcome-back")
+                    session.welcomeBackNotice = nil
+                } else if let notice = session.familyNotice {
+                    toast = AimToastMessage(text: notice, undoTitle: "", accessibilityIdentifier: "home-family-notice")
+                    session.familyNotice = nil
+                }
+            }
             .onReceive(NotificationCenter.default.publisher(for: .aimDataChanged)) { _ in
                 Task { await store.load() }
             }
@@ -284,7 +294,6 @@ struct HomeDashboardView: View {
                 }
             }
         }
-        .accessibilityIdentifier("home-today-card")
     }
 
     private func isOverdue(_ task: TaskItem) -> Bool {
