@@ -37,6 +37,7 @@ struct HomeView: View {
                     days: store.currentDays,
                     date: store.today,
                     stageName: store.stageName,
+                    title: "待办",
                     onOpenTimeline: { showingTimeline = true },
                     onNewTask: { showingTaskComposer = true },
                     onNewRecord: { if session.pregnancyID != nil { showingRecordComposer = true } },

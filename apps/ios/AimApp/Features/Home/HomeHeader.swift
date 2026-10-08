@@ -8,6 +8,8 @@ struct HomeHeader: View {
     let days: Int
     let date: Date
     let stageName: String?
+    /// 设了就用它作标题（待办标签用「待办」），不再显示孕周——孕周在首页。
+    var title: String? = nil
     let onOpenTimeline: () -> Void
     let onNewTask: () -> Void
     let onNewRecord: () -> Void
@@ -71,6 +73,7 @@ struct HomeHeader: View {
     }
 
     private var titleText: String {
+        if let title { return title }
         guard let week else { return "孕期" }
         return days > 0 ? "孕 \(week) 周 + \(days) 天" : "孕 \(week) 周"
     }
@@ -81,7 +84,7 @@ struct HomeHeader: View {
         formatter.locale = Locale(identifier: "zh_CN")
         formatter.dateFormat = "M月d日 EEEE"
         let dateText = formatter.string(from: date)
-        guard let stageName else { return dateText }
+        guard let stageName, title == nil else { return dateText }
         return dateText + " · " + stageName
     }
 }

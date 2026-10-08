@@ -34,7 +34,7 @@ struct AgentView: View {
         // 否则 WebView 会拿到一个新的 entry 把对话切走。
         _entry = State(initialValue: onClose == nil
             ? .resume
-            : .new(pageContext: store.context, autoSend: store.pendingAutoSend))
+            : .new(pageContext: store.context, autoSend: store.pendingAutoSend, attachImage: store.pendingImage))
     }
 
     var body: some View {
@@ -68,6 +68,7 @@ struct AgentView: View {
         }
         .onAppear {
             store.pendingAutoSend = nil
+            store.pendingImage = nil
             // 标签页重新出现：若刚才在快捷入口里开了新的一段，切过去。
             if onClose == nil {
                 webView?.evaluateJavaScript("window.__aimOnAppear__?.()")

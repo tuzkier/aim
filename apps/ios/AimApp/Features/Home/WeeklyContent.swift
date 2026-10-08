@@ -29,6 +29,18 @@ struct WeekContent: Codable, Equatable, Sendable {
         }
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
+
+    /// 本周详情用的完整说法：「身长约 41 厘米 · 体重约 1.5 公斤」。
+    var detailedSizeText: String? {
+        var parts: [String] = []
+        if let lengthCm { parts.append("身长约 \(lengthCm.formatted(.number.precision(.fractionLength(0...1)))) 厘米") }
+        if let weightG {
+            parts.append(weightG >= 1000
+                ? "体重约 \((weightG / 1000).formatted(.number.precision(.fractionLength(1)))) 公斤"
+                : "体重约 \(Int(weightG.rounded())) 克")
+        }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
 }
 
 /// 第 4–42 周的全部内容。

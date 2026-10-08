@@ -42,26 +42,37 @@ private struct MainTabView: View {
     @State private var libraryStore = LibraryStore()
     @State private var agentDestinations: AgentDestinations?
     @State private var refreshCoalescer: AgentRefreshCoalescer?
-    @State private var selectedTab: AimTab = .timeline
+    @State private var homeStore = HomeDashboardStore()
+    @State private var selectedTab: MainTab = .home
     @State private var invitationPrompt = InvitationPromptStore()
 
     var body: some View {
         TabView(selection: $selectedTab) {
+            HomeDashboardView(
+                store: homeStore,
+                recordStore: recordStore,
+                familyStore: familyStore,
+                libraryStore: libraryStore,
+                agentStore: agentStore,
+                onSwitchTab: { selectedTab = $0 }
+            )
+                .tabItem { Label("首页", systemImage: "house") }
+                .tag(MainTab.home)
             HomeView(store: timelineStore, planStore: planStore, recordStore: recordStore, agentStore: agentStore)
-                .tabItem { Label("孕期", systemImage: "heart.text.square") }
-                .tag(AimTab.timeline)
+                .tabItem { Label("待办", systemImage: "checklist") }
+                .tag(MainTab.tasks)
 
             LibraryView(store: libraryStore, agentStore: agentStore)
                 .tabItem { Label("资料库", systemImage: "books.vertical") }
-                .tag(AimTab.library)
+                .tag(MainTab.library)
 
             AgentView(store: agentStore)
                 .tabItem { Label("AIM", systemImage: "wand.and.sparkles") }
-                .tag(AimTab.agent)
+                .tag(MainTab.agent)
 
             FamilyView(store: familyStore)
                 .tabItem { Label("家庭", systemImage: "person.2") }
-                .tag(AimTab.family)
+                .tag(MainTab.family)
         }
         .environment(agentDestinations)
         .onAppear {
@@ -130,12 +141,6 @@ private struct MainTabView: View {
         }
     }
 
-    private enum AimTab: Hashable {
-        case timeline
-        case agent
-        case library
-        case family
-    }
 
     private func reloadRepositories() async {
         let repository = BusinessRepository(environment: session.environment)
@@ -143,6 +148,7 @@ private struct MainTabView: View {
         planStore.repository = repository
         recordStore.repository = repository
         familyStore.repository = repository
+        homeStore.repository = repository
         // Agent 撤销「新建」类操作要直接调删除接口，不经过模型。
         agentStore.repository = repository
         agentStore.sessions = agentSessions
@@ -152,6 +158,7 @@ private struct MainTabView: View {
         await recordStore.load()
         await familyStore.load()
         await libraryStore.load()
+        await homeStore.load()
         await invitationPrompt.check(using: repository)
     }
 }

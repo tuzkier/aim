@@ -26,19 +26,20 @@ enum AgentWebRoute: Equatable {
 enum AgentWebEntry: Equatable {
     /// AIM 标签页：接回上一段。
     case resume
-    /// 快捷入口：开新的一段，可带页面上下文、可自动发出一句话。
-    case new(pageContext: AgentContext?, autoSend: String?)
+    /// 快捷入口：开新的一段，可带页面上下文、可自动发出一句话、可预先放进一张图（首页「拍报告」）。
+    case new(pageContext: AgentContext?, autoSend: String?, attachImage: String? = nil)
 
     var jsonObject: [String: Any] {
         switch self {
         case .resume:
             return ["mode": "resume"]
-        case let .new(pageContext, autoSend):
+        case let .new(pageContext, autoSend, attachImage):
             var object: [String: Any] = ["mode": "new"]
             if let pageContext {
                 object["pageContext"] = ["title": pageContext.title, "summary": pageContext.summary]
             }
             if let autoSend { object["autoSend"] = autoSend }
+            if let attachImage { object["attachImage"] = attachImage }
             return object
         }
     }
