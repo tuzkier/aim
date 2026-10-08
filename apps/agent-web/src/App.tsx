@@ -414,7 +414,19 @@ const Conversation = ({
   });
   runtimeRef.current = runtime;
 
-  // 首页「拍报告」：原生选好图后把图片放进输入框，用户补一句话再发。
+  // 首页「拍报告」：打开时入口里带着一张图，放进输入框，用户补一句话再发。只放一次。
+  const attachedRef = useRef(false);
+  useEffect(() => {
+    if (entry.mode !== "new" || !entry.attachImage || attachedRef.current || restored) return;
+    const dataUrl = entry.attachImage;
+    const timer = window.setTimeout(() => {
+      attachedRef.current = true;
+      void runtime.thread.composer.addAttachment(dataUrlToFile(dataUrl, "photo.jpg"));
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [entry, runtime, restored]);
+
+  // 原生也可以在对话已打开时塞进一张图。
   useEffect(() => {
     window.__aimAttachImage__ = (dataUrl: string) => {
       void runtime.thread.composer.addAttachment(dataUrlToFile(dataUrl, "photo.jpg"));

@@ -33,3 +33,14 @@ test("page context rides along as clientContext", () => {
     clientContext: { page: { title: "番茄炒蛋", summary: "菜谱" }, images: "photos" },
   });
 });
+
+test("a photo from the home page rides along only if it is an image", () => {
+  const photo = "data:image/jpeg;base64,/9j/";
+  expect(resolveEntry({ ...base, entry: { mode: "new", attachImage: photo } })).toEqual({
+    mode: "new",
+    attachImage: photo,
+  });
+  expect(resolveEntry({ ...base, entry: { mode: "new", attachImage: "javascript:alert(1)" } })).toEqual({
+    mode: "new",
+  });
+});

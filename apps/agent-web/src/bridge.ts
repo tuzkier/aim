@@ -24,7 +24,7 @@ export interface PageContext {
  */
 export type AgentEntry =
   | { mode: "resume" }
-  | { mode: "new"; pageContext?: PageContext; autoSend?: string };
+  | { mode: "new"; pageContext?: PageContext; autoSend?: string; attachImage?: string };
 
 export interface NativeContext {
   /** `aim.v1.…` 会话票。 */
