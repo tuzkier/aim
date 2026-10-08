@@ -23,6 +23,7 @@ import {
 import { resolveEntry, withTurnContext } from "./entry";
 import {
   createImageAttachmentAdapter,
+  dataUrlToFile,
   imagesContext,
   numberImages,
   type UploadedImage,
@@ -412,6 +413,16 @@ const Conversation = ({
       }),
   });
   runtimeRef.current = runtime;
+
+  // 首页「拍报告」：原生选好图后把图片放进输入框，用户补一句话再发。
+  useEffect(() => {
+    window.__aimAttachImage__ = (dataUrl: string) => {
+      void runtime.thread.composer.addAttachment(dataUrlToFile(dataUrl, "photo.jpg"));
+    };
+    return () => {
+      delete window.__aimAttachImage__;
+    };
+  }, [runtime]);
 
   // 「让 Agent 分析当前记录」：打开就把问题发出去。只发一次——
   // 票据轮换等原因重渲染时不能再发。

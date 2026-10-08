@@ -50,6 +50,8 @@ declare global {
     __aimOnContextChanged__?: (next: NativeContext) => void;
     /** 原生工具栏的「开新对话」。由 Web 侧注册，原生只负责调用。 */
     __aimNewConversation__?: () => void;
+    /** 原生（首页「拍报告」）把一张图片放进输入框的待发列表。 */
+    __aimAttachImage__?: (dataUrl: string) => void;
     /** 原生工具栏的「历史对话」。面板在 Web 侧渲染——切换会话要重建运行时。 */
     __aimOpenHistory__?: () => void;
     /** 原生标签页重新出现时调用：若快捷入口里开了新的一段，切过去。 */

@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { fitWithin, imagesContext, numberImages } from "./imageAttachments";
+import { dataUrlToFile, fitWithin, imagesContext, numberImages } from "./imageAttachments";
 
 test("large photos shrink to fit 1600 on the long edge, small ones stay", () => {
   expect(fitWithin(4032, 3024, 1600)).toEqual({ width: 1600, height: 1200 });
@@ -33,4 +33,11 @@ test("photos are numbered in the order they were picked, not the order uploads f
     { id: "first", message: 2, index: 1 },
     { id: "second", message: 2, index: 2 },
   ]);
+});
+
+test("a photo handed over by the app becomes a file the composer can take", () => {
+  const file = dataUrlToFile("data:image/jpeg;base64,/9j/", "photo.jpg");
+  expect(file.type).toBe("image/jpeg");
+  expect(file.name).toBe("photo.jpg");
+  expect(file.size).toBe(3);
 });

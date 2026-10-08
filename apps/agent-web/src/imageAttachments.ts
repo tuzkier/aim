@@ -136,3 +136,13 @@ export const createImageAttachmentAdapter = (options: {
     },
   };
 };
+
+/** 原生（首页「拍报告」）传来的图片内容转成文件，交给输入框的附件适配器。 */
+export const dataUrlToFile = (dataUrl: string, name: string): File => {
+  const [header, payload = ""] = dataUrl.split(",", 2);
+  const type = /data:([^;]+)/.exec(header)?.[1] ?? "image/jpeg";
+  const binary = atob(payload);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return new File([bytes], name, { type });
+};
