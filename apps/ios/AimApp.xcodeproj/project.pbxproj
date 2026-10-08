@@ -131,6 +131,11 @@
 		A20000000000000000000146 /* Features/Family/FamilyActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000146 /* Features/Family/FamilyActivityView.swift */; };
 		A20000000000000000000147 /* Features/Family/InvitationViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000147 /* Features/Family/InvitationViews.swift */; };
 		A20000000000000000000148 /* Tests/FamilyProfileTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000148 /* Tests/FamilyProfileTests.swift */; };
+		A20000000000000000000149 /* Features/Home/WeeklyContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000149 /* Features/Home/WeeklyContent.swift */; };
+		A20000000000000000000150 /* Features/Home/HomeDashboardStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000150 /* Features/Home/HomeDashboardStore.swift */; };
+		A20000000000000000000151 /* Features/Home/HomeDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000151 /* Features/Home/HomeDashboardView.swift */; };
+		A20000000000000000000152 /* Features/Home/WeekDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000152 /* Features/Home/WeekDetailView.swift */; };
+		A20000000000000000000153 /* Tests/HomeDashboardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000153 /* Tests/HomeDashboardTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -281,6 +286,11 @@
 		A10000000000000000000146 /* Features/Family/FamilyActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Family/FamilyActivityView.swift; sourceTree = "<group>"; };
 		A10000000000000000000147 /* Features/Family/InvitationViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Family/InvitationViews.swift; sourceTree = "<group>"; };
 		A10000000000000000000148 /* Tests/FamilyProfileTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/FamilyProfileTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000149 /* Features/Home/WeeklyContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Home/WeeklyContent.swift; sourceTree = "<group>"; };
+		A10000000000000000000150 /* Features/Home/HomeDashboardStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Home/HomeDashboardStore.swift; sourceTree = "<group>"; };
+		A10000000000000000000151 /* Features/Home/HomeDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Home/HomeDashboardView.swift; sourceTree = "<group>"; };
+		A10000000000000000000152 /* Features/Home/WeekDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Home/WeekDetailView.swift; sourceTree = "<group>"; };
+		A10000000000000000000153 /* Tests/HomeDashboardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/HomeDashboardTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -560,6 +570,7 @@
 				A10000000000000000000067 /* Tests/LibraryCatalogTests.swift */,
 				A10000000000000000000065 /* Tests/AgentActivityLogTests.swift */,
 				A10000000000000000000063 /* Tests/PregnancySetupModelTests.swift */,
+				A10000000000000000000153 /* Tests/HomeDashboardTests.swift */,
 				A10000000000000000000148 /* Tests/FamilyProfileTests.swift */,
 				A10000000000000000000062 /* Tests/APIEndpointConfigurationTests.swift */,
 				A10000000000000000000030 /* Tests/EveClientTests.swift */,
@@ -1211,6 +1222,10 @@
 				A10000000000000000000134 /* Features/Home/TaskComposerView.swift */,
 				A10000000000000000000133 /* Features/Home/TaskQuickAddRow.swift */,
 				A10000000000000000000132 /* Features/Home/HomeView.swift */,
+				A10000000000000000000152 /* Features/Home/WeekDetailView.swift */,
+				A10000000000000000000151 /* Features/Home/HomeDashboardView.swift */,
+				A10000000000000000000150 /* Features/Home/HomeDashboardStore.swift */,
+				A10000000000000000000149 /* Features/Home/WeeklyContent.swift */,
 				A10000000000000000000057 /* Features/Home/HomeHeader.swift */,
 			);
 			name = Home;
@@ -1396,6 +1411,10 @@
 				A20000000000000000000134 /* Features/Home/TaskComposerView.swift in Sources */,
 				A20000000000000000000133 /* Features/Home/TaskQuickAddRow.swift in Sources */,
 				A20000000000000000000132 /* Features/Home/HomeView.swift in Sources */,
+				A20000000000000000000152 /* Features/Home/WeekDetailView.swift in Sources */,
+				A20000000000000000000151 /* Features/Home/HomeDashboardView.swift in Sources */,
+				A20000000000000000000150 /* Features/Home/HomeDashboardStore.swift in Sources */,
+				A20000000000000000000149 /* Features/Home/WeeklyContent.swift in Sources */,
 				A20000000000000000000102 /* Features/Agent/AgentQuestion.swift in Sources */,
 				A20000000000000000000110 /* Features/Onboarding/AuthForm.swift in Sources */,
 				A20000000000000000000116 /* Features/Records/ContentTitleIndex.swift in Sources */,
@@ -1508,6 +1527,7 @@
 				A20000000000000000000068 /* Tests/LibraryCatalogTests.swift in Sources */,
 				A20000000000000000000065 /* Tests/AgentActivityLogTests.swift in Sources */,
 				A20000000000000000000063 /* Tests/PregnancySetupModelTests.swift in Sources */,
+				A20000000000000000000153 /* Tests/HomeDashboardTests.swift in Sources */,
 				A20000000000000000000148 /* Tests/FamilyProfileTests.swift in Sources */,
 				A20000000000000000000062 /* Tests/APIEndpointConfigurationTests.swift in Sources */,
 				A20000000000000000000030 /* Tests/EveClientTests.swift in Sources */,

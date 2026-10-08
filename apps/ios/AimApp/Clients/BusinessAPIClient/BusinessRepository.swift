@@ -256,6 +256,7 @@ protocol BusinessRepositoryProtocol: Sendable {
     func leaveFamily() async throws -> MeSnapshot
     func removeMember(accountID: UUID) async throws
     func fetchMe() async throws -> MeSnapshot
+    func fetchWeeklyContent() async throws -> WeeklyContentBook
 }
 
 /// 新加的家庭接口给出默认实现：只关心别的接口的测试替身不必逐个补齐。
@@ -271,6 +272,7 @@ extension BusinessRepositoryProtocol {
     func leaveFamily() async throws -> MeSnapshot { throw APIError.notConfigured }
     func removeMember(accountID: UUID) async throws { throw APIError.notConfigured }
     func fetchMe() async throws -> MeSnapshot { throw APIError.notConfigured }
+    func fetchWeeklyContent() async throws -> WeeklyContentBook { throw APIError.notConfigured }
 }
 
 actor BusinessRepository: BusinessRepositoryProtocol {
@@ -561,6 +563,11 @@ actor BusinessRepository: BusinessRepositoryProtocol {
     func fetchMe() async throws -> MeSnapshot {
         let (data, _) = try await session.aimData(for: environment.businessRequest(path: "/api/v1/me"))
         return try decoder.decode(MeDTO.self, from: data).snapshot
+    }
+
+    func fetchWeeklyContent() async throws -> WeeklyContentBook {
+        let (data, _) = try await session.aimData(for: environment.businessRequest(path: "/api/v1/content/weekly"))
+        return try JSONDecoder().decode(WeeklyContentBook.self, from: data)
     }
 
     private func mutate<Body: Encodable>(path: String, body: Body) async throws -> TaskItem {
