@@ -62,13 +62,13 @@ private struct MainTabView: View {
                 .tabItem { Label("待办", systemImage: "checklist") }
                 .tag(MainTab.tasks)
 
-            LibraryView(store: libraryStore, agentStore: agentStore)
-                .tabItem { Label("资料库", systemImage: "books.vertical") }
-                .tag(MainTab.library)
 
             AgentView(store: agentStore)
                 .tabItem { Label("AIM", systemImage: "wand.and.sparkles") }
                 .tag(MainTab.agent)
+            LibraryView(store: libraryStore, agentStore: agentStore)
+                .tabItem { Label("资料库", systemImage: "books.vertical") }
+                .tag(MainTab.library)
 
             FamilyView(store: familyStore)
                 .tabItem { Label("家庭", systemImage: "person.2") }

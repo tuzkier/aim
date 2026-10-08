@@ -226,7 +226,7 @@ struct HomeDashboardView: View {
                             Spacer()
                             Image(systemName: "chevron.right").font(.caption).foregroundStyle(Color.aimTextTertiary)
                         }
-                        weekLine("figure.and.child.holdinghands", "宝宝", week.baby)
+                        weekLine("stroller", "宝宝", week.baby)
                         weekLine("heart", "妈妈", week.mom)
                         if let tip = week.tips.first { weekLine("lightbulb", "提示", tip) }
                     }

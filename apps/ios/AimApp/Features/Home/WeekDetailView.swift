@@ -85,7 +85,7 @@ struct WeekDetailView: View {
                 }
                 .padding(.vertical, AimMetrics.space12)
 
-                section("figure.and.child.holdinghands", "宝宝", content.baby)
+                section("stroller", "宝宝", content.baby)
                 section("heart", "妈妈", content.mom)
 
                 VStack(alignment: .leading, spacing: AimMetrics.space8) {
