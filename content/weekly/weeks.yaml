@@ -1,0 +1,396 @@
+id: weekly-pregnancy-guide
+version: 1.0.0
+source: 国家卫生健康委员会《孕产期保健工作规范》《孕前和孕期保健指南》；身长体重为常用胎儿生长参考的中位数并取整，约 20 周前为头臀长、之后为头脚长
+source_url: https://www.nhc.gov.cn/
+reviewed_at: "2026-10-08"
+weeks:
+  - week: 4
+    fruit: "🌱"
+    fruit_name: 一粒芝麻
+    length_cm: null
+    weight_g: null
+    baby: 受精卵刚在子宫里安顿下来，正在形成胚胎和胎盘的雏形。
+    mom: 月经推迟是最早的信号，可能有轻微腹胀或乳房胀痛。
+    tips:
+      - 每天补充叶酸
+      - 停止吸烟饮酒，用药先问医生
+  - week: 5
+    fruit: "🌱"
+    fruit_name: 一颗苹果籽
+    length_cm: 0.2
+    weight_g: null
+    baby: 神经管开始形成，心脏的雏形出现。
+    mom: 可能开始犯困、乏力，对气味变得敏感。
+    tips:
+      - 继续每天补充叶酸
+      - 按医生安排确认宫内妊娠
+  - week: 6
+    fruit: "🫛"
+    fruit_name: 一粒豌豆
+    length_cm: 0.5
+    weight_g: null
+    baby: 心脏开始跳动，B 超可能看到胎心。
+    mom: 早孕反应可能开始，恶心多在早晨更明显。
+    tips:
+      - 少食多餐，吃得下什么先吃什么
+      - 出现腹痛或出血及时就医
+  - week: 7
+    fruit: "🫐"
+    fruit_name: 一颗蓝莓
+    length_cm: 1.0
+    weight_g: null
+    baby: 手脚的芽体长出来，大脑发育很快。
+    mom: 尿频、乳房胀痛更明显，情绪起伏也常见。
+    tips:
+      - 白天多喝水，睡前少喝
+      - 想吐时备些苏打饼干
+  - week: 8
+    fruit: "🍇"
+    fruit_name: 一颗葡萄
+    length_cm: 1.6
+    weight_g: 1
+    baby: 手指脚趾开始分开，各个器官都在成形。
+    mom: 腰围可能还没变化，但已经容易累。
+    tips:
+      - 能休息就休息
+      - 按医生安排做第一次产检
+  - week: 9
+    fruit: "🍒"
+    fruit_name: 一颗樱桃
+    length_cm: 2.3
+    weight_g: 2
+    baby: 尾巴状的结构消失，越来越像一个小人儿。
+    mom: 早孕反应可能在这几周最明显。
+    tips:
+      - 吃不下也别勉强，注意补水
+      - 吐得厉害、喝不进水要就医
+  - week: 10
+    fruit: "🍓"
+    fruit_name: 一颗草莓
+    length_cm: 3.1
+    weight_g: 4
+    baby: 主要器官基本成形，接下来以长大为主。
+    mom: 体重可能变化不大，衣服开始有点紧。
+    tips:
+      - 了解当地建档要求
+      - 准备宽松舒适的衣服
+  - week: 11
+    fruit: "🥝"
+    fruit_name: 一颗猕猴桃
+    length_cm: 4.1
+    weight_g: 7
+    baby: 骨骼开始变硬，指甲床出现。
+    mom: 有些人恶心开始减轻，胃口慢慢回来。
+    tips:
+      - 按医生安排预约 NT 检查
+      - 饮食注意荤素搭配
+  - week: 12
+    fruit: "🍋"
+    fruit_name: 一个青柠
+    length_cm: 5.4
+    weight_g: 14
+    baby: 会做吸吮、握拳这样的小动作，只是你还感觉不到。
+    mom: 子宫长出盆腔，尿频可能有所缓解。
+    tips:
+      - 按医生安排建档、做 NT 检查
+      - 把检查结果记进 App
+  - week: 13
+    fruit: "🍑"
+    fruit_name: 一个桃子
+    length_cm: 7.4
+    weight_g: 23
+    baby: 声带开始形成，肠道回到腹腔里。
+    mom: 孕早期快结束了，流产风险明显下降。
+    tips:
+      - 可以考虑告诉更多家人
+      - 适量散步，保持活动
+  - week: 14
+    fruit: "🍋"
+    fruit_name: 一个柠檬
+    length_cm: 8.7
+    weight_g: 43
+    baby: 面部表情肌在练习，会皱眉、眯眼。
+    mom: 进入孕中期，很多人精力好了不少。
+    tips:
+      - 趁精力好安排想做的事
+      - 注意补钙和优质蛋白
+  - week: 15
+    fruit: "🍎"
+    fruit_name: 一个苹果
+    length_cm: 10.1
+    weight_g: 70
+    baby: 能感知光线，骨骼继续变结实。
+    mom: 可能出现鼻塞、牙龈出血，比较常见。
+    tips:
+      - 按医生安排做唐筛或无创
+      - 用软毛牙刷，定期看牙
+  - week: 16
+    fruit: "🥑"
+    fruit_name: 一个牛油果
+    length_cm: 11.6
+    weight_g: 100
+    baby: 心脏每天泵出大量血液，背部和腿部的肌肉在加强。
+    mom: 肚子开始显出来，有人会感到轻微的胎动。
+    tips:
+      - 留意有没有像小鱼游动的感觉
+      - 侧睡会更舒服
+  - week: 17
+    fruit: "🍐"
+    fruit_name: 一个梨
+    length_cm: 13.0
+    weight_g: 140
+    baby: 皮下开始储存脂肪，脐带变得更粗更结实。
+    mom: 重心前移，腰背可能开始酸。
+    tips:
+      - 穿平底鞋
+      - 久坐记得起来走动
+  - week: 18
+    fruit: "🫑"
+    fruit_name: 一个甜椒
+    length_cm: 14.2
+    weight_g: 190
+    baby: 耳朵基本就位，可能已经听得到你的心跳和声音。
+    mom: 很多人这几周第一次感到胎动。
+    tips:
+      - 按医生安排预约系统超声
+      - 可以多和宝宝说说话
+  - week: 19
+    fruit: "🍅"
+    fruit_name: 一个大番茄
+    length_cm: 15.3
+    weight_g: 240
+    baby: 皮肤表面覆盖一层胎脂，起保护作用。
+    mom: 可能出现小腿抽筋或头晕，起身慢一点。
+    tips:
+      - 起身、翻身动作放慢
+      - 抽筋时把脚尖往回勾
+  - week: 20
+    fruit: "🍌"
+    fruit_name: 一根香蕉
+    length_cm: 25.6
+    weight_g: 300
+    baby: 孕期过半，吞咽羊水、练习消化。
+    mom: 子宫顶到肚脐附近，胎动越来越明显。
+    tips:
+      - 按医生安排做系统超声（大排畸）
+      - 记下第一次感到胎动的日子
+  - week: 21
+    fruit: "🥕"
+    fruit_name: 一根胡萝卜
+    length_cm: 26.7
+    weight_g: 360
+    baby: 眉毛和眼睑长出来，活动越来越多。
+    mom: 胃口可能很好，体重增长加快。
+    tips:
+      - 吃饱即可，别刻意多吃
+      - 少喝含糖饮料
+  - week: 22
+    fruit: "🍠"
+    fruit_name: 一个红薯
+    length_cm: 27.8
+    weight_g: 430
+    baby: 嘴唇、眼睛的轮廓更清晰，指纹在形成。
+    mom: 可能出现妊娠纹，皮肤发痒也常见。
+    tips:
+      - 皮肤干可以用保湿乳
+      - 全身剧烈瘙痒要告诉医生
+  - week: 23
+    fruit: "🥭"
+    fruit_name: 一个芒果
+    length_cm: 28.9
+    weight_g: 501
+    baby: 肺里的血管在发育，为出生后呼吸做准备。
+    mom: 脚踝可能有点水肿，傍晚更明显。
+    tips:
+      - 休息时把脚垫高
+      - 突然明显水肿要就医
+  - week: 24
+    fruit: "🌽"
+    fruit_name: 一根玉米
+    length_cm: 30.0
+    weight_g: 600
+    baby: 有明显的睡醒周期，你可能感到规律的动静。
+    mom: 有些人开始感到肚子偶尔发紧。
+    tips:
+      - 按医生安排做糖耐量检查
+      - 检查前按要求空腹
+  - week: 25
+    fruit: "🥦"
+    fruit_name: 一棵西兰花
+    length_cm: 34.6
+    weight_g: 660
+    baby: 头发开始长，手能握得更紧。
+    mom: 睡觉可能越来越难找到舒服的姿势。
+    tips:
+      - 试试孕妇枕，左侧卧更舒服
+      - 白天别喝太多咖啡因饮料
+  - week: 26
+    fruit: "🥬"
+    fruit_name: 一棵生菜
+    length_cm: 35.6
+    weight_g: 760
+    baby: 眼睛开始能睁开，对声音有反应。
+    mom: 可能有烧心、便秘。
+    tips:
+      - 多吃蔬菜粗粮，多喝水
+      - 饭后别马上躺下
+  - week: 27
+    fruit: "🥒"
+    fruit_name: 一根大黄瓜
+    length_cm: 36.6
+    weight_g: 875
+    baby: 大脑活动更活跃，会打嗝，你可能感到有节律的小跳动。
+    mom: 孕中期最后一周，腰背负担更重了。
+    tips:
+      - 了解分娩医院的流程
+      - 和家人商量产后谁来照顾
+  - week: 28
+    fruit: "🍆"
+    fruit_name: 一个茄子
+    length_cm: 37.6
+    weight_g: 1005
+    baby: 进入孕晚期，会眨眼，脂肪继续增加。
+    mom: 产检会变得更频繁，按医生安排去就好。
+    tips:
+      - 每天找固定时间数胎动
+      - 胎动明显减少要立即就医
+  - week: 29
+    fruit: "🎃"
+    fruit_name: 一个小南瓜
+    length_cm: 38.6
+    weight_g: 1153
+    baby: 骨骼吸收大量钙质，肌肉和肺继续成熟。
+    mom: 可能气短、容易累，夜里起夜更多。
+    tips:
+      - 注意补钙和铁
+      - 累了就停下来休息
+  - week: 30
+    fruit: "🥬"
+    fruit_name: 一颗卷心菜
+    length_cm: 39.9
+    weight_g: 1319
+    baby: 大脑表面开始出现褶皱，体温调节能力在增强。
+    mom: 情绪可能更容易紧张，想得也多。
+    tips:
+      - 把担心的事说给家人听
+      - 可以参加医院的孕妇学校
+  - week: 31
+    fruit: "🥥"
+    fruit_name: 一个椰子
+    length_cm: 41.1
+    weight_g: 1502
+    baby: 肺和大脑在加紧发育，开始有比较规律的睡和醒。
+    mom: 子宫顶到胃和肺，吃一点就饱、容易气短。
+    tips:
+      - 少食多餐，睡前别吃太饱
+      - 每天留意胎动
+      - 开始准备待产包
+  - week: 32
+    fruit: "🍈"
+    fruit_name: 一个香瓜
+    length_cm: 42.4
+    weight_g: 1702
+    baby: 手指甲长到指尖，大多数宝宝会慢慢转成头朝下。
+    mom: 可能出现不规律宫缩，休息后会缓解。
+    tips:
+      - 按医生安排检查胎位
+      - 规律而越来越密的宫缩要就医
+  - week: 33
+    fruit: "🍍"
+    fruit_name: 一个菠萝
+    length_cm: 43.7
+    weight_g: 1918
+    baby: 从妈妈那里获得抗体，骨头更硬了，只有头骨还保持柔软。
+    mom: 盆骨和耻骨处可能酸痛。
+    tips:
+      - 避免久站和提重物
+      - 准备好去医院的路线
+  - week: 34
+    fruit: "🍈"
+    fruit_name: 一个哈密瓜
+    length_cm: 45.0
+    weight_g: 2146
+    baby: 中枢神经和肺继续成熟，胎脂开始变厚。
+    mom: 视物可能有点模糊，多是暂时的。
+    tips:
+      - 头痛、眼花伴水肿要立即就医
+      - 把产检资料放进待产包
+  - week: 35
+    fruit: "🍍"
+    fruit_name: 一个大菠萝
+    length_cm: 46.2
+    weight_g: 2383
+    baby: 空间越来越挤，翻身少了，但仍会踢和伸展。
+    mom: 宝宝下降后呼吸可能轻松些，尿频又回来了。
+    tips:
+      - 胎动方式会变，次数不该明显减少
+      - 确认陪产家人的时间
+  - week: 36
+    fruit: "🥬"
+    fruit_name: 一棵大白菜
+    length_cm: 47.4
+    weight_g: 2622
+    baby: 脸颊变圆，吸吮能力为吃奶做好准备。
+    mom: 产检通常改为每周一次，按医生安排。
+    tips:
+      - 待产包放在门口
+      - 了解见红、破水、宫缩的区别
+  - week: 37
+    fruit: "🍈"
+    fruit_name: 一个冬瓜
+    length_cm: 48.6
+    weight_g: 2859
+    baby: 进入早期足月，随时都可能准备好出生。
+    mom: 可能频繁宫缩发紧，分辨规律宫缩很重要。
+    tips:
+      - 破水或见红及时去医院
+      - 保持手机电量，家人随时联系
+  - week: 38
+    fruit: "🎃"
+    fruit_name: 一个南瓜
+    length_cm: 49.8
+    weight_g: 3083
+    baby: 器官都已成熟，主要在长肉和储存能量。
+    mom: 可能睡不好、心里着急，这都正常。
+    tips:
+      - 能睡就睡，攒足体力
+      - 吃些好消化的食物
+  - week: 39
+    fruit: "🍉"
+    fruit_name: 一个小西瓜
+    length_cm: 50.7
+    weight_g: 3288
+    baby: 已经足月，胎脂渐渐变少。
+    mom: 宫颈在慢慢变软，为分娩做准备。
+    tips:
+      - 宫缩规律时记下间隔
+      - 按医生交代的时机去医院
+  - week: 40
+    fruit: "🍉"
+    fruit_name: 一个西瓜
+    length_cm: 51.2
+    weight_g: 3462
+    baby: 到了预产期，随时准备和你见面。
+    mom: 只有少数人正好在预产期这天生，前后两周都正常。
+    tips:
+      - 按医生安排做产检与胎心监护
+      - 留意胎动和产兆
+  - week: 41
+    fruit: "🍉"
+    fruit_name: 一个西瓜
+    length_cm: 51.5
+    weight_g: 3597
+    baby: 仍在长大，需要更密切地观察。
+    mom: 过了预产期别着急，按医生安排评估。
+    tips:
+      - 按医生安排复查
+      - 胎动减少立即就医
+  - week: 42
+    fruit: "🍉"
+    fruit_name: 一个大西瓜
+    length_cm: 51.7
+    weight_g: 3685
+    baby: 已过预产期较久，医生会安排进一步的处理。
+    mom: 请严格按医生安排就诊。
+    tips:
+      - 按医生安排及时就医

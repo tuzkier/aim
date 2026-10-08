@@ -17,7 +17,15 @@ from aim_api.contexts.guidance.application.queries.get_safety_rules import (
 )
 from aim_api.platform.http.errors import NotFoundError
 
+from aim_api.contexts.guidance.application.queries import get_weekly_content
+
 router = APIRouter(tags=["guidance"])
+
+
+@router.get("/api/v1/content/weekly")
+async def get_weekly_content_endpoint():
+    """第 4–42 周的孕周内容。公开内容，不需要登录。"""
+    return get_weekly_content.execute()
 
 
 @router.get("/api/v1/guidance")

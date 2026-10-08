@@ -1313,6 +1313,26 @@
         }
       }
     },
+    "/api/v1/content/weekly": {
+      "get": {
+        "tags": [
+          "guidance"
+        ],
+        "summary": "Get Weekly Content Endpoint",
+        "description": "第 4–42 周的孕周内容。公开内容，不需要登录。",
+        "operationId": "get_weekly_content_endpoint_api_v1_content_weekly_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/guidance": {
       "get": {
         "tags": [

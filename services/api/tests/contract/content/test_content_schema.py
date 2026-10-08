@@ -40,3 +40,7 @@ def test_safety_and_hangzhou_content_have_source_and_review_date() -> None:
         ROOT / "content/hangzhou/schema.json",
         ROOT / "content/hangzhou/pregnancy-benefits.yaml",
     )
+
+
+def test_weekly_content_matches_its_schema() -> None:
+    _validate(ROOT / "content/weekly/schema.json", ROOT / "content/weekly/weeks.yaml")
