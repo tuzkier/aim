@@ -22,6 +22,6 @@ enum AimMetrics {
     static let railAnchorHalo: CGFloat = 4
     static let rowLeadingInset: CGFloat = 52
 
-    static let circleButtonSize: CGFloat = 32
+    static let circleButtonSize: CGFloat = 34
     static let checkboxSize: CGFloat = 18
 }

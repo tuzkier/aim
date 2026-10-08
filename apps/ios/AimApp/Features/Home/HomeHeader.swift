@@ -19,57 +19,24 @@ struct HomeHeader: View {
     @ScaledMetric(relativeTo: .subheadline) private var circleSize: CGFloat = AimMetrics.circleButtonSize
 
     var body: some View {
-        HStack(alignment: .bottom) {
-            Button(action: onOpenTimeline) {
-                VStack(alignment: .leading, spacing: AimMetrics.space4) {
-                    Text(captionText)
-                        .font(.caption2)
-                        .tracking(0.9)
-                        .foregroundStyle(Color.aimAccent)
-                    HStack(alignment: .firstTextBaseline, spacing: AimMetrics.space4) {
-                        Text(titleText)
-                            .font(.largeTitle.weight(.medium))
-                            .foregroundStyle(Color.aimTextPrimary)
-                        Image(systemName: "chevron.right")
-                            .font(.subheadline.weight(.medium))
-                            .foregroundStyle(Color.aimTextTertiary)
-                    }
-                }
+        AimPageHeader(
+            caption: captionText,
+            title: titleText,
+            titleAction: onOpenTimeline,
+            titleIdentifier: "home-header-week"
+        ) {
+            Menu {
+                Button("新建待办", systemImage: "checkmark.circle", action: onNewTask)
+                Button("新增记录", systemImage: "square.and.pencil", action: onNewRecord)
+            } label: {
+                AimCircleIcon(symbol: "plus", size: circleSize)
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("\(titleText)，查看完整时间线")
-            .accessibilityIdentifier("home-header-week")
-
-            Spacer(minLength: AimMetrics.space8)
-
-            HStack(spacing: AimMetrics.space8) {
-                Menu {
-                    Button("新建待办", systemImage: "checkmark.circle", action: onNewTask)
-                    Button("新增记录", systemImage: "square.and.pencil", action: onNewRecord)
-                } label: {
-                    circle("plus", tinted: false)
-                }
-                .accessibilityLabel("新增")
-                .accessibilityIdentifier("home-add-menu")
-
-                Button(action: onAgent) { circle("wand.and.sparkles", tinted: true) }
-                    .accessibilityLabel("AIM")
-                    .accessibilityIdentifier("global-agent-button")
-            }
+            .accessibilityLabel("新增")
+            .accessibilityIdentifier("home-add-menu")
+            AimCircleButton(symbol: "wand.and.sparkles", tinted: true, label: "AIM", identifier: "global-agent-button", action: onAgent)
         }
         .padding(.horizontal, AimMetrics.space20)
         .padding(.bottom, AimMetrics.space12)
-    }
-
-    private func circle(_ symbol: String, tinted: Bool) -> some View {
-        Image(systemName: symbol)
-            .font(.subheadline)
-            .foregroundStyle(tinted ? Color.aimAccent : Color.aimTextSecondary)
-            .frame(width: circleSize, height: circleSize)
-            .background(tinted ? Color.aimAccentSoft : Color.aimSurface, in: Circle())
-            .overlay {
-                if !tinted { Circle().stroke(Color.aimSeparator, lineWidth: 1) }
-            }
     }
 
     private var titleText: String {

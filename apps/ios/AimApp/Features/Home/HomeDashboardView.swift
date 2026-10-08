@@ -114,17 +114,11 @@ struct HomeDashboardView: View {
     // MARK: - 顶部
 
     private var header: some View {
-        HStack(alignment: .center) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(Date.now.formatted(.dateTime.month().day().weekday(.wide).locale(Locale(identifier: "zh_CN"))))
-                    .font(.caption)
-                    .foregroundStyle(Color.aimTextSecondary)
-                Text("\(HomeDashboardStore.greeting(at: .now))，\(myself?.displayName ?? "你好")")
-                    .font(.title2.weight(.semibold))
-                    .foregroundStyle(Color.aimTextPrimary)
-                    .accessibilityIdentifier("home-greeting")
-            }
-            Spacer()
+        AimPageHeader(
+            caption: Date.now.formatted(.dateTime.month().day().weekday(.wide).locale(Locale(identifier: "zh_CN"))),
+            title: "\(HomeDashboardStore.greeting(at: .now))，\(myself?.displayName ?? "你好")",
+            titleIdentifier: "home-greeting"
+        ) {
             Button { onSwitchTab(.family) } label: {
                 HStack(spacing: -8) {
                     ForEach(store.members.prefix(3)) { member in
@@ -135,22 +129,11 @@ struct HomeDashboardView: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("家庭")
-            Button {
+            AimCircleButton(symbol: "wand.and.sparkles", tinted: true, label: "AIM", identifier: "global-agent-button") {
                 agentStore.focus(context: nil)
                 showingAgent = true
-            } label: {
-                Image(systemName: "wand.and.sparkles")
-                    .font(.subheadline)
-                    .foregroundStyle(Color.aimAccent)
-                    .frame(width: 34, height: 34)
-                    .background(Color.aimAccentSoft, in: Circle())
             }
-            .buttonStyle(.plain)
-            .padding(.leading, AimMetrics.space8)
-            .accessibilityLabel("AIM")
-            .accessibilityIdentifier("global-agent-button")
         }
-        .padding(.top, AimMetrics.space8)
     }
 
     // MARK: - 孕周主卡
@@ -197,9 +180,7 @@ struct HomeDashboardView: View {
                     }
                     StageBar(progress: progress)
                 }
-                .padding(AimMetrics.space16)
-                .background(Color.aimSurface, in: RoundedRectangle(cornerRadius: AimMetrics.radiusCard))
-                .overlay(RoundedRectangle(cornerRadius: AimMetrics.radiusCard).stroke(Color.aimSeparator))
+                .aimCard()
             }
             .buttonStyle(.plain)
             .accessibilityIdentifier("home-hero")
@@ -222,7 +203,7 @@ struct HomeDashboardView: View {
                 card {
                     VStack(alignment: .leading, spacing: AimMetrics.space8) {
                         HStack {
-                            Text("这一周").font(.headline)
+                            Text("这一周").aimSectionTitle()
                             Spacer()
                             Image(systemName: "chevron.right").font(.caption).foregroundStyle(Color.aimTextTertiary)
                         }
@@ -255,7 +236,7 @@ struct HomeDashboardView: View {
         card {
             VStack(alignment: .leading, spacing: AimMetrics.space8) {
                 HStack {
-                    Text("今天").font(.headline)
+                    Text("今天").aimSectionTitle()
                     Spacer()
                     Button("全部 \(store.todayTotal) 项 ›") { onSwitchTab(.tasks) }
                         .font(.caption)
@@ -376,7 +357,7 @@ struct HomeDashboardView: View {
                 card {
                     VStack(alignment: .leading, spacing: AimMetrics.space8) {
                         HStack {
-                            Text("家里最近").font(.headline)
+                            Text("家里最近").aimSectionTitle()
                             Spacer()
                             Image(systemName: "chevron.right").font(.caption).foregroundStyle(Color.aimTextTertiary)
                         }
@@ -423,9 +404,7 @@ struct HomeDashboardView: View {
     private func card<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
         content()
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(AimMetrics.space16)
-            .background(Color.aimSurface, in: RoundedRectangle(cornerRadius: AimMetrics.radiusCard))
-            .overlay(RoundedRectangle(cornerRadius: AimMetrics.radiusCard).stroke(Color.aimSeparator))
+            .aimCard()
     }
 
     private func retryCard(_ message: String) -> some View {

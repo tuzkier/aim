@@ -4,29 +4,35 @@ import SwiftUI
 struct FamilyActivitySection: View {
     @Environment(AgentDestinations.self) private var destinations: AgentDestinations?
     @Bindable var store: FamilyStore
-    /// 解析出要打开的原生页面后交给家庭页推入（navigationDestination 不能挂在 List 里）。
+    /// 解析出要打开的原生页面后交给家庭页推入（导航路径由家庭页持有）。
     let onOpen: (AgentDestination) -> Void
     @State private var opening: String?
 
     var body: some View {
-        Section("家庭动态") {
+        VStack(alignment: .leading, spacing: AimMetrics.space8) {
+            Text("家庭动态").aimSectionTitle()
             if store.activity.isEmpty {
                 Text(store.isLoadingActivity ? "正在加载…" : "还没有动态。完成待办、记下记录后，家里人都能在这里看到。")
                     .font(.subheadline)
                     .foregroundStyle(Color.aimTextSecondary)
             }
-            ForEach(store.activity) { item in
-                row(item)
-                    .onAppear {
-                        if item.id == store.activity.last?.id {
-                            Task { await store.loadMoreActivity() }
+            // 按需构建：滑到最后一条才去拉更早的，普通 VStack 会一次把所有行都「出现」掉。
+            LazyVStack(alignment: .leading, spacing: AimMetrics.space12) {
+                ForEach(store.activity) { item in
+                    row(item)
+                        .onAppear {
+                            if item.id == store.activity.last?.id {
+                                Task { await store.loadMoreActivity() }
+                            }
                         }
-                    }
+                }
             }
             if store.isLoadingActivity && !store.activity.isEmpty {
                 ProgressView().frame(maxWidth: .infinity)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .aimCard()
     }
 
     @ViewBuilder

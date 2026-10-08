@@ -179,8 +179,8 @@ struct HomeView: View {
 
             Section {
                 sectionHeader("最近记录", trailing: AnyView(
-                    Button("全部") { showingTimeline = true }
-                        .font(.caption2)
+                    Button("全部 ›") { showingTimeline = true }
+                        .font(.caption)
                         .foregroundStyle(Color.aimAccent)
                         .buttonStyle(.plain)
                 ))
@@ -231,7 +231,7 @@ struct HomeView: View {
 
     private func sectionHeader(_ title: String, trailing: AnyView? = nil) -> some View {
         HStack {
-            Text(title).aimLabelStyle()
+            Text(title).aimSectionTitle()
             Spacer()
             if let trailing { trailing }
         }

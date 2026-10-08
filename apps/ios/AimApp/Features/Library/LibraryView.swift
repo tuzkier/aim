@@ -51,7 +51,8 @@ struct LibraryView: View {
                         .accessibilityIdentifier("library-card-\(category.id.rawValue)")
                     }
                 }
-                .padding(AimMetrics.space16)
+                .padding(.horizontal, AimMetrics.space16)
+                .padding(.bottom, AimMetrics.space28)
             }
             .background(Color.aimCanvas)
             .navigationTitle("资料库")
@@ -71,29 +72,11 @@ struct LibraryView: View {
     }
 
     private var header: some View {
-        HStack(alignment: .firstTextBaseline) {
-            VStack(alignment: .leading, spacing: AimMetrics.space4) {
-                Text("资料库")
-                    .font(.title2.weight(.medium))
-                    .foregroundStyle(Color.aimTextPrimary)
-                Text(subtitle)
-                    .font(.caption)
-                    .foregroundStyle(Color.aimTextTertiary)
-            }
-            Spacer()
-            Button {
+        AimPageHeader(caption: subtitle, title: "资料库") {
+            AimCircleButton(symbol: "wand.and.sparkles", tinted: true, label: "AIM", identifier: "library-agent-button") {
                 agentStore.focus(context: AgentContext(title: "资料库", summary: subtitle))
                 showingAgent = true
-            } label: {
-                Image(systemName: "wand.and.sparkles")
-                    .font(.system(size: 15, weight: .medium))
-                    .frame(width: 32, height: 32)
-                    .background(Color.aimAccentSoft, in: Circle())
-                    .foregroundStyle(Color.aimAccent)
             }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("library-agent-button")
-            .accessibilityLabel("AIM")
         }
     }
 

@@ -136,6 +136,7 @@
 		A20000000000000000000151 /* Features/Home/HomeDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000151 /* Features/Home/HomeDashboardView.swift */; };
 		A20000000000000000000152 /* Features/Home/WeekDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000152 /* Features/Home/WeekDetailView.swift */; };
 		A20000000000000000000153 /* Tests/HomeDashboardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000153 /* Tests/HomeDashboardTests.swift */; };
+		A20000000000000000000154 /* Core/DesignSystem/Components/AimPageHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000154 /* Core/DesignSystem/Components/AimPageHeader.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -291,6 +292,7 @@
 		A10000000000000000000151 /* Features/Home/HomeDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Home/HomeDashboardView.swift; sourceTree = "<group>"; };
 		A10000000000000000000152 /* Features/Home/WeekDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Home/WeekDetailView.swift; sourceTree = "<group>"; };
 		A10000000000000000000153 /* Tests/HomeDashboardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/HomeDashboardTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000154 /* Core/DesignSystem/Components/AimPageHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/DesignSystem/Components/AimPageHeader.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1222,6 +1224,7 @@
 				A10000000000000000000134 /* Features/Home/TaskComposerView.swift */,
 				A10000000000000000000133 /* Features/Home/TaskQuickAddRow.swift */,
 				A10000000000000000000132 /* Features/Home/HomeView.swift */,
+				A10000000000000000000154 /* Core/DesignSystem/Components/AimPageHeader.swift */,
 				A10000000000000000000152 /* Features/Home/WeekDetailView.swift */,
 				A10000000000000000000151 /* Features/Home/HomeDashboardView.swift */,
 				A10000000000000000000150 /* Features/Home/HomeDashboardStore.swift */,
@@ -1411,6 +1414,7 @@
 				A20000000000000000000134 /* Features/Home/TaskComposerView.swift in Sources */,
 				A20000000000000000000133 /* Features/Home/TaskQuickAddRow.swift in Sources */,
 				A20000000000000000000132 /* Features/Home/HomeView.swift in Sources */,
+				A20000000000000000000154 /* Core/DesignSystem/Components/AimPageHeader.swift in Sources */,
 				A20000000000000000000152 /* Features/Home/WeekDetailView.swift in Sources */,
 				A20000000000000000000151 /* Features/Home/HomeDashboardView.swift in Sources */,
 				A20000000000000000000150 /* Features/Home/HomeDashboardStore.swift in Sources */,

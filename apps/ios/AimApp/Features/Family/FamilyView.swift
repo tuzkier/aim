@@ -46,15 +46,23 @@ struct FamilyView: View {
     @ViewBuilder
     private var familyContent: some View {
         if let family = store.snapshot {
-            List {
-                meCard
-                familyCard(family)
-                membersSection(family)
-                FamilyActivitySection(store: store) { path.append(FamilyRoute.destination($0)) }
+            ScrollView {
+                VStack(spacing: AimMetrics.space12) {
+                    AimPageHeader(caption: "\(family.members.count) 位家人", title: "家庭") {
+                        AimCircleButton(symbol: "person.badge.plus", label: "邀请家人", identifier: "family-header-invite") {
+                            showingInvite = true
+                        }
+                    }
+                    meCard
+                    familyCard(family)
+                    membersCard(family)
+                    FamilyActivitySection(store: store) { path.append(FamilyRoute.destination($0)) }
+                }
+                .padding(.horizontal, AimMetrics.space16)
+                .padding(.bottom, AimMetrics.space28)
             }
-            .scrollContentBackground(.hidden)
             .background(Color.aimCanvas)
-            .listStyle(.insetGrouped)
+            .toolbar(.hidden, for: .navigationBar)
         } else if store.isLoading {
             ProgressView("正在加载家庭")
         } else if let errorMessage = store.errorMessage {
@@ -70,26 +78,29 @@ struct FamilyView: View {
     }
 
     private var meCard: some View {
-        Section {
-            NavigationLink(value: FamilyRoute.profile) {
-                HStack(spacing: AimMetrics.space12) {
-                    MemberAvatar(name: myself?.displayName ?? "我", size: 44, highlighted: true)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text([myself?.displayName, myself?.role.displayName].compactMap { $0 }.uniqued().joined(separator: " · "))
-                            .font(.body.weight(.semibold))
-                        Text("个人资料与账号设置")
-                            .font(.caption)
-                            .foregroundStyle(Color.aimTextSecondary)
-                    }
+        NavigationLink(value: FamilyRoute.profile) {
+            HStack(spacing: AimMetrics.space12) {
+                MemberAvatar(name: myself?.displayName ?? "我", size: 44, highlighted: true)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text([myself?.displayName, myself?.role.displayName].compactMap { $0 }.uniqued().joined(separator: " · "))
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(Color.aimTextPrimary)
+                    Text("个人资料与账号设置")
+                        .font(.caption)
+                        .foregroundStyle(Color.aimTextSecondary)
                 }
-                .padding(.vertical, AimMetrics.space4)
+                Spacer()
+                Image(systemName: "chevron.right").font(.caption).foregroundStyle(Color.aimTextTertiary)
             }
-            .accessibilityIdentifier("profile-entry")
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .aimCard()
         }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("profile-entry")
     }
 
     private func familyCard(_ family: FamilySnapshot) -> some View {
-        Section {
+        Group {
             VStack(alignment: .leading, spacing: AimMetrics.space12) {
                 HStack(alignment: .firstTextBaseline) {
                     Text(family.name).font(.title2.weight(.semibold))
@@ -130,31 +141,43 @@ struct FamilyView: View {
                     .accessibilityLabel("邀请家人")
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .aimCard()
         }
-        .listRowBackground(Color.clear)
-        .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
     }
 
-    private func membersSection(_ family: FamilySnapshot) -> some View {
-        Section("家庭成员") {
+    private func membersCard(_ family: FamilySnapshot) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("家庭成员").aimSectionTitle().padding(.bottom, AimMetrics.space8)
             ForEach(family.members) { member in
                 NavigationLink(value: FamilyRoute.member(member)) {
-                    memberRow(member)
+                    memberRow(member).cardRow()
                 }
+                .buttonStyle(.plain)
                 .accessibilityIdentifier("family-member-row")
+                Divider().overlay(Color.aimSeparator)
             }
             ForEach(family.invitations) { invitation in
                 Button { openInvitation = invitation } label: {
-                    invitationRow(invitation)
+                    invitationRow(invitation).cardRow()
                 }
+                .buttonStyle(.plain)
                 .accessibilityIdentifier("family-invitation-row")
+                Divider().overlay(Color.aimSeparator)
             }
             Button { showingInvite = true } label: {
                 Label("邀请家人", systemImage: "person.badge.plus")
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(Color.aimAccent)
+                    .padding(.top, AimMetrics.space12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
             .accessibilityIdentifier("family-invite")
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .aimCard()
     }
 
     private func memberRow(_ member: FamilyMember) -> some View {
@@ -173,6 +196,7 @@ struct FamilyView: View {
             if let count = store.openTaskCount(for: member.accountID), count > 0 {
                 Text("\(count) 项待办").font(.caption).foregroundStyle(Color.aimTextSecondary)
             }
+            Image(systemName: "chevron.right").font(.caption).foregroundStyle(Color.aimTextTertiary)
         }
     }
 
@@ -208,6 +232,15 @@ enum FamilyRoute: Hashable {
         case let .member(member): "member-\(member.accountID)"
         case let .destination(target): target.id
         }
+    }
+}
+
+extension View {
+    /// 卡片里的一行：上下留白、整行可点。
+    func cardRow() -> some View {
+        padding(.vertical, AimMetrics.space12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
     }
 }
 
