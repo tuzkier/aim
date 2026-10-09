@@ -49,8 +49,10 @@ struct FetalMovementCounter: Codable, Equatable, Sendable {
                 startedAt: startedAt, durationSeconds: Int(Self.window),
                 count: count, outcome: .under, taps: seconds)
         }
+        // 系统时钟回拨后 elapsed 可能短于最后一次点击；用时至少盖住它，否则后端校验不过。
         return FetalMovementResult(
-            startedAt: startedAt, durationSeconds: Int(elapsed(at: now).rounded(.down)),
+            startedAt: startedAt,
+            durationSeconds: max(Int(elapsed(at: now).rounded(.down)), seconds.last ?? 0),
             count: count, outcome: .stopped, taps: seconds)
     }
 }

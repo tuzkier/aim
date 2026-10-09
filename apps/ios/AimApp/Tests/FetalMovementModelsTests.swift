@@ -107,6 +107,17 @@ final class FetalMovementModelsTests: XCTestCase {
         XCTAssertEqual(result.taps, [30])
     }
 
+    func testStoppingAfterTheClockMovesBackStillCoversTheLastTap() {
+        // 系统时钟回拨（NTP 校时或手动改时间）后，用时不能短于最后一次点击，否则后端校验不过。
+        var c = counter()
+        _ = c.tap(at: start.addingTimeInterval(600))
+        for now in [start.addingTimeInterval(300), start.addingTimeInterval(-100)] {
+            let result = c.result(at: now)
+            XCTAssertEqual(result.outcome, .stopped)
+            XCTAssertGreaterThanOrEqual(result.durationSeconds, result.taps.last ?? 0)
+        }
+    }
+
     func testTheCounterSurvivesARoundTripThroughJSON() throws {
         var c = counter()
         _ = c.tap(at: start.addingTimeInterval(42))
