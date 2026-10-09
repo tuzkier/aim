@@ -63,6 +63,7 @@
 		A20000000000000000000057 /* Tests/AgentChangePreviewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000056 /* Tests/AgentChangePreviewTests.swift */; };
 		A20000000000000000000058 /* Features/Home/HomeHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000057 /* Features/Home/HomeHeader.swift */; };
 		A20000000000000000000160 /* Features/FetalMovement/FetalMovementModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000160 /* Features/FetalMovement/FetalMovementModels.swift */; };
+		A20000000000000000000161 /* Features/FetalMovement/FetalMovementStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000161 /* Features/FetalMovement/FetalMovementStore.swift */; };
 		A20000000000000000000059 /* Features/Records/TaskRecordSuggestion.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000058 /* Features/Records/TaskRecordSuggestion.swift */; };
 		A20000000000000000000060 /* Tests/TaskRecordSuggestionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000059 /* Tests/TaskRecordSuggestionTests.swift */; };
 		A20000000000000000000061 /* Core/Networking/APIEndpointConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000060 /* Core/Networking/APIEndpointConfiguration.swift */; };
@@ -144,6 +145,7 @@
 		A20000000000000000000158 /* Features/Library/EncyclopediaEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000158 /* Features/Library/EncyclopediaEntryView.swift */; };
 		A20000000000000000000159 /* Tests/EncyclopediaCatalogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000159 /* Tests/EncyclopediaCatalogTests.swift */; };
 		A20000000000000000000164 /* Tests/FetalMovementModelsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000164 /* Tests/FetalMovementModelsTests.swift */; };
+		A20000000000000000000165 /* Tests/FetalMovementStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000165 /* Tests/FetalMovementStoreTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -225,6 +227,7 @@
 		A10000000000000000000056 /* Tests/AgentChangePreviewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/AgentChangePreviewTests.swift; sourceTree = "<group>"; };
 		A10000000000000000000057 /* Features/Home/HomeHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Home/HomeHeader.swift; sourceTree = "<group>"; };
 		A10000000000000000000160 /* Features/FetalMovement/FetalMovementModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FetalMovement/FetalMovementModels.swift; sourceTree = "<group>"; };
+		A10000000000000000000161 /* Features/FetalMovement/FetalMovementStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FetalMovement/FetalMovementStore.swift; sourceTree = "<group>"; };
 		A10000000000000000000058 /* Features/Records/TaskRecordSuggestion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Records/TaskRecordSuggestion.swift; sourceTree = "<group>"; };
 		A10000000000000000000059 /* Tests/TaskRecordSuggestionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/TaskRecordSuggestionTests.swift; sourceTree = "<group>"; };
 		A10000000000000000000060 /* Core/Networking/APIEndpointConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Networking/APIEndpointConfiguration.swift; sourceTree = "<group>"; };
@@ -307,6 +310,7 @@
 		A10000000000000000000158 /* Features/Library/EncyclopediaEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Library/EncyclopediaEntryView.swift; sourceTree = "<group>"; };
 		A10000000000000000000159 /* Tests/EncyclopediaCatalogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/EncyclopediaCatalogTests.swift; sourceTree = "<group>"; };
 		A10000000000000000000164 /* Tests/FetalMovementModelsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/FetalMovementModelsTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000165 /* Tests/FetalMovementStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/FetalMovementStoreTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -589,6 +593,7 @@
 				A10000000000000000000153 /* Tests/HomeDashboardTests.swift */,
 				A10000000000000000000159 /* Tests/EncyclopediaCatalogTests.swift */,
 				A10000000000000000000164 /* Tests/FetalMovementModelsTests.swift */,
+				A10000000000000000000165 /* Tests/FetalMovementStoreTests.swift */,
 				A10000000000000000000148 /* Tests/FamilyProfileTests.swift */,
 				A10000000000000000000062 /* Tests/APIEndpointConfigurationTests.swift */,
 				A10000000000000000000030 /* Tests/EveClientTests.swift */,
@@ -666,6 +671,7 @@
 			isa = PBXGroup;
 			children = (
 				A10000000000000000000160 /* Features/FetalMovement/FetalMovementModels.swift */,
+				A10000000000000000000161 /* Features/FetalMovement/FetalMovementStore.swift */,
 			);
 			name = FetalMovement;
 			sourceTree = "<group>";
@@ -1531,6 +1537,7 @@
 				A20000000000000000000056 /* Features/Agent/AgentDiffSheet.swift in Sources */,
 				A20000000000000000000058 /* Features/Home/HomeHeader.swift in Sources */,
 				A20000000000000000000160 /* Features/FetalMovement/FetalMovementModels.swift in Sources */,
+				A20000000000000000000161 /* Features/FetalMovement/FetalMovementStore.swift in Sources */,
 				A20000000000000000000059 /* Features/Records/TaskRecordSuggestion.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1568,6 +1575,7 @@
 				A20000000000000000000153 /* Tests/HomeDashboardTests.swift in Sources */,
 				A20000000000000000000159 /* Tests/EncyclopediaCatalogTests.swift in Sources */,
 				A20000000000000000000164 /* Tests/FetalMovementModelsTests.swift in Sources */,
+				A20000000000000000000165 /* Tests/FetalMovementStoreTests.swift in Sources */,
 				A20000000000000000000148 /* Tests/FamilyProfileTests.swift in Sources */,
 				A20000000000000000000062 /* Tests/APIEndpointConfigurationTests.swift in Sources */,
 				A20000000000000000000030 /* Tests/EveClientTests.swift in Sources */,
