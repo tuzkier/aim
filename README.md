@@ -16,7 +16,7 @@
 - `services/api`：FastAPI DDD 业务服务和 PostgreSQL 事实中心
 - `services/agent`：独立 Eve Agent Runtime，不拥有业务事实表
 - `contracts`：Public API 与 Internal Tool API 契约
-- `content`：版本化孕期任务、安全规则和杭州资料
+- `content`：版本化孕期任务、安全规则、杭州资料与孕期百科（说明见 `content/README.md`）
 - `infrastructure`：本地 Compose 与部署配置
 
 ## 常用命令
