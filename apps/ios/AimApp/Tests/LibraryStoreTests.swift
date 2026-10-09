@@ -119,6 +119,20 @@ final class LibraryStoreTests: XCTestCase {
         XCTAssertTrue(data.answered)
         XCTAssertEqual(data.answer, "可以，注意水温")
     }
+
+    /// 百科出问题也不能让资料库打不开：主题编号重复时取第一个，而不是闪退。
+    func testDuplicateEncyclopediaTopicsKeepTheFirstCountInsteadOfCrashing() async {
+        let (store, repository) = makeStore()
+        repository.encyclopediaCatalog = EncyclopediaCatalog(topics: [
+            EncyclopediaTopic(id: "diet", name: "饮食营养", count: 3),
+            EncyclopediaTopic(id: "diet", name: "饮食营养", count: 9),
+        ])
+
+        await store.load()
+
+        XCTAssertNil(store.errorMessage)
+        XCTAssertEqual(store.snapshot.encyclopediaCounts, ["diet": 3])
+    }
 }
 
 private final class FakeLibraryRepository: BusinessRepositoryProtocol, @unchecked Sendable {
@@ -126,8 +140,11 @@ private final class FakeLibraryRepository: BusinessRepositoryProtocol, @unchecke
     var createdDrafts: [RecordDraft] = []
     var updatedDrafts: [RecordDraft] = []
     var updatedRecordIDs: [UUID] = []
+    var encyclopediaCatalog = EncyclopediaCatalog()
 
     init(records: [RecordItem]) { self.records = records }
+
+    func fetchEncyclopediaCatalog() async throws -> EncyclopediaCatalog { encyclopediaCatalog }
 
     func fetchRecords(type: RecordType?) async throws -> RecordSnapshot {
         RecordSnapshot(records: records)

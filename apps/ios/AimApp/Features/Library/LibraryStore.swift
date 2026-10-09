@@ -43,8 +43,10 @@ final class LibraryStore {
                 records: loaded.0.records,
                 safetyRuleCount: loaded.1.count,
                 collectionSizes: collections.mapValues(\.items.count),
+                // 主题编号重复时取第一个——服务端数据出错不该让资料库闪退。
                 encyclopediaCounts: Dictionary(
-                    uniqueKeysWithValues: encyclopedia.topics.map { ($0.id, $0.count) })
+                    encyclopedia.topics.map { ($0.id, $0.count) },
+                    uniquingKeysWith: { first, _ in first })
             )
         } catch {
             errorMessage = error.localizedDescription
