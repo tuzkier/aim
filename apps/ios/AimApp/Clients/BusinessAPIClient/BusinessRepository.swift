@@ -257,6 +257,8 @@ protocol BusinessRepositoryProtocol: Sendable {
     func removeMember(accountID: UUID) async throws
     func fetchMe() async throws -> MeSnapshot
     func fetchWeeklyContent() async throws -> WeeklyContentBook
+    func fetchEncyclopediaCatalog() async throws -> EncyclopediaCatalog
+    func fetchEncyclopediaEntry(id: String) async throws -> EncyclopediaEntry
 }
 
 /// 新加的家庭接口给出默认实现：只关心别的接口的测试替身不必逐个补齐。
@@ -273,6 +275,8 @@ extension BusinessRepositoryProtocol {
     func removeMember(accountID: UUID) async throws { throw APIError.notConfigured }
     func fetchMe() async throws -> MeSnapshot { throw APIError.notConfigured }
     func fetchWeeklyContent() async throws -> WeeklyContentBook { throw APIError.notConfigured }
+    func fetchEncyclopediaCatalog() async throws -> EncyclopediaCatalog { throw APIError.notConfigured }
+    func fetchEncyclopediaEntry(id: String) async throws -> EncyclopediaEntry { throw APIError.notConfigured }
 }
 
 actor BusinessRepository: BusinessRepositoryProtocol {
@@ -568,6 +572,19 @@ actor BusinessRepository: BusinessRepositoryProtocol {
     func fetchWeeklyContent() async throws -> WeeklyContentBook {
         let (data, _) = try await session.aimData(for: environment.businessRequest(path: "/api/v1/content/weekly"))
         return try JSONDecoder().decode(WeeklyContentBook.self, from: data)
+    }
+
+    /// 孕期百科目录。公开内容，不需要登录。
+    func fetchEncyclopediaCatalog() async throws -> EncyclopediaCatalog {
+        let (data, _) = try await session.aimData(
+            for: environment.businessRequest(path: "/api/v1/library/encyclopedia"))
+        return try JSONDecoder().decode(EncyclopediaCatalog.self, from: data)
+    }
+
+    func fetchEncyclopediaEntry(id: String) async throws -> EncyclopediaEntry {
+        let (data, _) = try await session.aimData(
+            for: environment.businessRequest(path: "/api/v1/library/encyclopedia/\(id)"))
+        return try JSONDecoder().decode(EncyclopediaEntry.self, from: data)
     }
 
     private func mutate<Body: Encodable>(path: String, body: Body) async throws -> TaskItem {

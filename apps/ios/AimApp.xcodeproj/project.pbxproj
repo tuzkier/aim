@@ -137,6 +137,8 @@
 		A20000000000000000000152 /* Features/Home/WeekDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000152 /* Features/Home/WeekDetailView.swift */; };
 		A20000000000000000000153 /* Tests/HomeDashboardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000153 /* Tests/HomeDashboardTests.swift */; };
 		A20000000000000000000154 /* Core/DesignSystem/Components/AimPageHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000154 /* Core/DesignSystem/Components/AimPageHeader.swift */; };
+		A20000000000000000000155 /* Features/Library/EncyclopediaModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000155 /* Features/Library/EncyclopediaModels.swift */; };
+		A20000000000000000000159 /* Tests/EncyclopediaCatalogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000159 /* Tests/EncyclopediaCatalogTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -293,6 +295,8 @@
 		A10000000000000000000152 /* Features/Home/WeekDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Home/WeekDetailView.swift; sourceTree = "<group>"; };
 		A10000000000000000000153 /* Tests/HomeDashboardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/HomeDashboardTests.swift; sourceTree = "<group>"; };
 		A10000000000000000000154 /* Core/DesignSystem/Components/AimPageHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/DesignSystem/Components/AimPageHeader.swift; sourceTree = "<group>"; };
+		A10000000000000000000155 /* Features/Library/EncyclopediaModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Library/EncyclopediaModels.swift; sourceTree = "<group>"; };
+		A10000000000000000000159 /* Tests/EncyclopediaCatalogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/EncyclopediaCatalogTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -573,6 +577,7 @@
 				A10000000000000000000065 /* Tests/AgentActivityLogTests.swift */,
 				A10000000000000000000063 /* Tests/PregnancySetupModelTests.swift */,
 				A10000000000000000000153 /* Tests/HomeDashboardTests.swift */,
+				A10000000000000000000159 /* Tests/EncyclopediaCatalogTests.swift */,
 				A10000000000000000000148 /* Tests/FamilyProfileTests.swift */,
 				A10000000000000000000062 /* Tests/APIEndpointConfigurationTests.swift */,
 				A10000000000000000000030 /* Tests/EveClientTests.swift */,
@@ -1278,6 +1283,7 @@
 				A10000000000000000000070 /* Features/Library/LibraryView.swift */,
 				A10000000000000000000071 /* Features/Library/LibraryCategoryDetail.swift */,
 				A10000000000000000000066 /* Features/Library/LibraryCatalog.swift */,
+				A10000000000000000000155 /* Features/Library/EncyclopediaModels.swift */,
 			);
 			name = Library;
 			sourceTree = "<group>";
@@ -1446,6 +1452,7 @@
 				A20000000000000000000070 /* Features/Library/LibraryStore.swift in Sources */,
 				A20000000000000000000069 /* Features/Library/LibraryModels.swift in Sources */,
 				A20000000000000000000066 /* Features/Library/LibraryCatalog.swift in Sources */,
+				A20000000000000000000155 /* Features/Library/EncyclopediaModels.swift in Sources */,
 				A20000000000000000000064 /* Features/Onboarding/PregnancySetupModel.swift in Sources */,
 				A20000000000000000000061 /* Core/Networking/APIEndpointConfiguration.swift in Sources */,
 				A20000000000000000000001 /* App/AimApp.swift in Sources */,
@@ -1532,6 +1539,7 @@
 				A20000000000000000000065 /* Tests/AgentActivityLogTests.swift in Sources */,
 				A20000000000000000000063 /* Tests/PregnancySetupModelTests.swift in Sources */,
 				A20000000000000000000153 /* Tests/HomeDashboardTests.swift in Sources */,
+				A20000000000000000000159 /* Tests/EncyclopediaCatalogTests.swift in Sources */,
 				A20000000000000000000148 /* Tests/FamilyProfileTests.swift in Sources */,
 				A20000000000000000000062 /* Tests/APIEndpointConfigurationTests.swift in Sources */,
 				A20000000000000000000030 /* Tests/EveClientTests.swift in Sources */,

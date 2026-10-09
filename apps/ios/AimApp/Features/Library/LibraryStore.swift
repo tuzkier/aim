@@ -10,6 +10,10 @@ final class LibraryStore {
     var collections: [String: ContentCollection] = [:]
     var isLoading = false
     var errorMessage: String?
+    var encyclopedia = EncyclopediaCatalog()
+    /// 当前孕周。「这周读什么」与主题页的「本周」标记靠它；取不到时这两处不显示。
+    var currentWeek: Int?
+    private var entryCache: [String: EncyclopediaEntry] = [:]
 
     func load() async {
         // 重入保护取代了原来的「只加载一次」判断——后者会让资料库
@@ -25,22 +29,35 @@ final class LibraryStore {
             async let rules = repository.fetchSafetyRules()
             async let paperwork = repository.fetchContentCollection("hangzhou")
             async let preparation = repository.fetchContentCollection("preparation")
-            async let nutrition = repository.fetchContentCollection("nutrition")
-            let loaded = try await (records, rules, paperwork, preparation, nutrition)
+            // 百科与孕周取不到不该让整个资料库打不开：它们缺席时对应区块不显示即可。
+            async let catalog = try? repository.fetchEncyclopediaCatalog()
+            async let pregnancy = try? repository.fetchPregnancy()
+            let loaded = try await (records, rules, paperwork, preparation)
             safetyRules = loaded.1
-            collections = [
-                "hangzhou": loaded.2, "preparation": loaded.3, "nutrition": loaded.4,
-            ]
+            collections = ["hangzhou": loaded.2, "preparation": loaded.3]
             // 记录列表和时间线要靠它把 item_id 换回标题。
             ContentTitleIndex.register(collections)
+            if let fetched = await catalog { encyclopedia = fetched }
+            if let fetched = await pregnancy { currentWeek = fetched.weeks }
             snapshot = LibrarySnapshot(
                 records: loaded.0.records,
                 safetyRuleCount: loaded.1.count,
-                collectionSizes: collections.mapValues(\.items.count)
+                collectionSizes: collections.mapValues(\.items.count),
+                encyclopediaCounts: Dictionary(
+                    uniqueKeysWithValues: encyclopedia.topics.map { ($0.id, $0.count) })
             )
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    /// 百科正文。同一次运行里看过的条目不重复拉取。
+    func entry(id: String) async throws -> EncyclopediaEntry {
+        if let cached = entryCache[id] { return cached }
+        guard let repository else { throw APIError.notConfigured }
+        let fetched = try await repository.fetchEncyclopediaEntry(id: id)
+        entryCache[id] = fetched
+        return fetched
     }
 
     // MARK: - 写入
