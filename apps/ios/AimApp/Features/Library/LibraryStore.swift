@@ -32,9 +32,12 @@ final class LibraryStore {
             // 百科与孕周取不到不该让整个资料库打不开：它们缺席时对应区块不显示即可。
             async let catalog = try? repository.fetchEncyclopediaCatalog()
             async let pregnancy = try? repository.fetchPregnancy()
+            // 生产不加载草稿百科时，「吃什么」回退到已审核的 nutrition 集合；它同样单独容错。
+            async let nutrition = try? repository.fetchContentCollection("nutrition")
             let loaded = try await (records, rules, paperwork, preparation)
             safetyRules = loaded.1
             collections = ["hangzhou": loaded.2, "preparation": loaded.3]
+            if let fetched = await nutrition { collections["nutrition"] = fetched }
             // 记录列表和时间线要靠它把 item_id 换回标题。
             ContentTitleIndex.register(collections)
             if let fetched = await catalog { encyclopedia = fetched }

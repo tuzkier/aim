@@ -532,7 +532,8 @@ struct LibraryCategoryDetail: View {
                 }
             }
 
-            // 自带的饮食参考来自孕期百科的「饮食营养」主题。
+            // 自带的饮食参考优先来自孕期百科的「饮食营养」主题；百科还没发布时
+            // （生产不加载草稿），回退到已审核的 nutrition 集合。
             if nutritionSection == .advice {
                 let diet = store.encyclopedia.entries(inTopic: "diet", week: store.currentWeek)
                 if !diet.isEmpty {
@@ -545,6 +546,12 @@ struct LibraryCategoryDetail: View {
                             }
                             .accessibilityIdentifier("encyclopedia-entry-\(entry.id)")
                             .listRowBackground(Color.aimSurface)
+                        }
+                    }
+                } else if let source = store.collections["nutrition"], !source.items.isEmpty {
+                    Section("Aim 自带的参考") {
+                        ForEach(source.items) { item in
+                            contentItemRow(item: item, collection: source)
                         }
                     }
                 }
