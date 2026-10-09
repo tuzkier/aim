@@ -44,6 +44,9 @@ class EncyclopediaEntry:
     source_url: str
     reviewed_at: str | None
     review_status: str
+    #: 能否进客户端首页的「这周读什么」。只针对部分人群或有前提条件的条目设为 False；
+    #: 目录、主题页与孕周排序都不受影响——AIM 翻目录时仍要看得到它们。
+    pick: bool = True
 
     def covers(self, week: int) -> bool:
         if self.weeks is None:
@@ -64,6 +67,7 @@ class EncyclopediaEntry:
             "aliases": list(self.aliases),
             "weeks": list(self.weeks) if self.weeks else None,
             "summary": self.summary,
+            "pick": self.pick,
         }
 
 

@@ -38,6 +38,7 @@
         "ask": {"type": "array", "minItems": 2, "maxItems": 3, "items": {"type": "string", "minLength": 4, "maxLength": 24}},
         "related": {"type": "array", "maxItems": 5, "items": {"type": "string"}},
         "kind": {"enum": ["policy"]},
+        "pick": {"type": "boolean"},
         "link": {"type": "string", "format": "uri"}
       },
       "if": {"required": ["kind"]},

@@ -124,8 +124,33 @@ def test_catalog_lists_topics_with_counts_and_filters_by_topic(tmp_path: Path) -
     assert catalog["entries"][0] == {
         "id": "body.cramp", "topic": "body", "title": "标题cramp",
         "aliases": [], "weeks": [20, 36], "summary": "一句话摘要，说清楚这条讲什么",
+        "pick": True,
     }
     assert [e["id"] for e in by_topic["entries"]] == ["diet.iron", "diet.fish"]
+
+
+def test_pick_false_is_parsed_and_still_listed_in_the_catalog(tmp_path: Path) -> None:
+    """`pick: false` 只让客户端别把它放进首页推荐；目录照常列出，AIM 翻目录时要看得到。"""
+    _write(tmp_path, "checkup", [
+        _entry("checkup.amnio", weeks=(16, 22), pick=False),
+        _entry("checkup.nt", weeks=(11, 14)),
+    ])
+    encyclopedia = load_encyclopedia(tmp_path, include_drafts=True)
+
+    by_week = encyclopedia.catalog(week=17)["entries"]
+    by_topic = encyclopedia.catalog(topic="checkup")["entries"]
+
+    assert [(e["id"], e["pick"]) for e in by_week] == [("checkup.amnio", False)]
+    assert [(e["id"], e["pick"]) for e in by_topic] == [
+        ("checkup.amnio", False), ("checkup.nt", True),
+    ]
+    assert encyclopedia.detail("checkup.amnio")["pick"] is False
+
+
+def test_pick_must_be_a_boolean(tmp_path: Path) -> None:
+    _write(tmp_path, "checkup", [_entry("checkup.amnio", pick="no")])
+    with pytest.raises(EncyclopediaError, match="pick"):
+        load_encyclopedia(tmp_path, include_drafts=True)
 
 
 def test_detail_resolves_related_titles_and_drops_unpublished_links(tmp_path: Path) -> None:

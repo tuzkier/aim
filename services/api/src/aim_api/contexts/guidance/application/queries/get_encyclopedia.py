@@ -88,6 +88,9 @@ def _parse_entry(topic: str, document: dict[str, Any], raw: dict[str, Any]) -> E
         raise ValueError(f"entry {entry_id} has unknown kind {kind}")
     if kind == "policy" and not link:
         raise ValueError(f"policy entry {entry_id} needs a link")
+    pick = raw.get("pick", True)
+    if not isinstance(pick, bool):
+        raise ValueError(f"entry {entry_id} has non-boolean pick {pick!r}")
 
     return EncyclopediaEntry(
         id=entry_id,
@@ -108,6 +111,7 @@ def _parse_entry(topic: str, document: dict[str, Any], raw: dict[str, Any]) -> E
         source_url=str(document["source_url"]),
         reviewed_at=str(document["reviewed_at"]) if document.get("reviewed_at") else None,
         review_status=str(document.get("review_status", "draft")),
+        pick=pick,
     )
 
 

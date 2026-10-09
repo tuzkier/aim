@@ -44,6 +44,8 @@ def test_catalog_lists_topics_and_entries(client: TestClient) -> None:
     assert [t["id"] for t in body["topics"]] == ["body", "diet"]
     assert [e["id"] for e in body["entries"]] == ["body.cramp", "diet.iron"]
     assert "sections" not in body["entries"][0]
+    # 没写 pick 的条目默认可以进首页推荐。
+    assert body["entries"][0]["pick"] is True
 
 
 def test_catalog_filters_by_week_and_topic(client: TestClient) -> None:
