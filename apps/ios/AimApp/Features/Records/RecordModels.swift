@@ -7,6 +7,7 @@ enum RecordType: Codable, CaseIterable, Sendable, Equatable {
     case question
     case checklist
     case knowledge
+    case fetalMovement
     case unknown
 
     init(rawValue: String) {
@@ -17,6 +18,7 @@ enum RecordType: Codable, CaseIterable, Sendable, Equatable {
         case "question": self = .question
         case "checklist": self = .checklist
         case "knowledge": self = .knowledge
+        case "fetal_movement": self = .fetalMovement
         default: self = .unknown
         }
     }
@@ -29,6 +31,7 @@ enum RecordType: Codable, CaseIterable, Sendable, Equatable {
         case .question: return "question"
         case .checklist: return "checklist"
         case .knowledge: return "knowledge"
+        case .fetalMovement: return "fetal_movement"
         case .unknown: return "unknown"
         }
     }
@@ -94,6 +97,45 @@ struct QuestionRecordData: Codable, Equatable, Sendable {
     let answer: String?
 }
 
+enum FetalMovementOutcome: String, Codable, Sendable {
+    /// 数到 10 次。
+    case reached
+    /// 满 2 小时不足 10 次。
+    case under
+    /// 中途手动结束。
+    case stopped
+}
+
+/// 一次「数到 10 次」胎动计数。开始时间就是记录的 occurredAt。
+struct FetalMovementRecordData: Codable, Equatable, Sendable {
+    let durationSeconds: Int
+    let count: Int
+    let target: Int
+    let outcome: FetalMovementOutcome
+    /// 每次计数距开始的秒数。
+    let taps: [Int]
+}
+
+enum FetalMovementFormat {
+    /// 「不到 1 分钟」「32 分钟」「1 小时 15 分钟」「2 小时」。分钟向上取整：
+    /// 32 分 1 秒显示 33 分钟，避免把慢的说成快的。
+    static func duration(_ seconds: Int) -> String {
+        guard seconds >= 60 else { return "不到 1 分钟" }
+        let minutes = (seconds + 59) / 60
+        let hours = minutes / 60, rest = minutes % 60
+        if hours == 0 { return "\(minutes) 分钟" }
+        return rest == 0 ? "\(hours) 小时" : "\(hours) 小时 \(rest) 分钟"
+    }
+
+    static func summary(_ data: FetalMovementRecordData) -> String {
+        switch data.outcome {
+        case .reached: "\(data.count) 次 · \(duration(data.durationSeconds))"
+        case .under: "\(duration(data.durationSeconds)) \(data.count) 次 · 不足 \(data.target) 次"
+        case .stopped: "\(data.count) 次 · \(duration(data.durationSeconds)) · 未数完"
+        }
+    }
+}
+
 /// 办事指南与待产准备共用：内容库给条目，这里只存勾选状态。
 struct ChecklistRecordData: Codable, Equatable, Sendable {
     let collection: String
@@ -113,6 +155,7 @@ enum RecordStructuredData: Equatable, Sendable {
     case question(QuestionRecordData)
     case checklist(ChecklistRecordData)
     case knowledge(KnowledgeRecordData)
+    case fetalMovement(FetalMovementRecordData)
     case note
     case unknown
 }

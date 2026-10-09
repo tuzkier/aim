@@ -9,6 +9,7 @@ extension RecordType {
         case .question: "想问医生"
         case .checklist: "清单"
         case .knowledge: "资料"
+        case .fetalMovement: "胎动"
         case .unknown: "记录"
         }
     }
@@ -21,6 +22,7 @@ extension RecordType {
         case .question: "questionmark.bubble"
         case .checklist: "checklist"
         case .knowledge: "books.vertical"
+        case .fetalMovement: "hand.tap"
         case .unknown: "doc"
         }
     }
@@ -52,6 +54,7 @@ extension RecordItem {
                 : ContentTitleIndex.title(collection: data.collection, itemID: data.itemID)
                     ?? "清单条目"
         case .knowledge: title ?? "资料"
+        case .fetalMovement: "数胎动"
         case .unknown: type.displayName
         }
     }
@@ -66,6 +69,7 @@ extension RecordItem {
         case let .question(data): return data.answered ? (data.answer ?? "已解答") : "还没问"
         case let .checklist(data): return data.done ? "已完成" : "待完成"
         case let .knowledge(data): return data.body ?? data.reason ?? "资料条目"
+        case let .fetalMovement(data): return FetalMovementFormat.summary(data)
         case .unknown: return "暂不支持展示这类记录"
         }
     }

@@ -238,6 +238,11 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
     let reason: String?
     let body: String?
     let purposes: [String]?
+    let durationSeconds: Int?
+    let count: Int?
+    let target: Int?
+    let outcome: String?
+    let taps: [Int]?
 
     init(
         symptoms: [String]? = nil,
@@ -260,7 +265,12 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
         verdict: String? = nil,
         reason: String? = nil,
         body: String? = nil,
-        purposes: [String]? = nil
+        purposes: [String]? = nil,
+        durationSeconds: Int? = nil,
+        count: Int? = nil,
+        target: Int? = nil,
+        outcome: String? = nil,
+        taps: [Int]? = nil
     ) {
         self.symptoms = symptoms
         self.severity = severity
@@ -283,6 +293,11 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
         self.reason = reason
         self.body = body
         self.purposes = purposes
+        self.durationSeconds = durationSeconds
+        self.count = count
+        self.target = target
+        self.outcome = outcome
+        self.taps = taps
     }
 
     enum CodingKeys: String, CodingKey {
@@ -292,6 +307,8 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
         case answered, answer, collection, done
         case category, form, ingredients, steps, verdict, reason, body, purposes
         case itemID = "item_id"
+        case count, target, outcome, taps
+        case durationSeconds = "duration_seconds"
     }
 
     func recordData(for type: RecordType) -> RecordStructuredData {
@@ -322,6 +339,11 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
                 note: note,
                 purposes: purposes
             ))
+        case .fetalMovement:
+            guard let durationSeconds, let count, let target, let taps,
+                  let outcome = outcome.flatMap(FetalMovementOutcome.init(rawValue:)) else { return .unknown }
+            return .fetalMovement(FetalMovementRecordData(
+                durationSeconds: durationSeconds, count: count, target: target, outcome: outcome, taps: taps))
         case .note:
             return .note
         case .unknown:
@@ -350,6 +372,9 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
                 verdict: data.verdict?.rawValue, reason: data.reason, body: data.body,
                 purposes: data.purposes
             )
+        case let .fetalMovement(data):
+            self.init(durationSeconds: data.durationSeconds, count: data.count, target: data.target,
+                      outcome: data.outcome.rawValue, taps: data.taps)
         case .note, .unknown:
             self.init()
         }
