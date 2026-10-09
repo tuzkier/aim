@@ -413,19 +413,52 @@ final class CoreJourneyUITests: XCTestCase {
         XCTAssertTrue(picker.waitForExistence(timeout: 10), "「吃什么」应当分成菜谱与饮食提示")
         picker.buttons["饮食提示"].tap()
 
-        // 内容 id 来自 content/nutrition，不是写死在客户端的。
-        let item = app.buttons["content-item-raw-and-undercooked"]
+        // 饮食提示下列出的是百科「饮食营养」主题的条目。
+        let item = app.buttons["encyclopedia-entry-diet.raw-and-undercooked"]
         reveal(item, in: app)
         item.tap()
 
         XCTAssertTrue(
             app.navigationBars["生食与未煮熟的食物"].waitForExistence(timeout: 10),
-            "自带条目应当能点进详情"
+            "百科条目应当能点进详情"
         )
         XCTAssertTrue(
-            app.buttons["content-ask-agent"].waitForExistence(timeout: 5),
+            app.buttons["encyclopedia-ask-0"].waitForExistence(timeout: 5),
             "详情里应当能就这条问 AIM"
         )
+    }
+
+    /// 百科是资料库「开箱就有内容」的那一层：主题 → 条目 → 顺着条目问 AIM。
+    func testEncyclopediaTopicEntryAndAskAIM() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-reset-session"]
+        app.launch()
+
+        registerNewAccount(in: app)
+        completePregnancySetup(in: app)
+
+        let libraryTab = app.tabBars.buttons["资料库"]
+        XCTAssertTrue(libraryTab.waitForExistence(timeout: 15))
+        libraryTab.tap()
+
+        XCTAssertTrue(app.otherElements["library-weekly-picks"].waitForExistence(timeout: 10),
+                      "有当前孕周时应当显示「这周读什么」")
+
+        let topic = app.buttons["library-topic-diet"]
+        reveal(topic, in: app)
+        topic.tap()
+
+        let entry = app.buttons["encyclopedia-entry-diet.raw-and-undercooked"]
+        reveal(entry, in: app)
+        entry.tap()
+
+        XCTAssertTrue(app.navigationBars["生食与未煮熟的食物"].waitForExistence(timeout: 10))
+        let ask = app.buttons["encyclopedia-ask-0"]
+        reveal(ask, in: app)
+        ask.tap()
+
+        XCTAssertTrue(app.webViews.firstMatch.waitForExistence(timeout: 15),
+                      "点推荐问题应当打开 AIM")
     }
 
     /// 「想问医生」此前缺了最关键的一步：产检那天怎么把攒下的问题一次带走。

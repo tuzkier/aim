@@ -532,11 +532,20 @@ struct LibraryCategoryDetail: View {
                 }
             }
 
-            // 自带内容归到「饮食提示」下——它们讲的都是注意什么，不是菜谱。
-            if nutritionSection == .advice, let source = store.collections["nutrition"] {
-                Section("Aim 自带的参考") {
-                    ForEach(source.items) { item in
-                        contentItemRow(item: item, collection: source)
+            // 自带的饮食参考来自孕期百科的「饮食营养」主题。
+            if nutritionSection == .advice {
+                let diet = store.encyclopedia.entries(inTopic: "diet", week: store.currentWeek)
+                if !diet.isEmpty {
+                    Section("孕期百科") {
+                        ForEach(diet) { entry in
+                            NavigationLink {
+                                EncyclopediaEntryView(entryID: entry.id, store: store, agentStore: agentStore)
+                            } label: {
+                                EncyclopediaEntryRow(entry: entry, week: store.currentWeek)
+                            }
+                            .accessibilityIdentifier("encyclopedia-entry-\(entry.id)")
+                            .listRowBackground(Color.aimSurface)
+                        }
                     }
                 }
             }

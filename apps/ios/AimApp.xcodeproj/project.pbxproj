@@ -138,6 +138,9 @@
 		A20000000000000000000153 /* Tests/HomeDashboardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000153 /* Tests/HomeDashboardTests.swift */; };
 		A20000000000000000000154 /* Core/DesignSystem/Components/AimPageHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000154 /* Core/DesignSystem/Components/AimPageHeader.swift */; };
 		A20000000000000000000155 /* Features/Library/EncyclopediaModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000155 /* Features/Library/EncyclopediaModels.swift */; };
+		A20000000000000000000156 /* Features/Library/EncyclopediaSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000156 /* Features/Library/EncyclopediaSections.swift */; };
+		A20000000000000000000157 /* Features/Library/EncyclopediaTopicView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000157 /* Features/Library/EncyclopediaTopicView.swift */; };
+		A20000000000000000000158 /* Features/Library/EncyclopediaEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000158 /* Features/Library/EncyclopediaEntryView.swift */; };
 		A20000000000000000000159 /* Tests/EncyclopediaCatalogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000159 /* Tests/EncyclopediaCatalogTests.swift */; };
 /* End PBXBuildFile section */
 
@@ -296,6 +299,9 @@
 		A10000000000000000000153 /* Tests/HomeDashboardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/HomeDashboardTests.swift; sourceTree = "<group>"; };
 		A10000000000000000000154 /* Core/DesignSystem/Components/AimPageHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/DesignSystem/Components/AimPageHeader.swift; sourceTree = "<group>"; };
 		A10000000000000000000155 /* Features/Library/EncyclopediaModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Library/EncyclopediaModels.swift; sourceTree = "<group>"; };
+		A10000000000000000000156 /* Features/Library/EncyclopediaSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Library/EncyclopediaSections.swift; sourceTree = "<group>"; };
+		A10000000000000000000157 /* Features/Library/EncyclopediaTopicView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Library/EncyclopediaTopicView.swift; sourceTree = "<group>"; };
+		A10000000000000000000158 /* Features/Library/EncyclopediaEntryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Library/EncyclopediaEntryView.swift; sourceTree = "<group>"; };
 		A10000000000000000000159 /* Tests/EncyclopediaCatalogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/EncyclopediaCatalogTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -1284,6 +1290,9 @@
 				A10000000000000000000071 /* Features/Library/LibraryCategoryDetail.swift */,
 				A10000000000000000000066 /* Features/Library/LibraryCatalog.swift */,
 				A10000000000000000000155 /* Features/Library/EncyclopediaModels.swift */,
+				A10000000000000000000156 /* Features/Library/EncyclopediaSections.swift */,
+				A10000000000000000000157 /* Features/Library/EncyclopediaTopicView.swift */,
+				A10000000000000000000158 /* Features/Library/EncyclopediaEntryView.swift */,
 			);
 			name = Library;
 			sourceTree = "<group>";
@@ -1453,6 +1462,9 @@
 				A20000000000000000000069 /* Features/Library/LibraryModels.swift in Sources */,
 				A20000000000000000000066 /* Features/Library/LibraryCatalog.swift in Sources */,
 				A20000000000000000000155 /* Features/Library/EncyclopediaModels.swift in Sources */,
+				A20000000000000000000156 /* Features/Library/EncyclopediaSections.swift in Sources */,
+				A20000000000000000000157 /* Features/Library/EncyclopediaTopicView.swift in Sources */,
+				A20000000000000000000158 /* Features/Library/EncyclopediaEntryView.swift in Sources */,
 				A20000000000000000000064 /* Features/Onboarding/PregnancySetupModel.swift in Sources */,
 				A20000000000000000000061 /* Core/Networking/APIEndpointConfiguration.swift in Sources */,
 				A20000000000000000000001 /* App/AimApp.swift in Sources */,
