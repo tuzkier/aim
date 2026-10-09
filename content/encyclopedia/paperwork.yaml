@@ -27,11 +27,11 @@ entries:
     aliases: [生育津贴, 生育保险, 生育报销, 医保报销, 生育金]
     weeks: [28, 40]
     kind: policy
-    link: https://ybj.hangzhou.gov.cn/
+    link: https://www.hangzhou.gov.cn/col/col1229460765/index.html
     summary: 生育津贴和生育医疗费用报销与参保情况有关，能否享受、享受多少以医保部门的官方说明为准。
     sections:
       - heading: 去哪里查
-        text: 在杭州市医保局官网、浙里办 App 或当地医保经办窗口查询最新的办事指南；在职参保的，先问单位人事是否由单位统一申报。
+        text: 在杭州市政府门户网站的市医保局栏目、浙里办 App 的「浙里医保」或当地医保经办窗口查询最新的办事指南；在职参保的，先问单位人事是否由单位统一申报。
       - heading: 通常要准备
         text: 本人身份证、社保卡或银行卡、出生医学证明，以及住院病历、出院小结等医疗材料。由单位申报的，按单位要求提交。具体清单以办事指南为准。
       - heading: 建议何时办
