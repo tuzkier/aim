@@ -64,6 +64,16 @@ final class FetalMovementStore {
         errorMessage = nil
     }
 
+    /// 没有账号或孕期时（退出登录、切到还没建孕期的家庭）解绑，
+    /// 免得下一位用户看到并接着写上一位的断点。只清内存，落盘的数据留着，绑回来还能找到。
+    func unbind() {
+        scope = nil
+        active = nil
+        unsaved = []
+        sessions = []
+        errorMessage = nil
+    }
+
     var baselineSeconds: Int? { FetalMovementInsights.baselineSeconds(sessions) }
     var today: FetalMovementSession? { FetalMovementInsights.latest(onDayOf: clock(), in: sessions) }
 
@@ -101,10 +111,20 @@ final class FetalMovementStore {
         if sessions.isEmpty, repository != nil {
             try? await reloadSessions()
         }
+        // 等待期间切换了作用域：此刻的 sessions 与队列都是别家的，不能拿来比，也不能替别家保存。
+        // 这次的结果已经在原作用域落盘的队列里，切回来时可以重试。
+        guard self.scope == scope else { return abandonedCompletion(result, in: scope) }
         let baseline = baselineSeconds
         await saveUnsaved()
+        guard self.scope == scope else { return abandonedCompletion(result, in: scope) }
         return FetalMovementCompletion(
             result: result, baselineSeconds: baseline, saved: !unsaved.contains(result))
+    }
+
+    /// 以原作用域落盘的队列为准判断是否已保存：只有真的从那里移除了才算保存上。
+    private func abandonedCompletion(_ result: FetalMovementResult, in savedScope: Scope) -> FetalMovementCompletion {
+        let queue = Self.read([FetalMovementResult].self, key: savedScope.unsavedKey, from: defaults) ?? []
+        return FetalMovementCompletion(result: result, baselineSeconds: nil, saved: !queue.contains(result))
     }
 
     /// 按顺序保存队列里的结果；遇到失败就停下。全部保存成功返回 true。
@@ -117,8 +137,17 @@ final class FetalMovementStore {
             return false
         }
         isSaving = true
-        defer { isSaving = false }
+        let drained = await drain(scope, with: repository)
+        // 先复位再刷新历史：刷新期间结束的计数要能立刻保存，不能被当成重入挡掉。
+        isSaving = false
+        guard drained else { return false }
+        errorMessage = nil
+        // 已经保存成功，刷新历史失败不算错，不要让界面提示「没保存上」。
+        try? await reloadSessions()
+        return true
+    }
 
+    private func drain(_ scope: Scope, with repository: BusinessRepositoryProtocol) async -> Bool {
         while let result = unsaved.first, self.scope == scope {
             do {
                 _ = try await repository.createRecord(draft: result.draft)
@@ -129,11 +158,7 @@ final class FetalMovementStore {
             removeSaved(result, from: scope)
         }
         // 保存途中切换了作用域：新作用域的队列这次没有动。
-        guard self.scope == scope else { return false }
-        errorMessage = nil
-        // 已经保存成功，刷新历史失败不算错，不要让界面提示「没保存上」。
-        try? await reloadSessions()
-        return true
+        return self.scope == scope
     }
 
     func discardActive() {

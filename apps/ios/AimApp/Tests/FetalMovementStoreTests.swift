@@ -162,7 +162,7 @@ final class FetalMovementStoreTests: XCTestCase {
     /// 保存还没回来时再点「重试」，不能把同一条存两遍。
     func testSavingAgainWhileASaveIsInFlightDoesNothing() async {
         let repository = FakeFetalRepository()
-        let gate = CreateGate()
+        let gate = Gate()
         repository.gate = gate
         let store = makeStore(repository: repository)
         store.start()
@@ -202,10 +202,98 @@ final class FetalMovementStoreTests: XCTestCase {
         XCTAssertEqual(completion?.baselineSeconds, 620)
         XCTAssertEqual(completion?.isSlow, true)
     }
+
+    /// 给作用域 B 留一条没保存上的结果。
+    private func queueUnsavedResultForB() async {
+        let offline = FakeFetalRepository()
+        offline.failCreates = true
+        let storeB = makeStore(repository: offline, bound: false)
+        storeB.bind(accountID: accountB, pregnancyID: pregnancyB)
+        storeB.start(); now += 30; _ = storeB.tap()
+        _ = await storeB.finish()
+        XCTAssertEqual(storeB.unsaved.count, 1)
+        now += 3_600
+    }
+
+    /// 保存请求在路上时换了一家：那条要从原来那家的队列里移掉，
+    /// 新的一家的队列不受影响，也不能把原来那家的历史拉进来。
+    func testSwitchingScopeWhileSavingKeepsEachQueueSeparate() async {
+        await queueUnsavedResultForB()
+
+        let repository = FakeFetalRepository()
+        let gate = Gate()
+        repository.gate = gate
+        let store = makeStore(repository: repository)
+        store.start(); now += 30; _ = store.tap()
+
+        let finishing = Task { await store.finish() }
+        while await gate.calls == 0 { await Task.yield() }
+        store.bind(accountID: accountB, pregnancyID: pregnancyB)
+        await gate.release()
+        let completion = await finishing.value
+
+        XCTAssertEqual(completion?.saved, true, "请求确实存上了")
+        XCTAssertNil(completion?.baselineSeconds)
+        XCTAssertTrue(makeStore().unsaved.isEmpty, "A 落盘的队列移除了那一条")
+        XCTAssertEqual(store.unsaved.count, 1, "B 的队列不受影响")
+        let calls = await gate.calls
+        XCTAssertEqual(calls, 1, "没有替 B 发保存请求")
+        XCTAssertTrue(store.sessions.isEmpty, "A 的历史不能写进 B")
+    }
+
+    /// 结束后还在拉历史时换了一家：不能误报已保存，也不能拿 B 的历史当平时、替 B 保存。
+    func testSwitchingScopeWhileFinishingDoesNotReportSaved() async {
+        await queueUnsavedResultForB()
+        let repository = FakeFetalRepository()
+        for seconds in [600, 620, 640] { repository.seed(seconds: seconds, at: now - 86_400) }
+        let fetchGate = Gate()
+        repository.fetchGate = fetchGate
+        let store = makeStore(repository: repository, dedupe: 0)
+        store.start()
+        for _ in 1...10 { now += 200; _ = store.tap() }
+
+        let finishing = Task { await store.finish() }
+        while await fetchGate.calls == 0 { await Task.yield() }
+        store.bind(accountID: accountB, pregnancyID: pregnancyB)
+        await fetchGate.release()
+        let completion = await finishing.value
+
+        XCTAssertEqual(completion?.saved, false)
+        XCTAssertNil(completion?.baselineSeconds)
+        XCTAssertTrue(repository.createdDrafts.isEmpty, "没有以 B 的身份保存")
+        XCTAssertEqual(store.unsaved.count, 1, "B 只有它自己原来那一条")
+        XCTAssertNotEqual(store.unsaved.first, completion?.result, "结果没有跑进 B 的队列")
+        XCTAssertEqual(makeStore(repository: repository).unsaved.count, 1, "结果留在 A 的队列里，切回来可重试")
+    }
+
+    /// 退出登录或切到没有孕期的家庭后，下一位用户看不到也写不了上一位的计数。
+    func testUnbindingHidesTheCountUntilBoundAgain() async {
+        let repository = FakeFetalRepository()
+        repository.failCreates = true
+        let store = makeStore(repository: repository)
+        store.start(); now += 30; _ = store.tap()
+        _ = await store.finish()
+        now += 3_600
+        store.start(); now += 30; _ = store.tap()
+
+        store.unbind()
+
+        XCTAssertNil(store.active)
+        XCTAssertTrue(store.unsaved.isEmpty)
+        XCTAssertTrue(store.sessions.isEmpty)
+        XCTAssertNil(store.errorMessage)
+        store.start()
+        XCTAssertNil(store.active, "解绑后不能开始计数")
+        XCTAssertEqual(store.tap(), .ignored)
+
+        store.bind(accountID: accountA, pregnancyID: pregnancyA)
+        XCTAssertEqual(store.active?.count, 1, "绑回来能找回断点")
+        XCTAssertEqual(store.unsaved.count, 1, "绑回来能找回未保存结果")
+    }
 }
 
-/// 让 createRecord 停在半路，直到测试放行；同时数一共被调了几次。
-private actor CreateGate {
+/// 让替身的请求停在半路，直到测试放行；同时数一共被调了几次。
+private actor Gate {
     private(set) var calls = 0
     private var isOpen = false
     private var waiters: [CheckedContinuation<Void, Never>] = []
@@ -229,7 +317,10 @@ private final class FakeFetalRepository: BusinessRepositoryProtocol, @unchecked 
     var records: [RecordItem] = []
     var createdDrafts: [RecordDraft] = []
     var failCreates = false
-    var gate: CreateGate?
+    /// 卡住 createRecord。
+    var gate: Gate?
+    /// 卡住 fetchRecords。
+    var fetchGate: Gate?
 
     func seed(seconds: Int, at date: Date) {
         records.append(item(FetalMovementResult(
@@ -246,7 +337,8 @@ private final class FakeFetalRepository: BusinessRepositoryProtocol, @unchecked 
     }
 
     func fetchRecords(type: RecordType?) async throws -> RecordSnapshot {
-        RecordSnapshot(records: records.filter { type == nil || $0.type == type })
+        if let fetchGate { await fetchGate.pass() }
+        return RecordSnapshot(records: records.filter { type == nil || $0.type == type })
     }
 
     func createRecord(draft: RecordDraft) async throws -> RecordItem {
