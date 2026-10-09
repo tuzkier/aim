@@ -17,6 +17,7 @@ class RecordType(StrEnum):
     question = "question"
     checklist = "checklist"
     knowledge = "knowledge"
+    fetal_movement = "fetal_movement"
 
 
 class RecordVisibility(StrEnum):
@@ -115,6 +116,59 @@ class Record:
     # 孕期饮食大量情况是「可以但要限量」。只给能/不能两档会逼出错误的
     # 绝对化结论，所以是三档。
     FOOD_VERDICTS: ClassVar[frozenset[str]] = frozenset({"safe", "limit", "avoid"})
+
+    # 胎动计数用「数到 10 次」法。目标写进每条记录，将来换方法时旧数据仍可解读。
+    FETAL_MOVEMENT_TARGET: ClassVar[int] = 10
+    # 2 小时内不足 10 次需要尽快就医；记录最长 3 小时，超出说明客户端计时出了问题。
+    FETAL_MOVEMENT_WINDOW_SECONDS: ClassVar[int] = 2 * 60 * 60
+    FETAL_MOVEMENT_MAX_SECONDS: ClassVar[int] = 3 * 60 * 60
+    FETAL_MOVEMENT_OUTCOMES: ClassVar[frozenset[str]] = frozenset({"reached", "under", "stopped"})
+
+    @classmethod
+    def _validate_fetal_movement(cls, data: dict[str, Any]) -> None:
+        def integer(field: str, low: int, high: int) -> int:
+            value = data.get(field)
+            if isinstance(value, bool) or not isinstance(value, int) or not low <= value <= high:
+                raise RecordValidationError(
+                    f"fetal movement {field} must be an integer in {low}-{high}"
+                )
+            return value
+
+        count = integer("count", 0, 200)
+        duration = integer("duration_seconds", 0, cls.FETAL_MOVEMENT_MAX_SECONDS)
+        target = data.get("target")
+        if isinstance(target, bool) or target != cls.FETAL_MOVEMENT_TARGET:
+            raise RecordValidationError(
+                f"fetal movement target must be {cls.FETAL_MOVEMENT_TARGET}"
+            )
+
+        outcome = data.get("outcome")
+        if outcome not in cls.FETAL_MOVEMENT_OUTCOMES:
+            raise RecordValidationError("fetal movement outcome must be reached, under or stopped")
+        if outcome == "reached" and count < target:
+            raise RecordValidationError("a reached fetal movement count needs at least the target")
+        if outcome == "under" and (
+            count >= target or duration < cls.FETAL_MOVEMENT_WINDOW_SECONDS
+        ):
+            raise RecordValidationError(
+                "an under fetal movement count needs fewer than the target over two full hours"
+            )
+
+        taps = data.get("taps")
+        if not isinstance(taps, list) or len(taps) != count:
+            raise RecordValidationError("fetal movement taps must list one offset per count")
+        previous = 0
+        for offset in taps:
+            # 秒级取整后相邻两次可能相等，所以是「不递减」而不是「严格递增」。
+            if (
+                isinstance(offset, bool)
+                or not isinstance(offset, int)
+                or not previous <= offset <= duration
+            ):
+                raise RecordValidationError(
+                    "fetal movement taps must be non-decreasing seconds within the duration"
+                )
+            previous = offset
 
     @classmethod
     def _validate_knowledge(cls, data: dict[str, Any], title: str | None) -> None:
@@ -271,6 +325,10 @@ class Record:
             done = structured_data.get("done", False)
             if not isinstance(done, bool):
                 raise RecordValidationError("checklist done must be a boolean")
+            return
+
+        if record_type is RecordType.fetal_movement:
+            cls._validate_fetal_movement(structured_data)
             return
 
         raise RecordValidationError(f"unsupported record type: {record_type}")

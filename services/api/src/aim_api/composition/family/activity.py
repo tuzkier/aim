@@ -27,6 +27,7 @@ _RECORD_TYPE_NAMES = {
     "question": "问题",
     "checklist": "清单",
     "knowledge": "知识",
+    "fetal_movement": "胎动",
 }
 
 FORMER_MEMBER = "已离开的成员"
