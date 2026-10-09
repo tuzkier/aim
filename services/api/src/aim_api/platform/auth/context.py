@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from uuid import UUID
 
 from fastapi import HTTPException, Request, status
+from sqlalchemy import text
 
 
 def _encode(payload: dict[str, object]) -> str:
@@ -93,3 +94,32 @@ def verify_session_token(token: str, secret: str) -> ActorContext:
             status_code=status.HTTP_401_UNAUTHORIZED, detail="session token expired"
         )
     return ActorContext(account_id=account_id, phone=phone, expires_at=expires_at)
+
+
+async def ensure_account_active(database: object, account_id: UUID) -> None:
+    """票是无状态签名，注销账号的旧票在 30 天内仍然验得过。
+
+    所以验签之后再按主键查一次状态。用一句 SQL 而不是 import 家庭上下文的模型：
+    platform 不该依赖某个 context 的持久化层。
+    """
+    async with database.session() as session:  # type: ignore[attr-defined]
+        status_value = await session.scalar(
+            text("SELECT status FROM accounts WHERE id = :id"), {"id": account_id}
+        )
+    # 查不到行的票放行。一张验得过签名却查不到账号的票只有两种来路：
+    #   (a) 测试为尚不存在的账号直接签票，再靠 `POST /api/v1/families` 按需建账号；
+    #   (b) 账号已被清理脚本删掉、票却还没过期。
+    # (b) 不可能发生：任何票都签发在注销申请之前，而 SESSION_TTL_SECONDS 不超过
+    # DELETION_GRACE_PERIOD，所以票一定先于清理过期。这个不等式由
+    # tests/platform/test_session_ttl_within_deletion_grace.py 守着；改任一常量前先看它。
+    # 于是这里只拦「存在但不是 active」的账号——停用和注销缓冲期。
+    if status_value is not None and status_value != "active":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="account is not active"
+        )
+
+
+async def authenticate_active(request: Request) -> ActorContext:
+    actor = authenticate(request)
+    await ensure_account_active(request.app.state.database, actor.account_id)
+    return actor

@@ -8,6 +8,8 @@ struct SessionResponse: Decodable, Sendable {
     let pregnancyID: UUID?
     let role: FamilyRole
     let token: String
+    /// 登录时服务端顺手撤销了注销申请。旧服务端没有这个字段，缺省为 false。
+    let deletionCancelled: Bool
 
     enum CodingKeys: String, CodingKey {
         case accountID = "account_id"
@@ -16,6 +18,18 @@ struct SessionResponse: Decodable, Sendable {
         case pregnancyID = "pregnancy_id"
         case role
         case token
+        case deletionCancelled = "deletion_cancelled"
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        accountID = try container.decode(UUID.self, forKey: .accountID)
+        phone = try container.decode(String.self, forKey: .phone)
+        familyID = try container.decode(UUID.self, forKey: .familyID)
+        pregnancyID = try container.decodeIfPresent(UUID.self, forKey: .pregnancyID)
+        role = try container.decode(FamilyRole.self, forKey: .role)
+        token = try container.decode(String.self, forKey: .token)
+        deletionCancelled = try container.decodeIfPresent(Bool.self, forKey: .deletionCancelled) ?? false
     }
 }
 
@@ -56,6 +70,9 @@ final class OnboardingStore {
             let request = try makeRequest(using: appSession)
             let (data, _) = try await URLSession.shared.aimData(for: request)
             let response = try JSONDecoder.aim.decode(SessionResponse.self, from: data)
+            if response.deletionCancelled {
+                appSession.welcomeBackNotice = "欢迎回来，注销申请已取消"
+            }
             appSession.configure(
                 accountID: response.accountID,
                 familyID: response.familyID,
@@ -110,6 +127,7 @@ final class OnboardingStore {
         }
         if form.password.isEmpty { return "请输入密码" }
         if form.mode == .register, form.role == nil { return "请选择你在家里的身份" }
+        if form.mode == .register, !form.agreedToTerms { return "请先阅读并同意用户协议和隐私政策" }
         return "请检查填写的内容"
     }
 }

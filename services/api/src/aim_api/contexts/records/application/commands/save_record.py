@@ -15,7 +15,7 @@ class SaveRecordCommand:
 
 async def execute(command: SaveRecordCommand, uow: RecordsUnitOfWork) -> Record:
     command.record.assert_can_mutate(command.account_id)
-    command.record.assert_attachment_refs_reserved()
+    command.record.assert_attachment_refs_valid()
     await uow.repository.save_record(command.record, command.account_id)
     await uow.commit()
     return command.record

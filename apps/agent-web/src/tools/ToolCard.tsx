@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useApprovalBatch, useRegisterApproval } from "../approvals";
+import { approvalCopy } from "./labels";
 import { isAwaitingApproval, type ToolRenderProps } from "./types";
 
 /** 工具卡的外框。所有按 toolName 注册的渲染器共用它，保证流里视觉一致。 */
@@ -26,7 +27,11 @@ export const ApprovalSlot = <TArgs,>({ props }: { props: ToolRenderProps<TArgs> 
 
   return (
     <p className="tool-card__status">
-      {dispatching ? "正在提交…" : decision.approved ? "待提交：收录" : "待提交：不收录"}
+      {dispatching
+        ? "正在提交…"
+        : decision.approved
+          ? approvalCopy([props.toolName]).pendingYes
+          : approvalCopy([props.toolName]).pendingNo}
     </p>
   );
 };
@@ -48,7 +53,7 @@ export const ToolStatusLine = <TArgs,>({ props }: { props: ToolRenderProps<TArgs
     return <p className="tool-card__status">已超时，未执行</p>;
   }
   if (approval?.approved === false) {
-    return <p className="tool-card__status">没有收录</p>;
+    return <p className="tool-card__status">{approvalCopy([props.toolName]).rejected}</p>;
   }
   if (props.isError) {
     return <p className="tool-card__status tool-card__status--error">执行失败</p>;

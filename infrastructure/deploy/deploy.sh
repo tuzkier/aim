@@ -55,8 +55,10 @@ npm ci --prefix apps/agent-web
 npm run build --prefix apps/agent-web
 
 say "上传前端产物到 /opt/aim/web"
+# 三个临时包都在这一个 trap 里清；先注册再 mktemp，中途失败也不会留下文件。
+# 变量用 ${X:-}：set -u 下还没赋值的名字直接展开会让 trap 自己报错。
+trap 'rm -f "${TARBALL:-}" "${WEB_TARBALL:-}" "${LEGAL_TARBALL:-}"' EXIT
 WEB_TARBALL="$(mktemp -t aim-web)"
-trap 'rm -f "$TARBALL" "$WEB_TARBALL"' EXIT
 tar -czf "$WEB_TARBALL" -C apps/agent-web/dist .
 scp_ -q "$WEB_TARBALL" "${REMOTE}:/tmp/aim-web.tar.gz"
 ssh_ "$REMOTE" bash -euo pipefail <<'REMOTE_SCRIPT'
@@ -66,6 +68,18 @@ ssh_ "$REMOTE" bash -euo pipefail <<'REMOTE_SCRIPT'
   rm -f /tmp/aim-web.tar.gz
   # nginx 以 nginx 用户读这些文件，目录要可进入。
   chmod -R a+rX /opt/aim/web
+REMOTE_SCRIPT
+
+say "上传法律页面到 /opt/aim/legal"
+LEGAL_TARBALL="$(mktemp -t aim-legal)"
+tar -czf "$LEGAL_TARBALL" -C apps/legal .
+scp_ -q "$LEGAL_TARBALL" "${REMOTE}:/tmp/aim-legal.tar.gz"
+ssh_ "$REMOTE" bash -euo pipefail <<'REMOTE_SCRIPT'
+  rm -rf /opt/aim/legal
+  mkdir -p /opt/aim/legal
+  tar -xzf /tmp/aim-legal.tar.gz -C /opt/aim/legal
+  rm -f /tmp/aim-legal.tar.gz
+  chmod -R a+rX /opt/aim/legal
 REMOTE_SCRIPT
 
 say "打包并上传"

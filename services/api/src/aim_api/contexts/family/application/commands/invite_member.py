@@ -7,7 +7,7 @@ from uuid import UUID, uuid4
 
 from aim_api.contexts.family.application.ports import FamilyUnitOfWork
 from aim_api.contexts.family.application.token import hash_invitation_token
-from aim_api.contexts.family.domain.family import FamilyMember, FamilyMemberRole
+from aim_api.contexts.family.domain.family import FamilyMemberRole
 from aim_api.contexts.family.domain.invitation import Invitation
 
 
@@ -48,9 +48,8 @@ async def execute(command: InviteMemberCommand, uow: FamilyUnitOfWork) -> Invita
         token_hash=hash_invitation_token(raw_token),
         created_at=command.now,
     )
-    if invitee is not None:
-        family.add_member(FamilyMember.pending(invitee.id, command.role, invited_at=command.now))
-        await uow.repository.add_member(family.id, family.members[invitee.id])
+    # 不再预先插入「待确认」成员：被邀请人在自己的 App 里看到邀请，接受时才入籍。
+    await uow.repository.revoke_open_invitations(family.id, invitation.invitee_phone)
     await uow.repository.add_invitation(invitation)
     await uow.commit()
     return InvitationResult(invitation=invitation, token=raw_token)

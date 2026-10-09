@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   AssistantRuntimeProvider,
-  ComposerPrimitive,
   MessagePrimitive,
   ThreadPrimitive,
+  useAuiState,
 } from "@assistant-ui/react";
 import {
   useEveAgentRuntime,
@@ -12,16 +12,39 @@ import {
   useEveReset,
   useEveSession,
 } from "@assistant-ui/eve";
-import { accountKeyFromToken, loadNativeContext, type NativeContext } from "./bridge";
+import {
+  accountKeyFromToken,
+  loadNativeContext,
+  notifyTurnFinished,
+  type AgentEntry,
+  type NativeContext,
+  type PageContext,
+} from "./bridge";
+import { resolveEntry, withTurnContext } from "./entry";
+import {
+  createImageAttachmentAdapter,
+  dataUrlToFile,
+  imagesContext,
+  numberImages,
+  type UploadedImage,
+} from "./imageAttachments";
+import { ContextChip } from "./thread/ContextChip";
 import { clearSession, loadSession, saveSession } from "./session";
 import type { ClientSessionState } from "./types";
 import { ApprovalBatchProvider } from "./approvals";
+import { BizDataProvider, useBizData } from "./bizData";
+import { ErrorBoundary, MessageFallback } from "./ErrorBoundary";
+import { writesIn } from "./turnWrites";
+import { createWriteBatcher } from "./writeBatcher";
 import { createEveTransport, fetchSessionEvents } from "./eveTransport";
 import { GenericToolView, ToolRenderers } from "./tools";
 import { ToolGroupActions } from "./tools/ToolGroup";
+import { pendingApprovalTools } from "./tools/types";
 import { Reasoning } from "./thread/Reasoning";
 import { MarkdownText } from "./thread/MarkdownText";
 import { HistoryPanel } from "./thread/HistoryPanel";
+import { Composer } from "./thread/Composer";
+import { MessageImages } from "./thread/MessageImages";
 import { SessionRecovery, describeError } from "./thread/SessionRecovery";
 import { registerSession, titleFrom, touchSession, type AgentSessionSummary } from "./sessions";
 
@@ -71,28 +94,46 @@ const firstUserMessage = (events: readonly unknown[]): string | undefined => {
  * 「把这三道菜收进菜谱」是一件事，不该拆成三次拍板——那既不符合用户的表达，
  * 也是批次回不齐的来源。`groupPartByType` 是 assistant-ui 为这种情况提供的原语。
  */
-const AssistantMessage = () => (
-  <div className="msg msg--assistant">
-    <MessagePrimitive.Parts
-      components={{
-        // 指令里允许模型用行内加粗和短列表，客户端就必须能渲染它们——
-        // 否则 `**待办内容**` 会带着星号摆在用户面前。
-        Text: MarkdownText,
-        Reasoning,
-        // 没有专用渲染器的工具走兜底：只读工具收成一行步骤，
-        // 写操作至少把名字露出来。
-        tools: { Fallback: GenericToolView },
-      }}
-    />
-    <ToolGroupActions />
-  </div>
-);
+const AssistantMessage = () => {
+  // 按消息算待确认项：按钮只挂在真有待确认项的那条回复下面。
+  // 逗号拼成字符串再比较——选择器每次返回新数组会让组件反复重渲染。
+  const pending = useAuiState((state) => pendingApprovalTools(state.message.parts).join(","));
+  return (
+    <div className="msg msg--assistant">
+      <ErrorBoundary scope="message" fallback={() => <MessageFallback />}>
+        <MessagePrimitive.Parts
+          components={{
+            // 指令里允许模型用行内加粗和短列表，客户端就必须能渲染它们——
+            // 否则 `**待办内容**` 会带着星号摆在用户面前。
+            Text: MarkdownText,
+            Reasoning,
+            // 没有专用渲染器的工具走兜底：只读工具收成一行步骤，
+            // 写操作至少把名字露出来。
+            tools: { Fallback: GenericToolView },
+          }}
+        />
+        <ToolGroupActions toolNames={pending ? pending.split(",") : []} />
+      </ErrorBoundary>
+    </div>
+  );
+};
 
-const UserMessage = () => (
-  <div className="msg msg--user">
-    <MessagePrimitive.Parts />
-  </div>
-);
+/** 图片在上、文字气泡在下；只发了图时不留一个空气泡。 */
+const UserMessage = () => {
+  const hasText = useAuiState((state) =>
+    state.message.parts.some((part) => part.type === "text" && part.text.trim() !== ""),
+  );
+  return (
+    <div className="user-turn">
+      <MessageImages />
+      {hasText ? (
+        <div className="msg msg--user">
+          <MessagePrimitive.Parts />
+        </div>
+      ) : null}
+    </div>
+  );
+};
 
 /**
  * 把「开新对话」暴露给原生工具栏。
@@ -132,27 +173,20 @@ const TurnError = () => {
   );
 };
 
-const Thread = () => (
+const Thread = ({ chip, attachmentError }: { chip?: ReactNode; attachmentError?: string | null }) => (
   <ThreadPrimitive.Root className="thread">
     <ThreadPrimitive.Viewport className="thread__viewport" autoScroll>
       <ThreadPrimitive.Empty>
         {/* 原生头部已经有「AIM · 孕期里的事，说一声就好」，这里再来一遍大标题
             就是同一件事说两次。空态只留一句引导。 */}
         <p className="welcome">
-          可以问孕期变化、最近记录或接下来要做的事。涉及计划变更时，我会先让你确认。
+          可以问孕期变化、最近记录或接下来要做的事，也可以拍产检单让我记下来。涉及计划变更时，我会先让你确认。
         </p>
       </ThreadPrimitive.Empty>
       <ThreadPrimitive.Messages components={{ UserMessage, AssistantMessage }} />
       <TurnError />
     </ThreadPrimitive.Viewport>
-    <ComposerPrimitive.Root className="composer">
-      <ComposerPrimitive.Input
-        className="composer__input"
-        placeholder="告诉我你现在在担心什么"
-        rows={1}
-      />
-      <ComposerPrimitive.Send className="composer__send">发送</ComposerPrimitive.Send>
-    </ComposerPrimitive.Root>
+    <Composer chip={chip} error={attachmentError} />
   </ThreadPrimitive.Root>
 );
 
@@ -219,6 +253,79 @@ const ApprovalBridge = ({
 };
 
 /**
+ * AIM 写完东西就让原生刷新，也让卡片用的业务数据跟上。
+ *
+ * 从挂载那一刻的事件数开始扫：接回历史对话时重放的旧事件不算新写入。
+ */
+const TurnFinishedBridge = () => {
+  const events = useEveEvents();
+  const { reload } = useBizData();
+  const reloadRef = useRef(reload);
+  reloadRef.current = reload;
+  const seenRef = useRef<number | null>(null);
+  // 一阵写入只刷新一次：批量操作逐条通知会把原生和网页都刷爆。
+  const batcherRef = useRef<ReturnType<typeof createWriteBatcher> | null>(null);
+  batcherRef.current ??= createWriteBatcher({
+    delayMs: 600,
+    maxWaitMs: 2000,
+    flush: (kinds) => {
+      notifyTurnFinished(kinds);
+      reloadRef.current();
+    },
+  });
+  useEffect(() => () => batcherRef.current?.dispose(), []);
+  useEffect(() => {
+    if (seenRef.current === null) {
+      seenRef.current = events.length;
+      return;
+    }
+    const fresh = events.slice(seenRef.current);
+    seenRef.current = events.length;
+    batcherRef.current?.add(writesIn(fresh));
+  }, [events]);
+  return null;
+};
+
+/**
+ * 从快捷入口回到 AIM 标签页时，跟上快捷入口里新开的那段。
+ *
+ * 比的是运行时**当前**的会话 id，而不是页面打开时接回的那段——在本页新开的对话
+ * 没有「接回」这回事，拿它比会每次回到标签页都把当前对话重载一遍。
+ */
+const AppearBridge = ({
+  enabled,
+  accountKey,
+  runtime,
+  onSwitch,
+}: {
+  enabled: boolean;
+  accountKey: string;
+  runtime: ReturnType<typeof useEveAgentRuntime>;
+  onSwitch: (eveSessionId: string) => void;
+}) => {
+  const session = useEveSession();
+  const currentRef = useRef<string | undefined>(undefined);
+  currentRef.current = session?.sessionId;
+  const onSwitchRef = useRef(onSwitch);
+  onSwitchRef.current = onSwitch;
+  useEffect(() => {
+    if (!enabled) return;
+    window.__aimOnAppear__ = () => {
+      const stored = loadSession(accountKey);
+      if (!stored || stored.sessionId === currentRef.current) return;
+      // 正在生成、或者用户已经在输入框里写了东西，就不要把人拽走。
+      if (runtime.thread.getState().isRunning) return;
+      if (runtime.thread.composer.getState().text.trim()) return;
+      onSwitchRef.current(stored.sessionId);
+    };
+    return () => {
+      delete window.__aimOnAppear__;
+    };
+  }, [enabled, accountKey, runtime]);
+  return null;
+};
+
+/**
  * 把「历史对话」暴露给原生工具栏。面板本身在 Web 侧渲染——
  * 切换会话要重建运行时，那是这边的事。
  */
@@ -234,16 +341,62 @@ const HistoryBridge = ({ onOpen }: { onOpen: () => void }) => {
 
 const Conversation = ({
   context,
+  entry,
   restored,
   onSwitch,
+  onAppearSwitch,
   onDiscardStoredSession,
 }: {
   context: NativeContext;
+  entry: AgentEntry;
   restored: Restored | null;
   onSwitch: (session: AgentSessionSummary) => void;
+  onAppearSwitch: (eveSessionId: string) => void;
   onDiscardStoredSession: () => void;
 }) => {
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [page, setPage] = useState<PageContext | null>(
+    entry.mode === "new" ? (entry.pageContext ?? null) : null,
+  );
+  // prepareSend 在运行时创建时就被捕获，直接读 state 会一直是初值，所以经 ref 读。
+  const pageRef = useRef(page);
+  pageRef.current = page;
+
+  // 本段对话里上传成功的图片。只记在这次打开的页面里：重开旧对话后再说「把刚才那张存起来」，
+  // 模型拿不到编号，会请用户重发（见指令）。
+  const imagesRef = useRef<UploadedImage[]>([]);
+  const [attachmentError, setAttachmentError] = useState<string | null>(null);
+  const runtimeRef = useRef<ReturnType<typeof useEveAgentRuntime> | null>(null);
+  const attachmentAdapter = useMemo(
+    () =>
+      createImageAttachmentAdapter({
+        upload: async (blob) => {
+          // 网页上下文里孕期编号是可选的（还没建孕期时没有），这时存不了图。
+          if (!context.pregnancyId) throw new Error("还没有孕期信息，暂时不能发图片");
+          const response = await fetch(
+            `${context.eveOrigin ?? ""}/api/v1/pregnancies/${context.pregnancyId}/attachments`,
+            {
+              method: "POST",
+              headers: { authorization: `Bearer ${context.token}`, "content-type": "image/jpeg" },
+              body: blob,
+            },
+          );
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          return ((await response.json()) as { id: string }).id;
+        },
+        onUploaded: ({ id, order }) => {
+          // 这张图属于即将发出的那条用户消息。
+          const sent =
+            runtimeRef.current?.thread
+              .getState()
+              .messages.filter((message) => message.role === "user").length ?? 0;
+          imagesRef.current = [...imagesRef.current, { id, message: sent + 1, order }];
+        },
+        onError: setAttachmentError,
+      }),
+    [context.eveOrigin, context.pregnancyId, context.token],
+  );
+
   const runtime = useEveAgentRuntime({
     ...(restored
       ? { initialSession: restored.session, initialEvents: restored.events as never }
@@ -252,29 +405,86 @@ const Conversation = ({
     // 开发时由 Vite 代理转到本地 Eve。两边都不需要给 Eve 配 CORS。
     ...(context.eveOrigin ? { host: context.eveOrigin } : {}),
     headers: () => ({ authorization: `Bearer ${context.token}` }),
+    adapters: { attachments: attachmentAdapter },
+    prepareSend: (input) =>
+      withTurnContext(input, {
+        page: pageRef.current,
+        images: imagesContext(numberImages(imagesRef.current)),
+      }),
   });
+  runtimeRef.current = runtime;
+
+  // 首页「拍报告」：打开时入口里带着一张图，放进输入框，用户补一句话再发。只放一次。
+  const attachedRef = useRef(false);
+  useEffect(() => {
+    if (entry.mode !== "new" || !entry.attachImage || attachedRef.current || restored) return;
+    const dataUrl = entry.attachImage;
+    const timer = window.setTimeout(() => {
+      attachedRef.current = true;
+      void runtime.thread.composer.addAttachment(dataUrlToFile(dataUrl, "photo.jpg"));
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [entry, runtime, restored]);
+
+  // 原生也可以在对话已打开时塞进一张图。
+  useEffect(() => {
+    window.__aimAttachImage__ = (dataUrl: string) => {
+      void runtime.thread.composer.addAttachment(dataUrlToFile(dataUrl, "photo.jpg"));
+    };
+    return () => {
+      delete window.__aimAttachImage__;
+    };
+  }, [runtime]);
+
+  // 「让 Agent 分析当前记录」：打开就把问题发出去。只发一次——
+  // 票据轮换等原因重渲染时不能再发。
+  //
+  // 推到下一拍再发，并在 cleanup 里取消：挂载后立刻卸载（开发时 StrictMode 必然如此）
+  // 会让适配器以「运行时已卸载」为由静默丢掉这次发送，而「已发送」标记却已经立起来了。
+  const autoSentRef = useRef(false);
+  useEffect(() => {
+    if (entry.mode !== "new" || !entry.autoSend || autoSentRef.current || restored) return;
+    const text = entry.autoSend;
+    const timer = window.setTimeout(() => {
+      autoSentRef.current = true;
+      void runtime.thread.append({ role: "user", content: [{ type: "text", text }] });
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [entry, runtime, restored]);
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
-      <ApprovalBridge context={context} runtime={runtime}>
-        <NewConversationBridge accountKey={accountKeyFromToken(context.token)} />
-        <HistoryBridge onOpen={() => setHistoryOpen(true)} />
-        <SessionRecovery onDiscardStoredSession={onDiscardStoredSession} />
-        <ToolRenderers />
-        <Thread />
-        {historyOpen ? (
-          <HistoryPanel
-            token={context.token}
-            origin={context.eveOrigin}
-            currentEveSessionId={restored?.session.sessionId}
-            onPick={(picked) => {
-              setHistoryOpen(false);
-              onSwitch(picked);
-            }}
-            onClose={() => setHistoryOpen(false)}
+      <BizDataProvider context={context}>
+        <ApprovalBridge context={context} runtime={runtime}>
+          <NewConversationBridge accountKey={accountKeyFromToken(context.token)} />
+          <HistoryBridge onOpen={() => setHistoryOpen(true)} />
+          <TurnFinishedBridge />
+          <AppearBridge
+            enabled={entry.mode === "resume"}
+            accountKey={accountKeyFromToken(context.token)}
+            runtime={runtime}
+            onSwitch={onAppearSwitch}
           />
-        ) : null}
-      </ApprovalBridge>
+          <SessionRecovery onDiscardStoredSession={onDiscardStoredSession} />
+          <ToolRenderers />
+          <Thread
+            chip={page ? <ContextChip page={page} onClear={() => setPage(null)} /> : undefined}
+            attachmentError={attachmentError}
+          />
+          {historyOpen ? (
+            <HistoryPanel
+              token={context.token}
+              origin={context.eveOrigin}
+              currentEveSessionId={restored?.session.sessionId}
+              onPick={(picked) => {
+                setHistoryOpen(false);
+                onSwitch(picked);
+              }}
+              onClose={() => setHistoryOpen(false)}
+            />
+          ) : null}
+        </ApprovalBridge>
+      </BizDataProvider>
     </AssistantRuntimeProvider>
   );
 };
@@ -286,11 +496,13 @@ export const App = () => {
   const [restored, setRestored] = useState<Restored | null>(null);
   const [restoring, setRestoring] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const entry = useMemo(() => (context ? resolveEntry(context) : null), [context]);
 
   // 拿到会话票之后、开始渲染对话之前，把上一段对话的事件取回来。
   // `initialEvents` 只在运行时创建那一刻生效，所以必须先取完再渲染。
   useEffect(() => {
-    if (!context) return;
+    // 快捷入口开的是新的一段，不接回上一段。
+    if (!context || entry?.mode !== "resume") return;
     const stored = loadSession(accountKeyFromToken(context.token));
     if (!stored) return;
     let cancelled = false;
@@ -311,7 +523,7 @@ export const App = () => {
     return () => {
       cancelled = true;
     };
-  }, [context]);
+  }, [context, entry?.mode]);
 
   useEffect(() => {
     let cancelled = false;
@@ -351,13 +563,19 @@ export const App = () => {
           sessionId: picked.eveSessionId,
           streamIndex: snapshot.nextIndex,
         });
-        void touchSession(context.token, picked.id, context.eveOrigin);
+        if (picked.id) void touchSession(context.token, picked.id, context.eveOrigin);
       })
       .finally(() => setRestoring(false));
   };
 
+  /** 从快捷入口回到标签页时，切到最近那段（快捷入口会把它存成最近一段）。 */
+  const followLatestStored = (eveSessionId: string) => {
+    // 目录 id 不知道；只影响「顶到最前」，切换本身按 Eve 会话 id 进行。
+    switchToSession({ id: "", eveSessionId } as AgentSessionSummary);
+  };
+
   if (error) return <div className="fatal">{error}</div>;
-  if (!context) return <div className="loading">正在准备…</div>;
+  if (!context || !entry) return <div className="loading">正在准备…</div>;
   if (restoring) return <div className="loading">正在接回上一段对话…</div>;
 
   return (
@@ -372,8 +590,10 @@ export const App = () => {
         // 只在创建那一刻生效，光换 props 不会让它去接另一段。
         key={restored?.session.sessionId ?? "new"}
         context={context}
+        entry={entry}
         restored={restored}
         onSwitch={switchToSession}
+        onAppearSwitch={followLatestStored}
         onDiscardStoredSession={() => {
           clearSession(accountKeyFromToken(context.token));
           setRestored(null);

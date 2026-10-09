@@ -11,6 +11,7 @@ struct RecordDetailView: View {
     @State private var showingDeleteConfirmation = false
     @State private var showingTaskSheet = false
     @State private var showingAgent = false
+    @State private var viewingImage: IdentifiedImage?
 
     private var currentRecord: RecordItem {
         store.snapshot?.records.first(where: { $0.id == record.id }) ?? record
@@ -33,6 +34,20 @@ struct RecordDetailView: View {
             .listRowBackground(Color.clear)
 
             contentSection
+            if !currentRecord.attachmentRefs.isEmpty {
+                Section("图片") {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: AimMetrics.space8) {
+                            ForEach(currentRecord.attachmentRefs, id: \.self) { id in
+                                AttachmentThumbnail(id: id, environment: session.environment) {
+                                    viewingImage = IdentifiedImage(image: $0)
+                                }
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+            }
             Section("记录信息") {
                 LabeledContent("记录人", value: canEdit ? "我" : "家庭成员")
                 Label(currentRecord.visibility.displayName, systemImage: currentRecord.visibility == .family ? "person.2" : "lock")
@@ -40,13 +55,12 @@ struct RecordDetailView: View {
             Section {
                 Button("转为待办") { showingTaskSheet = true }
                 Button("让 Agent 分析当前记录") {
-                    agentStore.ask(
+                    agentStore.prepareAnalysis(
                         analysisPrompt(for: currentRecord),
                         context: AgentContext(
                             title: "记录",
                             summary: "\(currentRecord.type.displayName)：\(currentRecord.displayTitle)"
-                        ),
-                        environment: session.environment
+                        )
                     )
                     showingAgent = true
                 }
@@ -69,6 +83,9 @@ struct RecordDetailView: View {
         }
         .fullScreenCover(isPresented: $showingAgent) {
             AgentView(store: agentStore) { showingAgent = false }
+        }
+        .fullScreenCover(item: $viewingImage) { item in
+            AttachmentViewer(image: item.image) { viewingImage = nil }
         }
     }
 
@@ -174,5 +191,91 @@ private struct RecordTaskSheet: View {
             onCreated()
             dismiss()
         }
+    }
+}
+
+/// 取一张附件图片的请求。只接受附件编号，带上登录信息。
+enum AttachmentRequest {
+    static func make(id: String, environment: APIEnvironment) -> URLRequest? {
+        guard let uuid = UUID(uuidString: id) else { return nil }
+        var request = environment.businessRequest(path: "/api/v1/attachments/\(uuid.uuidString.lowercased())")
+        request.setValue("image/*", forHTTPHeaderField: "Accept")
+        return request
+    }
+}
+
+private struct IdentifiedImage: Identifiable {
+    let id = UUID()
+    let image: UIImage
+}
+
+/// 记录上挂的一张图片。加载失败显示占位，不影响页面其它内容。
+private struct AttachmentThumbnail: View {
+    let id: String
+    let environment: APIEnvironment
+    let onOpen: (UIImage) -> Void
+    @State private var image: UIImage?
+    @State private var failed = false
+
+    var body: some View {
+        Group {
+            if let image {
+                Button { onOpen(image) } label: {
+                    Image(uiImage: image).resizable().scaledToFill()
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("查看大图")
+            } else if failed {
+                Image(systemName: "photo")
+                    .foregroundStyle(Color.aimTextTertiary)
+                    .accessibilityLabel("图片加载失败")
+            } else {
+                ProgressView()
+            }
+        }
+        .frame(width: 96, height: 96)
+        .background(Color.aimSurfaceSunken)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        // 报告单多是白底，不描边的话和白色列表行连成一片，看不出是一张图。
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.aimRail, lineWidth: 1))
+        .task(id: id) {
+            guard let request = AttachmentRequest.make(id: id, environment: environment),
+                  let (data, response) = try? await URLSession.shared.data(for: request),
+                  (response as? HTTPURLResponse)?.statusCode == 200,
+                  let loaded = UIImage(data: data)
+            else {
+                failed = true
+                return
+            }
+            image = loaded
+        }
+    }
+}
+
+/// 全屏看大图：双指缩放，点一下关闭。
+private struct AttachmentViewer: View {
+    let image: UIImage
+    let onClose: () -> Void
+    @State private var scale: CGFloat = 1
+    @State private var settledScale: CGFloat = 1
+
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFit()
+                .scaleEffect(scale)
+                .gesture(
+                    MagnifyGesture()
+                        .onChanged { scale = min(max(1, settledScale * $0.magnification), 5) }
+                        .onEnded { _ in settledScale = scale }
+                )
+        }
+        .contentShape(Rectangle())
+        .onTapGesture(perform: onClose)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("图片，点一下关闭")
+        .accessibilityAddTraits(.isButton)
     }
 }

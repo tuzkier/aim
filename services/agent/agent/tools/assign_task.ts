@@ -5,7 +5,9 @@ import { callBusinessApi } from "../lib/business-api/client.ts";
 import { toolResultSchema } from "../lib/business-api/tool-result-schema.ts";
 
 export default defineTool({
-  description: "After the user confirms, assign a pregnancy task to a family member.",
+  description:
+    "Assign a to-do to a family member. Use a member_id from get_pregnancy_context.members " +
+    "(or null to unassign). The user confirms on a card before it runs.",
   inputSchema: z.object({
     taskId: z.string().uuid(),
     assignedMemberId: z.string().uuid().nullable(),

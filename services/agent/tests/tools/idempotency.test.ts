@@ -76,7 +76,7 @@ test("business client exposes FastAPI approval and retry semantics", async () =>
 
   try {
     await assert.rejects(
-      callBusinessApi(scope, "/internal/agent-tools/update-task", { approved: false }),
+      callBusinessApi(scope, "/internal/agent-tools/reschedule-task", { approved: false }),
       (error: unknown) => {
         assert.ok(error instanceof BusinessApiError);
         assert.equal(error.code, "approval_required");

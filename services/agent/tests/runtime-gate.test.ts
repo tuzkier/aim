@@ -82,10 +82,10 @@ test("compiled runtime exposes only the intended root and specialist tools", asy
 
   const BUSINESS_TOOLS = [
     "assign_task",
+    "complete_task",
     "create_knowledge",
     "create_record",
     "create_task",
-    "delete_record",
     "delete_task",
     "echo_context",
     "get_current_time",
@@ -93,11 +93,13 @@ test("compiled runtime exposes only the intended root and specialist tools", asy
     "get_pregnancy_context",
     "list_records",
     "list_tasks",
-    "preview_task_change",
     "record_pregnancy_fact",
+    "reschedule_task",
     "undo_operation",
-    "update_task",
   ];
+
+  // 这几个要么是不经确认就能删的口子，要么是空壳。删除待办改由需确认的 delete_task 负责。
+  const RETIRED_TOOLS = ["delete_record", "preview_task_change", "update_task"];
 
   // 能碰文件系统、shell 和外网的工具，一个都不该出现在孕期 App 的 agent 手上。
   const DANGEROUS_TOOLS = [
@@ -116,6 +118,9 @@ test("compiled runtime exposes only the intended root and specialist tools", asy
   }
   for (const name of DANGEROUS_TOOLS) {
     assert.ok(!exposed.includes(name), `${name} 绝不该暴露给 agent`);
+  }
+  for (const name of RETIRED_TOOLS) {
+    assert.ok(!exposed.includes(name), `${name} 已下线，不该再暴露`);
   }
 
   // 断言「有哪些不在」而不是「恰好是这些」：eve 升级会改摘要的 schema，

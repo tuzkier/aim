@@ -36,6 +36,9 @@ class TaskModel(Base):
     source_id: Mapped[str | None] = mapped_column(String(160), nullable=True)
     changed_by_actor_type: Mapped[str] = mapped_column(String(20), nullable=False)
     changed_by_actor_id: Mapped[UUID | None] = mapped_column(Uuid(as_uuid=True), nullable=True)
+    #: 谁建的。changed_by_* 会被之后的改动覆盖，家庭动态需要最初的那个人。
+    created_by_actor_type: Mapped[str] = mapped_column(String(20), nullable=False)
+    created_by_actor_id: Mapped[UUID | None] = mapped_column(Uuid(as_uuid=True), nullable=True)
     version: Mapped[int] = mapped_column(Integer, nullable=False)
     scheduled_for: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     due_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

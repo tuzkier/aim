@@ -11,6 +11,8 @@ struct LibraryView: View {
 
     @State private var showingAgent = false
     @State private var openCategory: LibraryCategoryID?
+    @State private var openTopic: EncyclopediaTopic?
+    @State private var openEntryID: String?
 
     private let columns = [
         GridItem(.flexible(), spacing: AimMetrics.space12),
@@ -22,9 +24,18 @@ struct LibraryView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: AimMetrics.space12) {
                     header
+                    if let week = store.currentWeek {
+                        let picks = store.encyclopedia.picks(forWeek: week)
+                        if !picks.isEmpty {
+                            EncyclopediaWeeklyPicks(
+                                week: week, picks: picks, topics: store.encyclopedia.topics
+                            ) { openEntryID = $0.id }
+                        }
+                    }
                     if let focus = LibraryFocus.make(from: store.snapshot) {
                         LibraryFocusBanner(focus: focus)
                     }
+                    sectionTitle("我的档案", identifier: "library-section-archive")
                     LazyVGrid(columns: columns, spacing: AimMetrics.space12) {
                         ForEach(LibraryCatalog.gridCategories) { category in
                             Button { openCategory = category.id } label: {
@@ -40,6 +51,12 @@ struct LibraryView: View {
                             .accessibilityIdentifier("library-card-\(category.id.rawValue)")
                         }
                     }
+                    if !store.encyclopedia.isEmpty {
+                        sectionTitle("孕期百科", identifier: "library-section-encyclopedia")
+                        EncyclopediaTopicGrid(catalog: store.encyclopedia, week: store.currentWeek) {
+                            openTopic = $0
+                        }
+                    }
                     ForEach(LibraryCatalog.bannerCategories) { category in
                         Button { openCategory = category.id } label: {
                             LibraryBannerRow(
@@ -51,7 +68,8 @@ struct LibraryView: View {
                         .accessibilityIdentifier("library-card-\(category.id.rawValue)")
                     }
                 }
-                .padding(AimMetrics.space16)
+                .padding(.horizontal, AimMetrics.space16)
+                .padding(.bottom, AimMetrics.space28)
             }
             .background(Color.aimCanvas)
             .navigationTitle("资料库")
@@ -64,6 +82,12 @@ struct LibraryView: View {
             .navigationDestination(item: $openCategory) { category in
                 LibraryCategoryDetail(category: category, store: store, agentStore: agentStore)
             }
+            .navigationDestination(item: $openTopic) { topic in
+                EncyclopediaTopicView(topic: topic, store: store, agentStore: agentStore)
+            }
+            .navigationDestination(item: $openEntryID) { id in
+                EncyclopediaEntryView(entryID: id, store: store, agentStore: agentStore)
+            }
             .fullScreenCover(isPresented: $showingAgent) {
                 AgentView(store: agentStore) { showingAgent = false }
             }
@@ -71,35 +95,29 @@ struct LibraryView: View {
     }
 
     private var header: some View {
-        HStack(alignment: .firstTextBaseline) {
-            VStack(alignment: .leading, spacing: AimMetrics.space4) {
-                Text("资料库")
-                    .font(.title2.weight(.medium))
-                    .foregroundStyle(Color.aimTextPrimary)
-                Text(subtitle)
-                    .font(.caption)
-                    .foregroundStyle(Color.aimTextTertiary)
-            }
-            Spacer()
-            Button {
+        AimPageHeader(caption: subtitle, title: "资料库") {
+            AimCircleButton(symbol: "wand.and.sparkles", tinted: true, label: "AIM", identifier: "library-agent-button") {
                 agentStore.focus(context: AgentContext(title: "资料库", summary: subtitle))
                 showingAgent = true
-            } label: {
-                Image(systemName: "wand.and.sparkles")
-                    .font(.system(size: 15, weight: .medium))
-                    .frame(width: 32, height: 32)
-                    .background(Color.aimAccentSoft, in: Circle())
-                    .foregroundStyle(Color.aimAccent)
             }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("library-agent-button")
-            .accessibilityLabel("AIM")
         }
     }
 
+    private func sectionTitle(_ text: String, identifier: String) -> some View {
+        Text(text)
+            .font(.headline)
+            .foregroundStyle(Color.aimTextPrimary)
+            .padding(.top, AimMetrics.space8)
+            .accessibilityIdentifier(identifier)
+    }
+
     private var subtitle: String {
-        let count = store.snapshot.records.count
-        return count == 0 ? "还没有收录内容" : "已收录 \(count) 条"
+        var parts: [String] = []
+        if let week = store.currentWeek { parts.append("孕 \(week) 周") }
+        if !store.encyclopedia.isEmpty { parts.append("百科 \(store.encyclopedia.entries.count) 条") }
+        let mine = store.snapshot.records.count
+        parts.append(mine == 0 ? "我的还没有内容" : "我的 \(mine) 条")
+        return parts.joined(separator: " · ")
     }
 }
 

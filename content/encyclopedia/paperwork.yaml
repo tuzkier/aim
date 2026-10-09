@@ -1,0 +1,74 @@
+id: encyclopedia-paperwork
+version: 0.1.0
+source: 杭州市及浙江省政府公开的办事指南
+source_url: https://www.hangzhou.gov.cn/
+reviewed_at: "2026-10-09"
+review_status: reviewed
+entries:
+  - id: paperwork.registration
+    title: 建档建册
+    aliases: [建档, 建册, 母子健康手册, 小卡, 大卡, 孕妇建档]
+    weeks: [6, 13]
+    kind: policy
+    link: https://wsjkw.hangzhou.gov.cn/
+    summary: 确认宫内怀孕后，要在社区领取母子健康手册（建册），并在产检医院建档。具体流程以官方说明为准。
+    sections:
+      - heading: 去哪里查
+        text: 建册的地点和流程可以咨询户籍地或居住地的社区卫生服务中心，或查看杭州市卫健委官网、浙里办 App 上的相关服务；建档的要求直接问准备生产的医院。
+      - heading: 通常要准备
+        text: 夫妻双方身份证、户口簿或居住证、医保卡或社保卡、结婚证（部分地方需要），以及能确认宫内怀孕的 B 超或检查报告。具体以当地要求为准，出发前打电话确认更省事。
+      - heading: 建议何时办
+        text: 确认宫内怀孕后尽早办理，一般建议在孕早期完成，具体时限以当地要求为准。热门医院的建档名额可能较紧张，可以提前了解预约方式。
+    ask: [建册要去哪个社区办, 建档建册有什么区别, 建档建册要准备哪些材料]
+    related: [checkup.first-visit, checkup.schedule]
+
+  - id: paperwork.maternity-allowance
+    title: 生育津贴
+    aliases: [生育津贴, 生育保险, 生育报销, 医保报销, 生育金]
+    weeks: [28, 40]
+    kind: policy
+    link: https://www.hangzhou.gov.cn/col/col1229460765/index.html
+    summary: 生育津贴和生育医疗费用报销与参保情况有关，能否享受、享受多少以医保部门的官方说明为准。
+    sections:
+      - heading: 去哪里查
+        text: 在杭州市政府门户网站的市医保局栏目、浙里办 App 的「浙里医保」或当地医保经办窗口查询最新的办事指南；在职参保的，先问单位人事是否由单位统一申报。
+      - heading: 通常要准备
+        text: 本人身份证、社保卡或银行卡、出生医学证明，以及住院病历、出院小结等医疗材料。由单位申报的，按单位要求提交。具体清单以办事指南为准。
+      - heading: 建议何时办
+        text: 孕晚期就先把流程和材料弄清楚，产后出院时记得复印或拍照保存好病历材料，然后在规定期限内申报。
+    ask: [生育津贴的办事指南在哪查, 生育津贴要准备哪些材料, 生育津贴申报流程是怎样的]
+    related: [paperwork.leave, paperwork.birth-services]
+
+  - id: paperwork.leave
+    title: 陪产假与产假
+    aliases: [产假, 陪产假, 产假几天, 护理假, 请假]
+    weeks: [28, 40]
+    kind: policy
+    link: https://hrss.hangzhou.gov.cn/
+    summary: 产假、陪产假等假期的天数和条件以国家规定和浙江省的最新条例为准，提前和单位沟通安排。
+    sections:
+      - heading: 去哪里查
+        text: 查看杭州市人社局官网、浙江省政府公布的最新条例，或直接咨询单位人事部门。政策可能调整，以官方最新发布为准。
+      - heading: 通常要准备
+        text: 单位一般会要求提供出生医学证明、结婚证、身份证，以及医院出具的分娩或手术证明。具体材料按单位规定。
+      - heading: 建议何时办
+        text: 孕晚期提前和单位沟通预计休假时间、工作交接；伴侣也要提前了解陪产假的申请方式。产后按单位要求补交材料。
+    ask: [产假天数去哪里查最新规定, 陪产假怎么申请, 休产假前要和单位沟通什么]
+    related: [paperwork.maternity-allowance, life.work]
+
+  - id: paperwork.birth-services
+    title: 出生「一件事」联办
+    aliases: [出生一件事, 上户口, 出生证明, 新生儿医保, 办出生证]
+    weeks: [36, 42]
+    kind: policy
+    link: https://www.zjzwfw.gov.cn/
+    summary: 宝宝出生后的出生医学证明、户口登记、医保参保等事项，在浙江可以通过「一件事」联办集中办理。
+    sections:
+      - heading: 去哪里查
+        text: 在浙江政务服务网或浙里办 App 搜索「出生一件事」，查看当前可以联办的事项和流程；部分医院也设有办理窗口。具体包含哪些事项以页面说明为准。
+      - heading: 通常要准备
+        text: 父母双方身份证、户口簿、结婚证，以及宝宝的出生医学证明信息。给宝宝取好名字再办会更顺利。具体材料以办事指南为准。
+      - heading: 建议何时办
+        text: 孕晚期先在浙里办上了解流程并准备好证件，宝宝出生后尽早办理。新生儿医保参保有时间要求，具体期限以页面说明为准。
+    ask: [出生一件事在哪里办, 出生一件事要准备哪些材料, 新生儿医保参保去哪里办]
+    related: [paperwork.maternity-allowance, birth.hospital-bag, birth.postpartum-day-one]

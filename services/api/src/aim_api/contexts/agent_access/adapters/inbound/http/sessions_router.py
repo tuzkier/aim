@@ -20,7 +20,7 @@ from aim_api.contexts.agent_access.adapters.outbound.persistence.models import (
 from aim_api.contexts.family.adapters.outbound.persistence.repositories import (
     SqlAlchemyFamilyUnitOfWork,
 )
-from aim_api.platform.auth.context import authenticate
+from aim_api.platform.auth.context import authenticate_active
 from aim_api.platform.database.session import Database
 from aim_api.platform.http.errors import NotFoundError
 
@@ -62,12 +62,21 @@ def _to_response(model: AgentSessionModel) -> SessionResponse:
 
 @router.get("/api/v1/agent/sessions", response_model=SessionListResponse)
 async def list_sessions(request: Request) -> SessionListResponse:
-    actor = authenticate(request)
+    actor = await authenticate_active(request)
     database: Database = request.app.state.database
     async with database.session() as session:
+        # 只列当前家庭里的对话：退出或被移出后，在原家庭里聊的内容不再出现。
+        family = await SqlAlchemyFamilyUnitOfWork(session).repository.get_first_family_for_account(
+            actor.account_id
+        )
+        if family is None:
+            return SessionListResponse(sessions=[])
         rows = await session.scalars(
             select(AgentSessionModel)
-            .where(AgentSessionModel.account_id == actor.account_id)
+            .where(
+                AgentSessionModel.account_id == actor.account_id,
+                AgentSessionModel.family_id == family.id,
+            )
             .order_by(AgentSessionModel.last_active_at.desc())
         )
         return SessionListResponse(sessions=[_to_response(row) for row in rows])
@@ -79,7 +88,7 @@ async def list_sessions(request: Request) -> SessionListResponse:
 async def create_session(
     payload: CreateSessionRequest, request: Request, response: Response
 ) -> SessionResponse:
-    actor = authenticate(request)
+    actor = await authenticate_active(request)
     database: Database = request.app.state.database
     now = datetime.now(UTC)
 
@@ -140,7 +149,7 @@ async def _own_session(session, account_id: UUID, session_id: UUID) -> AgentSess
 async def update_session(
     session_id: UUID, payload: UpdateSessionRequest, request: Request
 ) -> SessionResponse:
-    actor = authenticate(request)
+    actor = await authenticate_active(request)
     database: Database = request.app.state.database
     async with database.session() as session:
         model = await _own_session(session, actor.account_id, session_id)
@@ -154,7 +163,7 @@ async def update_session(
 
 @router.delete("/api/v1/agent/sessions/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_session(session_id: UUID, request: Request) -> Response:
-    actor = authenticate(request)
+    actor = await authenticate_active(request)
     database: Database = request.app.state.database
     async with database.session() as session:
         model = await _own_session(session, actor.account_id, session_id)

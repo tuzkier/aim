@@ -1,4 +1,4 @@
-import Foundation
+import SwiftUI
 
 /// 对话面页面的地址。
 ///
@@ -17,5 +17,39 @@ enum AgentWebScheme {
 
     static func indexURL(gateway: URL) -> URL {
         URL(string: path, relativeTo: gateway)!.absoluteURL
+    }
+}
+
+enum LegalPage: String {
+    case privacy = "privacy.html"
+    case terms = "terms.html"
+
+    var title: String {
+        switch self {
+        case .privacy: "隐私政策"
+        case .terms: "用户协议"
+        }
+    }
+}
+
+extension AgentWebScheme {
+    /// 法律页面和对话面一样由网关提供，路径对应 nginx 的 `location /legal/`。
+    static func legalURL(_ page: LegalPage, gateway: URL) -> URL {
+        URL(string: "/legal/" + page.rawValue, relativeTo: gateway)!.absoluteURL
+    }
+}
+
+extension LegalPage: Identifiable {
+    var id: String { rawValue }
+}
+
+extension View {
+    /// 绑定一个 `LegalPage?`，非 nil 时用系统 Safari 视图弹出对应页面。
+    /// 放在这里而不是 `SafariView` 旁边：`SafariView` 是通用组件，不该反过来认识 Feature 层的 `LegalPage`。
+    func legalPageSheet(_ page: Binding<LegalPage?>, gateway: URL) -> some View {
+        sheet(item: page) { selected in
+            SafariView(url: AgentWebScheme.legalURL(selected, gateway: gateway))
+                .ignoresSafeArea()
+        }
     }
 }

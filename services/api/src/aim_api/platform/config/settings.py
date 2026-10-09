@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     api_port: int = Field(default=8000, validation_alias="API_PORT")
     otel_enabled: bool = Field(default=False, validation_alias="OTEL_ENABLED")
     auth_secret: str = Field(default="aim-development-secret", validation_alias="AUTH_SECRET")
+    attachments_root: str = Field(default="var/attachments", validation_alias="AIM_ATTACHMENTS_ROOT")
     auth_token_ttl_seconds: int = Field(default=3600, validation_alias="AUTH_TOKEN_TTL_SECONDS")
     agent_service_secret: str = Field(
         default="aim-agent-development-secret", validation_alias="AGENT_SERVICE_SECRET"

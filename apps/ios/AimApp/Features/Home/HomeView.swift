@@ -37,11 +37,13 @@ struct HomeView: View {
                     days: store.currentDays,
                     date: store.today,
                     stageName: store.stageName,
+                    title: "待办",
                     onOpenTimeline: { showingTimeline = true },
                     onNewTask: { showingTaskComposer = true },
                     onNewRecord: { if session.pregnancyID != nil { showingRecordComposer = true } },
                     onAgent: {
-                        agentStore.focus(context: agentContext)
+                        // 首页的 AIM 按钮不针对某一页，开一段普通的新对话，不带上下文标签。
+                        agentStore.focus(context: nil)
                         showingAgent = true
                     }
                 )
@@ -53,6 +55,15 @@ struct HomeView: View {
             .task(id: session.pregnancyID) {
                 guard session.pregnancyID != nil, store.weeks.isEmpty else { return }
                 await store.load()
+            }
+            .onAppear {
+                if let notice = session.welcomeBackNotice {
+                    toast = AimToastMessage(text: notice, undoTitle: "", accessibilityIdentifier: "home-welcome-back")
+                    session.welcomeBackNotice = nil
+                } else if let notice = session.familyNotice {
+                    toast = AimToastMessage(text: notice, undoTitle: "", accessibilityIdentifier: "home-family-notice")
+                    session.familyNotice = nil
+                }
             }
             // `store.now` 只在 load() 里刷新。App 在后台放一夜再回来，「今天」「逾期」「接下来 7 天」
             // 都还按昨天分组。回到前台先把 now 拨到现在——store 是 @Observable，各分组随之重算；
@@ -168,8 +179,8 @@ struct HomeView: View {
 
             Section {
                 sectionHeader("最近记录", trailing: AnyView(
-                    Button("全部") { showingTimeline = true }
-                        .font(.caption2)
+                    Button("全部 ›") { showingTimeline = true }
+                        .font(.caption)
                         .foregroundStyle(Color.aimAccent)
                         .buttonStyle(.plain)
                 ))
@@ -220,7 +231,7 @@ struct HomeView: View {
 
     private func sectionHeader(_ title: String, trailing: AnyView? = nil) -> some View {
         HStack {
-            Text(title).aimLabelStyle()
+            Text(title).aimSectionTitle()
             Spacer()
             if let trailing { trailing }
         }
@@ -339,13 +350,5 @@ struct HomeView: View {
         } else {
             quickAddError = store.errorMessage ?? "没能保存这条待办，稍后再试。"
         }
-    }
-
-    private var agentContext: AgentContext {
-        let week = store.currentWeek.map { "孕 \($0) 周" } ?? "孕期"
-        var lines = [week]
-        if let focus = store.focusTask { lines.append("当前最重要：" + focus.title) }
-        if !store.todayTasks.isEmpty { lines.append("今天还有 \(store.todayTasks.count) 项待办") }
-        return AgentContext(title: "今天", summary: lines.joined(separator: "\n"))
     }
 }

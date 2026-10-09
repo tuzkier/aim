@@ -16,7 +16,7 @@
 - `services/api`：FastAPI DDD 业务服务和 PostgreSQL 事实中心
 - `services/agent`：独立 Eve Agent Runtime，不拥有业务事实表
 - `contracts`：Public API 与 Internal Tool API 契约
-- `content`：版本化孕期任务、安全规则和杭州资料
+- `content`：版本化孕期任务、安全规则、杭州资料与孕期百科（说明见 `content/README.md`）
 - `infrastructure`：本地 Compose 与部署配置
 
 ## 常用命令
@@ -52,4 +52,4 @@ make verify
 xcrun simctl spawn booted defaults delete com.aim.pregnancy
 ```Eve 默认使用确定性 Mock Model；接入真实模型前请通过环境变量覆盖，不要把凭证写入 Compose 文件。
 
-iOS 首屏是手机号 + 密码的注册／登录，注册时选择家庭角色（妈妈／爸爸／其他家人）和称呼。进入后可录入预产期或末次月经，Aim 按 280 天互相换算并生成孕期计划。不发送短信；密码找回靠服务器上的 `services/api/scripts/reset_password.py`。
+iOS 首屏是手机号 + 密码的注册／登录，注册时选择家庭角色（妈妈／爸爸／其他家人）和称呼。进入后可录入预产期或末次月经，Aim 按 280 天互相换算并生成孕期计划。不发送短信；密码找回靠服务器上的 `services/api/scripts/reset_password.py`。注册需同意《用户协议》和《隐私政策》（`apps/legal/`，由网关 `/legal/` 提供）；家庭页可退出登录或申请注销，注销有 30 天缓冲期，到期由 `services/api/scripts/purge_deleted_accounts.py` 清理。

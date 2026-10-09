@@ -17,12 +17,13 @@ export default defineTool({
   description:
     "Get the current date and time in the user's timezone (Asia/Shanghai, UTC+8). " +
     "Call this before computing any date the user refers to relatively — 今天/明天/" +
-    "下周三/这个周末 — and before setting dueAt on a task. Never guess the current " +
+    "下周三/这个周末 — and before setting any time on a task or record (write those as " +
+    "YYYY-MM-DDTHH:mm with no timezone). Never guess the current " +
     "date from the conversation: you have no clock, and the runtime is on UTC, " +
     "which is 8 hours behind the user.",
   inputSchema: z.object({}),
   outputSchema: z.object({
-    iso: z.string().describe("带 +08:00 偏移的当前时刻，可直接用于 dueAt"),
+    iso: z.string().describe("带 +08:00 偏移的当前时刻，仅供参考；写工具的时间参数用 date + time 拼成不带时区的墙上时刻"),
     date: z.string().describe("当天日期，YYYY-MM-DD"),
     time: z.string().describe("当前时刻，HH:mm"),
     weekday: z.string().describe("中文星期，如「星期三」"),

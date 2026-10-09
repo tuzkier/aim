@@ -195,4 +195,5 @@ private final class StubTimelineRepository: BusinessRepositoryProtocol, @uncheck
     func invite(phone: String, role: FamilyRole) async throws { throw APIError.notConfigured }
     func renameFamily(to name: String) async throws {}
     func updateMyMembership(nickname: String?, role: FamilyRole?) async throws {}
+    func requestAccountDeletion(password: String) async throws { throw APIError.notConfigured }
 }

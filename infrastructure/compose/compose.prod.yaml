@@ -7,6 +7,9 @@ services:
 
   api:
     restart: unless-stopped
+    environment:
+      # 未审核的百科绝不上生产。
+      AIM_CONTENT_INCLUDE_DRAFTS: "0"
     build:
       args:
         # 服务器直连 pypi.org 不通，构建走阿里云镜像站
@@ -17,5 +20,9 @@ services:
 
   eve:
     restart: unless-stopped
+    environment:
+      # 缺模型配置时 eve 启动即退出，而不是静默退回 mock（见 agent/lib/model-config.ts）。
+      AIM_DEPLOYMENT: production
+      EVE_USE_MOCK_MODEL: "0"
     ports: !override
       - "127.0.0.1:2210:2000"

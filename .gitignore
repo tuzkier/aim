@@ -46,3 +46,6 @@ services/agent/.sandbox/
 .idea/
 .vscode/
 
+
+# 本机直接跑业务服务时上传的图片
+services/api/var/

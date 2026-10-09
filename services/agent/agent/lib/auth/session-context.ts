@@ -27,10 +27,16 @@ function requiredAttribute(
  */
 export function requireAimScope(ctx: AuthenticatedSessionContext): AimScope {
   const attributes = ctx.session.auth.current?.attributes;
+  const pregnancyId = attributes?.pregnancyId;
+  // 鉴权时没有孕期档案的账号 pregnancyId 为空串（见 lib/auth.ts）。这句话会回到
+  // 模型手里并被转述给用户，所以写成用户能照着做的中文。
+  if (typeof pregnancyId !== "string" || pregnancyId.trim().length === 0) {
+    throw new Error("还没有建立孕期档案，请先在 App 里填写预产期或末次月经");
+  }
   return {
     accountId: requiredAttribute(attributes, "accountId"),
     familyId: requiredAttribute(attributes, "familyId"),
-    pregnancyId: requiredAttribute(attributes, "pregnancyId"),
+    pregnancyId: pregnancyId.trim(),
   };
 }
 

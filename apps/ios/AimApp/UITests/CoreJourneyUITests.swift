@@ -10,7 +10,7 @@ final class CoreJourneyUITests: XCTestCase {
 
         completePregnancySetup(in: app)
 
-        let timelineTab = app.tabBars.buttons["孕期"]
+        let timelineTab = app.tabBars.buttons["待办"]
         XCTAssertTrue(timelineTab.waitForExistence(timeout: 15))
         timelineTab.tap()
 
@@ -34,7 +34,7 @@ final class CoreJourneyUITests: XCTestCase {
 
         completePregnancySetup(in: app)
 
-        let timelineTab = app.tabBars.buttons["孕期"]
+        let timelineTab = app.tabBars.buttons["待办"]
         XCTAssertTrue(timelineTab.waitForExistence(timeout: 15))
         timelineTab.tap()
 
@@ -76,7 +76,7 @@ final class CoreJourneyUITests: XCTestCase {
 
         completePregnancySetup(in: app)
 
-        let timelineTab = app.tabBars.buttons["孕期"]
+        let timelineTab = app.tabBars.buttons["待办"]
         XCTAssertTrue(timelineTab.waitForExistence(timeout: 15))
         timelineTab.tap()
 
@@ -104,7 +104,7 @@ final class CoreJourneyUITests: XCTestCase {
 
         completePregnancySetup(in: app)
 
-        let timelineTab = app.tabBars.buttons["孕期"]
+        let timelineTab = app.tabBars.buttons["待办"]
         XCTAssertTrue(timelineTab.waitForExistence(timeout: 15))
         timelineTab.tap()
 
@@ -157,7 +157,7 @@ final class CoreJourneyUITests: XCTestCase {
 
         completePregnancySetup(in: app)
 
-        let timelineTab = app.tabBars.buttons["孕期"]
+        let timelineTab = app.tabBars.buttons["待办"]
         XCTAssertTrue(timelineTab.waitForExistence(timeout: 15))
         timelineTab.tap()
 
@@ -193,7 +193,7 @@ final class CoreJourneyUITests: XCTestCase {
 
         completePregnancySetup(in: app)
 
-        let timelineTab = app.tabBars.buttons["孕期"]
+        let timelineTab = app.tabBars.buttons["待办"]
         XCTAssertTrue(timelineTab.waitForExistence(timeout: 15))
         timelineTab.tap()
 
@@ -228,8 +228,9 @@ final class CoreJourneyUITests: XCTestCase {
 
         registerNewAccount(in: app)
         completePregnancySetup(in: app)
+        openTasksTab(in: app)
 
-        XCTAssertTrue(app.tabBars.buttons["孕期"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.tabBars.buttons["待办"].waitForExistence(timeout: 15))
 
         let quickAdd = app.buttons["home-quick-add"]
         reveal(quickAdd, in: app)
@@ -252,6 +253,42 @@ final class CoreJourneyUITests: XCTestCase {
 
     /// 首页标题是进入完整时间线的主入口。时间线以今天所在周开头，
     /// 筛选跟着时间线走了，返回后回到首页。
+    /// 加错的待办要能删掉，而不是只能标成完成——那会留下一条假的「已完成」。
+    func testATaskCanBeDeletedFromItsDetail() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-reset-session"]
+        app.launch()
+
+        registerNewAccount(in: app)
+        completePregnancySetup(in: app)
+        openTasksTab(in: app)
+        XCTAssertTrue(app.tabBars.buttons["待办"].waitForExistence(timeout: 15))
+
+        let quickAdd = app.buttons["home-quick-add"]
+        reveal(quickAdd, in: app)
+        quickAdd.tap()
+        let field = app.textFields["home-quick-add-field"]
+        XCTAssertTrue(field.waitForExistence(timeout: 3))
+        let title = "加错的待办 \(Int.random(in: 100...999))"
+        field.typeText(title + "\n")
+        let row = app.staticTexts[title]
+        XCTAssertTrue(row.waitForExistence(timeout: 10))
+        dismissKeyboard(in: app)
+
+        row.tap()
+        let delete = app.buttons["task-delete"]
+        reveal(delete, in: app)
+        delete.tap()
+        let confirm = app.buttons["删除"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 3), "删除前应当再确认一次")
+        confirm.tap()
+
+        XCTAssertTrue(app.buttons["home-quick-add"].waitForExistence(timeout: 10), "删除后应回到首页")
+        let gone = NSPredicate(format: "exists == false")
+        expectation(for: gone, evaluatedWith: app.staticTexts[title])
+        waitForExpectations(timeout: 10)
+    }
+
     func testHeaderOpensTimelineWithTodayOnTop() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-reset-session"]
@@ -259,6 +296,7 @@ final class CoreJourneyUITests: XCTestCase {
 
         registerNewAccount(in: app)
         completePregnancySetup(in: app)
+        openTasksTab(in: app)
 
         let header = app.buttons["home-header-week"]
         XCTAssertTrue(header.waitForExistence(timeout: 15))
@@ -375,19 +413,52 @@ final class CoreJourneyUITests: XCTestCase {
         XCTAssertTrue(picker.waitForExistence(timeout: 10), "「吃什么」应当分成菜谱与饮食提示")
         picker.buttons["饮食提示"].tap()
 
-        // 内容 id 来自 content/nutrition，不是写死在客户端的。
-        let item = app.buttons["content-item-raw-and-undercooked"]
+        // 饮食提示下列出的是百科「饮食营养」主题的条目。
+        let item = app.buttons["encyclopedia-entry-diet.raw-and-undercooked"]
         reveal(item, in: app)
         item.tap()
 
         XCTAssertTrue(
             app.navigationBars["生食与未煮熟的食物"].waitForExistence(timeout: 10),
-            "自带条目应当能点进详情"
+            "百科条目应当能点进详情"
         )
         XCTAssertTrue(
-            app.buttons["content-ask-agent"].waitForExistence(timeout: 5),
+            app.buttons["encyclopedia-ask-0"].waitForExistence(timeout: 5),
             "详情里应当能就这条问 AIM"
         )
+    }
+
+    /// 百科是资料库「开箱就有内容」的那一层：主题 → 条目 → 顺着条目问 AIM。
+    func testEncyclopediaTopicEntryAndAskAIM() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-reset-session"]
+        app.launch()
+
+        registerNewAccount(in: app)
+        completePregnancySetup(in: app)
+
+        let libraryTab = app.tabBars.buttons["资料库"]
+        XCTAssertTrue(libraryTab.waitForExistence(timeout: 15))
+        libraryTab.tap()
+
+        XCTAssertTrue(app.otherElements["library-weekly-picks"].waitForExistence(timeout: 10),
+                      "有当前孕周时应当显示「这周读什么」")
+
+        let topic = app.buttons["library-topic-diet"]
+        reveal(topic, in: app)
+        topic.tap()
+
+        let entry = app.buttons["encyclopedia-entry-diet.raw-and-undercooked"]
+        reveal(entry, in: app)
+        entry.tap()
+
+        XCTAssertTrue(app.navigationBars["生食与未煮熟的食物"].waitForExistence(timeout: 10))
+        let ask = app.buttons["encyclopedia-ask-0"]
+        reveal(ask, in: app)
+        ask.tap()
+
+        XCTAssertTrue(app.webViews.firstMatch.waitForExistence(timeout: 15),
+                      "点推荐问题应当打开 AIM")
     }
 
     /// 「想问医生」此前缺了最关键的一步：产检那天怎么把攒下的问题一次带走。
@@ -504,7 +575,7 @@ final class CoreJourneyUITests: XCTestCase {
 
         completePregnancySetup(in: app)
 
-        let timelineTab = app.tabBars.buttons["孕期"]
+        let timelineTab = app.tabBars.buttons["待办"]
         XCTAssertTrue(timelineTab.waitForExistence(timeout: 15))
         timelineTab.tap()
 
@@ -650,7 +721,7 @@ final class CoreJourneyUITests: XCTestCase {
         // 不点任何东西，录入界面就应该自己出现，且底部 Tab 还进不去。
         let save = app.buttons["pregnancy-setup-save"]
         XCTAssertTrue(save.waitForExistence(timeout: 10), "登录后应直接进入孕期信息录入")
-        XCTAssertFalse(app.tabBars.buttons["孕期"].exists, "填完之前不应能进入主界面")
+        XCTAssertFalse(app.tabBars.buttons["待办"].exists, "填完之前不应能进入主界面")
 
         // 没选日期 → 不能保存。
         XCTAssertFalse(save.isEnabled, "未选择日期时不应允许保存")
@@ -670,7 +741,7 @@ final class CoreJourneyUITests: XCTestCase {
         save.tap()
 
         XCTAssertTrue(
-            app.tabBars.buttons["孕期"].waitForExistence(timeout: 15),
+            app.tabBars.buttons["待办"].waitForExistence(timeout: 15),
             "保存后应进入主界面"
         )
     }
@@ -767,6 +838,92 @@ final class CoreJourneyUITests: XCTestCase {
     }
 
 
+    /// 首页：启动停在首页，孕周主卡点开本周详情能翻周，「全部 N 项」切到待办。
+    func testHomeShowsTheWeekAndOpensDetail() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-reset-session"]
+        app.launch()
+        registerNewAccount(in: app, nickname: "阿敏")
+        completePregnancySetup(in: app)
+
+        let greeting = app.staticTexts["home-greeting"]
+        XCTAssertTrue(greeting.waitForExistence(timeout: 15), "启动后应停在首页")
+        XCTAssertTrue(greeting.label.contains("阿敏"), "问候里应当用家里的称呼")
+
+        let hero = app.buttons["home-hero"]
+        XCTAssertTrue(hero.waitForExistence(timeout: 10), "首页应当有孕周主卡")
+        hero.tap()
+        XCTAssertTrue(app.navigationBars["第 18 周"].waitForExistence(timeout: 8), "主卡点开应是当前这一周")
+        XCTAssertTrue(app.staticTexts["这是你现在所在的一周"].exists)
+        app.buttons["week-next"].tap()
+        XCTAssertTrue(app.navigationBars["第 19 周"].waitForExistence(timeout: 5), "应当能翻到下一周")
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+
+        let all = app.buttons["home-today-all"]
+        reveal(all, in: app)
+        all.tap()
+        XCTAssertTrue(app.buttons["home-header-week"].waitForExistence(timeout: 8), "「全部」应切到待办标签")
+    }
+
+    /// 邀请此前走不通：被邀请的人在 App 里看不到邀请。这条守的是按手机号走完整条路：
+    /// A 发邀请 → 退出 → B 用该号注册 → 在填写预产期页看到邀请 → 加入 → 家庭页里有两个人。
+    func testInviteeJoinsByPhone() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-reset-session"]
+        app.launch()
+        registerNewAccount(in: app, nickname: "阿敏")
+        completePregnancySetup(in: app)
+
+        let familyTab = app.tabBars.buttons["家庭"]
+        XCTAssertTrue(familyTab.waitForExistence(timeout: 15))
+        familyTab.tap()
+        let invite = app.buttons["family-invite"]
+        reveal(invite, in: app)
+        invite.tap()
+
+        let inviteePhone = "137\(Int.random(in: 10_000_000...99_999_999))"
+        let phoneField = app.textFields["invite-phone"]
+        XCTAssertTrue(phoneField.waitForExistence(timeout: 8))
+        phoneField.tap()
+        phoneField.typeText(inviteePhone)
+        app.buttons["invite-send"].tap()
+        XCTAssertTrue(app.staticTexts["邀请已发出"].waitForExistence(timeout: 10))
+        app.buttons["完成"].tap()
+        XCTAssertTrue(
+            app.buttons["family-invitation-row"].waitForExistence(timeout: 10),
+            "成员列表里应当出现「等待加入」的一行")
+
+        let profile = app.buttons["profile-entry"]
+        reveal(profile, in: app)
+        profile.tap()
+        let signOut = app.buttons["account-sign-out"]
+        reveal(signOut, in: app)
+        signOut.tap()
+
+        XCTAssertTrue(app.textFields["auth-phone"].waitForExistence(timeout: 10))
+        // 登录页可能停在登录模式：切回注册。
+        let registerSegment = app.segmentedControls["auth-mode-picker"].buttons["注册"]
+        if registerSegment.waitForExistence(timeout: 3) { registerSegment.tap() }
+        registerNewAccount(in: app, role: "爸爸", phone: inviteePhone)
+
+        let invitationRow = app.buttons["setup-invitation-row"]
+        XCTAssertTrue(invitationRow.waitForExistence(timeout: 15), "填写预产期页顶部应当列出家人的邀请")
+        invitationRow.tap()
+        let accept = app.buttons["invitation-accept"]
+        XCTAssertTrue(accept.waitForExistence(timeout: 8))
+        accept.tap()
+        var confirm = app.sheets.buttons["加入"].firstMatch
+        if !confirm.waitForExistence(timeout: 5) {
+            confirm = app.buttons["加入"].firstMatch
+        }
+        confirm.tap()
+
+        XCTAssertTrue(familyTab.waitForExistence(timeout: 20), "加入后共享对方的孕期，直接进主界面")
+        familyTab.tap()
+        XCTAssertTrue(app.staticTexts["阿敏"].waitForExistence(timeout: 15), "应当看到邀请人")
+        XCTAssertEqual(app.buttons.matching(identifier: "family-member-row").count, 2)
+    }
+
     /// AIM 的会话此前只活在内存里，App 一重启就找不回来。这条守的是「翻得回去」：
     /// 问一句 → 开新对话 → 从历史列表把刚才那段找回来。
     func testAPastConversationCanBeReopenedFromHistory() throws {
@@ -813,6 +970,109 @@ final class CoreJourneyUITests: XCTestCase {
             "点回历史对话，内容应当被重放回来")
     }
 
+    /// App Store 审核指南 5.1.1(v)：能注册就必须能在 App 内注销。
+    /// 30 天缓冲：注销后马上用同一账号登录，应当恢复并提示。
+    func testAccountCanBeDeletedAndRestoredWithinGracePeriod() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-reset-session"]
+        app.launch()
+
+        let phone = registerNewAccount(in: app)
+        completePregnancySetup(in: app)
+
+        let familyTab = app.tabBars.buttons["家庭"]
+        XCTAssertTrue(familyTab.waitForExistence(timeout: 15))
+        familyTab.tap()
+        // 账号设置在个人资料页里：家庭页顶部的「我」卡片进去。
+        let profile = app.buttons["profile-entry"]
+        XCTAssertTrue(profile.waitForExistence(timeout: 10))
+        profile.tap()
+
+        let deleteButton = app.buttons["account-delete"]
+        reveal(deleteButton, in: app)
+        deleteButton.tap()
+        // confirmationDialog 的按钮桥接成 UIAlertAction，accessibilityIdentifier 会丢，只能按标题查。
+        // 同一标题在树里会出现不止一次（sheet 本身也带一份），要 firstMatch。
+        var confirm = app.sheets.buttons["继续注销"].firstMatch
+        if !confirm.waitForExistence(timeout: 5) {
+            confirm = app.buttons["继续注销"].firstMatch
+        }
+        XCTAssertTrue(confirm.waitForExistence(timeout: 5), "应当弹出注销确认")
+        confirm.tap()
+
+        let passwordField = app.secureTextFields["account-delete-password"]
+        XCTAssertTrue(passwordField.waitForExistence(timeout: 5))
+        passwordField.tap()
+        passwordField.typeText("aim-test-password")
+        let submitDeletion = app.buttons["account-delete-submit"]
+        XCTAssertTrue(submitDeletion.waitForExistence(timeout: 5))
+        submitDeletion.tap()
+
+        // 回到登录页，带一句提示。
+        let notice = app.staticTexts["auth-notice"]
+        XCTAssertTrue(notice.waitForExistence(timeout: 10), "注销后应回到登录页并提示")
+
+        // 缓冲期内登录 → 恢复。
+        selectLoginMode(in: app)
+        let phoneField = app.textFields["auth-phone"]
+        XCTAssertTrue(phoneField.waitForExistence(timeout: 5))
+        phoneField.tap()
+        phoneField.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 20))
+        phoneField.typeText(phone)
+        let password = app.secureTextFields["auth-password"]
+        password.tap()
+        password.typeText("aim-test-password")
+        dismissKeyboard(in: app)
+        let login = app.buttons["auth-submit"]
+        XCTAssertTrue(login.waitForExistence(timeout: 5))
+        XCTAssertTrue(login.isEnabled, "登录模式不需要勾同意")
+        login.tap()
+
+        let welcome = app.descendants(matching: .any).matching(identifier: "home-welcome-back").firstMatch
+        XCTAssertTrue(welcome.waitForExistence(timeout: 15), "缓冲期内登录应提示注销已取消")
+    }
+
+    /// 未勾选同意时不能注册。
+    func testRegistrationIsBlockedUntilTermsAreAccepted() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-reset-session"]
+        app.launch()
+
+        let phone = app.textFields["auth-phone"]
+        XCTAssertTrue(phone.waitForExistence(timeout: 10))
+        phone.tap()
+        phone.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 20))
+        phone.typeText("139\(Int.random(in: 10_000_000...99_999_999))")
+        let password = app.secureTextFields["auth-password"]
+        password.tap()
+        password.typeText("aim-test-password")
+        dismissKeyboard(in: app)
+        app.buttons["auth-role"].tap()
+        let mother = app.buttons["妈妈"]
+        XCTAssertTrue(mother.waitForExistence(timeout: 5))
+        mother.tap()
+
+        let submit = app.buttons["auth-submit"]
+        XCTAssertTrue(submit.waitForExistence(timeout: 5))
+        XCTAssertFalse(submit.isEnabled, "没勾同意不该能注册")
+        acceptTerms(in: app)
+        let enabled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isEnabled == true"), object: submit)
+        XCTAssertEqual(XCTWaiter.wait(for: [enabled], timeout: 3), .completed, "勾了同意就该能注册")
+    }
+
+    /// 切到登录模式。segmented picker 的段在无障碍树里是 button；
+    /// 先从带标识符的分段控件里找，找不到再退回到全局第一个「登录」按钮。
+    private func selectLoginMode(in app: XCUIApplication) {
+        let segment = app.segmentedControls["auth-mode-picker"].buttons["登录"]
+        if segment.waitForExistence(timeout: 3) {
+            segment.tap()
+            return
+        }
+        let fallback = app.buttons["登录"].firstMatch
+        XCTAssertTrue(fallback.waitForExistence(timeout: 3), "登录页应当能切到登录模式")
+        fallback.tap()
+    }
+
     /// 注册一个全新账号。
     ///
     /// 服务端的 `demo-session` 免密入口已经删除，所有用例都要走真实注册：
@@ -820,19 +1080,23 @@ final class CoreJourneyUITests: XCTestCase {
     ///
     /// 输入密码后必须先收键盘：键盘会盖住底部的提交按钮，而滑动去够它
     /// 又会和键盘的滚动打架。收掉之后整个表单就在一屏里。
+    @discardableResult
     private func registerNewAccount(
         in app: XCUIApplication,
         role: String = "妈妈",
-        nickname: String? = nil
-    ) {
-        let phone = app.textFields["auth-phone"]
-        guard phone.waitForExistence(timeout: 10) else {
-            return XCTFail("注册页没有出现")
+        nickname: String? = nil,
+        phone fixedPhone: String? = nil
+    ) -> String {
+        let phone = fixedPhone ?? "139\(Int.random(in: 10_000_000...99_999_999))"
+        let phoneField = app.textFields["auth-phone"]
+        guard phoneField.waitForExistence(timeout: 10) else {
+            XCTFail("注册页没有出现")
+            return phone
         }
 
-        phone.tap()
-        phone.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 20))
-        phone.typeText("139\(Int.random(in: 10_000_000...99_999_999))")
+        phoneField.tap()
+        phoneField.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 20))
+        phoneField.typeText(phone)
 
         let password = app.secureTextFields["auth-password"]
         password.tap()
@@ -852,10 +1116,50 @@ final class CoreJourneyUITests: XCTestCase {
         XCTAssertTrue(option.waitForExistence(timeout: 5), "身份菜单里应当有「\(role)」")
         option.tap()
 
+        // 注册前必须同意协议。Toggle 在无障碍树里是 switch。
+        acceptTerms(in: app)
+
         let submit = app.buttons["auth-submit"]
         XCTAssertTrue(submit.waitForExistence(timeout: 5))
-        XCTAssertTrue(submit.isEnabled, "手机号、密码、身份都填齐后应当可以注册")
+        XCTAssertTrue(submit.isEnabled, "手机号、密码、身份、同意都填齐后应当可以注册")
         submit.tap()
+        return phone
+    }
+
+    /// 同意开关。SwiftUI 的 Toggle 通常直接暴露为 switch，标识符挂在它身上；
+    /// 若标识符落在外层容器上，则退回到容器里的第一个 switch。
+    private func consentSwitch(in app: XCUIApplication) -> XCUIElement {
+        let direct = app.switches["auth-consent"]
+        if direct.waitForExistence(timeout: 3) { return direct }
+        return app.descendants(matching: .any)
+            .matching(identifier: "auth-consent").firstMatch
+            .switches.firstMatch
+    }
+
+    /// 勾上同意开关。
+    ///
+    /// `auth-consent` 这个 switch 元素的框覆盖整行（标签 + 开关），它的中心点落在
+    /// 标签里的《隐私政策》链接上：按元素 `tap()` 会打开隐私页而不是拨开关。
+    /// 所以这里从来不按元素点，而是算出开关本体的中心：优先用行内嵌套的
+    /// UISwitch（无标识符、贴右侧的那个）的框，没有就取整行右缘往里 30pt。
+    private func acceptTerms(in app: XCUIApplication) {
+        let consent = consentSwitch(in: app)
+        XCTAssertTrue(consent.waitForExistence(timeout: 5), "注册页应当有同意开关")
+        guard (consent.value as? String) != "1" else { return }
+
+        let rowFrame = consent.frame
+        let knob = consent.switches.firstMatch
+        let knobFrame = knob.exists ? knob.frame : .null
+        let target = knobFrame.isNull
+            ? CGPoint(x: rowFrame.maxX - 30, y: rowFrame.midY)
+            : CGPoint(x: knobFrame.midX, y: knobFrame.midY)
+        app.coordinate(withNormalizedOffset: .zero)
+            .withOffset(CGVector(dx: target.x, dy: target.y))
+            .tap()
+
+        let flipped = NSPredicate(format: "value == '1'")
+        let flippedExpectation = XCTNSPredicateExpectation(predicate: flipped, object: consent)
+        XCTAssertEqual(XCTWaiter.wait(for: [flippedExpectation], timeout: 3), .completed, "点击后同意开关应当打开")
     }
 
     /// 对话面换成 WebView 之后最该守住的一条：页面能从网关加载起来。
@@ -876,7 +1180,7 @@ final class CoreJourneyUITests: XCTestCase {
 
         // WebView 里的文字对 XCUITest 是可见的，可以直接断言。
         XCTAssertTrue(
-            app.staticTexts["可以问孕期变化、最近记录或接下来要做的事。涉及计划变更时，我会先让你确认。"].waitForExistence(timeout: 30),
+            app.staticTexts["可以问孕期变化、最近记录或接下来要做的事，也可以拍产检单让我记下来。涉及计划变更时，我会先让你确认。"].waitForExistence(timeout: 30),
             "对话面应当加载出打包在 bundle 里的页面；空白说明自定义 scheme 没取到静态资源"
         )
     }
@@ -962,6 +1266,13 @@ final class CoreJourneyUITests: XCTestCase {
         if app.keyboards.count > 0 {
             app.typeText("\n")
         }
+    }
+
+    /// 启动默认停在首页；待办相关的用例先切到「待办」标签。
+    private func openTasksTab(in app: XCUIApplication) {
+        let tab = app.tabBars.buttons["待办"]
+        XCTAssertTrue(tab.waitForExistence(timeout: 15))
+        tab.tap()
     }
 
     private func completePregnancySetup(in app: XCUIApplication) {

@@ -7,6 +7,9 @@ struct LibrarySnapshot: Equatable, Sendable {
     /// 内容集合的条目总数。清单类分类的进度是「已勾选记录数 / 集合条目数」，
     /// 两边缺一不可——内容还没加载出来时不能显示 0/0，那看起来像没有内容。
     var collectionSizes: [String: Int] = [:]
+    /// 百科各主题的条目数。「吃什么」没有用户条目时优先用饮食主题的数量做摘要，
+    /// 为空（生产尚未发布百科）时回退到 nutrition 集合的条目数。
+    var encyclopediaCounts: [String: Int] = [:]
 }
 
 /// 一张分类卡上显示的活数据。
@@ -94,7 +97,9 @@ enum LibraryCategoryID: String, CaseIterable, Identifiable, Sendable {
             return Self.checklistSummary(
                 from: snapshot, collection: "preparation", format: { "待产包 \($0)/\($1)" })
         case .nutrition:
-            guard let total = snapshot.collectionSizes["nutrition"], total > 0 else {
+            let diet = snapshot.encyclopediaCounts["diet"] ?? 0
+            let total = diet > 0 ? diet : snapshot.collectionSizes["nutrition"] ?? 0
+            guard total > 0 else {
                 return LibrarySummary(headline: Self.placeholderHeadline(for: self))
             }
             return LibrarySummary(headline: "\(total) 条饮食提示")

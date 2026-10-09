@@ -201,4 +201,15 @@ final class LibraryStep2CatalogTests: XCTestCase {
         XCTAssertEqual(
             LibraryCategoryID.preparation.summary(from: snapshot).headline, "待产包与婴儿用品")
     }
+
+    /// 「吃什么」：百科饮食主题有条目时用它的数量；生产不加载草稿时回退到 nutrition 集合。
+    func testNutritionSummaryPrefersEncyclopediaAndFallsBackToNutritionCollection() {
+        let fallback = LibrarySnapshot(collectionSizes: ["nutrition": 7])
+        let both = LibrarySnapshot(collectionSizes: ["nutrition": 7], encyclopediaCounts: ["diet": 12])
+        let neither = LibrarySnapshot()
+
+        XCTAssertEqual(LibraryCategoryID.nutrition.summary(from: fallback).headline, "7 条饮食提示")
+        XCTAssertEqual(LibraryCategoryID.nutrition.summary(from: both).headline, "12 条饮食提示")
+        XCTAssertEqual(LibraryCategoryID.nutrition.summary(from: neither).headline, "食谱与禁忌，即将上线")
+    }
 }

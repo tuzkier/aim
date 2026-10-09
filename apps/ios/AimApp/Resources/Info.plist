@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CFBundleDisplayName</key>
+	<string>AIMom</string>
 	<!--
 	  验证环境后端的地址。真实值来自不进版本库的
 	  AimApp/Config/Endpoints.local.xcconfig，构建时由 Xcode 展开；
@@ -10,6 +12,11 @@
 	-->
 	<key>AIMRemoteBaseURL</key>
 	<string>$(AIM_REMOTE_BASE_URL)</string>
+	<!-- 只用系统 HTTPS/TLS，属于豁免加密；声明了就不用每次上传都答问卷。 -->
+	<key>NSCameraUsageDescription</key>
+	<string>用于拍摄产检报告等，交给 AIM 识别。</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<!--
 	  验证环境后端是纯 IP、无 TLS。ATS 的 NSExceptionDomains 只接受域名，
 	  不接受 IP 地址，因此这里只能整体放开明文 HTTP。

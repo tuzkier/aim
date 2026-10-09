@@ -51,7 +51,7 @@ from aim_api.contexts.records.adapters.outbound.persistence.repositories import 
 from aim_api.contexts.records.application.queries import get_record
 from aim_api.contexts.records.application.queries.get_record import GetRecordQuery
 from aim_api.contexts.records.domain.errors import RecordAccessDenied, RecordNotFound
-from aim_api.platform.auth.context import ActorContext, authenticate
+from aim_api.platform.auth.context import ActorContext, authenticate_active
 from aim_api.platform.http.errors import (
     ConflictError,
     ForbiddenError,
@@ -185,13 +185,13 @@ def _translate(error: Exception) -> None:
     raise error
 
 
-def _actor(request: Request) -> ActorContext:
-    return authenticate(request)
+async def _actor(request: Request) -> ActorContext:
+    return await authenticate_active(request)
 
 
 @router.get("/api/v1/pregnancies/{pregnancy_id}/plan", response_model=PlanResponse)
 async def get_plan_endpoint(pregnancy_id: UUID, request: Request) -> PlanResponse:
-    actor = _actor(request)
+    actor = await _actor(request)
     database = request.app.state.database
     async with database.session() as session:
         uow = SqlAlchemyPlanningUnitOfWork(session)
@@ -213,7 +213,7 @@ async def get_plan_endpoint(pregnancy_id: UUID, request: Request) -> PlanRespons
 async def generate_plan_endpoint(
     pregnancy_id: UUID, payload: GeneratePlanRequest, request: Request
 ) -> PlanResponse:
-    actor = _actor(request)
+    actor = await _actor(request)
     as_of = payload.as_of or date.today()
     database = request.app.state.database
     async with database.session() as session:
@@ -306,7 +306,7 @@ async def _validated_record_source(
 async def create_task_endpoint(
     pregnancy_id: UUID, payload: CreateTaskRequest, request: Request
 ) -> TaskResponse:
-    actor = _actor(request)
+    actor = await _actor(request)
     source_type = payload.source_type
     source_id = payload.source_id
     try:
@@ -342,7 +342,7 @@ async def delete_task_endpoint(pregnancy_id: UUID, task_id: UUID, request: Reque
 
     任务不存在时同样返回 204——撤销可能被重放，重复删除不该报错。
     """
-    actor = _actor(request)
+    actor = await _actor(request)
     database = request.app.state.database
     async with database.session() as session:
         uow = SqlAlchemyPlanningUnitOfWork(session)
@@ -365,7 +365,7 @@ async def delete_task_endpoint(pregnancy_id: UUID, task_id: UUID, request: Reque
 async def schedule_task_endpoint(
     task_id: UUID, payload: ScheduleTaskRequest, request: Request
 ) -> TaskResponse:
-    actor = _actor(request)
+    actor = await _actor(request)
     return await _run_task_command(
         request,
         schedule_task.execute,
@@ -382,7 +382,7 @@ async def schedule_task_endpoint(
 async def complete_task_endpoint(
     task_id: UUID, payload: ExpectedVersionRequest, request: Request
 ) -> TaskResponse:
-    actor = _actor(request)
+    actor = await _actor(request)
     return await _run_task_command(
         request,
         complete_task.execute,
@@ -398,7 +398,7 @@ async def complete_task_endpoint(
 async def delay_task_endpoint(
     task_id: UUID, payload: DelayTaskRequest, request: Request
 ) -> TaskResponse:
-    actor = _actor(request)
+    actor = await _actor(request)
     return await _run_task_command(
         request,
         delay_task.execute,
@@ -415,7 +415,7 @@ async def delay_task_endpoint(
 async def assign_task_endpoint(
     task_id: UUID, payload: AssignTaskRequest, request: Request
 ) -> TaskResponse:
-    actor = _actor(request)
+    actor = await _actor(request)
     return await _run_task_command(
         request,
         assign_task.execute,
@@ -432,7 +432,7 @@ async def assign_task_endpoint(
 async def undo_change_endpoint(
     change_id: UUID, payload: ExpectedVersionRequest, request: Request
 ) -> TaskResponse:
-    actor = _actor(request)
+    actor = await _actor(request)
     return await _run_task_command(
         request,
         undo_change.execute,

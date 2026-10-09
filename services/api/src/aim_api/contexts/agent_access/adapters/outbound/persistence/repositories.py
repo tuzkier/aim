@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from sqlalchemy import select
+from datetime import datetime
+from uuid import UUID
+
+from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -35,7 +38,22 @@ class SqlAlchemyToolInvocationRepository:
                 status=invocation.status.value,
                 result_json=invocation.result,
                 created_at=invocation.created_at,
+                account_id=invocation.account_id,
+                family_id=invocation.family_id,
+                pregnancy_id=invocation.pregnancy_id,
+                undone_at=invocation.undone_at,
             )
+        )
+
+    async def get_by_operation(self, operation_id: UUID) -> ToolInvocation | None:
+        model = await self.session.get(ToolInvocationModel, operation_id)
+        return _to_domain(model) if model else None
+
+    async def mark_undone(self, operation_id: UUID, at: datetime) -> None:
+        await self.session.execute(
+            update(ToolInvocationModel)
+            .where(ToolInvocationModel.operation_id == operation_id)
+            .values(undone_at=at)
         )
 
     async def commit(self) -> None:
@@ -56,4 +74,8 @@ def _to_domain(model: ToolInvocationModel) -> ToolInvocation:
         status=ToolInvocationStatus(model.status),
         result=model.result_json,
         created_at=model.created_at,
+        account_id=model.account_id,
+        family_id=model.family_id,
+        pregnancy_id=model.pregnancy_id,
+        undone_at=model.undone_at,
     )

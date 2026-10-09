@@ -24,6 +24,12 @@ class ToolInvocationModel(Base):
     status: Mapped[str] = mapped_column(String(30), nullable=False)
     result_json: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    #: 这次调用代表谁、作用在哪段孕期。撤销时据此校验归属。
+    account_id: Mapped[UUID | None] = mapped_column(Uuid(as_uuid=True), nullable=True)
+    family_id: Mapped[UUID | None] = mapped_column(Uuid(as_uuid=True), nullable=True)
+    pregnancy_id: Mapped[UUID | None] = mapped_column(Uuid(as_uuid=True), nullable=True)
+    #: 已被撤销的时刻。再次撤销时直接返回成功。
+    undone_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class AgentSessionModel(Base):

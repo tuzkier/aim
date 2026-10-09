@@ -8,7 +8,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Request, status
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from starlette.exceptions import HTTPException
 
 from aim_api.contexts.agent_access.adapters.outbound.persistence.repositories import (
@@ -18,12 +18,13 @@ from aim_api.contexts.agent_access.application.authorize_tool import (
     AgentToolContext,
     authorize_tool,
 )
+from aim_api.contexts.agent_access.adapters.inbound.http.operation_undo import undo_invocation
 from aim_api.contexts.agent_access.application.execute_tool import effective_request_hash
 from aim_api.contexts.agent_access.domain.tool_invocation import ToolInvocation
 from aim_api.contexts.family.adapters.outbound.persistence.repositories import (
     SqlAlchemyFamilyRepository,
 )
-from aim_api.platform.auth.context import verify_session_token
+from aim_api.platform.auth.context import ensure_account_active, verify_session_token
 from aim_api.contexts.guidance.application.queries.get_guidance import (
     GetGuidanceQuery,
 )
@@ -34,22 +35,25 @@ from aim_api.contexts.planning.adapters.outbound.persistence.repositories import
     SqlAlchemyPlanningUnitOfWork,
 )
 from aim_api.contexts.planning.application.commands import (
+    delete_task,
     assign_task,
     complete_task,
     create_task,
     delay_task,
-    delete_task,
     schedule_task,
-    undo_change,
 )
 from aim_api.contexts.planning.application.commands.assign_task import AssignTaskCommand
 from aim_api.contexts.planning.application.commands.complete_task import CompleteTaskCommand
 from aim_api.contexts.planning.application.commands.create_task import CreateTaskCommand
-from aim_api.contexts.planning.application.commands.delete_task import DeleteTaskCommand
 from aim_api.contexts.planning.application.commands.delay_task import DelayTaskCommand
+from aim_api.contexts.planning.application.commands.delete_task import DeleteTaskCommand
 from aim_api.contexts.planning.application.commands.schedule_task import ScheduleTaskCommand
-from aim_api.contexts.planning.application.commands.undo_change import UndoChangeCommand
+from aim_api.contexts.planning.domain.errors import PlanningDomainError, TaskNotFound
 from aim_api.contexts.planning.domain.task import ActorType
+from aim_api.contexts.planning.domain.task_status import (
+    InvalidTaskTransition,
+    TaskVersionConflict,
+)
 from aim_api.contexts.pregnancy.adapters.outbound.persistence.repositories import (
     SqlAlchemyPregnancyRepository,
 )
@@ -59,9 +63,8 @@ from aim_api.contexts.pregnancy.domain.fact import FactSource
 from aim_api.contexts.records.adapters.outbound.persistence.repositories import (
     SqlAlchemyRecordsUnitOfWork,
 )
-from aim_api.contexts.records.application.commands import create_record, delete_record
+from aim_api.contexts.records.application.commands import create_record
 from aim_api.contexts.records.application.commands.create_record import CreateRecordCommand
-from aim_api.contexts.records.application.commands.delete_record import DeleteRecordCommand
 from aim_api.contexts.records.domain.errors import RecordValidationError
 from aim_api.contexts.records.application.queries import list_records
 from aim_api.contexts.records.application.queries.list_records import ListRecordsQuery
@@ -83,14 +86,55 @@ class ToolResult(BaseModel):
     data: dict[str, Any]
 
 
-class UpdateTaskRequest(BaseModel):
+#: 一次批量操作的上限。再多就是模型在乱来，拆开做也更容易让用户核对。
+MAX_BATCH = 50
+
+
+def _exactly_one(batch, single, what: str) -> None:
+    if (batch is None) == (single is None):
+        raise ValueError(f"pass either a list of {what} or a single one, not both")
+
+
+class TaskVersionRef(BaseModel):
     task_id: UUID
-    action: Literal["schedule", "complete", "delay"]
     expected_version: int = Field(ge=1)
-    scheduled_for: datetime | None = None
-    due_at: datetime | None = None
+
+
+class CompleteTaskToolRequest(BaseModel):
+    #: 批量形式。单条的旧形式（task_id + expected_version 平铺）仍然接受。
+    tasks: list[TaskVersionRef] | None = Field(default=None, min_length=1, max_length=MAX_BATCH)
+    task_id: UUID | None = None
+    expected_version: int | None = Field(default=None, ge=1)
+
+    @model_validator(mode="after")
+    def _one_form(self):
+        _exactly_one(self.tasks, self.task_id, "tasks")
+        if self.task_id is not None and self.expected_version is None:
+            raise ValueError("expected_version is required with task_id")
+        return self
+
+    def refs(self) -> list[TaskVersionRef]:
+        return self.tasks or [TaskVersionRef(task_id=self.task_id, expected_version=self.expected_version)]
+
+
+class DeleteTaskToolRequest(BaseModel):
+    task_ids: list[UUID] | None = Field(default=None, min_length=1, max_length=MAX_BATCH)
+    task_id: UUID | None = None
     approved: bool = False
-    family_id: UUID | None = None
+
+    @model_validator(mode="after")
+    def _one_form(self):
+        _exactly_one(self.task_ids, self.task_id, "task ids")
+        return self
+
+
+class RescheduleTaskRequest(BaseModel):
+    task_id: UUID
+    expected_version: int = Field(ge=1)
+    #: schedule = 定下具体去做的时间（例如预约好的产检）；delay = 只把截止时间往后挪。
+    kind: Literal["schedule", "delay"]
+    at: datetime
+    approved: bool = False
 
 
 class AssignTaskRequest(BaseModel):
@@ -109,14 +153,23 @@ class RecordFactRequest(BaseModel):
     pregnancy_id: UUID | None = None
 
 
-class CreateTaskRequest(BaseModel):
+class TaskDraft(BaseModel):
     title: str = Field(min_length=1, max_length=200)
     description: str | None = None
     due_at: datetime | None = None
 
 
-class DeleteTaskRequest(BaseModel):
-    task_id: UUID
+class CreateTaskRequest(BaseModel):
+    #: 批量形式。单条的旧形式（title 等平铺）仍然接受。
+    tasks: list[TaskDraft] | None = Field(default=None, min_length=1, max_length=MAX_BATCH)
+    title: str | None = Field(default=None, min_length=1, max_length=200)
+    description: str | None = None
+    due_at: datetime | None = None
+
+    @model_validator(mode="after")
+    def _one_form(self):
+        _exactly_one(self.tasks, self.title, "tasks")
+        return self
 
 
 class CreateRecordRequest(BaseModel):
@@ -125,6 +178,8 @@ class CreateRecordRequest(BaseModel):
     title: str | None = None
     content: str | None = None
     occurred_at: datetime | None = None
+    #: 用户在对话里发的图片编号，挂到这条记录上。
+    attachment_ids: list[UUID] = Field(default_factory=list, max_length=4)
 
 
 class CreateKnowledgeRequest(BaseModel):
@@ -142,19 +197,13 @@ class CreateKnowledgeRequest(BaseModel):
     approved: bool = False
 
 
-class DeleteRecordRequest(BaseModel):
-    record_id: UUID
-
-
 class GetGuidanceRequest(BaseModel):
     week: int = Field(ge=0)
     region: str = "CN-ZJ-HZ"
 
 
 class UndoOperationRequest(BaseModel):
-    change_id: UUID
-    expected_version: int = Field(ge=1)
-    approved: bool = False
+    operation_id: UUID
 
 
 class ListRecordsRequest(BaseModel):
@@ -195,7 +244,7 @@ def _context(request: Request) -> AgentToolContext:
 # 档位在服务端声明，而不是看调用方传来的 approved 标志——否则「执行前确认」
 # 那一档等于形同虚设，任何调用方带上 approved: true 就能绕过。
 DIRECT_EXECUTION_TOOLS = frozenset(
-    {"create_task", "delete_task", "create_record", "delete_record"}
+    {"create_task", "create_record", "complete_task", "undo_operation"}
 )
 
 
@@ -228,6 +277,9 @@ async def _run(
             call_id=context.call_id,
             tool_name=tool_name,
             request_hash=request_hash,
+            account_id=context.account_id,
+            family_id=context.family_id,
+            pregnancy_id=context.pregnancy_id,
         )
         family_membership = SqlAlchemyFamilyRepository(session)
         pregnancy_ownership = SqlAlchemyPregnancyRepository(session)
@@ -275,10 +327,26 @@ async def _run(
         return JSONResponse(content=result)
 
 
+#: 称呼为空时的回退，与 iOS 家庭页一致。
+_ROLE_NAMES = {"mother": "妈妈", "father": "爸爸", "other_caregiver": "家人"}
+
+
 async def _get_context(session, context: AgentToolContext, body: dict[str, Any]):
     pregnancy = await SqlAlchemyPregnancyRepository(session).get_pregnancy(context.pregnancy_id)
     plan = await SqlAlchemyPlanningUnitOfWork(session).repository.get_plan(context.pregnancy_id)
+    family = await SqlAlchemyFamilyRepository(session).get_family(context.family_id)
     age = pregnancy.gestational_age() if pregnancy else None
+    # member_id 就是账号 ID：assign_task 的 assigned_member_id 用的正是它。
+    members = [
+        {
+            "member_id": str(member.account_id),
+            "display_name": (member.nickname or "").strip()
+            or _ROLE_NAMES.get(member.role.value, "家人"),
+            "role": member.role.value,
+        }
+        for member in (family.members.values() if family else [])
+        if member.status.value == "active"
+    ]
     return (
         {
             "family_id": str(context.family_id),
@@ -286,6 +354,8 @@ async def _get_context(session, context: AgentToolContext, body: dict[str, Any])
             "due_date": pregnancy.due_date.isoformat() if pregnancy else None,
             "gestational_age": {"weeks": age.weeks, "days": age.days} if age else None,
             "plan_id": str(plan.id) if plan else None,
+            "self_member_id": str(context.account_id),
+            "members": members,
         },
         "已读取当前孕期上下文",
     )
@@ -341,85 +411,145 @@ async def _list_records(session, context: AgentToolContext, body: dict[str, Any]
     return ({"records": normalized, "count": len(normalized)}, f"已读取 {len(normalized)} 条孕期记录")
 
 
-async def _update_task(session, context: AgentToolContext, body: dict[str, Any]):
-    uow = SqlAlchemyPlanningUnitOfWork(session)
-    task_id = UUID(body["task_id"])
+async def _task_in_scope(uow, context: AgentToolContext, task_id: UUID):
     task = await uow.repository.get_task(task_id)
     if task is None or task.pregnancy_id != context.pregnancy_id:
         raise ForbiddenError("task is outside the agent pregnancy scope")
-    action = body["action"]
-    if action == "schedule":
-        if body.get("scheduled_for") is None:
-            raise ConflictError("scheduled_for is required")
-        updated = await schedule_task.execute(
-            ScheduleTaskCommand(
-                task_id=task_id,
+    return task
+
+
+async def _task_write_result(uow, updated) -> dict[str, Any]:
+    """写入结果统一带上 change_id：撤销靠它找回这次写入改了什么。"""
+    change = await uow.repository.get_change_by_version(updated.id, updated.version)
+    return {
+        "task_id": str(updated.id),
+        "title": updated.title,
+        "version": updated.version,
+        "status": updated.status.value,
+        "change_id": str(change.id) if change else None,
+    }
+
+
+def _batch_result(done: list[dict[str, Any]], failed: list[dict[str, Any]]) -> dict[str, Any]:
+    """批量结果。只有一项时顺带平铺它的字段，兼容单条调用方与旧的撤销记录。"""
+    data: dict[str, Any] = {"tasks": done, "failed": failed}
+    if len(done) == 1 and not failed:
+        data.update(done[0])
+    return data
+
+
+def _failure_reason(error: Exception) -> str:
+    if isinstance(error, TaskVersionConflict):
+        return "这项待办刚被改过，请重新读取后再试"
+    if isinstance(error, InvalidTaskTransition):
+        return "这项待办已经是完成状态"
+    if isinstance(error, (ForbiddenError, TaskNotFound)):
+        return "找不到这项待办"
+    return str(error)
+
+
+async def _complete_task(session, context: AgentToolContext, body: dict[str, Any]):
+    """完成一项或多项待办。逐项处理：某一项失败不拖累其它项，失败原因逐条返回。"""
+    uow = SqlAlchemyPlanningUnitOfWork(session)
+    refs = CompleteTaskToolRequest.model_validate(body).refs()
+    done: list[dict[str, Any]] = []
+    failed: list[dict[str, Any]] = []
+    for ref in refs:
+        try:
+            task = await _task_in_scope(uow, context, ref.task_id)
+            updated = await complete_task.execute(
+                CompleteTaskCommand(
+                    task_id=task.id,
+                    account_id=context.account_id,
+                    expected_version=ref.expected_version,
+                ),
+                uow,
+            )
+            done.append(await _task_write_result(uow, updated))
+        except (ForbiddenError, PlanningDomainError, TaskVersionConflict, InvalidTaskTransition) as error:
+            await session.rollback()
+            failed.append({"task_id": str(ref.task_id), "reason": _failure_reason(error)})
+    if not done:
+        raise ConflictError("一项都没有完成：" + "；".join(f["reason"] for f in failed))
+    titles = "、".join(t["title"] for t in done)
+    summary = f"已完成待办：{titles}" + (f"（{len(failed)} 项没有完成）" if failed else "")
+    return (_batch_result(done, failed), summary)
+
+
+async def _delete_task(session, context: AgentToolContext, body: dict[str, Any]):
+    """删掉不该存在的待办（加错了、重复了、不需要了），可一次多条。
+
+    硬删除，不能撤销，所以在「执行前确认」档；一次确认覆盖整批。先核对整批都在
+    本段孕期里再动手——有一条越界就一条都不删，免得删到一半才报错。
+    没有它时，模型只能把加错的待办标成完成来「去掉」，留下假的完成记录。
+    """
+    uow = SqlAlchemyPlanningUnitOfWork(session)
+    ids = [UUID(i) for i in (body.get("task_ids") or [body["task_id"]])]
+    tasks = [await _task_in_scope(uow, context, task_id) for task_id in ids]
+    for task in tasks:
+        await delete_task.execute(
+            DeleteTaskCommand(
+                task_id=task.id,
+                pregnancy_id=context.pregnancy_id,
                 account_id=context.account_id,
-                expected_version=body["expected_version"],
-                scheduled_for=datetime.fromisoformat(body["scheduled_for"].replace("Z", "+00:00")),
             ),
             uow,
         )
-    elif action == "complete":
-        updated = await complete_task.execute(
-            CompleteTaskCommand(
-                task_id=task_id,
+    done = [{"task_id": str(task.id), "title": task.title} for task in tasks]
+    return (_batch_result(done, []), "已删除待办：" + "、".join(t["title"] for t in done))
+
+
+async def _reschedule_task(session, context: AgentToolContext, body: dict[str, Any]):
+    uow = SqlAlchemyPlanningUnitOfWork(session)
+    task = await _task_in_scope(uow, context, UUID(body["task_id"]))
+    at = _parse_datetime(body["at"])
+    if body["kind"] == "schedule":
+        updated = await schedule_task.execute(
+            ScheduleTaskCommand(
+                task_id=task.id,
                 account_id=context.account_id,
                 expected_version=body["expected_version"],
+                scheduled_for=at,
             ),
             uow,
         )
     else:
-        if body.get("due_at") is None:
-            raise ConflictError("due_at is required")
         updated = await delay_task.execute(
             DelayTaskCommand(
-                task_id=task_id,
+                task_id=task.id,
                 account_id=context.account_id,
                 expected_version=body["expected_version"],
-                due_at=datetime.fromisoformat(body["due_at"].replace("Z", "+00:00")),
+                due_at=at,
             ),
             uow,
         )
-    return (
-        {"task_id": str(updated.id), "version": updated.version, "status": updated.status.value},
-        f"已更新任务：{updated.title}",
-    )
+    return (await _task_write_result(uow, updated), f"已改期：{updated.title}")
 
 
 async def _create_task(session, context: AgentToolContext, body: dict[str, Any]):
-    """Agent 新建待办。actor 记为 agent，时间线据此显示「Agent 调整」。"""
+    """Agent 新建一条或多条待办。actor 记为 agent，时间线据此显示「Agent 调整」。"""
     uow = SqlAlchemyPlanningUnitOfWork(session)
-    task = await create_task.execute(
-        CreateTaskCommand(
-            pregnancy_id=context.pregnancy_id,
-            account_id=context.account_id,
-            title=body["title"],
-            description=body.get("description"),
-            due_at=_parse_datetime(body.get("due_at")),
-            changed_by_actor_type=ActorType.agent,
-        ),
-        uow,
+    drafts = body.get("tasks") or [
+        {"title": body["title"], "description": body.get("description"), "due_at": body.get("due_at")}
+    ]
+    done: list[dict[str, Any]] = []
+    for draft in drafts:
+        task = await create_task.execute(
+            CreateTaskCommand(
+                pregnancy_id=context.pregnancy_id,
+                account_id=context.account_id,
+                title=draft["title"],
+                description=draft.get("description"),
+                due_at=_parse_datetime(draft.get("due_at")),
+                changed_by_actor_type=ActorType.agent,
+            ),
+            uow,
+        )
+        done.append({"task_id": str(task.id), "title": task.title})
+    summary = (
+        f"已添加待办：{done[0]['title']}" if len(done) == 1 else f"已添加 {len(done)} 项待办"
     )
-    return ({"task_id": str(task.id), "title": task.title}, f"已添加待办：{task.title}")
-
-
-async def _delete_task(session, context: AgentToolContext, body: dict[str, Any]):
-    """撤销「Agent 新建待办」。任务不存在时也算成功——撤销可能被重放。"""
-    uow = SqlAlchemyPlanningUnitOfWork(session)
-    task_id = UUID(body["task_id"])
-    existing = await uow.repository.get_task(task_id)
-    if existing is not None and existing.pregnancy_id != context.pregnancy_id:
-        raise ForbiddenError("task is outside the agent pregnancy scope")
-    await delete_task.execute(
-        DeleteTaskCommand(
-            task_id=task_id,
-            pregnancy_id=context.pregnancy_id,
-            account_id=context.account_id,
-        ),
-        uow,
-    )
-    return ({"task_id": str(task_id)}, "已撤销新增的待办")
+    return (_batch_result(done, []), summary)
 
 
 async def _create_knowledge(session, context: AgentToolContext, body: dict[str, Any]):
@@ -459,24 +589,15 @@ async def _create_record(session, context: AgentToolContext, body: dict[str, Any
             structured_data=body.get("structured_data") or {},
             title=body.get("title"),
             content=body.get("content"),
+            attachment_ids=tuple(UUID(str(value)) for value in body.get("attachment_ids") or []),
         ),
         uow,
     )
-    return ({"record_id": str(record.id)}, "已记录")
-
-
-async def _delete_record(session, context: AgentToolContext, body: dict[str, Any]):
-    uow = SqlAlchemyRecordsUnitOfWork(session)
-    await delete_record.execute(
-        DeleteRecordCommand(
-            record_id=UUID(body["record_id"]),
-            family_id=context.family_id,
-            account_id=context.account_id,
-            pregnancy_id=context.pregnancy_id,
-        ),
-        uow,
+    count = len(record.attachment_refs)
+    return (
+        {"record_id": str(record.id), "attachment_count": count},
+        "已记录" + (f"，附上 {count} 张图" if count else ""),
     )
-    return ({"record_id": body["record_id"]}, "已撤销记录")
 
 
 def _parse_datetime(value: Any) -> datetime | None:
@@ -503,10 +624,7 @@ async def _assign_task(session, context: AgentToolContext, body: dict[str, Any])
         ),
         uow,
     )
-    return (
-        {"task_id": str(updated.id), "version": updated.version},
-        f"已更新任务负责人：{updated.title}",
-    )
+    return (await _task_write_result(uow, updated), f"已更新任务负责人：{updated.title}")
 
 
 async def _record_fact(session, context: AgentToolContext, body: dict[str, Any]):
@@ -542,25 +660,12 @@ async def _guidance(session, context: AgentToolContext, body: dict[str, Any]):
 
 
 async def _undo_operation(session, context: AgentToolContext, body: dict[str, Any]):
-    uow = SqlAlchemyPlanningUnitOfWork(session)
-    change = await uow.repository.get_change(UUID(body["change_id"]))
-    if change is None:
-        raise ConflictError("task change does not exist")
-    task = await uow.repository.get_task(change.task_id)
-    if task is None or task.pregnancy_id != context.pregnancy_id:
-        raise ForbiddenError("change is outside the agent pregnancy scope")
-    updated = await undo_change.execute(
-        UndoChangeCommand(
-            change_id=change.id,
-            account_id=context.account_id,
-            expected_version=body["expected_version"],
-        ),
-        uow,
+    invocation = await SqlAlchemyToolInvocationRepository(session).get_by_operation(
+        UUID(body["operation_id"])
     )
-    return (
-        {"task_id": str(updated.id), "version": updated.version},
-        f"已撤销任务变更：{updated.title}",
-    )
+    if invocation is None or invocation.pregnancy_id != context.pregnancy_id:
+        raise ConflictError("没有找到这次操作，可能不是在这段孕期里做的")
+    return await undo_invocation(session, invocation, account_id=context.account_id)
 
 
 @router.post("/get-pregnancy-context", response_model=ToolResult, include_in_schema=False)
@@ -580,19 +685,24 @@ async def list_records_endpoint(request: Request, payload: ListRecordsRequest):
     return await _run(request, "list_records", payload, _list_records)
 
 
-@router.post("/update-task", response_model=ToolResult, include_in_schema=False)
-async def update_task(request: Request, payload: UpdateTaskRequest):
-    return await _run(request, "update_task", payload, _update_task, write=True)
+@router.post("/complete-task", response_model=ToolResult, include_in_schema=False)
+async def complete_task_endpoint(request: Request, payload: CompleteTaskToolRequest):
+    return await _run(request, "complete_task", payload, _complete_task, write=True)
+
+
+@router.post("/delete-task", response_model=ToolResult, include_in_schema=False)
+async def delete_task_endpoint(request: Request, payload: DeleteTaskToolRequest):
+    return await _run(request, "delete_task", payload, _delete_task, write=True)
+
+
+@router.post("/reschedule-task", response_model=ToolResult, include_in_schema=False)
+async def reschedule_task_endpoint(request: Request, payload: RescheduleTaskRequest):
+    return await _run(request, "reschedule_task", payload, _reschedule_task, write=True)
 
 
 @router.post("/create-task", response_model=ToolResult, include_in_schema=False)
 async def create_task_endpoint(request: Request, payload: CreateTaskRequest):
     return await _run(request, "create_task", payload, _create_task, write=True)
-
-
-@router.post("/delete-task", response_model=ToolResult, include_in_schema=False)
-async def delete_task_endpoint(request: Request, payload: DeleteTaskRequest):
-    return await _run(request, "delete_task", payload, _delete_task, write=True)
 
 
 @router.post("/create-knowledge", response_model=ToolResult, include_in_schema=False)
@@ -603,11 +713,6 @@ async def create_knowledge_endpoint(request: Request, payload: CreateKnowledgeRe
 @router.post("/create-record", response_model=ToolResult, include_in_schema=False)
 async def create_record_endpoint(request: Request, payload: CreateRecordRequest):
     return await _run(request, "create_record", payload, _create_record, write=True)
-
-
-@router.post("/delete-record", response_model=ToolResult, include_in_schema=False)
-async def delete_record_endpoint(request: Request, payload: DeleteRecordRequest):
-    return await _run(request, "delete_record", payload, _delete_record, write=True)
 
 
 @router.post("/assign-task", response_model=ToolResult, include_in_schema=False)
@@ -652,6 +757,7 @@ async def resolve_session(request: Request, payload: ResolveSessionRequest):
 
     settings = request.app.state.settings
     actor = verify_session_token(payload.token, settings.auth_secret)
+    await ensure_account_active(request.app.state.database, actor.account_id)
 
     database = request.app.state.database
     async with database.session() as session:

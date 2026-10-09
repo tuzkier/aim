@@ -6,6 +6,7 @@
 - 会话 Token 写入 Keychain，家庭/孕期 scope 仅保存非敏感 ID；
 - 孕期（今天总控 + 可进入的完整时间线）/ 资料库 / AIM / 家庭四个主 Tab；
 - 任务详情、完成、延期和家庭成员邀请交互；
+- 账号：法律页、退出登录、注销（30 天缓冲）；
 - Agent Sheet、Eve 原生 NDJSON 解码、断线 cursor 和审批响应；
 - SwiftData 的 Eve cursor 与普通待办离线操作模型；
 - 由 `contracts/public-api/openapi.json` 对齐的 DTO 边界。

@@ -1,7 +1,9 @@
 import SwiftUI
 
 struct TaskDetailView: View {
+    @Environment(\.dismiss) private var dismiss
     @State private var store: TaskDetailStore
+    @State private var showingDeleteConfirmation = false
     @State private var dueDate: Date
     @State private var showingDelay = false
     @State private var recordStore = RecordStore()
@@ -67,8 +69,28 @@ struct TaskDetailView: View {
                 .buttonStyle(.borderedProminent)
                 .disabled(store.task.status == .completed || store.isSaving)
             }
+
+            // 加错了、重复了、不需要了：删掉，而不是标成完成——完成代表真的做了。
+            Section {
+                Button("删除待办", role: .destructive) { showingDeleteConfirmation = true }
+                    .disabled(store.isSaving)
+                    .accessibilityIdentifier("task-delete")
+            }
         }
         .navigationTitle("事项详情")
+        .confirmationDialog("删除这条待办？", isPresented: $showingDeleteConfirmation, titleVisibility: .visible) {
+            Button("删除", role: .destructive) {
+                Task {
+                    if await store.delete() {
+                        // 首页、时间线各自持有待办列表，由根视图统一刷新。
+                        NotificationCenter.default.post(
+                            name: .aimDataChanged, object: nil, userInfo: ["kinds": ["task"]]
+                        )
+                        dismiss()
+                    }
+                }
+            }
+        } message: { Text("删除后无法恢复。") }
 #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
 #endif

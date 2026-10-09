@@ -25,6 +25,10 @@ class PlanningRepositoryPort(Protocol):
 
     async def get_change(self, change_id: UUID) -> TaskChange | None: ...
 
+    async def get_change_by_version(
+        self, task_id: UUID, version_after: int
+    ) -> TaskChange | None: ...
+
 
 class FamilyMembershipPort(Protocol):
     async def is_active_member(self, family_id: UUID, account_id: UUID) -> bool: ...

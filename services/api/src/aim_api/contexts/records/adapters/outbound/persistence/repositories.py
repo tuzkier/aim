@@ -14,7 +14,11 @@ from aim_api.contexts.family.application.ports import PersistenceConflict
 from aim_api.contexts.pregnancy.adapters.outbound.persistence.repositories import (
     SqlAlchemyPregnancyRepository,
 )
-from aim_api.contexts.records.adapters.outbound.persistence.models import RecordModel
+from aim_api.contexts.records.adapters.outbound.persistence.models import (
+    AttachmentModel,
+    RecordModel,
+)
+from aim_api.contexts.records.domain.attachment import Attachment
 from aim_api.contexts.records.domain.errors import RecordAccessDenied, RecordValidationError
 from aim_api.contexts.records.domain.record import Record, RecordType, RecordVisibility
 
@@ -73,7 +77,7 @@ class SqlAlchemyRecordsRepository:
 
     async def save_record(self, record: Record, account_id: UUID) -> None:
         record.assert_can_mutate(account_id)
-        record.assert_attachment_refs_reserved()
+        record.assert_attachment_refs_valid()
         if record.deleted_at is not None:
             raise RecordValidationError("soft-deleted records cannot be saved")
         result = await self.session.execute(
@@ -111,9 +115,51 @@ class SqlAlchemyRecordsRepository:
             raise RecordAccessDenied("record cannot be deleted by this account")
 
 
+class SqlAlchemyAttachmentRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
+
+    async def add(self, attachment: Attachment) -> None:
+        self.session.add(
+            AttachmentModel(
+                id=attachment.id,
+                family_id=attachment.family_id,
+                pregnancy_id=attachment.pregnancy_id,
+                uploaded_by=attachment.uploaded_by,
+                media_type=attachment.media_type,
+                byte_size=attachment.byte_size,
+                record_id=attachment.record_id,
+                created_at=attachment.created_at,
+            )
+        )
+
+    async def get(self, attachment_id: UUID) -> Attachment | None:
+        model = await self.session.get(AttachmentModel, attachment_id)
+        if model is None:
+            return None
+        return Attachment(
+            id=model.id,
+            family_id=model.family_id,
+            pregnancy_id=model.pregnancy_id,
+            uploaded_by=model.uploaded_by,
+            media_type=model.media_type,
+            byte_size=model.byte_size,
+            record_id=model.record_id,
+            created_at=model.created_at,
+        )
+
+    async def attach(self, attachment_ids: list[UUID], record_id: UUID) -> None:
+        await self.session.execute(
+            update(AttachmentModel)
+            .where(AttachmentModel.id.in_(attachment_ids), AttachmentModel.record_id.is_(None))
+            .values(record_id=record_id)
+        )
+
+
 class SqlAlchemyRecordsUnitOfWork:
     def __init__(self, session: AsyncSession) -> None:
         self.repository = SqlAlchemyRecordsRepository(session)
+        self.attachments = SqlAlchemyAttachmentRepository(session)
         self.family_membership = SqlAlchemyFamilyRepository(session)
         self.pregnancy_ownership = SqlAlchemyPregnancyRepository(session)
         self._session = session
@@ -137,7 +183,7 @@ def _visibility_clause(account_id: UUID):
 
 
 def _to_model(record: Record) -> RecordModel:
-    record.assert_attachment_refs_reserved()
+    record.assert_attachment_refs_valid()
     return RecordModel(
         id=record.id,
         pregnancy_id=record.pregnancy_id,

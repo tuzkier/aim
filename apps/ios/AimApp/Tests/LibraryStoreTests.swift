@@ -119,6 +119,69 @@ final class LibraryStoreTests: XCTestCase {
         XCTAssertTrue(data.answered)
         XCTAssertEqual(data.answer, "可以，注意水温")
     }
+
+    /// 百科出问题也不能让资料库打不开：主题编号重复时取第一个，而不是闪退。
+    func testDuplicateEncyclopediaTopicsKeepTheFirstCountInsteadOfCrashing() async {
+        let (store, repository) = makeStore()
+        repository.encyclopediaCatalog = EncyclopediaCatalog(topics: [
+            EncyclopediaTopic(id: "diet", name: "饮食营养", count: 3),
+            EncyclopediaTopic(id: "diet", name: "饮食营养", count: 9),
+        ])
+
+        await store.load()
+
+        XCTAssertNil(store.errorMessage)
+        XCTAssertEqual(store.snapshot.encyclopediaCounts, ["diet": 3])
+    }
+
+    /// 生产不加载草稿百科时，「吃什么」要回退到已审核的 nutrition 集合，而不是显示「即将上线」。
+    func testNutritionFallsBackToTheNutritionCollectionWhenEncyclopediaIsEmpty() async {
+        let (store, repository) = makeStore()
+        repository.collectionItemCounts = ["nutrition": 7]
+
+        await store.load()
+
+        XCTAssertNil(store.errorMessage)
+        XCTAssertEqual(store.collections["nutrition"]?.items.count, 7)
+        XCTAssertEqual(LibraryCategoryID.nutrition.summary(from: store.snapshot).headline, "7 条饮食提示")
+    }
+
+    func testNutritionPrefersEncyclopediaDietCountWhenAvailable() async {
+        let (store, repository) = makeStore()
+        repository.collectionItemCounts = ["nutrition": 7]
+        repository.encyclopediaCatalog = EncyclopediaCatalog(topics: [
+            EncyclopediaTopic(id: "diet", name: "饮食营养", count: 12),
+        ])
+
+        await store.load()
+
+        XCTAssertEqual(LibraryCategoryID.nutrition.summary(from: store.snapshot).headline, "12 条饮食提示")
+    }
+
+    /// 百科目录取不到不能让资料库整页打不开。
+    func testEncyclopediaFailureDoesNotFailTheWholeLibrary() async {
+        let (store, repository) = makeStore()
+        repository.collectionItemCounts = ["nutrition": 7]
+        repository.encyclopediaFailure = APIError.notConfigured
+
+        await store.load()
+
+        XCTAssertNil(store.errorMessage)
+        XCTAssertTrue(store.encyclopedia.isEmpty)
+        XCTAssertEqual(LibraryCategoryID.nutrition.summary(from: store.snapshot).headline, "7 条饮食提示")
+    }
+
+    /// nutrition 集合是回退用的，它取不到同样不该拖垮整页。
+    func testNutritionCollectionFailureDoesNotFailTheWholeLibrary() async {
+        let (store, repository) = makeStore()
+        repository.failingCollections = ["nutrition"]
+
+        await store.load()
+
+        XCTAssertNil(store.errorMessage)
+        XCTAssertNil(store.collections["nutrition"])
+        XCTAssertNotNil(store.collections["preparation"])
+    }
 }
 
 private final class FakeLibraryRepository: BusinessRepositoryProtocol, @unchecked Sendable {
@@ -126,8 +189,18 @@ private final class FakeLibraryRepository: BusinessRepositoryProtocol, @unchecke
     var createdDrafts: [RecordDraft] = []
     var updatedDrafts: [RecordDraft] = []
     var updatedRecordIDs: [UUID] = []
+    var encyclopediaCatalog = EncyclopediaCatalog()
+    var encyclopediaFailure: Error?
+    /// 各内容集合返回几条假条目；没列出的集合返回空集合。
+    var collectionItemCounts: [String: Int] = [:]
+    var failingCollections: Set<String> = []
 
     init(records: [RecordItem]) { self.records = records }
+
+    func fetchEncyclopediaCatalog() async throws -> EncyclopediaCatalog {
+        if let encyclopediaFailure { throw encyclopediaFailure }
+        return encyclopediaCatalog
+    }
 
     func fetchRecords(type: RecordType?) async throws -> RecordSnapshot {
         RecordSnapshot(records: records)
@@ -156,7 +229,12 @@ private final class FakeLibraryRepository: BusinessRepositoryProtocol, @unchecke
 
     func fetchSafetyRules() async throws -> [SafetyRule] { [] }
     func fetchContentCollection(_ name: String) async throws -> ContentCollection {
-        ContentCollection(id: name, source: "test", sourceURL: "", items: [])
+        if failingCollections.contains(name) { throw APIError.notConfigured }
+        let items = (0..<(collectionItemCounts[name] ?? 0)).map { index in
+            ContentItem(id: "\(name)-\(index)", title: "条目 \(index)", summary: "摘要",
+                        verificationURL: nil, group: nil)
+        }
+        return ContentCollection(id: name, source: "test", sourceURL: "", items: items)
     }
     func fetchToday() async throws -> TodaySnapshot { throw APIError.notConfigured }
     func fetchPlan() async throws -> PlanSnapshot { throw APIError.notConfigured }
@@ -176,6 +254,7 @@ private final class FakeLibraryRepository: BusinessRepositoryProtocol, @unchecke
     // 真要用到时会因为断言不成立而暴露，而不是被静默吞掉。
     func renameFamily(to name: String) async throws {}
     func updateMyMembership(nickname: String?, role: FamilyRole?) async throws {}
+    func requestAccountDeletion(password: String) async throws { throw APIError.notConfigured }
 }
 
 @MainActor
@@ -239,6 +318,7 @@ private final class CountingRepository: BusinessRepositoryProtocol, @unchecked S
     // 真要用到时会因为断言不成立而暴露，而不是被静默吞掉。
     func renameFamily(to name: String) async throws {}
     func updateMyMembership(nickname: String?, role: FamilyRole?) async throws {}
+    func requestAccountDeletion(password: String) async throws { throw APIError.notConfigured }
 }
 
 @MainActor
@@ -314,4 +394,5 @@ private final class DeletingRepository: BusinessRepositoryProtocol, @unchecked S
     // 真要用到时会因为断言不成立而暴露，而不是被静默吞掉。
     func renameFamily(to name: String) async throws {}
     func updateMyMembership(nickname: String?, role: FamilyRole?) async throws {}
+    func requestAccountDeletion(password: String) async throws { throw APIError.notConfigured }
 }

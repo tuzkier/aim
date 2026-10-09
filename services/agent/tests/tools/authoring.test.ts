@@ -2,8 +2,6 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import createRecord from "../../agent/tools/create_record.ts";
 import createTask from "../../agent/tools/create_task.ts";
-import deleteTask from "../../agent/tools/delete_task.ts";
-import updateTask from "../../agent/tools/update_task.ts";
 
 const scope = {
   session: {
@@ -62,7 +60,7 @@ test("create_task posts the to-do without asserting its own approval", async () 
     { task_id: "11111111-1111-1111-1111-111111111111", title: "预约产检" },
     () =>
       createTask.execute(
-        { title: "预约产检", description: "本周内完成" },
+        { tasks: [{ title: "预约产检", description: "本周内完成" }, { title: "买叶酸" }] },
         scope,
       ),
   );
@@ -74,19 +72,16 @@ test("create_task posts the to-do without asserting its own approval", async () 
   // 否则「执行前确认」那一档只要带上这个标志就能绕过。
   const body = (await request?.clone().json()) as Record<string, unknown>;
   // 未提供的可选字段会被 JSON 序列化丢掉，所以断言的是实际发出的键集合。
-  assert.deepEqual(body, { title: "预约产检", description: "本周内完成" });
+  // 批量：一次调用带上全部待办，而不是一条一次。
+  assert.deepEqual(body, {
+    tasks: [{ title: "预约产检", description: "本周内完成" }, { title: "买叶酸" }],
+  });
   assert.equal("approved" in body, false);
 });
 
 test("create_task is not gated by an approval request", () => {
   assert.equal(createTask.approval, undefined);
   assert.equal(createRecord.approval, undefined);
-  assert.equal(deleteTask.approval, undefined);
-});
-
-test("update_task keeps its approval gate", () => {
-  // 修改既有计划属于「执行前确认」档，放开新建不能顺手把它也放开。
-  assert.notEqual(updateTask.approval, undefined);
 });
 
 test("create_record maps note content onto the gateway payload", async () => {
@@ -103,17 +98,6 @@ test("create_record maps note content onto the gateway payload", async () => {
   const body = (await request?.clone().json()) as Record<string, unknown>;
   assert.equal(body.record_type, "note");
   assert.equal(body.content, "记得带既往报告");
-});
-
-test("delete_task targets the undo endpoint", async () => {
-  const { request } = await withStubbedApi({ task_id: "33333333-3333-3333-3333-333333333333" }, () =>
-    deleteTask.execute({ taskId: "33333333-3333-3333-3333-333333333333" }, scope),
-  );
-
-  assert.equal(request?.url, "http://api.test/internal/agent-tools/delete-task");
-  assert.deepEqual(await request?.clone().json(), {
-    task_id: "33333333-3333-3333-3333-333333333333",
-  });
 });
 
 test("create_knowledge is gated by approval unlike the direct-execution tools", async () => {
@@ -186,4 +170,71 @@ test("create_knowledge allows advice with no verdict", async () => {
   const body = (await request?.clone().json()) as Record<string, unknown>;
   assert.equal("verdict" in body, false);
   assert.equal(body.reason, "补铁的同时吃点维生素C，吸收会好一些");
+});
+
+test("create_record builds symptom structured data from typed fields", async () => {
+  const { request } = await withStubbedApi({ record_id: "r1" }, () =>
+    createRecord.execute(
+      { recordType: "symptom", symptoms: ["头晕", "恶心"], severity: 3 },
+      scope,
+    ),
+  );
+  const body = (await request?.clone().json()) as Record<string, unknown>;
+  assert.equal(body.record_type, "symptom");
+  assert.deepEqual(body.structured_data, { symptoms: ["头晕", "恶心"], severity: 3 });
+});
+
+test("create_record fills the four checkup text fields and keeps metrics", async () => {
+  const { request } = await withStubbedApi({ record_id: "r2" }, () =>
+    createRecord.execute(
+      {
+        recordType: "checkup",
+        hospital: "杭州市妇产科医院",
+        metrics: { systolic: 118, diastolic: 76 },
+      },
+      scope,
+    ),
+  );
+  const body = (await request?.clone().json()) as Record<string, unknown>;
+  assert.deepEqual(body.structured_data, {
+    hospital: "杭州市妇产科医院",
+    exam_items: "",
+    result: "",
+    doctor_advice: "",
+    metrics: { systolic: 118, diastolic: 76 },
+  });
+});
+
+test("create_record rejects a symptom without symptoms before calling the API", async () => {
+  await assert.rejects(
+    () => createRecord.execute({ recordType: "symptom", severity: 2 }, scope) as Promise<unknown>,
+    /至少写一个症状/,
+  );
+});
+
+test("create_task sends the due time pinned to Beijing", async () => {
+  const { request } = await withStubbedApi({ task_id: "t1" }, () =>
+    createTask.execute({ tasks: [{ title: "拿报告", dueAt: "2026-09-29T15:00" }] }, scope),
+  );
+  const body = (await request?.clone().json()) as { tasks: Record<string, unknown>[] };
+  assert.equal(body.tasks[0]!.due_at, "2026-09-29T15:00:00+08:00");
+});
+
+test("create_record forwards the photo ids to attach", async () => {
+  const id = "44444444-4444-4444-8444-444444444444";
+  const { request } = await withStubbedApi({ record_id: "r3", attachment_count: 1 }, () =>
+    createRecord.execute({ recordType: "note", content: "B 超单存档", attachmentIds: [id] }, scope),
+  );
+  const body = (await request?.clone().json()) as Record<string, unknown>;
+  assert.deepEqual(body.attachment_ids, [id]);
+});
+
+test("create_record accepts at most four photos", () => {
+  const ids = Array.from({ length: 5 }, (_, i) => `4444444${i}-4444-4444-8444-444444444444`);
+  // 对外类型是通用结构描述，实际是 zod 对象。
+  const schema = createRecord.inputSchema as unknown as {
+    safeParse(value: unknown): { success: boolean };
+  };
+  const parsed = schema.safeParse({ recordType: "note", content: "x", attachmentIds: ids });
+  assert.equal(parsed.success, false);
 });

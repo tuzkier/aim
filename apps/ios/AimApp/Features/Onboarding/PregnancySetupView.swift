@@ -7,10 +7,41 @@ import SwiftUI
 struct PregnancySetupView: View {
     @Environment(AppSessionStore.self) private var session
     @State private var model = PregnancySetupModel()
+    @State private var invitations = InvitationPromptStore()
+    @State private var deciding: MyInvitation?
+
+    private var repository: BusinessRepository { BusinessRepository(environment: session.environment) }
 
     var body: some View {
         NavigationStack {
             Form {
+                if let notice = session.familyNotice {
+                    Section {
+                        Label(notice, systemImage: "info.circle")
+                            .foregroundStyle(Color.aimTextSecondary)
+                    }
+                }
+                // 新注册的人一定先到这里：家人发来的邀请直接列在最上面，不用先建一份自己的孕期。
+                if !invitations.invitations.isEmpty {
+                    Section {
+                        ForEach(invitations.invitations) { invitation in
+                            Button { deciding = invitation } label: {
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text("\(invitation.inviterName)邀请你加入「\(invitation.familyName)」")
+                                        .foregroundStyle(Color.aimTextPrimary)
+                                    Text("身份：\(invitation.role.displayName)")
+                                        .font(.caption)
+                                        .foregroundStyle(Color.aimTextSecondary)
+                                }
+                            }
+                            .accessibilityIdentifier("setup-invitation-row")
+                        }
+                    } header: {
+                        Text("家人邀请你加入")
+                    } footer: {
+                        Text("加入后共享对方的孕期，不用再填写下面的日期。")
+                    }
+                }
                 Section {
                     Picker("我知道的是", selection: $model.dateMode) {
                         ForEach(PregnancyDateMode.allCases, id: \.self) { mode in
@@ -71,6 +102,13 @@ struct PregnancySetupView: View {
             .onChange(of: model.dateMode) { _, mode in
                 model.modeDidChange(to: mode)
             }
+            .task { await invitations.check(using: repository) }
+            .sheet(item: $deciding) { invitation in
+                InvitationDecisionSheet(invitation: invitation, repository: repository) {
+                    Task { await invitations.check(using: repository) }
+                }
+            }
+            .onDisappear { session.familyNotice = nil }
         }
     }
 

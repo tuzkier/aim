@@ -109,20 +109,19 @@ class SqlAlchemyPlanningRepository:
 
     async def get_change(self, change_id: UUID) -> TaskChange | None:
         model = await self.session.get(TaskChangeModel, change_id)
-        if model is None:
-            return None
-        return TaskChange(
-            id=model.id,
-            task_id=model.task_id,
-            operation=model.operation,
-            before=_decode_snapshot(model.before_json),
-            after=_decode_snapshot(model.after_json),
-            version_before=model.version_before,
-            version_after=model.version_after,
-            changed_by_actor_type=model.changed_by_actor_type,
-            changed_by_actor_id=model.changed_by_actor_id,
-            created_at=model.created_at,
+        return _to_change(model) if model else None
+
+    async def get_change_by_version(
+        self, task_id: UUID, version_after: int
+    ) -> TaskChange | None:
+        """某次写入产生的那条变更。命令只返回 Task，撤销却需要变更本身。"""
+        model = await self.session.scalar(
+            select(TaskChangeModel).where(
+                TaskChangeModel.task_id == task_id,
+                TaskChangeModel.version_after == version_after,
+            )
         )
+        return _to_change(model) if model else None
 
 
 class SqlAlchemyPlanningUnitOfWork:
@@ -155,6 +154,9 @@ def _to_task_model(task: Task) -> TaskModel:
         source_id=task.source_id,
         changed_by_actor_type=task.changed_by_actor_type.value,
         changed_by_actor_id=task.changed_by_actor_id,
+        # 只在新建时用到这个转换，此刻的改动人就是创建人。
+        created_by_actor_type=task.changed_by_actor_type.value,
+        created_by_actor_id=task.changed_by_actor_id,
         version=task.version,
         scheduled_for=task.scheduled_for,
         due_at=task.due_at,
@@ -205,3 +207,18 @@ def _decode_snapshot(snapshot: dict[str, Any]) -> dict[str, Any]:
     ):
         result["assigned_member_id"] = UUID(result["assigned_member_id"])
     return result
+
+
+def _to_change(model: TaskChangeModel) -> TaskChange:
+    return TaskChange(
+        id=model.id,
+        task_id=model.task_id,
+        operation=model.operation,
+        before=_decode_snapshot(model.before_json),
+        after=_decode_snapshot(model.after_json),
+        version_before=model.version_before,
+        version_after=model.version_after,
+        changed_by_actor_type=model.changed_by_actor_type,
+        changed_by_actor_id=model.changed_by_actor_id,
+        created_at=model.created_at,
+    )

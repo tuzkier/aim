@@ -82,12 +82,30 @@ struct APIFamilyDTO: Codable, Sendable {
     let createdBy: UUID
     let createdAt: Date
     let members: [APIFamilyMemberDTO]
+    /// 只有读取家庭时才给；改名等接口的返回里没有。
+    let invitations: [APIFamilyInvitationDTO]?
 
     enum CodingKeys: String, CodingKey {
         case id, name
         case createdBy = "created_by"
         case createdAt = "created_at"
-        case members
+        case members, invitations
+    }
+}
+
+struct APIFamilyInvitationDTO: Codable, Sendable {
+    let id: UUID
+    let phoneMasked: String
+    let role: String
+    let invitedBy: UUID
+    let expiresAt: Date
+    let status: String
+
+    enum CodingKeys: String, CodingKey {
+        case id, role, status
+        case phoneMasked = "phone_masked"
+        case invitedBy = "invited_by"
+        case expiresAt = "expires_at"
     }
 }
 
@@ -99,12 +117,14 @@ struct APIFamilyMemberDTO: Codable, Sendable {
     let status: String
     let invitedAt: Date?
     let joinedAt: Date?
+    let isAdmin: Bool?
 
     enum CodingKeys: String, CodingKey {
         case accountID = "account_id"
         case role, nickname, status
         case invitedAt = "invited_at"
         case joinedAt = "joined_at"
+        case isAdmin = "is_admin"
     }
 }
 

@@ -1,17 +1,25 @@
 import { defineTool } from "eve/tools";
+import { always } from "eve/tools/approval";
 import { z } from "zod";
 import { callBusinessApi } from "../lib/business-api/client.ts";
 import { toolResultSchema } from "../lib/business-api/tool-result-schema.ts";
 
-// 撤销「新建待办」走删除：undo_operation 做的是字段级还原，新建没有可还原的前值。
-// 撤销本身就是用户的意思表示，不再要求二次确认。
+// 「执行前确认」档：待办是硬删除，删了不能撤销。
+// 没有这个工具时，模型只能把加错的待办标成完成来「去掉」，留下假的完成记录。
 export default defineTool({
   description:
-    "Remove a to-do that was just created, undoing an add. Do not use this to complete " +
-    "or cancel a task the user already had — use update_task for those.",
-  inputSchema: z.object({ taskId: z.string().uuid() }),
+    "Delete to-dos that should not exist: added by mistake, duplicates, or no longer wanted. " +
+    "Pass all of them in one call — the user confirms the whole batch on one card, and " +
+    "deletion cannot be undone. Never use complete_task to get rid of a wrong to-do — " +
+    "completing means the user did it.",
+  inputSchema: z.object({ taskIds: z.array(z.string().uuid()).min(1).max(50) }),
   outputSchema: toolResultSchema,
-  async execute({ taskId }, ctx) {
-    return callBusinessApi(ctx, "/internal/agent-tools/delete-task", { task_id: taskId });
+  approval: always(),
+  async execute({ taskIds }, ctx) {
+    return callBusinessApi(ctx, "/internal/agent-tools/delete-task", {
+      task_ids: taskIds,
+      // Eve 只在确认通过后才调用 execute。
+      approved: true,
+    });
   },
 });

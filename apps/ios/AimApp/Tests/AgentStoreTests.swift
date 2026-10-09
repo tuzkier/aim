@@ -1,3 +1,4 @@
+import WebKit
 import XCTest
 @testable import AimApp
 
@@ -68,22 +69,98 @@ final class AgentSharedSessionTests: XCTestCase {
         XCTAssertEqual(store.context, recordContext)
     }
 
-    func testAskSetsContextBeforeSending() {
-        let store = AgentStore(context: nil)
-        let context = AgentContext(title: "记录", summary: "产检：NT")
+    func testQuickEntryPayloadCarriesPageContextAndScope() throws {
+        let family = UUID(uuidString: "22222222-2222-2222-2222-222222222222")!
+        let pregnancy = UUID(uuidString: "33333333-3333-3333-3333-333333333333")!
         let environment = APIEnvironment(
-            baseURL: URL(string: "http://localhost")!,
-            eveBaseURL: URL(string: "http://localhost")!,
+            baseURL: URL(string: "http://127.0.0.1:8100")!,
+            eveBaseURL: URL(string: "http://127.0.0.1:2210")!,
+            bearerToken: "aim.v1.\"quoted\"",
+            accountID: nil,
+            familyID: family,
+            pregnancyID: pregnancy
+        )
+        let payload = AgentWebView.contextPayload(
+            environment: environment,
+            colorScheme: .dark,
+            entry: .new(pageContext: AgentContext(title: "番茄炒蛋", summary: "菜谱"), autoSend: nil)
+        )
+        let object = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: Data(payload.utf8)) as? [String: Any]
+        )
+        XCTAssertEqual(object["token"] as? String, "aim.v1.\"quoted\"")
+        XCTAssertEqual(object["theme"] as? String, "dark")
+        XCTAssertEqual(object["familyId"] as? String, "22222222-2222-2222-2222-222222222222")
+        XCTAssertEqual(object["pregnancyId"] as? String, "33333333-3333-3333-3333-333333333333")
+        let entry = try XCTUnwrap(object["entry"] as? [String: Any])
+        XCTAssertEqual(entry["mode"] as? String, "new")
+        XCTAssertEqual((entry["pageContext"] as? [String: String])?["title"], "番茄炒蛋")
+        XCTAssertNil(entry["autoSend"])
+    }
+
+    func testTabEntryResumes() throws {
+        let environment = APIEnvironment(
+            baseURL: URL(string: "http://127.0.0.1:8100")!,
+            eveBaseURL: URL(string: "http://127.0.0.1:2210")!,
             bearerToken: nil,
             accountID: nil,
             familyID: nil,
             pregnancyID: nil
         )
+        let payload = AgentWebView.contextPayload(environment: environment, colorScheme: .light, entry: .resume)
+        let object = try XCTUnwrap(
+            JSONSerialization.jsonObject(with: Data(payload.utf8)) as? [String: Any]
+        )
+        XCTAssertEqual((object["entry"] as? [String: String])?["mode"], "resume")
+        XCTAssertNil(object["familyId"])
+    }
 
-        store.ask("请帮我理解这条记录", context: context, environment: environment)
+    func testAnalysisPreparesAnAutoSendInsteadOfCallingEve() {
+        let store = AgentStore()
+        store.prepareAnalysis("请帮我理解这条记录", context: AgentContext(title: "记录", summary: "症状：头晕"))
+        XCTAssertEqual(store.pendingAutoSend, "请帮我理解这条记录")
+        XCTAssertEqual(store.context?.title, "记录")
+        XCTAssertTrue(store.messages.isEmpty)
+    }
 
-        XCTAssertEqual(store.context, context)
-        XCTAssertEqual(store.messages.last?.text, "请帮我理解这条记录")
-        XCTAssertTrue(store.messages.last?.isUser ?? false)
+    func testRefreshRequestsDuringARunCollapseIntoOneMorePass() async {
+        var batches: [Set<String>] = []
+        var release: CheckedContinuation<Void, Never>?
+        let coalescer = AgentRefreshCoalescer { kinds in
+            batches.append(kinds)
+            if batches.count == 1 {
+                await withCheckedContinuation { release = $0 }
+            }
+        }
+
+        let first = Task { await coalescer.request(["task"]) }
+        // 等第一轮真正挂起在 perform 里。
+        while release == nil { await Task.yield() }
+        // 第一轮还没结束时又来了 3 个通知：不该各跑一轮。
+        await coalescer.request(["task"])
+        await coalescer.request(["record"])
+        await coalescer.request(["task", "knowledge"])
+        release?.resume()
+        await first.value
+
+        XCTAssertEqual(batches, [["task"], ["task", "record", "knowledge"]])
+    }
+
+    /// iOS 在后台回收网页进程后，WebView 会一直白着——必须自己重新加载。
+    func testWebViewReloadsWhenItsContentProcessIsKilled() {
+        let coordinator = AgentWebView.Coordinator(onNavigate: { _ in }, onTurnFinished: { _ in })
+        let webView = ReloadSpyWebView()
+
+        coordinator.webViewWebContentProcessDidTerminate(webView)
+
+        XCTAssertTrue(webView.reloaded)
+    }
+}
+
+private final class ReloadSpyWebView: WKWebView {
+    var reloaded = false
+    override func reload() -> WKNavigation? {
+        reloaded = true
+        return nil
     }
 }

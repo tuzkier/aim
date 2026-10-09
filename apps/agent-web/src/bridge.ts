@@ -8,6 +8,24 @@
  * `webkit.messageHandlers`。没有原生外壳时（浏览器里开发）走 dev 回退。
  */
 
+import type { WriteKind } from "./turnWrites";
+
+export interface PageContext {
+  title: string;
+  summary: string;
+}
+
+/**
+ * 这次对话面是从哪里打开的。
+ *
+ * - resume：AIM 标签页，接回上一段。
+ * - new：快捷入口，开一段新的；带 pageContext 时输入框上方显示「正在看：…」，
+ *   带 autoSend 时打开就把这句话发出去（「让 Agent 分析当前记录」）。
+ */
+export type AgentEntry =
+  | { mode: "resume" }
+  | { mode: "new"; pageContext?: PageContext; autoSend?: string; attachImage?: string };
+
 export interface NativeContext {
   /** `aim.v1.…` 会话票。 */
   token: string;
@@ -15,6 +33,11 @@ export interface NativeContext {
   theme: "light" | "dark";
   /** Eve 的来源。原生里是部署环境，开发时留空走同源代理。 */
   eveOrigin?: string;
+  /** 当前家庭与孕期。卡片凭 ID 去公开 API 取真实标题和称呼，不采信模型参数。 */
+  familyId?: string;
+  pregnancyId?: string;
+  /** 缺省按 resume 处理。 */
+  entry?: AgentEntry;
 }
 
 type MessageHandler = { postMessage: (body: unknown) => void };
@@ -27,8 +50,12 @@ declare global {
     __aimOnContextChanged__?: (next: NativeContext) => void;
     /** 原生工具栏的「开新对话」。由 Web 侧注册，原生只负责调用。 */
     __aimNewConversation__?: () => void;
+    /** 原生（首页「拍报告」）把一张图片放进输入框的待发列表。 */
+    __aimAttachImage__?: (dataUrl: string) => void;
     /** 原生工具栏的「历史对话」。面板在 Web 侧渲染——切换会话要重建运行时。 */
     __aimOpenHistory__?: () => void;
+    /** 原生标签页重新出现时调用：若快捷入口里开了新的一段，切过去。 */
+    __aimOnAppear__?: () => void;
     webkit?: { messageHandlers?: Record<string, MessageHandler | undefined> };
   }
 }
@@ -51,9 +78,21 @@ export const openNative = (route: { kind: "record" | "task" | "knowledge"; id: s
   handler.postMessage(route);
 };
 
-/** 告诉原生这一轮结束了，可以刷新受影响的页面。 */
-export const notifyTurnFinished = (): void => {
-  window.webkit?.messageHandlers?.aimTurnFinished?.postMessage({});
+/**
+ * 把页面里的异常送到原生日志。WebView 的控制台在真机上看不到，
+ * 「突然空白」这类问题只能靠它事后追查。
+ */
+export const reportToNative = (kind: string, detail: Record<string, unknown>): void => {
+  try {
+    window.webkit?.messageHandlers?.aimLog?.postMessage({ kind, ...detail });
+  } catch {
+    // 日志通道本身出问题时不能再抛——那会把兜底变成新的崩溃点。
+  }
+};
+
+/** 告诉原生刚写了哪几类东西，原生据此只刷新受影响的页面。 */
+export const notifyTurnFinished = (kinds: readonly WriteKind[]): void => {
+  window.webkit?.messageHandlers?.aimTurnFinished?.postMessage({ kinds });
 };
 
 /**
@@ -78,8 +117,12 @@ const devFallbackContext = async (): Promise<NativeContext> => {
   if (!response.ok) {
     throw new Error(`开发登录失败：HTTP ${response.status}`);
   }
-  const { token } = (await response.json()) as { token: string };
-  return { token, theme: "light" };
+  const { token, family_id, pregnancy_id } = (await response.json()) as {
+    token: string;
+    family_id?: string;
+    pregnancy_id?: string | null;
+  };
+  return { token, theme: "light", familyId: family_id, pregnancyId: pregnancy_id ?? undefined };
 };
 
 /**

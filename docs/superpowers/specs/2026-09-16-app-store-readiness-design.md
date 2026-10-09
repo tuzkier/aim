@@ -39,10 +39,10 @@ active ──申请注销──▶ pending_deletion ──30 天后 purge──�
 
 对每个 `status = pending_deletion` 且 `deletion_requested_at <= now() - 30 天` 的账号：
 
-1. 删除其 `agent_sessions`（外键已 CASCADE）。
-2. 删除其发出的 `family_invitations`（`invited_by` 为 RESTRICT，必须先删）；`accepted_account_id` 已 SET NULL。
+1. 删除其 `agent_sessions`（外键已 CASCADE）。`tool_invocations` 只靠 `session_id = agent_sessions.eve_session_id` 关联、没有外键，其 `result_json` 含记录与待办等健康内容，须在 `agent_sessions` 级联前按会话删除；唯一成员整家删除时同样先清该家庭全部会话的工具调用。Eve 自己的对话转录存在 `eve-workflow-data` 卷里、不在应用数据库中，本脚本不碰它——Eve 转录不在数据库里，由部署文档「定时任务」里的 90 天保留期 crontab 按 run 清理，兑现隐私政策「注销后 90 天内清除」的承诺。
+2. 删除其发出的 `family_invitations`（`invited_by` 为 RESTRICT，必须先删）；`accepted_account_id` 已 SET NULL。同时删除 `invitee_phone` 等于其手机号的邀请——按手机号匹配、没有外键，不删就一直留着他的手机号。
 3. 对其所在的每个家庭：
-   - 若家庭还有其它成员：`tasks.assigned_member_id = NULL`（该账号的）；若 `families.created_by` 是该账号，改为加入时间最早的其它成员；`records.author_account_id`、`pregnancies.created_by`、`pregnancy_facts.recorded_by_account_id`、`task_changes.changed_by_actor_id` 这些无外键的审计字段**保留原 UUID**——客户端只用它判断「能否编辑」，从不展示作者，保留即等价于匿名。
+   - 若家庭还有其它**已加入**（active）成员：`tasks.assigned_member_id = NULL`（该账号的）；他的 `visibility = private` 记录删除（没有别人能看，保留无意义）；`family` 记录保留；若 `families.created_by` 是该账号，改为加入时间最早的其它成员；`records.author_account_id`、`pregnancies.created_by`、`pregnancy_facts.recorded_by_account_id`、`task_changes.changed_by_actor_id` 这些无外键的审计字段**保留原 UUID**——客户端只用它判断「能否编辑」，从不展示作者，保留即等价于匿名。
    - 若该账号是家庭唯一成员：删除该家庭的 pregnancies、pregnancy_facts、records、plans、tasks、task_changes、family_invitations，再删家庭本身。
 4. 删除 `family_members`（CASCADE）与 `accounts` 行。
 
@@ -77,7 +77,7 @@ active ──申请注销──▶ pending_deletion ──30 天后 purge──�
 
 ## 5. 医疗免责声明
 
-`AgentView` 头部副标题改为常驻两行：第一行沿用「孕期里的事，说一声就好」，第二行 `footnote` 灰字「AIM 的建议不能替代医生诊断，紧急情况请立即就医」。不做首次启动弹窗——注册时已同意含免责条款的协议，Agent 界面又常驻提示，审核备注里说明这两处即可。
+`AgentView` 头部副标题改为常驻两行：第一行沿用「孕期里的事，说一声就好」，第二行 `caption2` 灰字「AIM 的建议不能替代医生诊断，紧急情况请立即就医」。不做首次启动弹窗——注册时已同意含免责条款的协议，Agent 界面又常驻提示，审核备注里说明这两处即可。
 
 ## 6. iOS 打包元数据
 

@@ -13,3 +13,16 @@ export type ToolRenderProps<TArgs> = ToolCallMessagePartProps<TArgs>;
 export const isAwaitingApproval = (
   approval: ToolCallMessagePartProps["approval"],
 ): boolean => approval !== undefined && approval.approved === undefined && !approval.resolution;
+
+/** 这条消息里还等着拍板的工具名。按消息算，确认按钮才不会挂到每条回复下面。 */
+export const pendingApprovalTools = (parts: readonly unknown[]): string[] =>
+  parts.flatMap((raw) => {
+    const part = raw as {
+      type?: string;
+      toolName?: string;
+      approval?: ToolCallMessagePartProps["approval"];
+    };
+    return part.type === "tool-call" && part.toolName && isAwaitingApproval(part.approval)
+      ? [part.toolName]
+      : [];
+  });

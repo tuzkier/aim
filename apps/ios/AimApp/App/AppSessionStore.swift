@@ -9,6 +9,12 @@ final class AppSessionStore {
     var pregnancyID: UUID?
     var bearerToken: String?
     var isOffline = false
+    /// 退出或注销后回到登录页要说一句话；登录页读一次就清掉。不持久化。
+    var signOutNotice: String?
+    /// 登录时服务端撤销了注销申请，进首页提示一次。
+    var welcomeBackNotice: String?
+    /// 换了家庭（加入、退出、被移出）后提示一次，如「你已不在『我们的家』里」。
+    var familyNotice: String?
 
     private let defaults: UserDefaults
     private let keychain: KeychainStore
@@ -79,6 +85,18 @@ final class AppSessionStore {
             defaults.removeObject(forKey: Keys.pregnancyID)
         }
         try? keychain.write(bearerToken, for: Keys.bearerToken)
+    }
+
+    /// 换到另一个家庭：接受邀请、退出、被移出之后。孕期可能为空（新的空家庭）。
+    func switchFamily(familyID: UUID, pregnancyID: UUID?) {
+        self.familyID = familyID
+        self.pregnancyID = pregnancyID
+        defaults.set(familyID.uuidString, forKey: Keys.familyID)
+        if let pregnancyID {
+            defaults.set(pregnancyID.uuidString, forKey: Keys.pregnancyID)
+        } else {
+            defaults.removeObject(forKey: Keys.pregnancyID)
+        }
     }
 
     func setPregnancyID(_ pregnancyID: UUID) {

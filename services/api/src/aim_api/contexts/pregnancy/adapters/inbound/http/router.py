@@ -26,7 +26,7 @@ from aim_api.contexts.pregnancy.domain.pregnancy_dates import (
     due_date_from_last_menstrual_period,
     last_menstrual_period_from_due_date,
 )
-from aim_api.platform.auth.context import ActorContext, authenticate
+from aim_api.platform.auth.context import ActorContext, authenticate_active
 from aim_api.platform.http.errors import ConflictError, ForbiddenError, NotFoundError
 
 router = APIRouter(tags=["pregnancy"])
@@ -124,8 +124,8 @@ def _translate(error: Exception) -> None:
     raise error
 
 
-def _actor(request: Request) -> ActorContext:
-    return authenticate(request)
+async def _actor(request: Request) -> ActorContext:
+    return await authenticate_active(request)
 
 
 @router.post(
@@ -136,7 +136,7 @@ def _actor(request: Request) -> ActorContext:
 async def create_pregnancy_endpoint(
     family_id: UUID, payload: CreatePregnancyRequest, request: Request
 ) -> PregnancyResponse:
-    actor = _actor(request)
+    actor = await _actor(request)
     database = request.app.state.database
     async with database.session() as session:
         uow = SqlAlchemyPregnancyUnitOfWork(session)
@@ -157,7 +157,7 @@ async def create_pregnancy_endpoint(
 
 @router.get("/api/v1/pregnancies/{pregnancy_id}", response_model=PregnancyResponse)
 async def get_pregnancy_endpoint(pregnancy_id: UUID, request: Request) -> PregnancyResponse:
-    actor = _actor(request)
+    actor = await _actor(request)
     database = request.app.state.database
     async with database.session() as session:
         uow = SqlAlchemyPregnancyUnitOfWork(session)
@@ -179,7 +179,7 @@ async def get_pregnancy_endpoint(pregnancy_id: UUID, request: Request) -> Pregna
 async def record_fact_endpoint(
     pregnancy_id: UUID, payload: RecordFactRequest, request: Request
 ) -> FactResponse:
-    actor = _actor(request)
+    actor = await _actor(request)
     database = request.app.state.database
     async with database.session() as session:
         uow = SqlAlchemyPregnancyUnitOfWork(session)

@@ -15,6 +15,11 @@
 from __future__ import annotations
 
 import os
+
+# 百科内容审核前都是草稿；测试要能读到它们。必须早于任何 create_app()，
+# 因为 get_encyclopedia() 进程内只加载一次。
+os.environ.setdefault("AIM_CONTENT_INCLUDE_DRAFTS", "1")
+
 import uuid
 from collections.abc import Iterator
 from urllib.parse import urlsplit, urlunsplit
@@ -85,3 +90,20 @@ def disposable_database() -> Iterator[str]:
             )
             conn.execute(text(f'DROP DATABASE IF EXISTS "{name}"'))
         admin.dispose()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def attachments_root(tmp_path_factory) -> Iterator[str]:
+    """测试上传的图片写进临时目录，不落到开发机的 var/attachments。"""
+    root = tmp_path_factory.mktemp("attachments")
+    previous = os.environ.get("AIM_ATTACHMENTS_ROOT")
+    os.environ["AIM_ATTACHMENTS_ROOT"] = str(root)
+    get_settings.cache_clear()
+    try:
+        yield str(root)
+    finally:
+        if previous is None:
+            os.environ.pop("AIM_ATTACHMENTS_ROOT", None)
+        else:
+            os.environ["AIM_ATTACHMENTS_ROOT"] = previous
+        get_settings.cache_clear()

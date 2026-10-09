@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from fastapi import APIRouter, Request
@@ -10,11 +10,9 @@ from aim_api.contexts.family.adapters.outbound.persistence.repositories import (
     SqlAlchemyFamilyUnitOfWork,
 )
 from aim_api.contexts.family.application.commands import (
-    accept_invitation,
     create_family,
     invite_member,
 )
-from aim_api.contexts.family.application.commands.accept_invitation import AcceptInvitationCommand
 from aim_api.contexts.family.application.commands.create_family import CreateFamilyCommand
 from aim_api.contexts.family.application.commands.invite_member import InviteMemberCommand
 from aim_api.contexts.family.application.ports import PersistenceConflict
@@ -31,7 +29,7 @@ from aim_api.contexts.family.domain.errors import (
     InviteeMismatch,
 )
 from aim_api.contexts.family.domain.family import Family, FamilyMemberRole
-from aim_api.platform.auth.context import ActorContext, authenticate
+from aim_api.platform.auth.context import ActorContext, authenticate_active
 from aim_api.platform.http.errors import ConflictError, ForbiddenError, NotFoundError
 
 router = APIRouter(tags=["family"])
@@ -74,6 +72,19 @@ class FamilyMemberResponse(BaseModel):
     status: str
     invited_at: datetime | None
     joined_at: datetime | None
+    #: 管理员 = 家庭创建人，只有他能移出别人。
+    is_admin: bool = False
+
+
+class FamilyInvitationResponse(BaseModel):
+    id: UUID
+    #: 打码后的手机号，如 138****5678。
+    phone_masked: str
+    role: FamilyMemberRole
+    invited_by: UUID
+    expires_at: datetime
+    #: pending / declined / expired
+    status: str
 
 
 class FamilyResponse(BaseModel):
@@ -82,6 +93,8 @@ class FamilyResponse(BaseModel):
     created_by: UUID
     created_at: datetime
     members: list[FamilyMemberResponse]
+    #: 还没处理完的邀请（含过期 7 天内的），只在读取家庭时给出。
+    invitations: list[FamilyInvitationResponse] = []
 
 
 class InvitationResponse(BaseModel):
@@ -106,10 +119,37 @@ def _family_response(family: Family) -> FamilyResponse:
                 status=member.status.value,
                 invited_at=member.invited_at,
                 joined_at=member.joined_at,
+                is_admin=member.account_id == family.created_by,
             )
             for member in family.members.values()
         ],
     )
+
+
+def mask_phone(phone: str) -> str:
+    return f"{phone[:3]}****{phone[-4:]}" if len(phone) >= 7 else phone
+
+
+def _invitation_responses(invitations, now: datetime) -> list[FamilyInvitationResponse]:
+    """待处理与暂不的邀请照列；过期的再列 7 天，方便一键重发。"""
+    result = []
+    for invitation in invitations:
+        if invitation.status.value not in ("pending", "declined", "expired"):
+            continue
+        expired = now >= invitation.expires_at or invitation.status.value == "expired"
+        if expired and now - invitation.expires_at > timedelta(days=7):
+            continue
+        result.append(
+            FamilyInvitationResponse(
+                id=invitation.id,
+                phone_masked=mask_phone(invitation.invitee_phone),
+                role=invitation.role,
+                invited_by=invitation.invited_by,
+                expires_at=invitation.expires_at,
+                status="expired" if expired else invitation.status.value,
+            )
+        )
+    return result
 
 
 def _translate(error: Exception) -> None:
@@ -128,13 +168,13 @@ def _translate(error: Exception) -> None:
     raise error
 
 
-def _actor(request: Request) -> ActorContext:
-    return authenticate(request)
+async def _actor(request: Request) -> ActorContext:
+    return await authenticate_active(request)
 
 
 @router.post("/api/v1/families", response_model=FamilyResponse, status_code=201)
 async def create_family_endpoint(payload: CreateFamilyRequest, request: Request) -> FamilyResponse:
-    actor = _actor(request)
+    actor = await _actor(request)
     database = request.app.state.database
     async with database.session() as session:
         uow = SqlAlchemyFamilyUnitOfWork(session)
@@ -162,7 +202,7 @@ async def create_family_endpoint(payload: CreateFamilyRequest, request: Request)
 async def invite_member_endpoint(
     family_id: UUID, payload: InviteMemberRequest, request: Request
 ) -> InvitationResponse:
-    actor = _actor(request)
+    actor = await _actor(request)
     database = request.app.state.database
     async with database.session() as session:
         uow = SqlAlchemyFamilyUnitOfWork(session)
@@ -188,30 +228,9 @@ async def invite_member_endpoint(
         )
 
 
-@router.post("/api/v1/family-invitations/{token}/accept", response_model=FamilyResponse)
-async def accept_invitation_endpoint(token: str, request: Request) -> FamilyResponse:
-    actor = _actor(request)
-    database = request.app.state.database
-    async with database.session() as session:
-        uow = SqlAlchemyFamilyUnitOfWork(session)
-        try:
-            family = await accept_invitation.execute(
-                AcceptInvitationCommand(
-                    invitation_token=token,
-                    account_id=actor.account_id,
-                    phone=actor.phone,
-                ),
-                uow,
-            )
-        except Exception as error:
-            await uow.rollback()
-            _translate(error)
-        return _family_response(family)
-
-
 @router.get("/api/v1/families/{family_id}", response_model=FamilyResponse)
 async def get_family_endpoint(family_id: UUID, request: Request) -> FamilyResponse:
-    actor = _actor(request)
+    actor = await _actor(request)
     database = request.app.state.database
     async with database.session() as session:
         uow = SqlAlchemyFamilyUnitOfWork(session)
@@ -219,17 +238,20 @@ async def get_family_endpoint(family_id: UUID, request: Request) -> FamilyRespon
             family = await get_family.execute(
                 GetFamilyQuery(family_id=family_id, account_id=actor.account_id), uow
             )
+            invitations = await uow.repository.list_invitations_for_family(family_id)
         except Exception as error:
             await uow.rollback()
             _translate(error)
-        return _family_response(family)
+        response = _family_response(family)
+        response.invitations = _invitation_responses(invitations, datetime.now(UTC))
+        return response
 
 
 @router.patch("/api/v1/families/{family_id}", response_model=FamilyResponse)
 async def rename_family_endpoint(
     family_id: UUID, payload: RenameFamilyRequest, request: Request
 ) -> FamilyResponse:
-    actor = _actor(request)
+    actor = await _actor(request)
     database = request.app.state.database
     async with database.session() as session:
         uow = SqlAlchemyFamilyUnitOfWork(session)
@@ -256,7 +278,7 @@ async def update_my_membership_endpoint(
     端点里没有 member_id 入口——改别人需要一套「谁能改谁」的权限模型，
     而当前没有需求支撑它。想改别人时，加的应当是那套模型，不是这个参数。
     """
-    actor = _actor(request)
+    actor = await _actor(request)
     database = request.app.state.database
     async with database.session() as session:
         uow = SqlAlchemyFamilyUnitOfWork(session)

@@ -6,7 +6,12 @@ from typing import Any
 from uuid import UUID, uuid4
 
 from aim_api.contexts.records.application.ports import RecordsUnitOfWork
-from aim_api.contexts.records.domain.errors import RecordAccessDenied, RecordNotFound
+from aim_api.contexts.records.domain.attachment import MAX_ATTACHMENTS_PER_RECORD
+from aim_api.contexts.records.domain.errors import (
+    RecordAccessDenied,
+    RecordNotFound,
+    RecordValidationError,
+)
 from aim_api.contexts.records.domain.record import Record, RecordType, RecordVisibility
 
 
@@ -22,6 +27,8 @@ class CreateRecordCommand:
     title: str | None = None
     content: str | None = None
     now: datetime | None = None
+    #: 要挂到这条记录上的图片编号。必须属于同一家庭、尚未挂到别的记录。
+    attachment_ids: tuple[UUID, ...] = ()
 
 
 async def execute(command: CreateRecordCommand, uow: RecordsUnitOfWork) -> Record:
@@ -32,6 +39,7 @@ async def execute(command: CreateRecordCommand, uow: RecordsUnitOfWork) -> Recor
         raise RecordAccessDenied("pregnancy does not belong to this family")
     if not await uow.family_membership.is_active_member(command.family_id, command.account_id):
         raise RecordAccessDenied("account cannot create records for this family")
+    await _check_attachments(command, uow)
     record = Record.create(
         record_id=uuid4(),
         pregnancy_id=command.pregnancy_id,
@@ -43,9 +51,25 @@ async def execute(command: CreateRecordCommand, uow: RecordsUnitOfWork) -> Recor
         title=command.title,
         content=command.content,
         structured_data=command.structured_data,
-        attachment_refs=[],
+        attachment_refs=[str(attachment_id) for attachment_id in command.attachment_ids],
         now=command.now,
     )
     await uow.repository.add_record(record)
+    if command.attachment_ids:
+        await uow.attachments.attach(list(command.attachment_ids), record.id)
     await uow.commit()
     return record
+
+
+async def _check_attachments(command: CreateRecordCommand, uow: RecordsUnitOfWork) -> None:
+    if len(command.attachment_ids) > MAX_ATTACHMENTS_PER_RECORD:
+        raise RecordValidationError("一条记录最多挂 4 张图片")
+    if len(set(command.attachment_ids)) != len(command.attachment_ids):
+        raise RecordValidationError("同一张图片不能重复挂")
+    for attachment_id in command.attachment_ids:
+        attachment = await uow.attachments.get(attachment_id)
+        # 别的家庭的图片与不存在的图片同一说法：不暴露编号是否存在。
+        if attachment is None or attachment.family_id != command.family_id:
+            raise RecordValidationError("找不到这张图片，请让用户重新发一次")
+        if attachment.record_id is not None:
+            raise RecordValidationError("这张图片已经挂在别的记录上了")

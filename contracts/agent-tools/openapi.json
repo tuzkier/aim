@@ -144,18 +144,100 @@
         }
       }
     },
-    "/internal/agent-tools/update-task": {
+    "/internal/agent-tools/complete-task": {
       "post": {
         "tags": [
           "agent-tools"
         ],
-        "summary": "Update Task",
-        "operationId": "update_task_internal_agent_tools_update_task_post",
+        "summary": "Complete Task Endpoint",
+        "operationId": "complete_task_endpoint_internal_agent_tools_complete_task_post",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateTaskRequest"
+                "$ref": "#/components/schemas/CompleteTaskToolRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/internal/agent-tools/delete-task": {
+      "post": {
+        "tags": [
+          "agent-tools"
+        ],
+        "summary": "Delete Task Endpoint",
+        "operationId": "delete_task_endpoint_internal_agent_tools_delete_task_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteTaskToolRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/internal/agent-tools/reschedule-task": {
+      "post": {
+        "tags": [
+          "agent-tools"
+        ],
+        "summary": "Reschedule Task Endpoint",
+        "operationId": "reschedule_task_endpoint_internal_agent_tools_reschedule_task_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RescheduleTaskRequest"
               }
             }
           },
@@ -197,47 +279,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/aim_api__contexts__agent_access__adapters__inbound__http__router__CreateTaskRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ToolResult"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/internal/agent-tools/delete-task": {
-      "post": {
-        "tags": [
-          "agent-tools"
-        ],
-        "summary": "Delete Task Endpoint",
-        "operationId": "delete_task_endpoint_internal_agent_tools_delete_task_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DeleteTaskRequest"
               }
             }
           },
@@ -320,47 +361,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/aim_api__contexts__agent_access__adapters__inbound__http__router__CreateRecordRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ToolResult"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/internal/agent-tools/delete-record": {
-      "post": {
-        "tags": [
-          "agent-tools"
-        ],
-        "summary": "Delete Record Endpoint",
-        "operationId": "delete_record_endpoint_internal_agent_tools_delete_record_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DeleteRecordRequest"
               }
             }
           },
@@ -599,6 +599,174 @@
   },
   "components": {
     "schemas": {
+      "ActivityItemResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "actor_name": {
+            "type": "string",
+            "title": "Actor Name"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "target_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Type"
+          },
+          "target_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Id"
+          },
+          "target_deleted": {
+            "type": "boolean",
+            "title": "Target Deleted"
+          },
+          "via_agent": {
+            "type": "boolean",
+            "title": "Via Agent"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "actor_name",
+          "title",
+          "target_type",
+          "target_id",
+          "target_deleted",
+          "via_agent",
+          "created_at"
+        ],
+        "title": "ActivityItemResponse"
+      },
+      "ActivityResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ActivityItemResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "next_before": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Before"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "next_before"
+        ],
+        "title": "ActivityResponse"
+      },
+      "AttachmentResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "media_type": {
+            "type": "string",
+            "title": "Media Type"
+          },
+          "byte_size": {
+            "type": "integer",
+            "title": "Byte Size"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "media_type",
+          "byte_size"
+        ],
+        "title": "AttachmentResponse"
+      },
+      "CompleteTaskToolRequest": {
+        "properties": {
+          "tasks": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/TaskVersionRef"
+                },
+                "type": "array",
+                "maxItems": 50,
+                "minItems": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tasks"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "expected_version": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Version"
+          }
+        },
+        "type": "object",
+        "title": "CompleteTaskToolRequest"
+      },
       "CreateFamilyRequest": {
         "properties": {
           "name": {
@@ -806,33 +974,60 @@
         ],
         "title": "DelayTaskRequest"
       },
-      "DeleteRecordRequest": {
+      "DeleteTaskToolRequest": {
         "properties": {
-          "record_id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Record Id"
-          }
-        },
-        "type": "object",
-        "required": [
-          "record_id"
-        ],
-        "title": "DeleteRecordRequest"
-      },
-      "DeleteTaskRequest": {
-        "properties": {
+          "task_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "type": "array",
+                "maxItems": 50,
+                "minItems": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Ids"
+          },
           "task_id": {
-            "type": "string",
-            "format": "uuid",
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Task Id"
+          },
+          "approved": {
+            "type": "boolean",
+            "title": "Approved",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "DeleteTaskToolRequest"
+      },
+      "DeletionRequest": {
+        "properties": {
+          "password": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Password"
           }
         },
         "type": "object",
         "required": [
-          "task_id"
+          "password"
         ],
-        "title": "DeleteTaskRequest"
+        "title": "DeletionRequest"
       },
       "ExpectedVersionRequest": {
         "properties": {
@@ -908,6 +1103,46 @@
         ],
         "title": "FactSource"
       },
+      "FamilyInvitationResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "phone_masked": {
+            "type": "string",
+            "title": "Phone Masked"
+          },
+          "role": {
+            "$ref": "#/components/schemas/FamilyMemberRole"
+          },
+          "invited_by": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Invited By"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "phone_masked",
+          "role",
+          "invited_by",
+          "expires_at",
+          "status"
+        ],
+        "title": "FamilyInvitationResponse"
+      },
       "FamilyMemberResponse": {
         "properties": {
           "account_id": {
@@ -956,6 +1191,11 @@
               }
             ],
             "title": "Joined At"
+          },
+          "is_admin": {
+            "type": "boolean",
+            "title": "Is Admin",
+            "default": false
           }
         },
         "type": "object",
@@ -1005,6 +1245,14 @@
             },
             "type": "array",
             "title": "Members"
+          },
+          "invitations": {
+            "items": {
+              "$ref": "#/components/schemas/FamilyInvitationResponse"
+            },
+            "type": "array",
+            "title": "Invitations",
+            "default": []
           }
         },
         "type": "object",
@@ -1262,6 +1510,149 @@
           "password"
         ],
         "title": "LoginRequest"
+      },
+      "MeResponse": {
+        "properties": {
+          "account_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Account Id"
+          },
+          "family_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Family Id"
+          },
+          "pregnancy_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pregnancy Id"
+          },
+          "role": {
+            "$ref": "#/components/schemas/FamilyMemberRole"
+          }
+        },
+        "type": "object",
+        "required": [
+          "account_id",
+          "family_id",
+          "pregnancy_id",
+          "role"
+        ],
+        "title": "MeResponse"
+      },
+      "MemberDetailResponse": {
+        "properties": {
+          "member": {
+            "$ref": "#/components/schemas/FamilyMemberResponse"
+          },
+          "open_tasks": {
+            "items": {
+              "$ref": "#/components/schemas/TaskResponse"
+            },
+            "type": "array",
+            "title": "Open Tasks"
+          },
+          "recent_records": {
+            "items": {
+              "$ref": "#/components/schemas/RecordResponse"
+            },
+            "type": "array",
+            "title": "Recent Records"
+          }
+        },
+        "type": "object",
+        "required": [
+          "member",
+          "open_tasks",
+          "recent_records"
+        ],
+        "title": "MemberDetailResponse"
+      },
+      "MyInvitationResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "family_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Family Id"
+          },
+          "family_name": {
+            "type": "string",
+            "title": "Family Name"
+          },
+          "inviter_name": {
+            "type": "string",
+            "title": "Inviter Name"
+          },
+          "role": {
+            "$ref": "#/components/schemas/FamilyMemberRole"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "can_accept": {
+            "type": "boolean",
+            "title": "Can Accept"
+          },
+          "blocked_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Blocked Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "family_id",
+          "family_name",
+          "inviter_name",
+          "role",
+          "expires_at",
+          "status",
+          "can_accept",
+          "blocked_reason"
+        ],
+        "title": "MyInvitationResponse"
+      },
+      "MyInvitationsResponse": {
+        "properties": {
+          "invitations": {
+            "items": {
+              "$ref": "#/components/schemas/MyInvitationResponse"
+            },
+            "type": "array",
+            "title": "Invitations"
+          }
+        },
+        "type": "object",
+        "required": [
+          "invitations"
+        ],
+        "title": "MyInvitationsResponse"
       },
       "PlanResponse": {
         "properties": {
@@ -1572,6 +1963,46 @@
         ],
         "title": "RenameFamilyRequest"
       },
+      "RescheduleTaskRequest": {
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Task Id"
+          },
+          "expected_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expected Version"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "schedule",
+              "delay"
+            ],
+            "title": "Kind"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          },
+          "approved": {
+            "type": "boolean",
+            "title": "Approved",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "task_id",
+          "expected_version",
+          "kind",
+          "at"
+        ],
+        "title": "RescheduleTaskRequest"
+      },
       "ResolveSessionRequest": {
         "properties": {
           "token": {
@@ -1653,6 +2084,44 @@
           "sessions"
         ],
         "title": "SessionListResponse"
+      },
+      "TaskDraft": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "due_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title"
+        ],
+        "title": "TaskDraft"
       },
       "TaskResponse": {
         "properties": {
@@ -1805,6 +2274,26 @@
         ],
         "title": "TaskSourceType"
       },
+      "TaskVersionRef": {
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Task Id"
+          },
+          "expected_version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Expected Version"
+          }
+        },
+        "type": "object",
+        "required": [
+          "task_id",
+          "expected_version"
+        ],
+        "title": "TaskVersionRef"
+      },
       "TodayResponse": {
         "properties": {
           "pregnancy_id": {
@@ -1897,28 +2386,41 @@
       },
       "UndoOperationRequest": {
         "properties": {
-          "change_id": {
+          "operation_id": {
             "type": "string",
             "format": "uuid",
-            "title": "Change Id"
-          },
-          "expected_version": {
-            "type": "integer",
-            "minimum": 1.0,
-            "title": "Expected Version"
-          },
-          "approved": {
-            "type": "boolean",
-            "title": "Approved",
-            "default": false
+            "title": "Operation Id"
           }
         },
         "type": "object",
         "required": [
-          "change_id",
-          "expected_version"
+          "operation_id"
         ],
         "title": "UndoOperationRequest"
+      },
+      "UndoOperationResponse": {
+        "properties": {
+          "operation_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Operation Id"
+          },
+          "summary": {
+            "type": "string",
+            "title": "Summary"
+          },
+          "already_undone": {
+            "type": "boolean",
+            "title": "Already Undone"
+          }
+        },
+        "type": "object",
+        "required": [
+          "operation_id",
+          "summary",
+          "already_undone"
+        ],
+        "title": "UndoOperationResponse"
       },
       "UpdateMyMembershipRequest": {
         "properties": {
@@ -1947,6 +2449,20 @@
         },
         "type": "object",
         "title": "UpdateMyMembershipRequest"
+      },
+      "UpdatePregnancyRequest": {
+        "properties": {
+          "due_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Due Date"
+          }
+        },
+        "type": "object",
+        "required": [
+          "due_date"
+        ],
+        "title": "UpdatePregnancyRequest"
       },
       "UpdateRecordRequest": {
         "properties": {
@@ -2035,77 +2551,6 @@
         },
         "type": "object",
         "title": "UpdateSessionRequest"
-      },
-      "UpdateTaskRequest": {
-        "properties": {
-          "task_id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Task Id"
-          },
-          "action": {
-            "type": "string",
-            "enum": [
-              "schedule",
-              "complete",
-              "delay"
-            ],
-            "title": "Action"
-          },
-          "expected_version": {
-            "type": "integer",
-            "minimum": 1.0,
-            "title": "Expected Version"
-          },
-          "scheduled_for": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Scheduled For"
-          },
-          "due_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Due At"
-          },
-          "approved": {
-            "type": "boolean",
-            "title": "Approved",
-            "default": false
-          },
-          "family_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Family Id"
-          }
-        },
-        "type": "object",
-        "required": [
-          "task_id",
-          "action",
-          "expected_version"
-        ],
-        "title": "UpdateTaskRequest"
       },
       "ValidationError": {
         "properties": {
@@ -2240,6 +2685,15 @@
               }
             ],
             "title": "Occurred At"
+          },
+          "attachment_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "maxItems": 4,
+            "title": "Attachment Ids"
           }
         },
         "type": "object",
@@ -2250,10 +2704,33 @@
       },
       "aim_api__contexts__agent_access__adapters__inbound__http__router__CreateTaskRequest": {
         "properties": {
+          "tasks": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/TaskDraft"
+                },
+                "type": "array",
+                "maxItems": 50,
+                "minItems": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tasks"
+          },
           "title": {
-            "type": "string",
-            "maxLength": 200,
-            "minLength": 1,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Title"
           },
           "description": {
@@ -2281,9 +2758,6 @@
           }
         },
         "type": "object",
-        "required": [
-          "title"
-        ],
         "title": "CreateTaskRequest"
       },
       "aim_api__contexts__agent_access__adapters__inbound__http__router__RecordFactRequest": {
@@ -2396,6 +2870,11 @@
           "token": {
             "type": "string",
             "title": "Token"
+          },
+          "deletion_cancelled": {
+            "type": "boolean",
+            "title": "Deletion Cancelled",
+            "default": false
           }
         },
         "type": "object",
