@@ -2,10 +2,10 @@ import XCTest
 @testable import AimApp
 
 final class EncyclopediaCatalogTests: XCTestCase {
-    private func summary(_ id: String, weeks: [Int]?) -> EncyclopediaEntrySummary {
+    private func summary(_ id: String, weeks: [Int]?, pick: Bool = true) -> EncyclopediaEntrySummary {
         EncyclopediaEntrySummary(
             id: id, topic: String(id.split(separator: ".")[0]), title: id,
-            aliases: [], weeks: weeks, summary: "摘要")
+            aliases: [], weeks: weeks, summary: "摘要", pick: pick)
     }
 
     private var catalog: EncyclopediaCatalog {
@@ -24,6 +24,22 @@ final class EncyclopediaCatalogTests: XCTestCase {
         XCTAssertEqual(catalog.picks(forWeek: 25).map(\.id), ["body.now", "body.mid"])
         XCTAssertEqual(catalog.picks(forWeek: 25, limit: 1).map(\.id), ["body.now"])
         XCTAssertEqual(catalog.picks(forWeek: 40).map(\.id), [])
+    }
+
+    /// 只针对部分人群的条目（如羊水穿刺）不进首页推荐，但主题页和本周计数照常算它。
+    func testEntriesMarkedNotForPicksStayOutOfPicksButRemainInTopicPage() {
+        let catalog = EncyclopediaCatalog(
+            topics: [EncyclopediaTopic(id: "checkup", name: "产检项目", count: 2)],
+            entries: [
+                summary("checkup.amnio", weeks: [16, 22], pick: false),
+                summary("checkup.screening", weeks: [15, 20]),
+            ])
+
+        XCTAssertEqual(catalog.picks(forWeek: 16).map(\.id), ["checkup.screening"])
+        XCTAssertEqual(
+            catalog.entries(inTopic: "checkup", week: 16).map(\.id),
+            ["checkup.amnio", "checkup.screening"])
+        XCTAssertEqual(catalog.timelyCount(topic: "checkup", week: 16), 2)
     }
 
     func testTopicPageListsTimelyEntriesFirstThenKeepsFileOrder() {
@@ -74,5 +90,19 @@ final class EncyclopediaCatalogTests: XCTestCase {
 
         XCTAssertEqual(decoded.topics.first?.icon, "fork.knife")
         XCTAssertEqual(decoded.entries.first?.weeks, [13, 40])
+        // 旧版服务端不带 pick：缺省可以进推荐。
+        XCTAssertEqual(decoded.entries.first?.pick, true)
+    }
+
+    func testDecodesPickFlagWhenPresent() throws {
+        let json = """
+        {"topics":[],"entries":[
+          {"id":"checkup.amnio","topic":"checkup","title":"羊水穿刺","aliases":[],"weeks":[16,22],"summary":"摘要","pick":false},
+          {"id":"checkup.nt","topic":"checkup","title":"NT","aliases":[],"weeks":[11,14],"summary":"摘要","pick":true}]}
+        """.data(using: .utf8)!
+
+        let decoded = try JSONDecoder().decode(EncyclopediaCatalog.self, from: json)
+
+        XCTAssertEqual(decoded.entries.map(\.pick), [false, true])
     }
 }
