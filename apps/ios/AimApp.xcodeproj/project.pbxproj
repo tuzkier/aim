@@ -62,6 +62,7 @@
 		A20000000000000000000056 /* Features/Agent/AgentDiffSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000055 /* Features/Agent/AgentDiffSheet.swift */; };
 		A20000000000000000000057 /* Tests/AgentChangePreviewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000056 /* Tests/AgentChangePreviewTests.swift */; };
 		A20000000000000000000058 /* Features/Home/HomeHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000057 /* Features/Home/HomeHeader.swift */; };
+		A20000000000000000000160 /* Features/FetalMovement/FetalMovementModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000160 /* Features/FetalMovement/FetalMovementModels.swift */; };
 		A20000000000000000000059 /* Features/Records/TaskRecordSuggestion.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000058 /* Features/Records/TaskRecordSuggestion.swift */; };
 		A20000000000000000000060 /* Tests/TaskRecordSuggestionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000059 /* Tests/TaskRecordSuggestionTests.swift */; };
 		A20000000000000000000061 /* Core/Networking/APIEndpointConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000060 /* Core/Networking/APIEndpointConfiguration.swift */; };
@@ -223,6 +224,7 @@
 		A10000000000000000000055 /* Features/Agent/AgentDiffSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Agent/AgentDiffSheet.swift; sourceTree = "<group>"; };
 		A10000000000000000000056 /* Tests/AgentChangePreviewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/AgentChangePreviewTests.swift; sourceTree = "<group>"; };
 		A10000000000000000000057 /* Features/Home/HomeHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Home/HomeHeader.swift; sourceTree = "<group>"; };
+		A10000000000000000000160 /* Features/FetalMovement/FetalMovementModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FetalMovement/FetalMovementModels.swift; sourceTree = "<group>"; };
 		A10000000000000000000058 /* Features/Records/TaskRecordSuggestion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Records/TaskRecordSuggestion.swift; sourceTree = "<group>"; };
 		A10000000000000000000059 /* Tests/TaskRecordSuggestionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/TaskRecordSuggestionTests.swift; sourceTree = "<group>"; };
 		A10000000000000000000060 /* Core/Networking/APIEndpointConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Networking/APIEndpointConfiguration.swift; sourceTree = "<group>"; };
@@ -655,8 +657,17 @@
 		A40000000000000000000021 /* Features */ = {
 			isa = PBXGroup;
 			children = (
+				A40000000000000000000107 /* FetalMovement */,
 			);
 			path = Features;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000107 /* FetalMovement */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000160 /* Features/FetalMovement/FetalMovementModels.swift */,
+			);
+			name = FetalMovement;
 			sourceTree = "<group>";
 		};
 		A40000000000000000000022 /* Generated */ = {
@@ -1519,6 +1530,7 @@
 				A20000000000000000000055 /* Features/Agent/AgentChangePreview.swift in Sources */,
 				A20000000000000000000056 /* Features/Agent/AgentDiffSheet.swift in Sources */,
 				A20000000000000000000058 /* Features/Home/HomeHeader.swift in Sources */,
+				A20000000000000000000160 /* Features/FetalMovement/FetalMovementModels.swift in Sources */,
 				A20000000000000000000059 /* Features/Records/TaskRecordSuggestion.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
