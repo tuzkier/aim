@@ -1,0 +1,222 @@
+id: encyclopedia-checkup
+version: 0.1.0
+source: 中华医学会妇产科学分会《孕前和孕期保健指南（2018）》；中国营养学会《中国居民膳食指南（2022）》孕期妇女膳食指南；国家卫生健康委员会公开的孕产期保健资料
+source_url: https://www.nhc.gov.cn/
+reviewed_at: null
+review_status: draft
+entries:
+  - id: checkup.first-visit
+    title: 早孕检查与建档
+    aliases: [第一次产检, 建档, 早孕检查, 首次产检]
+    weeks: [6, 13]
+    summary: 确认怀孕后第一次正式产检，确认宫内妊娠和孕周，做一轮基础检查，并在产检医院建档。
+    sections:
+      - heading: 什么时候去
+        text: 指南建议首次产检在孕 6–13 周之间完成，多数人在验孕阳性、月经推迟几周后去。具体预约时间各医院不同，可以提前打电话或在医院公众号上问清楚。
+      - heading: 通常查什么
+        text: 早孕期 B 超确认胎儿在宫内并核对孕周；抽血查血常规、血型、肝肾功能、血糖、乙肝、梅毒、艾滋病等；尿常规；量血压、体重。医生还会根据情况加做甲功等项目。
+      - heading: 要带什么
+        text: 身份证、医保卡或社保卡、之前的验孕或 B 超结果、末次月经日期。如果有慢性病或正在吃的药，把病历和药盒一起带上。抽血项目可能需要空腹，预约时问清楚。
+      - heading: 建档与建册
+        text: 建档是在准备生产的医院登记，之后产检都在这里做；建册一般在社区卫生服务中心领取母子健康手册。两件事的顺序和要求以当地医院和社区的说明为准。
+    ask: [第一次产检要空腹吗, 建档要带哪些材料, 几周去建档比较合适]
+    related: [checkup.schedule, paperwork.registration, checkup.thyroid, checkup.blood-routine]
+
+  - id: checkup.nt
+    title: NT 检查
+    aliases: [NT, 颈后透明层, 测NT, 小排畸]
+    weeks: [11, 14]
+    summary: 孕 11–13+6 周做的一次 B 超，测量胎儿颈后透明层厚度，用于评估染色体异常等风险。
+    sections:
+      - heading: 是什么
+        text: NT 是胎儿颈部后方皮下的一层液体，通过 B 超测量厚度。它和早期唐筛的抽血结果一起，用于估算唐氏综合征等染色体异常的风险，同时也能看到一部分明显的结构问题。
+      - heading: 什么时候做
+        text: 只能在孕 11 周到 13 周 6 天之间做，过了就测不了，所以要提前预约。具体日期请按医生安排。
+      - heading: 注意事项
+        text: 一般不需要空腹。宝宝体位不合适时，医生可能让你走动一会儿再测。NT 结果是筛查参考，偏厚不等于有问题，医生会结合其他检查给出下一步建议。
+    ask: [NT 偏厚怎么办, NT 需要空腹吗, 错过了 NT 还能补吗]
+    related: [checkup.early-screening, checkup.nipt, checkup.ultrasound]
+
+  - id: checkup.early-screening
+    title: 早期唐筛
+    aliases: [早唐, 早孕期唐筛, 唐氏筛查, 早唐联合]
+    weeks: [11, 14]
+    summary: 孕 11–13+6 周抽血，配合 NT 结果估算胎儿染色体异常的风险，是筛查不是诊断。
+    sections:
+      - heading: 是什么
+        text: 抽孕妈妈的血检测几项指标，再结合 NT 厚度、年龄、孕周等算出风险值。结果分为低风险、临界风险和高风险。
+      - heading: 结果怎么看
+        text: 低风险说明概率较低，但不能完全排除；临界或高风险也不代表宝宝一定有问题，医生通常会建议进一步做无创 DNA 或羊水穿刺来确认。拿到报告后请让医生解读。
+      - heading: 和中期唐筛的关系
+        text: 有的医院做早唐，有的做中唐，也有的直接建议无创 DNA。选哪种以产检医院的安排为准，不必每项都做。
+    ask: [唐筛高风险怎么办, 早唐和中唐要都做吗, 唐筛需要空腹吗]
+    related: [checkup.nt, checkup.second-trimester-screening, checkup.nipt, checkup.amniocentesis]
+
+  - id: checkup.nipt
+    title: 无创 DNA
+    aliases: [无创, NIPT, 无创产前检测, 无创DNA]
+    weeks: [12, 22]
+    summary: 抽孕妈妈的血检测胎儿游离 DNA，筛查常见染色体非整倍体，准确度高于血清唐筛，但仍是筛查。
+    sections:
+      - heading: 是什么
+        text: 孕妈妈血液中有少量来自胎盘的游离 DNA，通过检测它来评估 21、18、13 三体等常见染色体异常的风险。按国家相关规范，适宜孕周一般是 12 周到 22 周 6 天。
+      - heading: 适合谁
+        text: 常用于唐筛临界或高风险、错过唐筛时间等情况。是否适合你、选基础版还是扩展版，请和医生商量。
+      - heading: 结果怎么看
+        text: 低风险可以按常规继续产检；高风险需要做羊水穿刺等产前诊断来确认，不要只凭无创结果做决定。出结果需要一段时间，具体等待时间问医院。
+    ask: [无创和唐筛选哪个, 无创高风险一定有问题吗, 无创要空腹吗]
+    related: [checkup.early-screening, checkup.second-trimester-screening, checkup.amniocentesis]
+
+  - id: checkup.second-trimester-screening
+    title: 中期唐筛
+    aliases: [中唐, 唐筛, 中孕期唐筛, 唐氏]
+    weeks: [15, 20]
+    summary: 孕 15–20 周抽血，估算唐氏综合征、18 三体和神经管缺陷的风险，是筛查不是诊断。
+    sections:
+      - heading: 是什么
+        text: 抽孕妈妈的血检测几项激素和蛋白，结合年龄、体重、孕周算出风险。孕周算得准不准对结果影响很大，所以通常以早孕 B 超核对后的孕周为准。
+      - heading: 结果怎么看
+        text: 低风险可以继续常规产检；临界或高风险时，医生一般会建议做无创 DNA 或羊水穿刺。高风险只是提示需要进一步检查，并不等于宝宝有问题。
+      - heading: 注意事项
+        text: 是否需要空腹各医院要求不同，预约时问清楚。已经做过早唐或无创的，是否还需要做中唐听医生安排。
+    ask: [中唐高风险要紧吗, 中唐需要空腹吗, 做了无创还要做中唐吗]
+    related: [checkup.early-screening, checkup.nipt, checkup.amniocentesis, checkup.schedule]
+
+  - id: checkup.anomaly-scan
+    title: 大排畸
+    aliases: [大排畸, 系统彩超, 四维, 三维彩超, 排畸B超]
+    weeks: [20, 24]
+    summary: 孕 20–24 周的胎儿系统超声，逐项检查宝宝主要器官结构，是孕期最重要的 B 超之一。
+    sections:
+      - heading: 是什么
+        text: 医生会系统地看宝宝的头颅、脸部、心脏、脊柱、腹部器官和四肢等结构，同时看胎盘、羊水和宫颈情况。叫四维还是彩超只是设备说法不同，关键是做系统筛查。
+      - heading: 什么时候做
+        text: 指南建议在孕 20–24 周完成。很多医院需要提前预约，最好在中唐前后就约好。
+      - heading: 注意事项
+        text: 一般不需要空腹。宝宝姿势不好看不清时，可能要走动后复查或改天再做。超声不能发现所有问题，有疑问时医生会安排进一步检查。
+    ask: [大排畸要空腹吗, 宝宝不配合怎么办, 四维和三维有什么区别]
+    related: [checkup.ultrasound, checkup.schedule, checkup.ogtt]
+
+  - id: checkup.ogtt
+    title: 糖耐量
+    aliases: [喝糖水, OGTT, 糖筛, 糖耐, 葡萄糖耐量]
+    weeks: [24, 28]
+    summary: 孕 24–28 周喝下定量葡萄糖水后分次抽血，筛查妊娠期糖尿病。
+    sections:
+      - heading: 怎么做
+        text: 先空腹抽一次血，然后在 5 分钟内喝完 75 克葡萄糖配成的糖水，从喝第一口开始计时，1 小时和 2 小时各再抽一次血。整个过程大约 2 个多小时。
+      - heading: 检查前准备
+        text: 检查前 3 天正常饮食，不要刻意少吃主食；前一晚开始空腹 8 小时以上，可以少量喝白开水。检查当天别迟到太久，以免空腹时间过长。
+      - heading: 检查期间
+        text: 喝完糖水后坐着安静等待，不要走动太多、不要吃东西、不要喝饮料。喝糖水想吐时可以小口慢喝，但要在规定时间内喝完。
+      - heading: 结果怎么看
+        text: 三次血糖中任何一次达到诊断标准，就会诊断为妊娠期糖尿病，报告请交给医生判读。确诊后多数人通过调整饮食和运动就能控制好，医生会告诉你后续怎么做。
+    ask: [糖耐量前一天能吃什么, 喝糖水吐了怎么办, 糖耐没过怎么办]
+    related: [diet.blood-sugar, checkup.schedule, diet.weight-gain]
+
+  - id: checkup.nst
+    title: 胎心监护
+    aliases: [胎监, NST, 胎心监测, 绑胎监]
+    weeks: [32, 40]
+    summary: 孕晚期用仪器连续记录胎心和宫缩，了解宝宝在宫内的状态，多从 32–34 周起开始做。
+    sections:
+      - heading: 是什么
+        text: 在肚子上绑两个探头，一个记录胎心，一个记录宫缩，同时你感到胎动时按一下按钮。一般持续 20 分钟左右，宝宝睡着时可能会延长。
+      - heading: 什么时候做
+        text: 指南建议一般从孕 34 周开始，有高危因素的可能从 32 周或更早开始，37 周后通常每周一次。具体频次按医生安排。
+      - heading: 小技巧
+        text: 去之前正常吃饭，别空腹；选宝宝平时比较活跃的时段；监护时侧躺或半躺更舒服。结果不理想时医生可能让你吃点东西、动一动后重做，不必紧张。
+    ask: [胎监过不了怎么办, 胎监前要吃东西吗, 宝宝睡觉胎监怎么办]
+    related: [body.fetal-movement, checkup.schedule, birth.when-to-go]
+
+  - id: checkup.ultrasound
+    title: B 超的意义
+    aliases: [B超, 彩超, 超声, 照B超]
+    weeks: [6, 40]
+    summary: 孕期不同阶段的 B 超各有目的：早期定孕周、中期查结构、晚期看生长和羊水胎盘。
+    sections:
+      - heading: 各阶段看什么
+        text: 早孕期确认胎儿在宫内、有无胎心、核对孕周；11–13+6 周做 NT；20–24 周做系统排畸；孕晚期看宝宝大小、胎位、羊水量和胎盘位置。
+      - heading: 安全吗
+        text: 产科常规使用的诊断超声被认为是安全的。按医生开的检查做即可，不建议为了拍照片纪念额外多做。
+      - heading: 报告怎么看
+        text: 报告上的双顶径、股骨长等数值用于估计宝宝大小，和孕周有一两周的出入很常见。单个数值不必自己对照网上的表格判断，交给医生结合整体情况看。
+    ask: [孕期 B 超做多了有害吗, 报告上的数值偏小怎么办, 晚期 B 超看什么]
+    related: [checkup.nt, checkup.anomaly-scan, checkup.schedule]
+
+  - id: checkup.blood-routine
+    title: 血常规与贫血
+    aliases: [血常规, 贫血, 血红蛋白低, 缺铁]
+    weeks: [6, 40]
+    summary: 血常规几乎每个阶段都会查，重点看血红蛋白，孕期贫血很常见，多数可以通过饮食和补铁改善。
+    sections:
+      - heading: 看什么
+        text: 主要看血红蛋白、红细胞、白细胞和血小板。孕期血容量增加，血液被稀释，血红蛋白稍低很常见。孕期一般以血红蛋白低于 110 g/L 作为贫血的判断标准。
+      - heading: 贫血怎么办
+        text: 多吃红肉、动物血、动物肝脏等含铁丰富的食物，搭配新鲜蔬果帮助吸收。是否需要吃铁剂、吃多少由医生根据化验结果决定，不要自行加量。
+      - heading: 什么时候找医生
+        text: 经常头晕、心慌、气短、脸色苍白、特别容易累时，及时告诉医生。白细胞偏高在孕期也比较常见，是否需要处理请让医生判断。
+    ask: [血红蛋白偏低怎么办, 铁剂饭前吃还是饭后吃, 孕期白细胞高正常吗]
+    related: [diet.iron-and-folate, body.fatigue, checkup.schedule]
+
+  - id: checkup.urine-routine
+    title: 尿常规
+    aliases: [验尿, 尿检, 尿蛋白, 尿酮体]
+    summary: 尿常规基本每次产检都要做，主要看尿蛋白、尿糖、酮体和有没有感染迹象。
+    sections:
+      - heading: 看什么
+        text: 尿蛋白结合血压可以帮助发现妊娠期高血压相关问题；尿糖、酮体与血糖和进食情况有关；白细胞、细菌等提示可能有泌尿系统感染。
+      - heading: 怎么留尿
+        text: 先清洁外阴，留取中段尿，也就是先排掉一点再接，接完再排。阴道分泌物多时容易污染结果，必要时医生会让你复查。
+      - heading: 什么时候找医生
+        text: 平时出现尿痛、尿急、尿里带血、发热或腰痛，不必等到下次产检，及时就医。孕吐严重时酮体可能偏高，也要告诉医生。
+    ask: [尿蛋白加号要紧吗, 尿酮体阳性是什么意思, 留尿要早上第一次吗]
+    related: [body.frequent-urination, body.edema, body.morning-sickness]
+
+  - id: checkup.thyroid
+    title: 甲功
+    aliases: [甲状腺功能, 甲功五项, TSH, 甲减, 甲亢]
+    weeks: [6, 13]
+    summary: 甲状腺激素对宝宝早期发育很重要，很多医院在早孕期首次产检时查甲功。
+    sections:
+      - heading: 为什么查
+        text: 孕早期宝宝自身的甲状腺还没发育好，主要依靠妈妈的甲状腺激素。指南把甲功列入首次产检的备查项目，很多医院会常规安排。
+      - heading: 结果异常怎么办
+        text: 孕期甲功的参考范围和平时不同，报告上的箭头请交给医生判断。需要服药时按医生要求定期复查调整剂量，不要自行停药或改量。
+      - heading: 什么时候找医生
+        text: 原本就有甲状腺疾病并在吃药的，确认怀孕后尽快就诊调整方案。出现明显心慌、手抖、怕热多汗，或特别怕冷、乏力、水肿时也要告诉医生。
+    ask: [孕期甲减会影响宝宝吗, 优甲乐怀孕了还能吃吗, 甲功要空腹查吗]
+    related: [checkup.first-visit, diet.iodine, life.medication]
+
+  - id: checkup.amniocentesis
+    title: 羊水穿刺
+    aliases: [羊穿, 羊水穿刺, 产前诊断, 染色体检查]
+    weeks: [16, 22]
+    summary: 抽取少量羊水检查胎儿染色体，是诊断性检查，一般在筛查高风险或有特定情况时由医生建议。
+    sections:
+      - heading: 是什么
+        text: 在 B 超引导下用细针经腹部抽取少量羊水，培养其中的胎儿细胞来分析染色体。和唐筛、无创不同，它能给出诊断结论，一般在孕 16–22 周做。
+      - heading: 谁需要做
+        text: 常见于唐筛或无创高风险、超声发现异常、有遗传病家族史等情况。是否需要做由产前诊断医生评估，并会详细说明利弊。
+      - heading: 风险与术后
+        text: 羊水穿刺有很小的流产和感染风险，医生会在术前说明。术后当天注意休息，避免剧烈运动。出结果通常需要几周，具体问医院。
+      - heading: 什么时候找医生
+        text: 术后出现阴道流血、流水、发热、持续腹痛或明显宫缩时，尽快回医院就诊。
+    ask: [羊穿疼不疼, 羊穿有流产风险吗, 羊穿结果要等多久]
+    related: [checkup.nipt, checkup.early-screening, checkup.second-trimester-screening]
+
+  - id: checkup.schedule
+    title: 产检时间表
+    aliases: [产检安排, 产检次数, 什么时候产检, 产检日程]
+    summary: 指南推荐整个孕期产检 7–11 次，孕早中期间隔较长，越接近预产期越密，具体按医生安排。
+    sections:
+      - heading: 早孕期
+        text: 孕 6–13 周首次产检并建档；11–13+6 周做 NT 和早期唐筛，或按医院安排选择无创 DNA。
+      - heading: 中孕期
+        text: 14–19 周可做中期唐筛（15–20 周）；20–24 周做大排畸；25–28 周做糖耐量。这段时间一般每 4 周左右产检一次。
+      - heading: 晚孕期
+        text: 29–36 周产检间隔逐渐缩短，很多医院约每 2–4 周一次，复查 B 超、血尿常规，34 周左右开始胎心监护；37 周以后通常每周一次，一直到分娩。
+      - heading: 提醒
+        text: 以上是低风险孕妇的常见安排。有妊娠合并症、双胎或检查结果异常时，产检会更频繁，一切以你的产检医生为准。
+    ask: [下次产检是几周, 产检一共要做几次, 哪几次产检最重要]
+    related: [checkup.first-visit, checkup.anomaly-scan, checkup.ogtt, checkup.nst]

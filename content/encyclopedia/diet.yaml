@@ -1,0 +1,182 @@
+id: encyclopedia-diet
+version: 0.1.0
+source: 中华医学会妇产科学分会《孕前和孕期保健指南（2018）》；中国营养学会《中国居民膳食指南（2022）》孕期妇女膳食指南；国家卫生健康委员会公开的孕产期保健资料
+source_url: https://www.nhc.gov.cn/
+reviewed_at: null
+review_status: draft
+entries:
+  - id: diet.raw-and-undercooked
+    title: 生食与未煮熟的食物
+    aliases: [生鱼片, 溏心蛋, 半熟牛排, 刺身]
+    summary: 生鱼片、溏心蛋、未煮熟的肉类存在李斯特菌与寄生虫风险，孕期建议彻底做熟。
+    sections:
+      - heading: 为什么
+        text: 孕期免疫状态变化，李斯特菌、弓形虫等感染的风险和后果都比平时更大。彻底加热能杀灭它们。
+      - heading: 怎么做
+        text: 肉类做到中心没有血色，鸡蛋煮到蛋黄凝固，海鲜彻底熟透。外出就餐时主动说明要全熟。
+      - heading: 什么时候找医生
+        text: 吃过可疑食物后出现发热、肌肉酸痛、腹泻等类似感冒的症状，及时就医并说明饮食情况。
+    ask: [吃了溏心蛋要紧吗, 寿司里哪些能吃, 外卖怎么点更安全]
+    related: [diet.food-safety-habits, life.pets-and-toxoplasma]
+
+  - id: diet.unpasteurized-dairy
+    title: 未经巴氏杀菌的乳制品
+    aliases: [生牛奶, 鲜奶, 软奶酪, 奶酪, 现挤奶]
+    summary: 生牛奶与部分软质奶酪可能带有李斯特菌，购买时留意包装上的杀菌标识。
+    sections:
+      - heading: 为什么
+        text: 未经杀菌的奶和用它做的奶制品可能含有李斯特菌。这种细菌在冰箱温度下也能生长，孕期感染的后果比平时严重。
+      - heading: 怎么选
+        text: 超市里标明巴氏杀菌或灭菌的牛奶、酸奶都可以放心喝。牧场现挤的生奶、来源不明的散装奶、部分进口软质奶酪（如布里、卡门贝尔）建议避开，拿不准时看配料和杀菌说明。
+      - heading: 什么时候找医生
+        text: 喝过可疑的生奶或奶制品后出现发热、肌肉酸痛、腹泻等症状，及时就医并说明饮食情况。
+    ask: [孕期能吃奶酪吗, 鲜奶和生奶有什么区别, 酸奶可以每天喝吗]
+    related: [diet.raw-and-undercooked, diet.food-safety-habits, diet.calcium]
+
+  - id: diet.high-mercury-fish
+    title: 汞含量较高的鱼类
+    aliases: [金枪鱼, 鲨鱼, 旗鱼, 吃鱼, 汞]
+    summary: 鲨鱼、旗鱼、部分金枪鱼常被列入限制清单。鱼本身是重要营养来源，限制的是种类而非全部。
+    sections:
+      - heading: 为什么
+        text: 体型大、寿命长的掠食性鱼类体内容易积累甲基汞，过量摄入可能影响宝宝神经系统发育。
+      - heading: 怎么吃
+        text: 鱼虾是优质蛋白和 DHA 的好来源，膳食指南鼓励孕期规律吃鱼。优先选三文鱼、鲈鱼、鳕鱼、带鱼、黄鱼、虾等常见品种，换着吃；鲨鱼、旗鱼、大目金枪鱼等尽量避开。具体吃多少可以问医生或营养门诊。
+    ask: [孕期能吃金枪鱼罐头吗, 哪些鱼适合孕妇吃, 一周吃几次鱼合适]
+    related: [diet.raw-and-undercooked, diet.iodine, diet.food-safety-habits]
+
+  - id: diet.alcohol
+    title: 酒精
+    aliases: [喝酒, 啤酒, 红酒, 醪糟, 酒酿]
+    summary: 孕期饮酒没有公认的安全下限。含酒精的调味料与甜品也需要留意。
+    sections:
+      - heading: 为什么
+        text: 酒精可以通过胎盘到达宝宝体内，可能影响宝宝的发育。目前没有证据表明孕期存在安全的饮酒量，所以建议孕期完全不喝。
+      - heading: 容易忽略的地方
+        text: 酒酿、醪糟、酒心巧克力、提拉米苏、部分料酒做的菜都可能含酒精。做菜时少量料酒经充分加热后残留会减少，介意的话可以不放；直接喝或不经加热的含酒精食物要避开。
+      - heading: 已经喝过怎么办
+        text: 很多人在发现怀孕前喝过酒，不必过度自责。从现在起停止饮酒，并在产检时如实告诉医生，由医生评估。
+    ask: [不知道怀孕时喝了酒怎么办, 酒酿圆子能吃吗, 做菜放料酒可以吗]
+    related: [diet.caffeine, life.medication, checkup.first-visit]
+
+  - id: diet.caffeine
+    title: 咖啡因
+    aliases: [咖啡, 奶茶, 喝茶, 可乐, 能量饮料]
+    summary: 咖啡、茶、可乐与巧克力都含咖啡因。每日总量的建议上限请咨询医生。
+    sections:
+      - heading: 为什么
+        text: 咖啡因可以通过胎盘，孕期代谢也变慢。摄入过多与一些不良妊娠结局有关，所以建议控制总量，而不是一定要完全戒掉。
+      - heading: 怎么控制
+        text: 咖啡、浓茶、奶茶、可乐、能量饮料和巧克力里的咖啡因要加在一起算。可以换成低因咖啡、淡茶或牛奶，一天中尽量别连续喝好几杯。每天总量的具体上限请咨询医生。
+    ask: [孕期一天能喝一杯咖啡吗, 奶茶里咖啡因多吗, 绿茶和红茶能喝吗]
+    related: [diet.alcohol, body.insomnia, body.heartburn]
+
+  - id: diet.iron-and-folate
+    title: 铁与叶酸
+    aliases: [叶酸, 补铁, 铁剂, 吃叶酸, 补叶酸]
+    weeks: [4, 40]
+    summary: 孕期需求量高于平时。是否需要额外补充、补充多少，由产检结果决定，不要自行加量。
+    sections:
+      - heading: 补叶酸
+        text: 叶酸可以降低宝宝神经管缺陷的风险。指南建议至少从孕前 3 个月起每天补充叶酸，至少持续到孕 3 个月，膳食指南建议整个孕期都坚持。常见剂量为每天 0.4 毫克，有特殊情况的人医生会调整，以医生意见为准。
+      - heading: 补铁
+        text: 孕中晚期对铁的需要明显增加。膳食指南建议适当多吃红肉，每周吃一两次动物血或肝脏，同时搭配新鲜蔬果帮助吸收。是否需要额外吃铁剂由血常规结果决定。
+      - heading: 注意事项
+        text: 不要同时叠加好几种含叶酸或铁的保健品，买之前把成分表拿给医生看。铁剂可能引起便秘或胃不舒服，有不适时告诉医生而不是自行停药。
+    ask: [叶酸要吃到几个月, 复合维生素还要单独吃叶酸吗, 铁剂便秘怎么办]
+    related: [checkup.blood-routine, body.constipation, diet.eating-with-nausea]
+
+  - id: diet.food-safety-habits
+    title: 处理与储存
+    aliases: [剩菜, 冰箱, 生熟分开, 食品安全, 隔夜菜]
+    summary: 生熟分开、彻底加热剩菜、蔬果洗净。这些习惯比记住某一份禁忌清单更有用。
+    sections:
+      - heading: 处理
+        text: 切生肉和熟食的刀、案板分开用；处理生肉、生蛋后洗手；蔬菜水果用流水洗净；肉、蛋、海鲜彻底做熟。
+      - heading: 储存
+        text: 做好的饭菜尽快放进冰箱，剩菜吃前彻底加热到冒热气；冰箱里的熟食和凉拌菜别放太久；冷藏不能杀死所有细菌，冰箱要定期清理。
+      - heading: 外出就餐
+        text: 选卫生条件好的店，少吃路边摊、冷盘、凉拌菜和自助餐里长时间放置的食物。
+    ask: [隔夜菜还能吃吗, 冰箱里的熟食放多久, 外卖怎么吃更安全]
+    related: [diet.raw-and-undercooked, diet.unpasteurized-dairy, life.pets-and-toxoplasma]
+
+  - id: diet.weight-gain
+    title: 孕期体重增长
+    aliases: [长胖, 体重, 孕期增重, 长多少斤, 体重超标]
+    weeks: [4, 40]
+    summary: 孕期合适的增重范围和孕前体重有关，按孕前 BMI 定目标，早期增得少、中晚期稳步增长。
+    sections:
+      - heading: 增多少合适
+        text: 增重目标要看孕前的体重指数（BMI），孕前偏瘦的可以多增一些，超重的要少增一些。请让产检医生根据你的情况给出目标范围，不必照搬网上的数字。
+      - heading: 怎么增长
+        text: 孕早期体重变化不大，孕吐时略有下降也常见；孕中晚期增长会加快。建议每周固定时间、穿差不多的衣服称一次体重并记下来，产检时给医生看。
+      - heading: 怎么做
+        text: 孕中晚期每天只需要比孕前多吃一点，不是「一人吃两人补」。主食粗细搭配，多吃蔬菜、优质蛋白和奶类，少吃甜点、油炸食品和含糖饮料；每天适量活动。
+      - heading: 什么时候找医生
+        text: 一周内体重突然增加很多并伴有水肿，或者体重长期不增甚至下降时，及时告诉医生。
+    ask: [孕期能长多少斤, 体重长太快怎么办, 体重不长会影响宝宝吗]
+    related: [diet.blood-sugar, life.exercise, body.edema]
+
+  - id: diet.calcium
+    title: 补钙
+    aliases: [钙片, 缺钙, 喝牛奶, 补钙吗, 钙]
+    weeks: [14, 40]
+    summary: 孕中晚期宝宝骨骼发育需要钙，首选从奶类和豆制品中获取，是否额外吃钙片听医生的。
+    sections:
+      - heading: 从食物中补
+        text: 膳食指南建议孕中晚期每天喝奶 300–500 克，奶类是最好的钙来源；豆腐、豆干等豆制品，以及深绿色蔬菜、虾皮也含钙。不爱喝牛奶的，可以换成酸奶或奶酪。
+      - heading: 要不要吃钙片
+        text: 饮食中奶类不足、或医生评估有需要时，会建议补充钙剂，具体剂量按医生安排。钙片和铁剂最好错开时间吃，以免互相影响吸收。
+      - heading: 什么时候找医生
+        text: 腿抽筋频繁不一定就是缺钙，不要自行加大钙片剂量；抽筋严重或伴小腿持续肿痛时，及时就医。
+    ask: [孕期什么时候开始补钙, 钙片和铁剂能一起吃吗, 喝牛奶拉肚子怎么办]
+    related: [body.leg-cramps, diet.unpasteurized-dairy, diet.iron-and-folate]
+
+  - id: diet.iodine
+    title: 补碘
+    aliases: [碘, 加碘盐, 海带紫菜, 吃海带, 无碘盐]
+    weeks: [4, 40]
+    summary: 碘是合成甲状腺激素的原料，孕期需要量增加，坚持吃加碘盐，每周吃一两次海带、紫菜等海产品。
+    sections:
+      - heading: 为什么重要
+        text: 宝宝的大脑和神经发育离不开甲状腺激素，而合成甲状腺激素需要碘。孕期对碘的需要量比平时高。
+      - heading: 怎么补
+        text: 膳食指南建议孕期坚持选用加碘盐，同时每周吃一到两次海带、紫菜、贻贝等富含碘的海产品。一般不需要另外吃碘补充剂，除非医生建议。
+      - heading: 注意事项
+        text: 有甲状腺疾病的人，是否用加碘盐、海产品吃多少，请遵从内分泌科或产科医生的意见。
+    ask: [孕期要吃加碘盐吗, 海带一周吃几次, 有甲状腺结节还能补碘吗]
+    related: [checkup.thyroid, diet.high-mercury-fish, diet.iron-and-folate]
+
+  - id: diet.blood-sugar
+    title: 孕期控糖饮食
+    aliases: [控糖, 妊娠糖尿病, 血糖高, 糖妈, 控糖食谱]
+    weeks: [24, 40]
+    summary: 诊断妊娠期糖尿病后，多数人通过调整饮食和规律运动就能把血糖控制好。
+    sections:
+      - heading: 怎么吃
+        text: 主食不要不吃，而是换成粗细搭配，比如杂粮饭、燕麦；每餐都有蔬菜和蛋白质；吃饭顺序可以先菜后肉再主食；少量多餐，把一天的饭分成三顿正餐加两三次加餐。
+      - heading: 要少吃的
+        text: 含糖饮料、甜点、果汁和白粥、精白面条等升糖快的食物；水果选低糖的，放在两餐之间少量吃。
+      - heading: 监测与运动
+        text: 按医生要求在家测血糖并记录。餐后散步对控制血糖很有帮助。很多医院有营养门诊或糖妈课堂，可以去学怎么搭配。
+      - heading: 什么时候找医生
+        text: 调整饮食后血糖仍然达不到医生给的目标，或者经常出现心慌、手抖、出冷汗等低血糖表现时，及时联系医生，必要时需要用胰岛素。
+    ask: [糖妈能吃水果吗, 控糖主食怎么吃, 血糖控制不好会怎样]
+    related: [checkup.ogtt, diet.weight-gain, life.exercise]
+
+  - id: diet.eating-with-nausea
+    title: 孕吐期怎么吃
+    aliases: [孕吐吃什么, 吃不下, 没胃口, 孕吐饮食, 想吐吃什么]
+    weeks: [5, 14]
+    summary: 孕吐期不必强求营养均衡，能吃下去最重要，少量多餐，保证碳水和水分。
+    sections:
+      - heading: 怎么吃
+        text: 想吃就吃一点，少量多餐；选清淡、干一些、不油腻的食物，比如饼干、面包、馒头、米饭；冷一点的食物气味小，可能更容易吃下。
+      - heading: 底线
+        text: 膳食指南提醒，孕吐严重时也要保证每天摄入一定量的碳水化合物，以免身体分解脂肪产生过多酮体。吃不下饭时，可以用粥、面条、水果、酸奶等先垫着。
+      - heading: 叶酸别停
+        text: 孕吐期也要坚持吃叶酸。吃了容易吐的话，可以换个时间吃，比如睡前，或者问医生能否换成别的剂型。
+      - heading: 什么时候找医生
+        text: 一整天吃什么吐什么、喝水也吐，尿量明显减少，体重明显下降或头晕乏力时，要尽快就医。
+    ask: [孕吐吃什么能吃下, 吐了还要补吃叶酸吗, 吃不下会饿到宝宝吗]
+    related: [body.morning-sickness, diet.iron-and-folate, body.fatigue]
