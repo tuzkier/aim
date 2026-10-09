@@ -44,3 +44,22 @@ def test_safety_and_hangzhou_content_have_source_and_review_date() -> None:
 
 def test_weekly_content_matches_its_schema() -> None:
     _validate(ROOT / "content/weekly/schema.json", ROOT / "content/weekly/weeks.yaml")
+
+
+BROWSABLE_DOCUMENTS = sorted(
+    path
+    for collection in ("nutrition", "preparation")
+    for path in (ROOT / "content" / collection).glob("*.yaml")
+)
+
+
+def test_browsable_collections_are_not_empty() -> None:
+    assert {path.parent.name for path in BROWSABLE_DOCUMENTS} == {"nutrition", "preparation"}
+
+
+@pytest.mark.parametrize(
+    "document_path", BROWSABLE_DOCUMENTS, ids=lambda p: f"{p.parent.name}/{p.name}"
+)
+def test_browsable_collections_match_their_schema(document_path: Path) -> None:
+    """资料库直接展示的内容集合同样要过 schema——生产里「吃什么」还在回退读 nutrition。"""
+    _validate(document_path.parent / "schema.json", document_path)
