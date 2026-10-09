@@ -15,6 +15,11 @@
 from __future__ import annotations
 
 import os
+
+# 百科内容审核前都是草稿；测试要能读到它们。必须早于任何 create_app()，
+# 因为 get_encyclopedia() 进程内只加载一次。
+os.environ.setdefault("AIM_CONTENT_INCLUDE_DRAFTS", "1")
+
 import uuid
 from collections.abc import Iterator
 from urllib.parse import urlsplit, urlunsplit

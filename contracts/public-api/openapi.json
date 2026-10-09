@@ -1404,6 +1404,112 @@
         }
       }
     },
+    "/api/v1/library/encyclopedia": {
+      "get": {
+        "tags": [
+          "guidance"
+        ],
+        "summary": "Get Encyclopedia Catalog Endpoint",
+        "description": "孕期百科目录：主题与条目摘要，不含正文。公开内容，不需要登录。",
+        "operationId": "get_encyclopedia_catalog_endpoint_api_v1_library_encyclopedia_get",
+        "parameters": [
+          {
+            "name": "topic",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Topic"
+            }
+          },
+          {
+            "name": "week",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 45,
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Week"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/library/encyclopedia/{entry_id}": {
+      "get": {
+        "tags": [
+          "guidance"
+        ],
+        "summary": "Get Encyclopedia Entry Endpoint",
+        "operationId": "get_encyclopedia_entry_endpoint_api_v1_library_encyclopedia__entry_id__get",
+        "parameters": [
+          {
+            "name": "entry_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Entry Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/content/{collection}": {
       "get": {
         "tags": [

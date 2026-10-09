@@ -7,6 +7,9 @@ services:
 
   api:
     restart: unless-stopped
+    environment:
+      # 未审核的百科绝不上生产。
+      AIM_CONTENT_INCLUDE_DRAFTS: "0"
     build:
       args:
         # 服务器直连 pypi.org 不通，构建走阿里云镜像站

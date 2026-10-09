@@ -18,6 +18,7 @@ from aim_api.contexts.agent_access.adapters.inbound.http.sessions_router import 
 )
 from aim_api.contexts.family.adapters.inbound.http.router import router as family_router
 from aim_api.contexts.guidance.adapters.inbound.http.router import router as guidance_router
+from aim_api.contexts.guidance.application.queries.get_encyclopedia import get_encyclopedia
 from aim_api.contexts.identity.adapters.inbound.http.router import router as identity_router
 from aim_api.contexts.planning.adapters.inbound.http.router import router as planning_router
 from aim_api.contexts.pregnancy.adapters.inbound.http.router import router as pregnancy_router
@@ -56,6 +57,8 @@ def create_app(*, settings: Settings | None = None, database: Database | None = 
     """Build an app with explicit infrastructure dependencies."""
 
     resolved_settings = settings or get_settings()
+    # 百科内容有问题时让进程起不来，而不是等第一个请求才 500。
+    get_encyclopedia()
     resolved_database = database or create_database(resolved_settings.database_url)
 
     @asynccontextmanager
