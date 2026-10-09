@@ -21,7 +21,7 @@ entries:
 
   - id: diet.unpasteurized-dairy
     title: 未经巴氏杀菌的乳制品
-    aliases: [生牛奶, 鲜奶, 软奶酪, 奶酪, 现挤奶]
+    aliases: [生牛奶, 生奶, 散装奶, 软奶酪, 奶酪, 现挤奶]
     summary: 生牛奶与部分软质奶酪可能带有李斯特菌，购买时留意包装上的杀菌标识。
     sections:
       - heading: 为什么
@@ -151,6 +151,8 @@ entries:
     title: 孕期控糖饮食
     aliases: [控糖, 妊娠糖尿病, 血糖高, 糖妈, 控糖食谱]
     weeks: [24, 40]
+    # 写给已诊断妊娠期糖尿病的人，不进首页推荐。
+    pick: false
     summary: 诊断妊娠期糖尿病后，多数人通过调整饮食和规律运动就能把血糖控制好。
     sections:
       - heading: 怎么吃

@@ -20,7 +20,7 @@ entries:
       - heading: 建档与建册
         text: 建档是在准备生产的医院登记，之后产检都在这里做；建册一般在社区卫生服务中心领取母子健康手册。两件事的顺序和要求以当地医院和社区的说明为准。
     ask: [第一次产检要空腹吗, 建档要带哪些材料, 几周去建档比较合适]
-    related: [checkup.schedule, paperwork.registration, checkup.thyroid, checkup.blood-routine]
+    related: [checkup.schedule, paperwork.registration, checkup.thyroid, checkup.blood-routine, body.early-bleeding-pain]
 
   - id: checkup.nt
     title: NT 检查
@@ -153,7 +153,7 @@ entries:
       - heading: 看什么
         text: 主要看血红蛋白、红细胞、白细胞和血小板。孕期血容量增加，血液被稀释，血红蛋白稍低很常见。孕期一般以血红蛋白低于 110 g/L 作为贫血的判断标准。
       - heading: 贫血怎么办
-        text: 多吃红肉、动物血、动物肝脏等含铁丰富的食物，搭配新鲜蔬果帮助吸收。是否需要吃铁剂、吃多少由医生根据化验结果决定，不要自行加量。
+        text: 红肉适量常吃，动物血或肝脏每周吃一两次，搭配新鲜蔬果帮助吸收。是否需要吃铁剂、吃多少由医生根据化验结果决定，不要自行加量。
       - heading: 什么时候找医生
         text: 经常头晕、心慌、气短、脸色苍白、特别容易累时，及时告诉医生。白细胞偏高在孕期也比较常见，是否需要处理请让医生判断。
     ask: [血红蛋白偏低怎么办, 铁剂饭前吃还是饭后吃, 孕期白细胞高正常吗]
@@ -192,6 +192,8 @@ entries:
     title: 羊水穿刺
     aliases: [羊穿, 羊水穿刺, 产前诊断, 染色体检查]
     weeks: [16, 22]
+    # 只有筛查高风险等情况才需要做，不进首页推荐。
+    pick: false
     summary: 抽取少量羊水检查胎儿染色体，是诊断性检查，一般在筛查高风险或有特定情况时由医生建议。
     sections:
       - heading: 是什么

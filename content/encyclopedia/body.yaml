@@ -20,6 +20,21 @@ entries:
     ask: [孕吐什么时候结束, 吐得吃不下东西怎么办, 孕吐严重会影响宝宝吗]
     related: [diet.eating-with-nausea, body.fatigue, checkup.urine-routine]
 
+  - id: body.early-bleeding-pain
+    title: 孕早期出血与腹痛
+    aliases: [见红, 宫外孕, 先兆流产, 肚子疼, 早孕出血, 阴道出血]
+    weeks: [4, 13]
+    summary: 孕早期少量出血或轻微腹痛并不少见，但原因自己分辨不了，都要让医生评估。
+    sections:
+      - heading: 是什么
+        text: 孕早期有些人会出现少量点滴出血，颜色淡红或褐色，有时伴有轻微的下腹隐痛或坠胀。原因有很多，有的并不要紧，也可能与先兆流产或宫外孕有关。光看症状没法自己判断，需要医生通过检查和 B 超来评估。
+      - heading: 先怎么做
+        text: 先别慌，垫上卫生巾，留意出血的量和颜色、什么时候开始、有没有腹痛，就诊时告诉医生。多休息，不要自行用药或往阴道里放药。还没做过 B 超确认宫内怀孕的，就诊时主动说明。
+      - heading: 什么时候找医生
+        text: 一侧下腹剧烈疼痛、晕倒或头晕眼花、肩膀疼痛、出血量多（像月经那么多或更多）或有血块时，立即去急诊，必要时叫救护车。其他任何孕早期出血，也应尽快联系医生，不要自己判断、在家硬等。
+    ask: [孕早期少量出血要去医院吗, 早孕出血去医院会查什么, 宫外孕有哪些危险信号]
+    related: [checkup.first-visit, body.discharge, body.morning-sickness]
+
   - id: body.fatigue
     title: 乏力嗜睡
     aliases: [犯困, 没力气, 总想睡, 疲惫, 累]
