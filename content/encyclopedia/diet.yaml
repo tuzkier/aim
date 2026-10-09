@@ -2,8 +2,8 @@ id: encyclopedia-diet
 version: 0.1.0
 source: 中华医学会妇产科学分会《孕前和孕期保健指南（2018）》；中国营养学会《中国居民膳食指南（2022）》孕期妇女膳食指南；国家卫生健康委员会公开的孕产期保健资料
 source_url: https://www.nhc.gov.cn/
-reviewed_at: null
-review_status: draft
+reviewed_at: "2026-10-09"
+review_status: reviewed
 entries:
   - id: diet.raw-and-undercooked
     title: 生食与未煮熟的食物

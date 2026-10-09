@@ -2,8 +2,8 @@ id: encyclopedia-paperwork
 version: 0.1.0
 source: 杭州市及浙江省政府公开的办事指南
 source_url: https://www.hangzhou.gov.cn/
-reviewed_at: null
-review_status: draft
+reviewed_at: "2026-10-09"
+review_status: reviewed
 entries:
   - id: paperwork.registration
     title: 建档建册
