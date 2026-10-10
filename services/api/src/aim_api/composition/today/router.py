@@ -70,8 +70,10 @@ async def get_today_endpoint(
         day = as_of or date.today()
         try:
             # 先校验再续任务：非家庭成员的请求不能触发写入。
+            # 续任务固定按服务器今天：客户端的 as_of 只影响读取，传过去的日期会补出
+            # 跳过的孕周、传未来的日期会提前生成，任务一旦生成就改不回来。
             if await can_read(uow, pregnancy_id, actor.account_id):
-                await sync_quietly(uow, pregnancy_id, day)
+                await sync_quietly(uow, pregnancy_id, date.today())
             model = await execute(
                 GetTodayQuery(pregnancy_id=pregnancy_id, account_id=actor.account_id, as_of=day),
                 uow,

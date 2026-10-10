@@ -34,7 +34,8 @@ async def execute(command: SyncWeekTasksCommand, uow: PlanningUnitOfWork) -> int
         return 0
     week = pregnancy.gestational_age(command.as_of).weeks
     seeded = await uow.repository.seeded_template_ids(plan.id)
-    now = datetime.combine(command.as_of, time(0), tzinfo=UTC)
+    # 生成时间与种子时间记真实时间；截止日仍按 as_of（接口传的就是服务器今天）推算。
+    now = datetime.now(UTC)
     created = 0
     for item in initial_plan_items(week):
         if item.id in seeded or not await uow.repository.try_seed(plan.id, item.id, now):

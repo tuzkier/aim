@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import date, timedelta
+from datetime import UTC, date, datetime, timedelta
 from uuid import UUID, uuid4
 
 from fastapi.testclient import TestClient
@@ -41,16 +41,37 @@ def _setup(client: TestClient, due: date) -> tuple[dict[str, str], str]:
     return headers, pregnancy["id"]
 
 
+def _sync(client: TestClient, pregnancy_id: str, as_of: date) -> int:
+    """直接调用续任务命令推进孕周。接口只按服务器今天续，测试里要指定哪天只能直调。"""
+    from aim_api.contexts.planning.adapters.outbound.persistence.repositories import (
+        SqlAlchemyPlanningUnitOfWork,
+    )
+    from aim_api.contexts.planning.application.commands import sync_week_tasks
+
+    database = client.app.state.database
+
+    async def run() -> int:
+        async with database.session() as session:
+            return await sync_week_tasks.execute(
+                sync_week_tasks.SyncWeekTasksCommand(pregnancy_id=UUID(pregnancy_id), as_of=as_of),
+                SqlAlchemyPlanningUnitOfWork(session),
+            )
+
+    return client.portal.call(run)
+
+
+def _plan_tasks(client: TestClient, pregnancy_id: str, headers: dict[str, str]) -> list[dict]:
+    plan = client.get(f"/api/v1/pregnancies/{pregnancy_id}/plan", headers=headers)
+    assert plan.status_code == 200, plan.text
+    return plan.json()["tasks"]
+
+
 def _source_ids(
     client: TestClient, pregnancy_id: str, headers: dict[str, str], as_of: date
 ) -> list[str]:
-    today = client.get(
-        f"/api/v1/pregnancies/{pregnancy_id}/today?as_of={as_of.isoformat()}", headers=headers
-    )
-    assert today.status_code == 200, today.text
-    plan = client.get(f"/api/v1/pregnancies/{pregnancy_id}/plan", headers=headers)
-    assert plan.status_code == 200, plan.text
-    return [task["source_id"] for task in plan.json()["tasks"] if task["source_id"]]
+    _sync(client, pregnancy_id, as_of)
+    tasks = _plan_tasks(client, pregnancy_id, headers)
+    return [task["source_id"] for task in tasks if task["source_id"]]
 
 
 def test_advancing_weeks_adds_only_the_current_weeks_templates() -> None:
@@ -108,6 +129,55 @@ def test_without_a_plan_today_behaves_as_before() -> None:
         )
     # 没有计划时维持现有行为（以实现前的返回码为准，通常为 404），关键是不能 500。
     assert today.status_code < 500, today.text
+
+
+def test_today_as_of_in_the_future_does_not_create_future_weeks_tasks() -> None:
+    """as_of 只影响读取；续任务固定按服务器今天，客户端传未来日期不能提前生成。"""
+    # 让「今天」落在第 26 周，as_of 指到第 33 周。
+    due = date.today() + timedelta(weeks=14)
+    with TestClient(create_app()) as client:
+        headers, pregnancy_id = _setup(client, due)
+        client.post(
+            f"/api/v1/pregnancies/{pregnancy_id}/plan",
+            headers=headers,
+            json={"as_of": _as_of(due, 6).isoformat()},
+        )
+        today = client.get(
+            f"/api/v1/pregnancies/{pregnancy_id}/today?as_of={_as_of(due, 33).isoformat()}",
+            headers=headers,
+        )
+        source_ids = [
+            task["source_id"] or "" for task in _plan_tasks(client, pregnancy_id, headers)
+        ]
+
+    assert today.status_code == 200, today.text
+    assert not any(source_id.startswith("w33-") for source_id in source_ids)
+    assert any(source_id.startswith("w25-") for source_id in source_ids), "按服务器今天续"
+
+
+def test_synced_tasks_record_the_real_creation_time() -> None:
+    """created_at 用真实时间；due_at 仍按 as_of 当天推算。"""
+    due = date(2027, 1, 12)
+    as_of = _as_of(due, 25)
+    with TestClient(create_app()) as client:
+        headers, pregnancy_id = _setup(client, due)
+        client.post(
+            f"/api/v1/pregnancies/{pregnancy_id}/plan",
+            headers=headers,
+            json={"as_of": _as_of(due, 6).isoformat()},
+        )
+        before = datetime.now(UTC)
+        _sync(client, pregnancy_id, as_of)
+        w25 = [
+            task
+            for task in _plan_tasks(client, pregnancy_id, headers)
+            if (task["source_id"] or "").startswith("w25-")
+        ]
+
+    assert w25
+    for task in w25:
+        assert datetime.fromisoformat(task["created_at"]) >= before - timedelta(seconds=5)
+        assert datetime.fromisoformat(task["due_at"]).date() >= as_of
 
 
 def test_get_plan_syncs_with_todays_week() -> None:
