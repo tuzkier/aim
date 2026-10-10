@@ -81,3 +81,27 @@ test("只引用工具或页面上下文给出的编号，百科条目读过才�
   assert.ok(paragraph.includes("Cite an encyclopedia entry only after reading it with get_library_entry."));
   assert.ok(!paragraph.includes("Only cite ids that a tool returned in this conversation;"), "旧规则与页面上下文矛盾");
 });
+
+test("症状匹配急症时，先写就医那句再翻资料，这一轮可以不翻", () => {
+  assert.ok(
+    libraryParagraph().includes(
+      "If the symptom matches an urgent red flag, write that seek-care sentence " +
+        "before calling list_library or get_library_entry; you may skip the library " +
+        "entirely in that turn.",
+    ),
+  );
+});
+
+test("引用格式字面量与网页端 MARK 一致", () => {
+  // apps/agent-web/src/thread/citations.ts 的 MARK 只认这两种形状。
+  const paragraph = libraryParagraph();
+  assert.ok(paragraph.includes("[[ref:<id>|<title>]]"));
+  assert.ok(paragraph.includes("[[record:<id>|<title>]]"));
+});
+
+test("说明带 topic 返回整个主题、本周排前，目录同一主题翻一次即可", () => {
+  const paragraph = libraryParagraph();
+  assert.ok(paragraph.includes("with a topic it returns the whole topic, entries for this week first"));
+  assert.ok(paragraph.includes("prefer passing a topic"));
+  assert.ok(paragraph.includes("The catalogue for a topic only needs browsing once per conversation."));
+});
