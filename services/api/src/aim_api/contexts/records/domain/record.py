@@ -147,6 +147,11 @@ class Record:
             raise RecordValidationError("fetal movement outcome must be reached, under or stopped")
         if outcome == "reached" and count < target:
             raise RecordValidationError("a reached fetal movement count needs at least the target")
+        # 第 10 次点按的秒数向上取整，7199.x 秒记为 7200，所以上限含 7200。
+        if outcome == "reached" and duration > cls.FETAL_MOVEMENT_WINDOW_SECONDS:
+            raise RecordValidationError(
+                "a reached fetal movement count must reach the target within two hours"
+            )
         if outcome == "under" and (
             count >= target or duration < cls.FETAL_MOVEMENT_WINDOW_SECONDS
         ):
@@ -169,6 +174,10 @@ class Record:
                     "fetal movement taps must be non-decreasing seconds within the duration"
                 )
             previous = offset
+
+        # 计数中用户点了「胎动明显少了？」：这是要留档的就医信号，与结果无关。
+        if "reported_less" in data and not isinstance(data["reported_less"], bool):
+            raise RecordValidationError("fetal movement reported_less must be a boolean")
 
     @classmethod
     def _validate_knowledge(cls, data: dict[str, Any], title: str | None) -> None:

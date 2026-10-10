@@ -89,6 +89,27 @@ class TestFetalMovement:
         with pytest.raises(RecordValidationError):
             make(valid(taps=[30, 200, 400, 600, 800, 1000, 1200, 1500, 1700, 1921]))
 
+    def test_reached_must_finish_within_two_hours(self):
+        """7199.x 秒的第 10 次点按向上取整为 7200，仍算 2 小时内。"""
+        taps = [10, 20, 30, 40, 50, 60, 70, 80, 90, 7199]
+        make(valid(duration_seconds=7200, taps=taps))
+        with pytest.raises(RecordValidationError):
+            make(valid(duration_seconds=7201, taps=taps))
+
+    def test_reported_less_is_optional(self):
+        assert "reported_less" not in make(valid()).structured_data
+
+    @pytest.mark.parametrize("reported_less", [True, False])
+    def test_reported_less_accepts_a_bool(self, reported_less):
+        data = valid(outcome="stopped", count=0, duration_seconds=90, taps=[])
+        data["reported_less"] = reported_less
+        assert make(data).structured_data["reported_less"] is reported_less
+
+    @pytest.mark.parametrize("reported_less", ["yes", 1, None])
+    def test_reported_less_must_be_a_bool(self, reported_less):
+        with pytest.raises(RecordValidationError):
+            make(valid(reported_less=reported_less))
+
     def test_equal_neighbouring_taps_are_allowed(self):
         """秒级取整后，相邻两次点按可能落在同一秒。"""
         make(valid(taps=[30, 30, 400, 600, 800, 1000, 1200, 1500, 1700, 1920]))
