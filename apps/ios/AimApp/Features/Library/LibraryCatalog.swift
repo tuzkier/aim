@@ -37,7 +37,7 @@ enum LibraryCategoryID: String, CaseIterable, Identifiable, Sendable {
 
     var title: String {
         switch self {
-        case .checkups: "产检与指标"
+        case .checkups: "产检与报告"
         case .nutrition: "吃什么"
         case .symptoms: "身体感受"
         case .questions: "想问医生"
@@ -83,10 +83,16 @@ enum LibraryCategoryID: String, CaseIterable, Identifiable, Sendable {
         case .symptoms:
             return Self.symptomSummary(from: snapshot)
         case .checkups:
-            let count = snapshot.records.filter { $0.type == .checkup }.count
+            let reports = snapshot.records.filter { $0.type == .checkup }
+            let count = reports.count
+            let latest = reports.max { ($0.occurredAt, $0.createdAt) < ($1.occurredAt, $1.createdAt) }
+            let flagged: Int = {
+                guard case let .checkup(data) = latest?.structuredData else { return 0 }
+                return CheckupReport.flaggedItems(data).count
+            }()
             return count == 0
                 ? LibrarySummary(headline: "还没有产检记录")
-                : LibrarySummary(headline: "\(count) 次记录")
+                : LibrarySummary(headline: "\(count) 次记录", tags: flagged > 0 ? ["最近报告 \(flagged) 项异常"] : [])
         case .safety:
             return snapshot.safetyRuleCount == 0
                 ? LibrarySummary(headline: "出现这些情况立即就医")

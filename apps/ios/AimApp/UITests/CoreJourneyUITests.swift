@@ -665,6 +665,94 @@ final class CoreJourneyUITests: XCTestCase {
         )
     }
 
+    /// 手动记一份带胎心和一项异常化验的报告，在资料库点进报告详情，
+    /// 把异常项加入想问医生，想问医生页能看到这条问题。照片选择器在 UI 测试里不好驱动，不选照片。
+    func testCheckupReportFlagsCanBeAddedToDoctorQuestions() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-reset-session"]
+        app.launch()
+
+        registerNewAccount(in: app)
+        completePregnancySetup(in: app)
+
+        openTasksTab(in: app)
+        let addMenu = app.buttons["home-add-menu"]
+        XCTAssertTrue(addMenu.waitForExistence(timeout: 5))
+        addMenu.tap()
+        let addRecord = app.buttons["新增记录"]
+        XCTAssertTrue(addRecord.waitForExistence(timeout: 3))
+        addRecord.tap()
+        app.buttons["record-type-checkup"].tap()
+
+        let hospital = app.textFields["checkup-hospital"]
+        XCTAssertTrue(hospital.waitForExistence(timeout: 5))
+        hospital.tap()
+        hospital.typeText("市一医院")
+
+        let fetalHeart = app.textFields["checkup-metric-fetalHeartRate"]
+        reveal(fetalHeart, in: app)
+        fetalHeart.tap()
+        fetalHeart.typeText("145")
+
+        let addItem = app.buttons["checkup-other-add"]
+        reveal(addItem, in: app)
+        addItem.tap()
+        // 先选标记再打字：收起键盘时表单会跳动，点标记可能落到下面的照片行上。
+        let flag = app.segmentedControls["checkup-other-flag-0"].buttons["异常"]
+        reveal(flag, in: app)
+        flag.tap()
+        XCTAssertTrue(flag.isSelected, "应当选中「异常」")
+        let name = app.textFields["checkup-other-name-0"]
+        XCTAssertTrue(name.waitForExistence(timeout: 5))
+        name.tap()
+        name.typeText("尿蛋白")
+        let value = app.textFields["checkup-other-value-0"]
+        value.tap()
+        value.typeText("+")
+
+        app.buttons["保存记录"].tap()
+        XCTAssertTrue(app.buttons["home-add-menu"].waitForExistence(timeout: 15), "保存后表单应当关闭")
+
+        let libraryTab = app.tabBars.buttons["资料库"]
+        XCTAssertTrue(libraryTab.waitForExistence(timeout: 15))
+        libraryTab.tap()
+        let checkups = app.buttons["library-card-checkups"]
+        reveal(checkups, in: app)
+        checkups.tap()
+
+        let row = app.buttons.matching(identifier: "library-checkup-record").firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 15), "产检列表应当有刚记的报告")
+        row.tap()
+
+        XCTAssertTrue(app.navigationBars["报告详情"].waitForExistence(timeout: 10), "应当进入报告详情")
+        XCTAssertTrue(app.staticTexts["尿蛋白"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["report-flag-尿蛋白"].exists, "异常项应当带标记")
+        XCTAssertEqual(app.staticTexts["report-flag-尿蛋白"].label, "异常")
+        let reportScreenshot = XCTAttachment(screenshot: app.screenshot())
+        reportScreenshot.name = "产检报告详情"
+        reportScreenshot.lifetime = .keepAlways
+        add(reportScreenshot)
+
+        let addQuestions = app.buttons["report-add-questions"]
+        reveal(addQuestions, in: app)
+        addQuestions.tap()
+        XCTAssertTrue(
+            app.staticTexts["已加入 1 个问题，在「想问医生」里能看到。"].waitForExistence(timeout: 10),
+            "加入后应当告诉用户加了几条")
+
+        // 回到资料库首页，打开想问医生。
+        app.navigationBars.buttons.firstMatch.tap()
+        XCTAssertTrue(app.buttons["library-checkup-record"].firstMatch.waitForExistence(timeout: 5))
+        app.navigationBars.buttons.firstMatch.tap()
+        let questions = app.buttons["library-card-questions"]
+        reveal(questions, in: app)
+        questions.tap()
+
+        let question = app.staticTexts.matching(
+            NSPredicate(format: "label CONTAINS %@", "尿蛋白")).firstMatch
+        XCTAssertTrue(question.waitForExistence(timeout: 15), "想问医生里应当出现报告的异常项")
+    }
+
     /// 想问医生与待产准备走的是同一套机制：内容库出条目，checklist 记录存勾选状态。
     /// 这条用例验证两者都能真的写进去，而不只是渲染出来。
     func testLibraryQuestionsAndChecklistCanBeWrittenTo() throws {

@@ -339,4 +339,108 @@ final class LibraryFocusTests: XCTestCase {
                        Self.soonHeadline)
         XCTAssertNil(make([previous, reading(daysBefore: 15, bp(148, 95))]))
     }
+
+    // MARK: - 最近报告有异常
+
+    private static let abnormalHeadline = "最近报告有 2 项异常，记得问医生"
+
+    private func report(id: UUID = UUID(), daysAgo: Int, items: [CheckupOtherItem],
+                        metrics: CheckupMetrics = CheckupMetrics()) -> RecordItem {
+        let when = Calendar.current.date(byAdding: .day, value: -daysAgo, to: .now)!
+        return RecordItem(
+            id: id, pregnancyID: UUID(), familyID: UUID(), authorAccountID: UUID(),
+            type: .checkup, occurredAt: when, visibility: .family, title: nil, content: nil,
+            structuredData: .checkup(CheckupRecordData(
+                hospital: nil, examItems: nil, result: nil, doctorAdvice: nil,
+                metrics: metrics, otherItems: items)),
+            attachmentRefs: [], createdAt: when, updatedAt: when)
+    }
+
+    private func reportQuestion(_ text: String, reportID: UUID) -> RecordItem {
+        RecordItem(
+            id: UUID(), pregnancyID: UUID(), familyID: UUID(), authorAccountID: UUID(),
+            type: .question, occurredAt: .now, visibility: .family, title: nil, content: text,
+            structuredData: .question(QuestionRecordData(answered: false, answer: nil, reportID: reportID)),
+            attachmentRefs: [], createdAt: .now, updatedAt: .now)
+    }
+
+    private let flaggedItems = [
+        CheckupOtherItem(name: "尿蛋白", value: "+", flag: .abnormal),
+        CheckupOtherItem(name: "尿糖", value: "阴性"),
+        CheckupOtherItem(name: "血小板", value: "98", flag: .low),
+    ]
+
+    /// 30 天内最新一份报告有 2 项标了异常、还没加进想问医生：提醒去问，点进报告详情。
+    func testRecentReportWithFlaggedItemsReminds() {
+        let id = UUID()
+        let snapshot = LibrarySnapshot(records: [report(id: id, daysAgo: 3, items: flaggedItems)])
+
+        let focus = LibraryFocus.make(from: snapshot)
+
+        XCTAssertEqual(focus?.headline, Self.abnormalHeadline)
+        XCTAssertEqual(focus?.level, .info)
+        XCTAssertEqual(focus?.reportID, id)
+    }
+
+    /// 异常项都已经有对应问题（指回这份报告），就不再提醒。
+    func testNoReminderOnceEveryFlaggedItemHasAQuestion() {
+        let id = UUID()
+        let snapshot = LibrarySnapshot(records: [
+            report(id: id, daysAgo: 3, items: flaggedItems),
+            reportQuestion("尿蛋白一个加号要紧吗", reportID: id),
+            reportQuestion("血小板偏低要复查吗", reportID: id),
+        ])
+
+        // 不再提醒报告异常；轮到下一条规则——这两个问题还没问。
+        let focus = LibraryFocus.make(from: snapshot)
+        XCTAssertNil(focus?.reportID)
+        XCTAssertEqual(focus?.headline, "攒了 2 个问题，下次产检一次带走")
+    }
+
+    /// 只问了一项还不够：仍然提醒。
+    func testReminderStaysWhileSomeFlaggedItemsAreNotAsked() {
+        let id = UUID()
+        let snapshot = LibrarySnapshot(records: [
+            report(id: id, daysAgo: 3, items: flaggedItems),
+            reportQuestion("尿蛋白一个加号要紧吗", reportID: id),
+        ])
+
+        XCTAssertEqual(LibraryFocus.make(from: snapshot)?.headline, Self.abnormalHeadline)
+    }
+
+    func testReportsOlderThanThirtyDaysAreNotSurfaced() {
+        let snapshot = LibrarySnapshot(records: [report(daysAgo: 31, items: flaggedItems)])
+
+        XCTAssertNil(LibraryFocus.make(from: snapshot))
+    }
+
+    /// 只看最新一份：最新那份没有异常，就不翻更早的。
+    func testOnlyTheLatestReportCounts() {
+        let snapshot = LibrarySnapshot(records: [
+            report(daysAgo: 10, items: flaggedItems),
+            report(daysAgo: 2, items: [CheckupOtherItem(name: "尿糖", value: "阴性")]),
+        ])
+
+        XCTAssertNil(LibraryFocus.make(from: snapshot))
+    }
+
+    func testBloodPressureStillOutranksAbnormalReport() {
+        let snapshot = LibrarySnapshot(records: [
+            checkup(daysAgo: 8, metrics: bp(145, 92)),
+            report(daysAgo: 1, items: flaggedItems, metrics: bp(148, 95)),
+        ])
+
+        XCTAssertEqual(LibraryFocus.make(from: snapshot)?.headline, Self.soonHeadline)
+    }
+
+    func testAbnormalReportOutranksRepeatedSymptoms() {
+        let snapshot = LibrarySnapshot(records: [
+            report(daysAgo: 1, items: flaggedItems),
+            symptom("头晕", daysAgo: 1),
+            symptom("头晕", daysAgo: 2),
+            symptom("头晕", daysAgo: 4),
+        ])
+
+        XCTAssertEqual(LibraryFocus.make(from: snapshot)?.headline, Self.abnormalHeadline)
+    }
 }

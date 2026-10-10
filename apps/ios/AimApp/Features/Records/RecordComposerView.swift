@@ -1,7 +1,9 @@
+import PhotosUI
 import SwiftUI
 
 struct RecordComposerView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(AppSessionStore.self) private var session
     @Bindable var store: RecordStore
     let record: RecordItem?
     let onSaved: () -> Void
@@ -12,14 +14,13 @@ struct RecordComposerView: View {
     @State private var symptoms: Set<String>
     @State private var severity: Int
     @State private var symptomNote: String
-    @State private var hospital: String
-    @State private var examItems: String
-    @State private var result: String
-    @State private var doctorAdvice: String
-    @State private var metrics: CheckupMetricInput
-    /// 编辑时的原报告。表单只管四段文字和三项指标，其余字段（其他指标、其他化验项）
-    /// 保存时从这里原样带回去，否则编辑一次就丢了。
-    private let originalCheckup: CheckupRecordData?
+    /// 产检报告的全部字段。编辑时用原报告回填，保存出来的与打开时一致，什么都不丢。
+    @State private var checkup: CheckupForm
+    /// 新建报告时选的照片（原始数据），保存时压缩上传。后端更新记录不收图片，编辑时不提供。
+    @State private var photoSelection: [PhotosPickerItem] = []
+    @State private var photos: [PickedPhoto] = []
+    @State private var isLoadingPhotos = false
+    @State private var photoError: String?
     @State private var title: String
     @State private var content: String
     @State private var savedCount = 0
@@ -50,23 +51,10 @@ struct RecordComposerView: View {
             _symptomNote = State(initialValue: "")
         }
         if case let .checkup(data) = source?.structuredData {
-            originalCheckup = data
-            _hospital = State(initialValue: data.hospital ?? "")
-            _examItems = State(initialValue: data.examItems ?? "")
-            _result = State(initialValue: data.result ?? "")
-            _doctorAdvice = State(initialValue: data.doctorAdvice ?? "")
-            _metrics = State(initialValue: CheckupMetricInput(
-                weight: data.metrics.weightKg.map { Self.text($0) } ?? "",
-                systolic: data.metrics.systolic.map { Self.text($0) } ?? "",
-                diastolic: data.metrics.diastolic.map { Self.text($0) } ?? ""
-            ))
+            _checkup = State(initialValue: CheckupForm(data: data))
         } else {
-            originalCheckup = nil
-            _metrics = State(initialValue: CheckupMetricInput())
-            _hospital = State(initialValue: "")
-            _examItems = State(initialValue: source == nil && suggestedType == .checkup ? (suggestedText ?? "") : "")
-            _result = State(initialValue: "")
-            _doctorAdvice = State(initialValue: "")
+            _checkup = State(initialValue: CheckupForm(
+                suggestedExamItems: source == nil && suggestedType == .checkup ? suggestedText : nil))
         }
         _title = State(initialValue: source?.title ?? (suggestedType == .note ? (suggestedText ?? "") : ""))
         _content = State(initialValue: source?.content ?? "")
@@ -76,7 +64,10 @@ struct RecordComposerView: View {
         NavigationStack {
             Form {
                 typeSection
-                visibilitySection
+                // 家庭可见的记录家人也能改，但谁能看到只由记下它的人决定。
+                if record?.canChangeVisibility(by: session.accountID) ?? true {
+                    visibilitySection
+                }
                 if let type { details(for: type) }
                 if let errorMessage = store.errorMessage { Section { Text(errorMessage).foregroundStyle(.red) } }
             }
@@ -175,21 +166,21 @@ struct RecordComposerView: View {
 
     private var checkupFields: some View {
         Group {
-            Section("产检信息") {
-                TextField("医院", text: $hospital)
+            Section("产检信息（都可选）") {
+                TextField("医院", text: $checkup.hospital)
                     .accessibilityIdentifier("checkup-hospital")
-                TextField("检查项目", text: $examItems)
+                TextField("检查项目", text: $checkup.examItems)
                     .accessibilityIdentifier("checkup-exam-items")
-                TextField("检查结果", text: $result, axis: .vertical)
+                TextField("检查结果", text: $checkup.result, axis: .vertical)
                     .accessibilityIdentifier("checkup-result")
-                TextField("医生建议", text: $doctorAdvice, axis: .vertical)
+                TextField("医生建议", text: $checkup.doctorAdvice, axis: .vertical)
                     .accessibilityIdentifier("checkup-advice")
             }
             Section {
-                metricField("体重", unit: "kg", text: $metrics.weight, id: "weight")
-                metricField("收缩压", unit: "mmHg", text: $metrics.systolic, id: "systolic")
-                metricField("舒张压", unit: "mmHg", text: $metrics.diastolic, id: "diastolic")
-                if let message = metrics.validationMessage {
+                ForEach(CheckupMetricField.allCases) { field in
+                    metricField(field)
+                }
+                if let message = checkup.metrics.validationMessage {
                     Text(message).font(.footnote).foregroundStyle(Color.aimDanger)
                 }
             } header: {
@@ -198,29 +189,142 @@ struct RecordComposerView: View {
                 // 空着表示这次没测，不是 0——当成 0 会把趋势线拉平。
                 Text("填了才会进资料库的趋势图。这次没测就留空。")
             }
+            otherItemsSection
+            if record == nil { photosSection }
         }
     }
 
-    private func metricField(
-        _ label: String, unit: String, text: Binding<String>, id: String
-    ) -> some View {
+    private func metricField(_ field: CheckupMetricField) -> some View {
         HStack {
-            Text(label)
+            Text(field.title)
             Spacer()
-            TextField("未测", text: text)
+            TextField("未测", text: $checkup.metrics[field])
                 .multilineTextAlignment(.trailing)
                 .frame(maxWidth: 90)
 #if os(iOS)
                 .keyboardType(.decimalPad)
 #endif
-                .accessibilityIdentifier("checkup-metric-\(id)")
-            Text(unit).font(.caption).foregroundStyle(Color.aimTextTertiary)
+                .accessibilityIdentifier("checkup-metric-\(field.rawValue)")
+            Text(field.unit).font(.caption).foregroundStyle(Color.aimTextTertiary)
+                .frame(minWidth: 44, alignment: .leading)
         }
     }
 
-    /// 62.0 显示成 "62" 而不是 "62.0"，回填时看着自然。
-    private static func text(_ value: Double) -> String {
-        value == value.rounded() ? String(Int(value)) : String(value)
+    /// 七项之外的化验结果逐行记：名称、数值必填，单位、参考范围、标记可选。
+    private var otherItemsSection: some View {
+        Section {
+            ForEach(Array($checkup.otherItems.enumerated()), id: \.element.id) { index, $item in
+                VStack(alignment: .leading, spacing: AimMetrics.space8) {
+                    HStack {
+                        TextField("名称，如尿蛋白", text: $item.name)
+                            .accessibilityIdentifier("checkup-other-name-\(index)")
+                        Button(role: .destructive) {
+                            let id = item.id
+                            checkup.otherItems.removeAll { $0.id == id }
+                        } label: {
+                            Image(systemName: "minus.circle.fill")
+                        }
+                        .buttonStyle(.borderless)
+                        .accessibilityLabel("删掉这一项")
+                    }
+                    HStack {
+                        TextField("数值或结果", text: $item.value)
+                            .accessibilityIdentifier("checkup-other-value-\(index)")
+                        TextField("单位", text: $item.unit)
+                            .frame(maxWidth: 80)
+                    }
+                    TextField("参考范围（可选）", text: $item.reference)
+                    Picker("报告上的标记", selection: $item.flag) {
+                        Text("无").tag(CheckupFlag?.none)
+                        Text("偏高").tag(CheckupFlag?.some(.high))
+                        Text("偏低").tag(CheckupFlag?.some(.low))
+                        Text("异常").tag(CheckupFlag?.some(.abnormal))
+                    }
+                    .pickerStyle(.segmented)
+                    .accessibilityIdentifier("checkup-other-flag-\(index)")
+                    if let message = item.validationMessage {
+                        Text(message).font(.footnote).foregroundStyle(Color.aimDanger)
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+            if checkup.otherItems.count < CheckupForm.maxOtherItems {
+                Button {
+                    checkup.otherItems.append(CheckupOtherItemInput())
+                } label: {
+                    Label("加一项化验", systemImage: "plus.circle")
+                }
+                .accessibilityIdentifier("checkup-other-add")
+            }
+        } header: {
+            Text("其他化验项（可选）")
+        } footer: {
+            Text("照报告单抄：数值按原样填，比如「阴性」「+」。标记也照报告上的箭头选。")
+        }
+    }
+
+    private var photosSection: some View {
+        Section {
+            if isLoadingPhotos { ProgressView("正在加载照片") }
+            if let photoError { Text(photoError).font(.footnote).foregroundStyle(Color.aimDanger) }
+            if !photos.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: AimMetrics.space8) {
+                        ForEach(photos) { photo in
+                            Image(uiImage: photo.thumbnail)
+                                .resizable().scaledToFill()
+                                .frame(width: 72, height: 72)
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                        }
+                    }
+                }
+            }
+            PhotosPicker(
+                selection: $photoSelection, maxSelectionCount: Self.maxPhotos,
+                selectionBehavior: .ordered, matching: .images
+            ) {
+                Label(photos.isEmpty ? "选择报告照片" : "重新选择（已选 \(photos.count) 张）",
+                      systemImage: "photo.on.rectangle")
+            }
+            .accessibilityIdentifier("checkup-photos")
+            .disabled(store.isSaving)
+        } header: {
+            Text("照片（最多 \(Self.maxPhotos) 张）")
+        } footer: {
+            Text("保存后不能再改照片，选好再存。")
+        }
+        .onChange(of: photoSelection) { _, items in
+            Task { await loadPhotos(items) }
+        }
+    }
+
+    /// 与后端每条记录的附件上限一致。
+    private static let maxPhotos = 4
+
+    private func loadPhotos(_ items: [PhotosPickerItem]) async {
+        isLoadingPhotos = true
+        photoError = nil
+        photos = []
+        var loaded: [Data] = []
+        for item in items {
+            if let data = try? await item.loadTransferable(type: Data.self) { loaded.append(data) }
+        }
+        // 解码和缩略都放到主线程外，大图不卡表单。
+        let picked = await Task.detached(priority: .userInitiated) {
+            loaded.compactMap { data -> PickedPhoto? in
+                guard let image = UIImage(data: data) else { return nil }
+                let thumbnail = image.preparingThumbnail(of: CGSize(width: 144, height: 144)) ?? image
+                return PickedPhoto(data: data, thumbnail: thumbnail)
+            }
+        }.value
+        // 加载期间又改了选择，以最后一次为准。
+        guard items == photoSelection else { return }
+        isLoadingPhotos = false
+        guard picked.count == items.count else {
+            photoError = "有一张照片没能加载，请重新选择后再保存。"
+            return
+        }
+        photos = picked
     }
 
     private var noteFields: some View {
@@ -247,19 +351,10 @@ struct RecordComposerView: View {
         switch type {
         case .symptom: !symptoms.isEmpty
         case .checkup:
-            // 四段文字都可选，但总得记下点什么。
-            !checkupDraft.isBlank
-                // 指标填错了不让存——后端也会拒，不如当场说清楚。
-                && metrics.validationMessage == nil
+            checkup.canSave(photoCount: photos.count) && !isLoadingPhotos && photoError == nil
         case .note: !content.trimmed.isEmpty
         case .question, .checklist, .knowledge, .fetalMovement, .none, .unknown: false
         }
-    }
-
-    private var checkupDraft: CheckupRecordData {
-        .composed(
-            from: originalCheckup, hospital: hospital, examItems: examItems,
-            result: result, doctorAdvice: doctorAdvice, metrics: metrics)
     }
 
     private func toggle(_ symptom: String) {
@@ -270,7 +365,7 @@ struct RecordComposerView: View {
         guard let draft = makeDraft() else { return }
         let saved: Bool
         if let record { saved = await store.update(recordID: record.id, draft: draft) }
-        else { saved = await store.save(draft) }
+        else { saved = await store.save(draft, photos: type == .checkup ? photos.map(\.data) : []) }
         if saved { savedCount += 1; onSaved(); dismiss() }
     }
 
@@ -281,12 +376,19 @@ struct RecordComposerView: View {
         case .symptom:
             data = .symptom(SymptomRecordData(symptoms: symptoms.sorted(), severity: severity, note: symptomNote.trimmed.nilIfEmpty))
         case .checkup:
-            data = .checkup(checkupDraft)
+            data = .checkup(checkup.draft)
         case .note: data = .note
         case .question, .checklist, .knowledge, .fetalMovement, .unknown: return nil
         }
         return RecordDraft(type: type, occurredAt: occurredAt, visibility: visibility, title: type == .note ? title.trimmed.nilIfEmpty : nil, content: type == .note ? content.trimmed.nilIfEmpty : nil, structuredData: data)
     }
+}
+
+/// 选好的一张照片：原始数据留着保存时压缩上传，缩略图给表单预览。
+private struct PickedPhoto: Identifiable, @unchecked Sendable {
+    let id = UUID()
+    let data: Data
+    let thumbnail: UIImage
 }
 
 extension String {

@@ -13,6 +13,8 @@ struct LibraryView: View {
     @State private var openCategory: LibraryCategoryID?
     @State private var openTopic: EncyclopediaTopic?
     @State private var openEntryID: String?
+    @State private var openReportID: UUID?
+    @Environment(AgentDestinations.self) private var destinations: AgentDestinations?
 
     private let columns = [
         GridItem(.flexible(), spacing: AimMetrics.space12),
@@ -47,7 +49,13 @@ struct LibraryView: View {
                         }
                     }
                     if let focus, focus.level != .urgent {
-                        LibraryFocusBanner(focus: focus)
+                        if let reportID = focus.reportID {
+                            // 报告异常的提醒点进去就是那份报告，异常项和「加入想问医生」都在那里。
+                            Button { openReportID = reportID } label: { LibraryFocusBanner(focus: focus) }
+                                .buttonStyle(.plain)
+                        } else {
+                            LibraryFocusBanner(focus: focus)
+                        }
                     }
                     sectionTitle("我的档案", identifier: "library-section-archive")
                     LazyVGrid(columns: columns, spacing: AimMetrics.space12) {
@@ -101,6 +109,13 @@ struct LibraryView: View {
             }
             .navigationDestination(item: $openEntryID) { id in
                 EncyclopediaEntryView(entryID: id, store: store, agentStore: agentStore)
+            }
+            .navigationDestination(item: $openReportID) { id in
+                if let destinations, let report = store.snapshot.records.first(where: { $0.id == id }) {
+                    RecordDetailView(
+                        record: report, store: destinations.recordStore,
+                        planStore: destinations.planStore, agentStore: agentStore)
+                }
             }
             .fullScreenCover(isPresented: $showingAgent) {
                 AgentView(store: agentStore) { showingAgent = false }

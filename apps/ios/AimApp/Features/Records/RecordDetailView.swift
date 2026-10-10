@@ -17,9 +17,20 @@ struct RecordDetailView: View {
         store.snapshot?.records.first(where: { $0.id == record.id }) ?? record
     }
 
-    private var canEdit: Bool { session.accountID == currentRecord.authorAccountID }
+    /// 家庭可见的记录家里任何成员都能改；仅自己可见的只有作者能改。与后端一致。
+    private var canEdit: Bool { currentRecord.isEditable(by: session.accountID) }
+    private var isAuthor: Bool { session.accountID == currentRecord.authorAccountID }
 
     var body: some View {
+        // 产检报告有自己的详情页：指标对比、化验项、把异常项加入想问医生。
+        if record.type == .checkup {
+            CheckupReportView(record: record, store: store, planStore: planStore, agentStore: agentStore)
+        } else {
+            genericDetail
+        }
+    }
+
+    private var genericDetail: some View {
         List {
             Section {
                 VStack(alignment: .leading, spacing: 12) {
@@ -49,7 +60,7 @@ struct RecordDetailView: View {
                 }
             }
             Section("记录信息") {
-                LabeledContent("记录人", value: canEdit ? "我" : "家庭成员")
+                LabeledContent("记录人", value: isAuthor ? "我" : "家庭成员")
                 Label(currentRecord.visibility.displayName, systemImage: currentRecord.visibility == .family ? "person.2" : "lock")
             }
             Section {
@@ -98,14 +109,9 @@ struct RecordDetailView: View {
                 LabeledContent("程度", value: "\(data.severity) / 5")
                 if let note = data.note, !note.isEmpty { Text(note) }
             }
-        case let .checkup(data):
-            Section("产检信息") {
-                // 没填的段落不显示，不留一行空白。完整的报告详情在 Task 6 重做。
-                if let hospital = data.hospital?.trimmed.nilIfEmpty { LabeledContent("医院", value: hospital) }
-                if let examItems = data.examItems?.trimmed.nilIfEmpty { LabeledContent("检查项目", value: examItems) }
-                if let result = data.result?.trimmed.nilIfEmpty { LabeledContent("检查结果", value: result) }
-                if let advice = data.doctorAdvice?.trimmed.nilIfEmpty { LabeledContent("医生建议", value: advice) }
-            }
+        case .checkup:
+            // 产检走 CheckupReportView，到不了这里。
+            EmptyView()
         case .note:
             Section("内容") { Text(currentRecord.content ?? "没有补充内容") }
         case let .question(data):
@@ -149,7 +155,7 @@ struct RecordDetailView: View {
     }
 }
 
-private struct RecordTaskSheet: View {
+struct RecordTaskSheet: View {
     @Environment(\.dismiss) private var dismiss
     let record: RecordItem
     @Bindable var store: RecordStore
@@ -211,13 +217,13 @@ enum AttachmentRequest {
     }
 }
 
-private struct IdentifiedImage: Identifiable {
+struct IdentifiedImage: Identifiable {
     let id = UUID()
     let image: UIImage
 }
 
 /// 记录上挂的一张图片。加载失败显示占位，不影响页面其它内容。
-private struct AttachmentThumbnail: View {
+struct AttachmentThumbnail: View {
     let id: String
     let environment: APIEnvironment
     let onOpen: (UIImage) -> Void
@@ -260,7 +266,7 @@ private struct AttachmentThumbnail: View {
 }
 
 /// 全屏看大图：双指缩放，点一下关闭。
-private struct AttachmentViewer: View {
+struct AttachmentViewer: View {
     let image: UIImage
     let onClose: () -> Void
     @State private var scale: CGFloat = 1

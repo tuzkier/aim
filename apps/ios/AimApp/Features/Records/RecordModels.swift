@@ -281,6 +281,20 @@ struct RecordItem: Identifiable, Equatable, Sendable {
     }
 }
 
+extension RecordItem {
+    /// 编辑与删除权限，与后端 `assert_can_mutate` 一致：家庭可见的记录属于整个家庭，
+    /// 任何成员都能改；仅自己可见的（以及看不懂的可见范围）只有作者能改。
+    func isEditable(by accountID: UUID?) -> Bool {
+        guard let accountID else { return false }
+        return visibility == .family || accountID == authorAccountID
+    }
+
+    /// 谁能看到这条记录，只由记下它的人决定。
+    func canChangeVisibility(by accountID: UUID?) -> Bool {
+        accountID != nil && accountID == authorAccountID
+    }
+}
+
 struct RecordDraft: Equatable, Sendable {
     let type: RecordType
     let occurredAt: Date

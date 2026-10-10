@@ -15,6 +15,8 @@ struct LibraryCategoryDetail: View {
     @State private var selectedMetric: MetricKind?
     @State private var nutritionSection: NutritionSection = .recipes
     @State private var selectedPurpose: String?
+    /// 产检列表点进报告详情要用记录仓库（编辑、删除、加问题都走它）。
+    @Environment(AgentDestinations.self) private var destinations: AgentDestinations?
 
     var body: some View {
         Group {
@@ -182,7 +184,7 @@ struct LibraryCategoryDetail: View {
         return List {
             if kinds.isEmpty {
                 Section {
-                    Text("记录产检时填上体重或血压，这里就会出现趋势。")
+                    Text("记录产检时填上测到的指标，这里就会出现趋势。")
                         .font(.footnote)
                         .foregroundStyle(Color.aimTextSecondary)
                 }
@@ -194,7 +196,7 @@ struct LibraryCategoryDetail: View {
                             get: { kind }, set: { selectedMetric = $0 })) {
                             ForEach(kinds) { Text($0.title).tag($0) }
                         }
-                        .pickerStyle(.segmented)
+                        .pickerStyle(.menu)
                         .accessibilityIdentifier("checkup-metric-picker")
                     }
                     MetricChart(trend: trend, title: kind.title)
@@ -204,14 +206,16 @@ struct LibraryCategoryDetail: View {
 
             Section("历次记录") {
                 ForEach(records) { record in
-                    VStack(alignment: .leading, spacing: AimMetrics.space4) {
-                        Text(recordTitle(record))
-                            .font(.subheadline.weight(.medium))
-                            .foregroundStyle(Color.aimTextPrimary)
-                        Text(record.occurredAt, style: .date)
-                            .font(.caption)
-                            .foregroundStyle(Color.aimTextTertiary)
+                    NavigationLink {
+                        if let destinations {
+                            RecordDetailView(
+                                record: record, store: destinations.recordStore,
+                                planStore: destinations.planStore, agentStore: agentStore)
+                        }
+                    } label: {
+                        checkupRow(record)
                     }
+                    .accessibilityIdentifier("library-checkup-record")
                     .listRowBackground(Color.aimSurface)
                 }
             }
@@ -219,6 +223,32 @@ struct LibraryCategoryDetail: View {
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .accessibilityIdentifier("library-checkup-overview")
+    }
+
+    private func checkupRow(_ record: RecordItem) -> some View {
+        let flagged: Int = {
+            guard case let .checkup(data) = record.structuredData else { return 0 }
+            return CheckupReport.flaggedItems(data).count
+        }()
+        return HStack {
+            VStack(alignment: .leading, spacing: AimMetrics.space4) {
+                Text(recordTitle(record))
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(Color.aimTextPrimary)
+                Text(record.occurredAt, style: .date)
+                    .font(.caption)
+                    .foregroundStyle(Color.aimTextTertiary)
+            }
+            Spacer()
+            if flagged > 0 {
+                Text("\(flagged) 项异常")
+                    .font(.caption2)
+                    .padding(.horizontal, AimMetrics.space8)
+                    .padding(.vertical, 2)
+                    .background(Color.aimWarningSoft, in: Capsule())
+                    .foregroundStyle(Color.aimWarning)
+            }
+        }
     }
 
     /// 身体感受看的是规律，不是流水账：什么反复出现、最近还在不在发生。

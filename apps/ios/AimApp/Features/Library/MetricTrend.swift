@@ -82,6 +82,8 @@ enum MetricKind: String, CaseIterable, Identifiable, Sendable {
     case bloodPressure
     case fastingGlucose
     case hemoglobin
+    case fetalHeartRate
+    case fundalHeight
 
     var id: String { rawValue }
 
@@ -91,6 +93,8 @@ enum MetricKind: String, CaseIterable, Identifiable, Sendable {
         case .bloodPressure: "血压"
         case .fastingGlucose: "空腹血糖"
         case .hemoglobin: "血红蛋白"
+        case .fetalHeartRate: "胎心"
+        case .fundalHeight: "宫高"
         }
     }
 
@@ -101,6 +105,8 @@ enum MetricKind: String, CaseIterable, Identifiable, Sendable {
         case .bloodPressure: "mmHg"
         case .fastingGlucose: "mmol/L"
         case .hemoglobin: "g/L"
+        case .fetalHeartRate: "次/分"
+        case .fundalHeight: "cm"
         }
     }
 
@@ -111,6 +117,8 @@ enum MetricKind: String, CaseIterable, Identifiable, Sendable {
         case .bloodPressure: { $0.systolic }
         case .fastingGlucose: { $0.fastingGlucose }
         case .hemoglobin: { $0.hemoglobin }
+        case .fetalHeartRate: { $0.fetalHeartRate }
+        case .fundalHeight: { $0.fundalHeightCm }
         }
     }
 

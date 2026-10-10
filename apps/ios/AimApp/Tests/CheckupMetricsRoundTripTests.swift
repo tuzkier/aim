@@ -201,35 +201,18 @@ final class CheckupMetricsRoundTripTests: XCTestCase {
         XCTAssertNil(try encoded(item.structuredData)["report_id"])
     }
 
-    /// 旧表单只编辑体重和血压。编辑一份 AIM 建的报告时，表单管不到的指标不能被清掉。
-    func testFormMetricsMergeIntoTheOriginalWithoutDroppingOthers() {
-        let original = CheckupMetrics(
-            weightKg: 60, systolic: 120, diastolic: 80, fastingGlucose: 5.1, hemoglobin: 118,
-            fetalHeartRate: 145, fundalHeightCm: 29)
-        let input = CheckupMetricInput(weight: "61.5", systolic: "", diastolic: "78")
-
-        let merged = input.merged(into: original)
-
-        XCTAssertEqual(merged.weightKg, 61.5)
-        XCTAssertNil(merged.systolic, "表单里清空的就是不要了")
-        XCTAssertEqual(merged.diastolic, 78)
-        XCTAssertEqual(merged.fastingGlucose, 5.1)
-        XCTAssertEqual(merged.hemoglobin, 118)
-        XCTAssertEqual(merged.fetalHeartRate, 145)
-        XCTAssertEqual(merged.fundalHeightCm, 29)
-    }
-
-    /// 编辑一份 AIM 建的报告：表单只有四段文字和三项指标，其他化验项与胎心不能丢；空文字段传 nil。
+    /// 表单回填一份 AIM 建的报告再保存：其他化验项与胎心都还在；空文字段传 nil。
     func testEditingAReportKeepsOtherItemsAndFetalHeartRate() {
         let original = CheckupRecordData(
             hospital: "市一医院", examItems: nil, result: "尿蛋白弱阳性", doctorAdvice: nil,
             metrics: CheckupMetrics(weightKg: 60, fetalHeartRate: 145),
             otherItems: [CheckupOtherItem(name: "尿蛋白", value: "+-", reference: "阴性", flag: .abnormal)])
 
-        let draft = CheckupRecordData.composed(
-            from: original,
-            hospital: " 市一医院 ", examItems: "", result: "尿蛋白弱阳性", doctorAdvice: "  ",
-            metrics: CheckupMetricInput(weight: "61", systolic: "", diastolic: ""))
+        var form = CheckupForm(data: original)
+        form.hospital = " 市一医院 "
+        form.doctorAdvice = "  "
+        form.metrics[.weight] = "61"
+        let draft = form.draft
 
         XCTAssertEqual(draft.hospital, "市一医院")
         XCTAssertNil(draft.examItems)
@@ -240,9 +223,9 @@ final class CheckupMetricsRoundTripTests: XCTestCase {
     }
 
     func testANewReportStartsWithoutOtherItems() {
-        let draft = CheckupRecordData.composed(
-            from: nil, hospital: "", examItems: "常规", result: "", doctorAdvice: "",
-            metrics: CheckupMetricInput())
+        var form = CheckupForm(suggestedExamItems: "常规")
+        form.result = ""
+        let draft = form.draft
 
         XCTAssertEqual(draft.examItems, "常规")
         XCTAssertNil(draft.hospital)

@@ -74,4 +74,18 @@ final class MetricTrendTests: XCTestCase {
     private func trend(_ records: [RecordItem]) -> MetricTrend? {
         MetricTrend.weight(from: records)
     }
+
+    func testFetalHeartRateAndFundalHeightHaveTrendsWithoutInventingMissingReadings() {
+        let records = [
+            checkup(daysAgo: 1, metrics: CheckupMetrics(fetalHeartRate: 145, fundalHeightCm: 28)),
+            checkup(daysAgo: 7, metrics: CheckupMetrics(weightKg: 60)),
+            checkup(daysAgo: 14, metrics: CheckupMetrics(fetalHeartRate: 140, fundalHeightCm: 26)),
+        ]
+        XCTAssertTrue(MetricKind.available(in: records).contains(.fetalHeartRate))
+        XCTAssertTrue(MetricKind.available(in: records).contains(.fundalHeight))
+        XCTAssertEqual(MetricKind.fetalHeartRate.trend(in: records)?.points.map(\.value), [140, 145])
+        XCTAssertEqual(MetricKind.fundalHeight.trend(in: records)?.points.map(\.value), [26, 28])
+        XCTAssertEqual(MetricKind.fetalHeartRate.unit, "次/分")
+        XCTAssertEqual(MetricKind.fundalHeight.unit, "cm")
+    }
 }

@@ -21,6 +21,8 @@ struct LibraryFocus: Equatable, Sendable {
     let headline: String
     var tags: [String] = []
     var level: Level = .info
+    /// 由报告触发时指向那份报告，点横幅进报告详情。
+    var reportID: UUID?
 
     /// 「偏高」的门槛：高压 ≥140 或低压 ≥90。用两次而不是一次——单次偏高很常见
     /// （紧张、刚走完路），一次就报会让用户很快学会忽略这个位置。
@@ -36,10 +38,13 @@ struct LibraryFocus: Equatable, Sendable {
     private static let severeFreshnessDays = 7
     private static let highFreshnessDays = 14
     private static let repeatedSymptomThreshold = 3
+    /// 报告异常的提醒只看 30 天内的报告：更早的那份，该问的多半已经在上次产检问过了。
+    private static let reportFreshnessDays = 30
 
     static func make(from snapshot: LibrarySnapshot, now: Date = .now) -> LibraryFocus? {
-        // 顺序即优先级：身体信号 > 反复症状 > 攒下的事务。
+        // 顺序即优先级：身体信号 > 报告异常 > 反复症状 > 攒下的事务。
         bloodPressure(from: snapshot, now: now)
+            ?? abnormalReport(from: snapshot, now: now)
             ?? repeatedSymptom(from: snapshot, now: now)
             ?? pendingQuestions(from: snapshot)
     }
@@ -97,6 +102,25 @@ struct LibraryFocus: Equatable, Sendable {
             return false
         }
         return date >= cutoff
+    }
+
+    /// 30 天内最新一份报告上有标了箭头或异常的项，且还没全部加进「想问医生」。
+    /// 只转述报告上的标记、提醒去问医生，不判断这些异常意味着什么。
+    private static func abnormalReport(from snapshot: LibrarySnapshot, now: Date) -> LibraryFocus? {
+        guard let latest = snapshot.records
+            .filter({ $0.type == .checkup && isWithin(days: reportFreshnessDays, of: $0.occurredAt, now: now) })
+            .max(by: { ($0.occurredAt, $0.createdAt) < ($1.occurredAt, $1.createdAt) }),
+              case let .checkup(data) = latest.structuredData else { return nil }
+        let flagged = CheckupReport.flaggedItems(data)
+        guard !flagged.isEmpty,
+              !CheckupReport.unaskedItems(for: latest, in: snapshot.records).isEmpty else { return nil }
+
+        return LibraryFocus(
+            headline: "最近报告有 \(flagged.count) 项异常，记得问医生",
+            tags: ["产检报告"],
+            level: .info,
+            reportID: latest.id
+        )
     }
 
     private static func repeatedSymptom(from snapshot: LibrarySnapshot, now: Date) -> LibraryFocus? {
