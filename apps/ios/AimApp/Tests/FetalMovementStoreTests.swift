@@ -13,6 +13,7 @@ final class FetalMovementStoreTests: XCTestCase {
         super.setUp()
         suiteName = "FetalMovementStoreTests-\(UUID().uuidString)"
         defaults = UserDefaults(suiteName: suiteName)
+        notifications = NotificationCenter()
     }
 
     override func tearDown() {
@@ -20,10 +21,13 @@ final class FetalMovementStoreTests: XCTestCase {
         super.tearDown()
     }
 
+    /// 每个用例自己的通知中心：保存成功的广播不会惊动宿主 App 去真的刷新。
+    private var notifications: NotificationCenter!
+
     private func makeStore(
         repository: FakeFetalRepository = FakeFetalRepository(), dedupe: TimeInterval = 3, bound: Bool = true
     ) -> FetalMovementStore {
-        let store = FetalMovementStore(defaults: defaults, dedupeInterval: dedupe)
+        let store = FetalMovementStore(defaults: defaults, dedupeInterval: dedupe, notificationCenter: notifications)
         store.repository = repository
         store.clock = { [unowned self] in self.now }
         if bound { store.bind(accountID: accountA, pregnancyID: pregnancyA) }
@@ -102,19 +106,40 @@ final class FetalMovementStoreTests: XCTestCase {
         XCTAssertNil(makeStore().active)
     }
 
-    func testAbandoningForSafetyDiscardsAnEmptyCount() async {
+    /// 一次都没数就点了「胎动明显少了？」：这句主诉本身要留档，记一条 0 次的未数完。
+    func testAbandoningForSafetyRecordsAnEmptyCountAsReportedLess() async throws {
         let repository = FakeFetalRepository()
         let store = makeStore(repository: repository)
         store.start()
-        now += 60
+        now += 75.8
 
         let completion = await store.abandonForSafety()
 
-        XCTAssertNil(completion)
+        XCTAssertEqual(completion?.result.outcome, .stopped)
+        XCTAssertEqual(completion?.result.count, 0)
+        XCTAssertEqual(completion?.result.durationSeconds, 75)
+        XCTAssertEqual(completion?.result.reportedLess, true)
+        XCTAssertEqual(completion?.saved, true)
         XCTAssertNil(store.active)
-        XCTAssertNil(makeStore(repository: repository).active, "一次都没数，不留断点")
-        XCTAssertTrue(store.unsaved.isEmpty)
-        XCTAssertTrue(repository.createdDrafts.isEmpty, "一次都没数，不写档案")
+        XCTAssertNil(makeStore(repository: repository).active, "不留断点")
+        let draft = try XCTUnwrap(repository.createdDrafts.first)
+        guard case let .fetalMovement(data) = draft.structuredData else { return XCTFail("应当是胎动记录") }
+        XCTAssertTrue(data.reportedLess)
+        XCTAssertEqual(data.taps, [])
+    }
+
+    /// 0 次时用时取已过去的秒数，但不超过后端允许的 3 小时。
+    func testAnEmptyReportedLessCountIsCappedAtThreeHours() async {
+        let repository = FakeFetalRepository()
+        let store = makeStore(repository: repository)
+        store.start()
+        now += 5 * 3_600
+
+        let completion = await store.abandonForSafety()
+
+        XCTAssertEqual(completion?.result.outcome, .stopped)
+        XCTAssertEqual(completion?.result.durationSeconds, 10_800)
+        XCTAssertEqual(repository.createdDrafts.count, 1)
     }
 
     func testAbandoningForSafetyRecordsAStartedCountAsStopped() async {
@@ -129,6 +154,7 @@ final class FetalMovementStoreTests: XCTestCase {
 
         XCTAssertEqual(completion?.result.outcome, .stopped)
         XCTAssertEqual(completion?.result.count, 2)
+        XCTAssertEqual(completion?.result.reportedLess, true, "计数中报告过胎动少了")
         XCTAssertEqual(completion?.saved, true)
         XCTAssertNil(store.active)
         XCTAssertNil(makeStore(repository: repository).active, "不能留下一个下次打开会接着数的断点")
@@ -157,6 +183,137 @@ final class FetalMovementStoreTests: XCTestCase {
 
         XCTAssertNil(completion)
         XCTAssertTrue(repository.createdDrafts.isEmpty)
+    }
+
+    // MARK: - 被系统杀掉后过期的断点
+
+    /// 计数页没开着时到了 2 小时：孕妈并没有在数，不能报「不足 10 次」，记为未数完。
+    func testSettlingAnExpiredCountSavesItAsStoppedAtTheLastTap() async throws {
+        let repository = FakeFetalRepository()
+        let store = makeStore(repository: repository)
+        store.start()
+        now += 100.7; _ = store.tap()
+        now += 300; _ = store.tap()
+        let relaunched = makeStore(repository: repository)
+        now += 3 * 3_600
+
+        await relaunched.settleExpiredActive()
+
+        XCTAssertNil(relaunched.active)
+        XCTAssertNil(makeStore(repository: repository).active, "断点已清掉并落盘")
+        XCTAssertTrue(relaunched.unsaved.isEmpty)
+        let draft = try XCTUnwrap(repository.createdDrafts.first)
+        guard case let .fetalMovement(data) = draft.structuredData else { return XCTFail("应当是胎动记录") }
+        XCTAssertEqual(data.outcome, .stopped)
+        XCTAssertEqual(data.count, 2)
+        XCTAssertEqual(data.durationSeconds, 400, "用时取最后一次点按的秒数")
+        XCTAssertEqual(data.taps, [100, 400])
+        XCTAssertFalse(data.reportedLess)
+    }
+
+    func testSettlingAnExpiredEmptyCountDiscardsIt() async {
+        let repository = FakeFetalRepository()
+        let store = makeStore(repository: repository)
+        store.start()
+        now += 3 * 3_600
+
+        await store.settleExpiredActive()
+
+        XCTAssertNil(store.active)
+        XCTAssertNil(makeStore(repository: repository).active)
+        XCTAssertTrue(store.unsaved.isEmpty)
+        XCTAssertTrue(repository.createdDrafts.isEmpty, "一次都没数，不写档案")
+    }
+
+    func testSettlingACountThatHasNotExpiredDoesNothing() async {
+        let repository = FakeFetalRepository()
+        let store = makeStore(repository: repository)
+        store.start()
+        now += 60; _ = store.tap()
+        now += 3_600
+
+        await store.settleExpiredActive()
+
+        XCTAssertEqual(store.active?.count, 1)
+        XCTAssertEqual(makeStore(repository: repository).active?.count, 1)
+        XCTAssertTrue(repository.createdDrafts.isEmpty)
+    }
+
+    /// 首页卡与胎动页据此显示「继续」：过期的不算，等收尾。
+    func testOnlyAnUnexpiredCountCanBeResumed() {
+        let store = makeStore()
+        XCTAssertNil(store.unfinishedActive)
+        store.start()
+        now += 60; _ = store.tap()
+        XCTAssertEqual(store.unfinishedActive?.count, 1)
+        now += FetalMovementCounter.window
+        XCTAssertNil(store.unfinishedActive)
+    }
+
+    // MARK: - 当场判断「慢一倍多」
+
+    /// 历史已在手：结束那一刻就能判断，不等保存（这里保存一直失败）。
+    func testSlowNoticeIsAvailableBeforeSavingWhenHistoryIsLoaded() async throws {
+        let repository = FakeFetalRepository()
+        for seconds in [600, 620, 640] { repository.seed(seconds: seconds, at: now - 86_400) }
+        let store = makeStore(repository: repository, dedupe: 0)
+        await store.load()
+        repository.failCreates = true
+        store.start()
+        for _ in 1...10 { now += 200; _ = store.tap() }
+        let local = try XCTUnwrap(store.active).result(at: now)
+
+        let notice = store.slowNoticeBeforeSaving(local)
+
+        XCTAssertEqual(notice, FetalMovementSlowNotice(durationSeconds: 2_000, baselineSeconds: 620))
+        let completion = await store.finish()
+        XCTAssertEqual(completion?.saved, false)
+        XCTAssertEqual(completion?.slowNotice, notice, "保存回来的判断与当场的一致")
+    }
+
+    /// 历史还没拉回来：当场没法判断，交给 finish() 拉到历史后补上。
+    func testSlowNoticeWaitsForTheCompletionWhenHistoryIsEmpty() throws {
+        let repository = FakeFetalRepository()
+        for seconds in [600, 620, 640] { repository.seed(seconds: seconds, at: now - 86_400) }
+        let store = makeStore(repository: repository, dedupe: 0)
+        store.start()
+        for _ in 1...10 { now += 200; _ = store.tap() }
+
+        XCTAssertNil(store.slowNoticeBeforeSaving(try XCTUnwrap(store.active).result(at: now)))
+    }
+
+    func testANormalPaceHasNoSlowNotice() async throws {
+        let repository = FakeFetalRepository()
+        for seconds in [600, 620, 640] { repository.seed(seconds: seconds, at: now - 86_400) }
+        let store = makeStore(repository: repository, dedupe: 0)
+        await store.load()
+        store.start()
+        for _ in 1...10 { now += 60; _ = store.tap() }
+
+        XCTAssertNil(store.slowNoticeBeforeSaving(try XCTUnwrap(store.active).result(at: now)))
+    }
+
+    // MARK: - 保存后通知其他页面
+
+    func testASuccessfulSaveTellsOtherPagesThatRecordsChanged() async {
+        final class Received: @unchecked Sendable { var kinds: [[String]] = [] }
+        let received = Received()
+        // 通知在发送方所在线程同步投递，这里就是主线程。
+        let token = notifications.addObserver(forName: .aimDataChanged, object: nil, queue: nil) { note in
+            received.kinds.append(note.userInfo?["kinds"] as? [String] ?? [])
+        }
+        defer { notifications.removeObserver(token) }
+        let repository = FakeFetalRepository()
+        repository.failCreates = true
+        let store = makeStore(repository: repository)
+        store.start(); now += 30; _ = store.tap()
+
+        _ = await store.finish()
+        XCTAssertTrue(received.kinds.isEmpty, "没保存上不通知")
+
+        repository.failCreates = false
+        await store.saveUnsaved()
+        XCTAssertEqual(received.kinds, [["record"]])
     }
 
     /// 上一次没保存上、这一次也没保存上：两条都要留着，不能后一条把前一条覆盖掉。

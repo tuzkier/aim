@@ -40,6 +40,9 @@ enum RecordType: Codable, CaseIterable, Sendable, Equatable {
         self.init(rawValue: try decoder.singleValueContainer().decode(String.self))
     }
 
+    /// 能否在通用记录编辑器里修改。胎动记录由计数页生成，编辑器改不了它的计数数据。
+    var canEditInComposer: Bool { self != .fetalMovement }
+
     func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(rawValue)
@@ -114,6 +117,21 @@ struct FetalMovementRecordData: Codable, Equatable, Sendable {
     let outcome: FetalMovementOutcome
     /// 每次计数距开始的秒数。
     let taps: [Int]
+    /// 计数中点了「胎动明显少了？」。这是要留档的就医信号，与结果无关。
+    var reportedLess = false
+}
+
+extension FetalMovementRecordData {
+    /// 写在扩展里以保留逐成员初始化器。旧数据没有 reportedLess，按没报告处理。
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        durationSeconds = try container.decode(Int.self, forKey: .durationSeconds)
+        count = try container.decode(Int.self, forKey: .count)
+        target = try container.decode(Int.self, forKey: .target)
+        outcome = try container.decode(FetalMovementOutcome.self, forKey: .outcome)
+        taps = try container.decode([Int].self, forKey: .taps)
+        reportedLess = try container.decodeIfPresent(Bool.self, forKey: .reportedLess) ?? false
+    }
 }
 
 enum FetalMovementFormat {
@@ -128,11 +146,12 @@ enum FetalMovementFormat {
     }
 
     static func summary(_ data: FetalMovementRecordData) -> String {
-        switch data.outcome {
+        let base = switch data.outcome {
         case .reached: "\(data.count) 次 · \(duration(data.durationSeconds))"
         case .under: "\(duration(data.durationSeconds)) \(data.count) 次 · 不足 \(data.target) 次"
         case .stopped: "\(data.count) 次 · \(duration(data.durationSeconds)) · 未数完"
         }
+        return data.reportedLess ? base + " · 感觉胎动少了" : base
     }
 }
 

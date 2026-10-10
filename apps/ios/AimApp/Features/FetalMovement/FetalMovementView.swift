@@ -13,10 +13,17 @@ struct FetalMovementView: View {
         List {
             Section {
                 todayRow
-                Button { counting = true } label: {
-                    Label("开始数胎动", systemImage: "hand.tap")
+                if let unfinished = store.unfinishedActive {
+                    Button { counting = true } label: {
+                        Label(FetalMovementCopy.resume(count: unfinished.count) + " · 继续", systemImage: "hand.tap")
+                    }
+                    .accessibilityIdentifier("fetal-movement-resume")
+                } else {
+                    Button { counting = true } label: {
+                        Label("开始数胎动", systemImage: "hand.tap")
+                    }
+                    .accessibilityIdentifier("fetal-movement-start")
                 }
-                .accessibilityIdentifier("fetal-movement-start")
                 Button("怎么数？") { showingGuide = true }
                     .accessibilityIdentifier("fetal-movement-guide")
                 FetalMovementRetryButton()
@@ -31,7 +38,8 @@ struct FetalMovementView: View {
                             Text(session.startedAt.formatted(date: .omitted, time: .shortened))
                                 .foregroundStyle(Color.aimTextSecondary)
                             Text(FetalMovementFormat.summary(session.data))
-                                .foregroundStyle(session.data.outcome == .under ? Color.aimDanger : Color.aimTextPrimary)
+                                .foregroundStyle(session.data.outcome == .under || session.data.reportedLess
+                                                 ? Color.aimDanger : Color.aimTextPrimary)
                         }
                         .swipeActions {
                             Button(role: .destructive) { Task { await store.delete(session) } } label: {
@@ -55,7 +63,11 @@ struct FetalMovementView: View {
                 } label: { Image(systemName: "wand.and.sparkles") }
             }
         }
-        .task { await store.load() }
+        .task {
+            // 被系统杀掉后过期的断点先记为未数完，再拉历史，列表里才能看到它。
+            await store.settleExpiredActive()
+            await store.load()
+        }
         .refreshable { await store.load() }
         .fullScreenCover(isPresented: $counting) {
             FetalMovementCounterView(agentStore: agentStore) { counting = false }
@@ -121,6 +133,11 @@ struct FetalMovementHomeCard: View {
     let agentStore: AgentStore
     @State private var counting = false
 
+    private var subtitle: String {
+        if let unfinished = store.unfinishedActive { return FetalMovementCopy.resume(count: unfinished.count) }
+        return store.today.map { "今天 " + FetalMovementFormat.summary($0.data) } ?? "今天还没数"
+    }
+
     var body: some View {
         // 「开始」不能放进 NavigationLink 的 label 里——链接会吞掉内层按钮的点击。
         HStack {
@@ -130,8 +147,7 @@ struct FetalMovementHomeCard: View {
                 HStack {
                     VStack(alignment: .leading, spacing: AimMetrics.space4) {
                         Text("数胎动").font(.headline).foregroundStyle(Color.aimTextPrimary)
-                        Text(store.today.map { "今天 " + FetalMovementFormat.summary($0.data) } ?? "今天还没数")
-                            .font(.subheadline).foregroundStyle(Color.aimTextSecondary)
+                        Text(subtitle).font(.subheadline).foregroundStyle(Color.aimTextSecondary)
                     }
                     Spacer()
                 }
@@ -139,12 +155,21 @@ struct FetalMovementHomeCard: View {
             }
             .buttonStyle(.plain)
             .accessibilityIdentifier("home-fetal-movement-card")
-            Button("开始") { counting = true }
-                .buttonStyle(.borderedProminent)
-                .accessibilityIdentifier("home-fetal-movement-start")
+            if store.unfinishedActive != nil {
+                Button("继续") { counting = true }
+                    .buttonStyle(.borderedProminent)
+                    .accessibilityIdentifier("fetal-movement-resume")
+            } else {
+                Button("开始") { counting = true }
+                    .buttonStyle(.borderedProminent)
+                    .accessibilityIdentifier("home-fetal-movement-start")
+            }
         }
         .aimCard()
-        .task { await store.load() }
+        .task {
+            await store.settleExpiredActive()
+            await store.load()
+        }
         .fullScreenCover(isPresented: $counting) {
             FetalMovementCounterView(agentStore: agentStore) { counting = false }
         }

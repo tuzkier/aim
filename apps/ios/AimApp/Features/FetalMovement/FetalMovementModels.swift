@@ -63,11 +63,13 @@ struct FetalMovementResult: Codable, Equatable, Sendable {
     let count: Int
     let outcome: FetalMovementOutcome
     let taps: [Int]
+    /// 计数中点了「胎动明显少了？」。
+    var reportedLess = false
 
     var recordData: FetalMovementRecordData {
         FetalMovementRecordData(
             durationSeconds: durationSeconds, count: count, target: FetalMovementCounter.target,
-            outcome: outcome, taps: taps)
+            outcome: outcome, taps: taps, reportedLess: reportedLess)
     }
 
     /// 家庭动态直接显示它：「爸爸 记了「数胎动 10 次 · 32 分钟」」。
@@ -77,6 +79,39 @@ struct FetalMovementResult: Codable, Equatable, Sendable {
         RecordDraft(
             type: .fetalMovement, occurredAt: startedAt, visibility: .family,
             title: title, content: nil, structuredData: .fetalMovement(recordData))
+    }
+}
+
+extension FetalMovementResult {
+    /// 写在扩展里以保留逐成员初始化器。升级前落盘的未保存结果没有 reportedLess，照样要能读出来重试。
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        startedAt = try container.decode(Date.self, forKey: .startedAt)
+        durationSeconds = try container.decode(Int.self, forKey: .durationSeconds)
+        count = try container.decode(Int.self, forKey: .count)
+        outcome = try container.decode(FetalMovementOutcome.self, forKey: .outcome)
+        taps = try container.decode([Int].self, forKey: .taps)
+        reportedLess = try container.decodeIfPresent(Bool.self, forKey: .reportedLess) ?? false
+    }
+}
+
+/// 「这次用了多久，比你平时慢了一倍多」的提醒。
+struct FetalMovementSlowNotice: Equatable, Sendable {
+    let durationSeconds: Int
+    let baselineSeconds: Int
+
+    init(durationSeconds: Int, baselineSeconds: Int) {
+        self.durationSeconds = durationSeconds
+        self.baselineSeconds = baselineSeconds
+    }
+
+    /// 只有数到 10 次、有平时、且比平时慢一倍多时才有提醒。
+    /// `baselineSeconds` 必须是这次之前的平时，不能把这次自己算进去。
+    init?(result: FetalMovementResult, baselineSeconds: Int?) {
+        guard result.outcome == .reached, let baselineSeconds,
+              FetalMovementInsights.isSlow(durationSeconds: result.durationSeconds, baselineSeconds: baselineSeconds)
+        else { return nil }
+        self.init(durationSeconds: result.durationSeconds, baselineSeconds: baselineSeconds)
     }
 }
 

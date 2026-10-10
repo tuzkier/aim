@@ -41,6 +41,72 @@ final class FetalMovementModelsTests: XCTestCase {
         XCTAssertEqual((object?["taps"] as? [Int])?.count, 6)
     }
 
+    func testReportedLessDecodesAndDefaultsToFalse() throws {
+        let with = """
+        {"duration_seconds":90,"count":0,"target":10,"outcome":"stopped","taps":[],"reported_less":true}
+        """.data(using: .utf8)!
+        let without = """
+        {"duration_seconds":90,"count":0,"target":10,"outcome":"stopped","taps":[]}
+        """.data(using: .utf8)!
+        guard case let .fetalMovement(reported) = try JSONDecoder().decode(APIRecordStructuredDataDTO.self, from: with)
+                .recordData(for: .fetalMovement),
+              case let .fetalMovement(plain) = try JSONDecoder().decode(APIRecordStructuredDataDTO.self, from: without)
+                .recordData(for: .fetalMovement)
+        else { return XCTFail("应当解码为胎动") }
+        XCTAssertTrue(reported.reportedLess)
+        XCTAssertFalse(plain.reportedLess, "旧记录没有这个字段，按没报告处理")
+    }
+
+    /// 只在报告过时才发这个字段，旧服务端和没报告的记录都不受影响。
+    func testReportedLessIsEncodedOnlyWhenTrue() throws {
+        func encoded(_ reportedLess: Bool) throws -> [String: Any]? {
+            let data = FetalMovementRecordData(
+                durationSeconds: 90, count: 0, target: 10, outcome: .stopped, taps: [], reportedLess: reportedLess)
+            let json = try JSONEncoder().encode(APIRecordStructuredDataDTO(recordData: .fetalMovement(data)))
+            return try JSONSerialization.jsonObject(with: json) as? [String: Any]
+        }
+        XCTAssertEqual(try encoded(true)?["reported_less"] as? Bool, true)
+        XCTAssertNil(try encoded(false)?["reported_less"])
+
+        // 编码再解码回来仍是同一条。
+        let original = FetalMovementRecordData(
+            durationSeconds: 90, count: 0, target: 10, outcome: .stopped, taps: [], reportedLess: true)
+        let dto = try JSONDecoder().decode(
+            APIRecordStructuredDataDTO.self,
+            from: JSONEncoder().encode(APIRecordStructuredDataDTO(recordData: .fetalMovement(original))))
+        XCTAssertEqual(dto.recordData(for: .fetalMovement), .fetalMovement(original))
+    }
+
+    /// 升级前落盘的未保存结果没有 reportedLess，升级后要还能读出来重试。
+    func testAResultSavedBeforeReportedLessExistedStillDecodes() throws {
+        let json = """
+        {"startedAt":0,"durationSeconds":600,"count":4,"outcome":"stopped","taps":[1,2,3,4]}
+        """.data(using: .utf8)!
+        let result = try JSONDecoder().decode(FetalMovementResult.self, from: json)
+        XCTAssertFalse(result.reportedLess)
+        XCTAssertEqual(result.count, 4)
+
+        var reported = result
+        reported.reportedLess = true
+        let restored = try JSONDecoder().decode(FetalMovementResult.self, from: JSONEncoder().encode(reported))
+        XCTAssertEqual(restored, reported)
+        XCTAssertTrue(restored.recordData.reportedLess)
+    }
+
+    func testSummaryMentionsReportedLess() {
+        XCTAssertEqual(
+            FetalMovementFormat.summary(.init(durationSeconds: 600, count: 4, target: 10, outcome: .stopped, taps: [],
+                                              reportedLess: true)),
+            "4 次 · 10 分钟 · 未数完 · 感觉胎动少了")
+    }
+
+    /// 胎动记录由计数页生成，通用编辑器改不了它的结构化数据；详情页只留删除。
+    func testFetalMovementRecordsAreNotEditableInTheComposer() {
+        XCTAssertFalse(RecordType.fetalMovement.canEditInComposer)
+        XCTAssertTrue(RecordType.symptom.canEditInComposer)
+        XCTAssertTrue(RecordType.note.canEditInComposer)
+    }
+
     func testFormatting() {
         XCTAssertEqual(FetalMovementFormat.duration(40), "不到 1 分钟")
         XCTAssertEqual(FetalMovementFormat.duration(1920), "32 分钟")
@@ -83,6 +149,17 @@ final class FetalMovementModelsTests: XCTestCase {
         XCTAssertEqual(result.count, 10)
         XCTAssertEqual(result.taps.last, 1920)
         XCTAssertEqual(c.tap(at: start.addingTimeInterval(2000)), .reachedTarget, "数满后不再计数")
+    }
+
+    /// 第 10 次落在 7199.4 秒：向上取整为 7200，仍是 2 小时内数到，后端接受 ≤ 7200。
+    func testTheTenthTapJustBeforeTwoHoursIsReachedAtTwoHours() {
+        var c = counter()
+        for i in 1...9 { _ = c.tap(at: start.addingTimeInterval(Double(i * 600))) }
+        XCTAssertEqual(c.tap(at: start.addingTimeInterval(7199.4)), .reachedTarget)
+
+        let result = c.result(at: start.addingTimeInterval(7300))
+        XCTAssertEqual(result.outcome, .reached)
+        XCTAssertEqual(result.durationSeconds, 7200)
     }
 
     func testTwoHoursWithoutTenIsUnder() {

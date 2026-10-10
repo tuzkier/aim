@@ -7,10 +7,11 @@ struct FetalMovementCompletion: Equatable, Sendable {
     let baselineSeconds: Int?
     let saved: Bool
 
-    var isSlow: Bool {
-        result.outcome == .reached
-            && FetalMovementInsights.isSlow(durationSeconds: result.durationSeconds, baselineSeconds: baselineSeconds)
+    var slowNotice: FetalMovementSlowNotice? {
+        FetalMovementSlowNotice(result: result, baselineSeconds: baselineSeconds)
     }
+
+    var isSlow: Bool { slowNotice != nil }
 }
 
 /// 胎动计数的状态：进行中的计数（本地断点）、没保存上的结果、档案里的历史。
@@ -34,6 +35,8 @@ final class FetalMovementStore {
 
     let dedupeInterval: TimeInterval
     private let defaults: UserDefaults
+    /// 保存成功后在这里广播 `.aimDataChanged`，让首页、资料库刷新。测试注入自己的，免得惊动宿主 App。
+    private let notificationCenter: NotificationCenter
     private var scope: Scope?
     /// 正在把队列写到档案。界面据此把「重试」换成进度，免得保存途中还提示没保存上。
     private(set) var isSaving = false
@@ -51,9 +54,11 @@ final class FetalMovementStore {
     }
 
     init(defaults: UserDefaults = .standard,
-         dedupeInterval: TimeInterval = FetalMovementCounter.defaultDedupeInterval) {
+         dedupeInterval: TimeInterval = FetalMovementCounter.defaultDedupeInterval,
+         notificationCenter: NotificationCenter = .default) {
         self.defaults = defaults
         self.dedupeInterval = dedupeInterval
+        self.notificationCenter = notificationCenter
     }
 
     /// 切到某个账号的某次孕期：读出它自己的断点与未保存结果，清空历史（随后由调用方 `load()`）。
@@ -81,6 +86,11 @@ final class FetalMovementStore {
     }
 
     var baselineSeconds: Int? { FetalMovementInsights.baselineSeconds(sessions) }
+    /// 还能接着数的断点（计数页关着、App 被系统收回后留下的）。已过 2 小时的不算，等 `settleExpiredActive()` 收尾。
+    var unfinishedActive: FetalMovementCounter? {
+        guard let active, !active.isExpired(at: clock()) else { return nil }
+        return active
+    }
     var today: FetalMovementSession? { FetalMovementInsights.latest(onDayOf: clock(), in: sessions) }
 
     func load() async {
@@ -106,9 +116,22 @@ final class FetalMovementStore {
     }
 
     func finish() async -> FetalMovementCompletion? {
-        guard let scope, let counter = active else { return nil }
+        guard let counter = active else { return nil }
+        return await finish(with: counter.result(at: clock()))
+    }
+
+    /// 结束那一刻就能给出的「慢一倍多」提醒，不等保存——弱网下孕妈点「完成」离开就再也看不到了。
+    /// 历史已在手时，它还不含这次（这次还在本地队列里），正是这次之前的平时。
+    /// 历史为空（还没拉回来）时返回 nil，由 `finish()` 拉到历史后在结果里补上。
+    func slowNoticeBeforeSaving(_ result: FetalMovementResult) -> FetalMovementSlowNotice? {
+        guard !sessions.isEmpty else { return nil }
+        return FetalMovementSlowNotice(result: result, baselineSeconds: baselineSeconds)
+    }
+
+    /// 把进行中的计数换成 `result` 收尾：清掉断点、入队保存。
+    private func finish(with result: FetalMovementResult) async -> FetalMovementCompletion? {
+        guard let scope, active != nil else { return nil }
         // 先落盘再做任何等待：结束时刻以按下为准，也防止等待期间被重复结束。
-        let result = counter.result(at: clock())
         active = nil
         unsaved.append(result)
         persist(scope)
@@ -148,6 +171,7 @@ final class FetalMovementStore {
         isSaving = false
         guard drained else { return false }
         errorMessage = nil
+        notificationCenter.post(name: .aimDataChanged, object: nil, userInfo: ["kinds": ["record"]])
         // 已经保存成功，刷新历史失败不算错，不要让界面提示「没保存上」。
         try? await reloadSessions()
         return true
@@ -174,15 +198,52 @@ final class FetalMovementStore {
     }
 
     /// 计数中点「胎动明显少了？」：安全提示不等这里，这里只善后进行中的计数。
-    /// 一次都没数就丢掉；数过就照常结束——没满 2 小时记为「未数完」，已满 2 小时记为「不足 10 次」。
+    /// 数过就照常结束——没满 2 小时记为「未数完」，已满 2 小时记为「不足 10 次」；
+    /// 一次都没数也记一条 0 次的「未数完」。几种都标上 reportedLess：「感觉胎动少了」本身就要留档。
     @discardableResult
     func abandonForSafety() async -> FetalMovementCompletion? {
         guard scope != nil, let counter = active else { return nil }
+        let now = clock()
+        var result: FetalMovementResult
         if counter.count == 0 {
-            discardActive()
-            return nil
+            let elapsed = min(Int(counter.elapsed(at: now).rounded(.down)), Self.maxRecordSeconds)
+            result = FetalMovementResult(
+                startedAt: counter.startedAt, durationSeconds: elapsed, count: 0, outcome: .stopped, taps: [])
+        } else {
+            result = counter.result(at: now)
         }
-        return await finish()
+        result.reportedLess = true
+        return await finish(with: result)
+    }
+
+    /// 后端允许的最长用时（3 小时）。
+    private static let maxRecordSeconds = 3 * 60 * 60
+
+    /// 计数页没开着时过了 2 小时（多半是 App 被系统杀掉、孕妈忘了这次计数）：
+    /// 这不是真的「2 小时不足 10 次」，不能报不足，记为「未数完」保存；一次都没数就直接丢掉。
+    /// 用时取最后一次点按的秒数——那之后她并没有在数，也保证点按都落在用时之内、后端校验能过。
+    /// 计数页开着时不调用：那时到点是真实的「2 小时不足 10 次」，由计数页自己结束。
+    func settleExpiredActive() async {
+        guard queueExpiredActive() else { return }
+        await saveUnsaved()
+    }
+
+    /// `settleExpiredActive()` 的同步部分：把过期的断点转进待保存队列并落盘，返回是否需要保存。
+    /// 计数页要在同一刻接着开始新计数，不能等保存，所以单独拿出来。
+    @discardableResult
+    func queueExpiredActive() -> Bool {
+        guard let scope, let counter = active, counter.isExpired(at: clock()) else { return false }
+        guard counter.count > 0 else {
+            discardActive()
+            return false
+        }
+        let taps = counter.taps.map { Int($0.rounded(.down)) }
+        active = nil
+        unsaved.append(FetalMovementResult(
+            startedAt: counter.startedAt, durationSeconds: taps.last ?? 0,
+            count: counter.count, outcome: .stopped, taps: taps))
+        persist(scope)
+        return true
     }
 
     func delete(_ session: FetalMovementSession) async {

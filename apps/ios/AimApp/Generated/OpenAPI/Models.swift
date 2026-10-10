@@ -243,6 +243,8 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
     let target: Int?
     let outcome: String?
     let taps: [Int]?
+    /// 只在为 true 时编码（可选值为 nil 时不输出），解码缺省按 false。
+    let reportedLess: Bool?
 
     init(
         symptoms: [String]? = nil,
@@ -270,7 +272,8 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
         count: Int? = nil,
         target: Int? = nil,
         outcome: String? = nil,
-        taps: [Int]? = nil
+        taps: [Int]? = nil,
+        reportedLess: Bool? = nil
     ) {
         self.symptoms = symptoms
         self.severity = severity
@@ -298,6 +301,7 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
         self.target = target
         self.outcome = outcome
         self.taps = taps
+        self.reportedLess = reportedLess
     }
 
     enum CodingKeys: String, CodingKey {
@@ -309,6 +313,7 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
         case itemID = "item_id"
         case count, target, outcome, taps
         case durationSeconds = "duration_seconds"
+        case reportedLess = "reported_less"
     }
 
     func recordData(for type: RecordType) -> RecordStructuredData {
@@ -343,7 +348,8 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
             guard let durationSeconds, let count, let target, let taps,
                   let outcome = outcome.flatMap(FetalMovementOutcome.init(rawValue:)) else { return .unknown }
             return .fetalMovement(FetalMovementRecordData(
-                durationSeconds: durationSeconds, count: count, target: target, outcome: outcome, taps: taps))
+                durationSeconds: durationSeconds, count: count, target: target, outcome: outcome, taps: taps,
+                reportedLess: reportedLess ?? false))
         case .note:
             return .note
         case .unknown:
@@ -374,7 +380,8 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
             )
         case let .fetalMovement(data):
             self.init(durationSeconds: data.durationSeconds, count: data.count, target: data.target,
-                      outcome: data.outcome.rawValue, taps: data.taps)
+                      outcome: data.outcome.rawValue, taps: data.taps,
+                      reportedLess: data.reportedLess ? true : nil)
         case .note, .unknown:
             self.init()
         }

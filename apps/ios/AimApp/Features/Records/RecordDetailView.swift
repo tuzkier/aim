@@ -65,7 +65,10 @@ struct RecordDetailView: View {
                     showingAgent = true
                 }
                 if canEdit {
-                    Button("编辑记录") { showingEditor = true }
+                    // 胎动记录由计数页生成，通用编辑器改不了它的计数数据；只留删除。
+                    if currentRecord.type.canEditInComposer {
+                        Button("编辑记录") { showingEditor = true }
+                    }
                     Button("删除记录", role: .destructive) { showingDeleteConfirmation = true }
                 }
             }

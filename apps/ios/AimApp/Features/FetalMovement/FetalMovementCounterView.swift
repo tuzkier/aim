@@ -11,6 +11,9 @@ enum FetalMovementCopy {
     static let lessTitle = "感觉胎动明显少了"
     static let lessBody = "不用数完。请现在联系你的产检医院，或去产科急诊。"
     static let recordedNote = "已记录。数够 10 次不代表一切正常，感觉不对就联系医院。"
+    /// 没数完时没有「数够 10 次」可言，只提醒感觉不对就联系医院。
+    static let recordedStoppedNote = "已记录。感觉不对就联系医院。"
+    static func resume(count: Int) -> String { "有一次计数还没结束（\(count) 次）" }
 
     static func slow(duration: Int, baseline: Int) -> String {
         "这次用了 \(FetalMovementFormat.duration(duration))，比你平时（约 \(FetalMovementFormat.duration(baseline))）慢了一倍多，胎动可能比平时少。建议尽快联系你的产检医院。"
@@ -40,6 +43,8 @@ struct FetalMovementCounterView: View {
     @State private var phase: Phase = .counting
     /// 后台保存回来的结果，用来补上「和平时比」。保存期间为 nil。
     @State private var completion: FetalMovementCompletion?
+    /// 结束那一刻就判断出的「慢一倍多」，不等保存。历史还没拉回来时为 nil，等 `completion` 补上。
+    @State private var immediateSlowNotice: FetalMovementSlowNotice?
     /// 后台保存进行中：期间「重试」显示为进度，不提示没保存上。
     @State private var saving = false
     @State private var tapCount = 0
@@ -81,8 +86,13 @@ struct FetalMovementCounterView: View {
         }
         .onAppear {
             guard !startAttempted, phase == .counting else { return }
+            // 恢复出来的断点已经过了 2 小时：那段时间计数页没开着，不是真的「不足 10 次」，
+            // 不弹安全页。先记为未数完（后台保存），再开始一个新计数。
+            if store.queueExpiredActive() { Task { await store.saveUnsaved() } }
             store.start()
             startAttempted = true
+            // 上次数到第 10 次就被系统杀掉、没来得及结束：直接显示结果，不用再点一下。
+            if (store.active?.count ?? 0) >= FetalMovementCounter.target { end() }
         }
         .sheet(isPresented: $showingGuide) { FetalMovementGuideView() }
         .fullScreenCover(isPresented: $showingAgent) {
@@ -188,11 +198,13 @@ struct FetalMovementCounterView: View {
         guard !ending, let counter = store.active else { return }
         ending = true
         let result = counter.result(at: store.clock())
+        // 必须在 finish() 之前取：此刻的历史还不含这次。
+        immediateSlowNotice = store.slowNoticeBeforeSaving(result)
         phase = result.outcome == .under ? .safety(.under) : .finished(result)
         saveInBackground { await store.finish() }
     }
 
-    /// 计数中点「胎动明显少了？」：先给安全提示，再善后——0 次丢弃，数过的记为未数完。
+    /// 计数中点「胎动明显少了？」：先给安全提示，再善后——记一条标了「感觉胎动少了」的记录（0 次也记）。
     private func reportLess() {
         guard !ending else { return }
         ending = true
@@ -219,16 +231,18 @@ struct FetalMovementCounterView: View {
                  : "\(result.count) 次 · 未数完")
                 .font(.title2.weight(.semibold))
                 .foregroundStyle(Color.aimTextPrimary)
-            // 「和平时比」要等保存前拉到的历史，回来后再补上。
-            if let completion, completion.isSlow, let baseline = completion.baselineSeconds {
-                Text(FetalMovementCopy.slow(duration: completion.result.durationSeconds, baseline: baseline))
+            // 有历史时结束那一刻就判断；历史还没拉回来时，等保存前拉到的历史回来再补上。
+            if let notice = immediateSlowNotice ?? completion?.slowNotice {
+                Text(FetalMovementCopy.slow(duration: notice.durationSeconds, baseline: notice.baselineSeconds))
                     .font(.subheadline)
                     .foregroundStyle(Color.aimAccent)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .aimCard()
-                askAgentButton("我数胎动用了 \(FetalMovementFormat.duration(completion.result.durationSeconds))，比平时慢了一倍多，现在该怎么办？")
+                    .accessibilityIdentifier("fetal-movement-slow")
+                askAgentButton("我数胎动用了 \(FetalMovementFormat.duration(notice.durationSeconds))，比平时慢了一倍多，现在该怎么办？")
             }
-            Text(FetalMovementCopy.recordedNote).font(.footnote).foregroundStyle(Color.aimTextSecondary)
+            Text(result.outcome == .reached ? FetalMovementCopy.recordedNote : FetalMovementCopy.recordedStoppedNote)
+                .font(.footnote).foregroundStyle(Color.aimTextSecondary)
             FetalMovementRetryButton(busy: saving)
             Button("完成", action: onClose)
                 .buttonStyle(.borderedProminent)
