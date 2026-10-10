@@ -485,8 +485,16 @@ final class CoreJourneyUITests: XCTestCase {
 
         let card = app.buttons["home-fetal-movement-card"]
         reveal(card, in: app)
-        XCTAssertTrue(card.label.contains("10 次") || app.staticTexts["今天 10 次 · 不到 1 分钟"].exists,
-                      "首页卡应当显示今天这次的结果")
+        // 保存在后台进行，回来后才刷新历史：等首页卡显示出结果，不能只看一眼。
+        let showsTen = NSPredicate(format: "label CONTAINS '10 次'")
+        wait(for: [expectation(for: showsTen, evaluatedWith: card, handler: nil)], timeout: 15)
+
+        card.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["fetal-movement-page"].waitForExistence(timeout: 10),
+                      "点首页卡应当进入胎动页")
+        // 「今天 10 次 …」那行以「今天」开头；历史里这次的记录行以「10 次」开头。
+        let historyRow = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH '10 次'")).firstMatch
+        XCTAssertTrue(historyRow.waitForExistence(timeout: 15), "胎动页的历史里应当有这次的记录")
     }
 
     /// 「想问医生」此前缺了最关键的一步：产检那天怎么把攒下的问题一次带走。
