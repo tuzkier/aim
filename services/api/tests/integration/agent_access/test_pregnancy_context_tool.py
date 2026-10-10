@@ -6,10 +6,9 @@ from uuid import UUID, uuid4
 import pytest
 from fastapi.testclient import TestClient
 
+from aim_api.bootstrap import create_app
 from aim_api.contexts.agent_access.adapters.inbound.http import router as agent_router
 from aim_api.contexts.guidance.domain.safety_rule import SafetyRule
-
-from aim_api.bootstrap import create_app
 from aim_api.platform.auth.context import issue_session_token
 from aim_api.platform.config.settings import get_settings
 

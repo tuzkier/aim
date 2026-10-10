@@ -76,7 +76,7 @@
 
 ### 5.2 iOS 自查三档
 
-`SafetyCheck.Level` 增加 `soon`：勾中任一 urgent → `now`（「请立即联系产检医院或拨打 120」）；否则勾中任一 same_day → `soon`（「今天或明天联系你的产检医院」）；否则 `mention`。自查列表按当前孕周过滤 `weeks`，urgent 排在前面。
+`SafetyCheck.Level` 增加 `soon`：勾中任一 urgent → `now`（「请立即联系产检医院或拨打 120」）；否则勾中任一 same_day → `soon`（「今天或明天联系你的产检医院」）；否则 `mention`。`soon` 的标题固定为「今天或明天联系你的产检医院」，是这一档的下限；勾中条目的 `action` 可以比标题更急（如「今天就联系」），结论下方逐条列出，以 action 为准。自查列表按当前孕周过滤 `weeks`（孕周先夹到 4–42），urgent 排在前面。
 
 ### 5.3 接口与 Agent
 
