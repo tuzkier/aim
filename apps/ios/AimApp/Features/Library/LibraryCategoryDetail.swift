@@ -61,6 +61,11 @@ struct LibraryCategoryDetail: View {
         }
     }
 
+    /// 只列当前孕周适用的，紧急项排在最前。
+    private var visibleSafetyRules: [SafetyRule] {
+        SafetyCheck.rules(store.safetyRules, forWeek: store.currentWeek)
+    }
+
     /// 危险信号做成自查而不是阅读材料：真出血的时候没人有心情通读一屏文字。
     /// 勾出正在经历的情况，直接给结论。
     private var safetyList: some View {
@@ -74,7 +79,7 @@ struct LibraryCategoryDetail: View {
             }
             .listRowBackground(Color.aimSurface)
 
-            ForEach(store.safetyRules) { rule in
+            ForEach(visibleSafetyRules) { rule in
                 Button {
                     if checkedSignals.contains(rule.id) {
                         checkedSignals.remove(rule.id)
@@ -92,12 +97,9 @@ struct LibraryCategoryDetail: View {
                                 .foregroundStyle(Color.aimTextPrimary)
                                 .fixedSize(horizontal: false, vertical: true)
                             if rule.isUrgent {
-                                Text("紧急")
-                                    .font(.caption2)
-                                    .padding(.horizontal, AimMetrics.space8)
-                                    .padding(.vertical, 1)
-                                    .background(Color.aimDangerSoft, in: Capsule())
-                                    .foregroundStyle(Color.aimDanger)
+                                severityTag("紧急", color: .aimDanger, background: .aimDangerSoft)
+                            } else if rule.isSameDay {
+                                severityTag("尽快", color: .aimAccent, background: .aimAccentSoft)
                             }
                         }
                     }
@@ -110,18 +112,34 @@ struct LibraryCategoryDetail: View {
         .scrollContentBackground(.hidden)
         .accessibilityIdentifier("library-safety-list")
         .safeAreaInset(edge: .bottom) {
-            if let verdict = SafetyCheck.verdict(for: checkedSignals, in: store.safetyRules) {
+            // 结论只看列表上能看到的条目：孕周变了被藏起来的勾选不该再影响结论。
+            if let verdict = SafetyCheck.verdict(for: checkedSignals, in: visibleSafetyRules) {
                 safetyVerdict(verdict)
             }
         }
     }
 
+    private func severityTag(_ text: String, color: Color, background: Color) -> some View {
+        Text(text)
+            .font(.caption2)
+            .padding(.horizontal, AimMetrics.space8)
+            .padding(.vertical, 1)
+            .background(background, in: Capsule())
+            .foregroundStyle(color)
+    }
+
     @ViewBuilder
     private func safetyVerdict(_ verdict: SafetyCheck.Verdict) -> some View {
+        // 三档各有颜色：立即就医用危险色，当天联系用提醒色，下次产检保持中性。
+        let (tint, background): (Color, Color) = switch verdict.level {
+        case .now: (.aimDanger, .aimDangerSoft)
+        case .soon: (.aimAccent, .aimAccentSoft)
+        case .mention: (.aimTextPrimary, .aimSurfaceSunken)
+        }
         VStack(alignment: .leading, spacing: AimMetrics.space8) {
             Text(verdict.headline)
                 .font(.headline)
-                .foregroundStyle(verdict.level == .now ? Color.aimDanger : Color.aimTextPrimary)
+                .foregroundStyle(tint)
                 .fixedSize(horizontal: false, vertical: true)
             ForEach(verdict.actions, id: \.self) { action in
                 Text("· " + action)
@@ -144,7 +162,7 @@ struct LibraryCategoryDetail: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(AimMetrics.space16)
-        .background(verdict.level == .now ? Color.aimDangerSoft : Color.aimSurfaceSunken)
+        .background(background)
         .accessibilityIdentifier("safety-verdict")
     }
 

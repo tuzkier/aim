@@ -44,7 +44,8 @@ final class LibraryStore {
             if let fetched = await pregnancy { currentWeek = fetched.weeks }
             snapshot = LibrarySnapshot(
                 records: loaded.0.records,
-                safetyRuleCount: loaded.1.count,
+                // 通栏条数要和自查页实际显示的一致：按当前孕周过滤后再数。
+                safetyRuleCount: SafetyCheck.rules(loaded.1, forWeek: currentWeek).count,
                 collectionSizes: collections.mapValues(\.items.count),
                 // 主题编号重复时取第一个——服务端数据出错不该让资料库闪退。
                 encyclopediaCounts: Dictionary(

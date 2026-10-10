@@ -62,8 +62,54 @@ final class LibraryFocusTests: XCTestCase {
         XCTAssertTrue(focus!.headline.contains("血压"))
     }
 
-    /// 提示只说「记下来、问医生」，不下判断——这是医疗内容的红线。
-    func testTheBloodPressurePromptDefersToADoctor() {
+    /// 连续两次 ≥140/90 要今天联系医院，不能再等下次产检——和危险信号的口径一致。
+    func testTwoConsecutiveHighReadingsMeanContactTheHospitalToday() {
+        let snapshot = LibrarySnapshot(records: [
+            checkup(daysAgo: 30, metrics: CheckupMetrics(systolic: 145, diastolic: 92)),
+            checkup(daysAgo: 1, metrics: CheckupMetrics(systolic: 148, diastolic: 95)),
+        ])
+
+        XCTAssertEqual(LibraryFocus.make(from: snapshot)?.headline, "血压连续偏高，今天联系你的产检医院")
+    }
+
+    /// 只有舒张压到 90 也算偏高——140/90 是「或」的关系。
+    func testDiastolicAloneCountsTowardsConsecutiveHighReadings() {
+        let snapshot = LibrarySnapshot(records: [
+            checkup(daysAgo: 30, metrics: CheckupMetrics(systolic: 130, diastolic: 92)),
+            checkup(daysAgo: 1, metrics: CheckupMetrics(systolic: 132, diastolic: 95)),
+        ])
+
+        XCTAssertEqual(LibraryFocus.make(from: snapshot)?.headline, "血压连续偏高，今天联系你的产检医院")
+    }
+
+    /// 最近一次高压 ≥160 或低压 ≥110 是危险信号的升档线：一次就够，要立即就医。
+    func testASingleSeverelyHighReadingMeansSeekCareNow() {
+        for metrics in [CheckupMetrics(systolic: 162, diastolic: 100),
+                        CheckupMetrics(systolic: 150, diastolic: 110)] {
+            let snapshot = LibrarySnapshot(records: [
+                checkup(daysAgo: 30, metrics: CheckupMetrics(systolic: 118, diastolic: 75)),
+                checkup(daysAgo: 1, metrics: metrics),
+                question("能继续游泳吗", answered: false),
+            ])
+
+            XCTAssertEqual(LibraryFocus.make(from: snapshot)?.headline,
+                           "血压很高，请立即联系产检医院或去急诊")
+        }
+    }
+
+    /// 很高的那次已经过去、最近一次回落了，就不再按立即就医提示。
+    func testOnlyTheLatestReadingDecidesTheSevereLevel() {
+        let snapshot = LibrarySnapshot(records: [
+            checkup(daysAgo: 30, metrics: CheckupMetrics(systolic: 165, diastolic: 112)),
+            checkup(daysAgo: 1, metrics: CheckupMetrics(systolic: 118, diastolic: 75)),
+        ])
+
+        XCTAssertNotEqual(LibraryFocus.make(from: snapshot)?.headline,
+                          "血压很高，请立即联系产检医院或去急诊")
+    }
+
+    /// 提示只说该去联系谁，不下判断——这是医疗内容的红线。
+    func testTheBloodPressurePromptDefersToTheHospital() {
         let snapshot = LibrarySnapshot(records: [
             checkup(daysAgo: 30, metrics: CheckupMetrics(systolic: 145, diastolic: 92)),
             checkup(daysAgo: 1, metrics: CheckupMetrics(systolic: 148, diastolic: 95)),
@@ -71,7 +117,7 @@ final class LibraryFocusTests: XCTestCase {
 
         let headline = LibraryFocus.make(from: snapshot)!.headline
 
-        XCTAssertTrue(headline.contains("医生"))
+        XCTAssertTrue(headline.contains("产检医院"))
         for verdict in ["高血压", "妊高症", "子痫", "确诊", "建议服药"] {
             XCTAssertFalse(headline.contains(verdict), "不该出现诊断性措辞：\(verdict)")
         }

@@ -6,8 +6,22 @@ struct SafetyRule: Identifiable, Equatable, Sendable {
     let action: String
     let severity: String
     let sourceURL: String
+    /// 只在这段孕周显示，`[起, 止]` 含两端；nil 表示整个孕期都适用。
+    var weeks: [Int]? = nil
 
+    /// 立即去急诊或拨打 120。
     var isUrgent: Bool { severity == "urgent" }
+    /// 今天或明天联系产检医院。
+    var isSameDay: Bool { severity == "same_day" }
+
+    /// 这一条在给定孕周是否适用。
+    ///
+    /// 孕周取不到、条目没写孕周、或孕周写坏了，一律当作适用——
+    /// 危险信号宁可多显示一条，也不能因为缺数据把它藏起来。
+    func applies(week: Int?) -> Bool {
+        guard let week, let weeks, weeks.count == 2 else { return true }
+        return weeks[0] <= week && week <= weeks[1]
+    }
 }
 
 struct APISafetyRuleDTO: Decodable, Sendable {
@@ -16,9 +30,11 @@ struct APISafetyRuleDTO: Decodable, Sendable {
     let action: String
     let severity: String
     let sourceURL: String
+    /// 老版本接口没有这个字段，解码时缺省为 nil。
+    let weeks: [Int]?
 
     enum CodingKeys: String, CodingKey {
-        case id, condition, action, severity
+        case id, condition, action, severity, weeks
         case sourceURL = "source_url"
     }
 }
@@ -34,6 +50,7 @@ extension SafetyRule {
         action = dto.action
         severity = dto.severity
         sourceURL = dto.sourceURL
+        weeks = dto.weeks
     }
 }
 
