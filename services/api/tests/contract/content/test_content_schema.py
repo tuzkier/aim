@@ -63,3 +63,34 @@ def test_browsable_collections_are_not_empty() -> None:
 def test_browsable_collections_match_their_schema(document_path: Path) -> None:
     """资料库直接展示的内容集合同样要过 schema——生产里「吃什么」还在回退读 nutrition。"""
     _validate(document_path.parent / "schema.json", document_path)
+
+
+def _task_documents() -> list[dict]:
+    return [
+        yaml.safe_load(path.read_text(encoding="utf-8"))
+        for path in sorted((ROOT / "content/pregnancy-tasks").glob("*.yaml"))
+    ]
+
+
+def test_pregnancy_task_ids_are_globally_unique() -> None:
+    ids = [item["id"] for document in _task_documents() for item in document["items"]]
+    assert len(ids) == len(set(ids)), sorted({i for i in ids if ids.count(i) > 1})
+
+
+def test_every_week_from_4_to_42_has_task_templates() -> None:
+    covered = {
+        week
+        for document in _task_documents()
+        for week in document["applicability"]["gestational_weeks"]
+    }
+    assert [week for week in range(4, 43) if week not in covered] == []
+
+
+def test_task_titles_and_summaries_stay_short() -> None:
+    too_long = [
+        item["id"]
+        for document in _task_documents()
+        for item in document["items"]
+        if len(item["title"]) > 20 or len(item["summary"]) > 60
+    ]
+    assert too_long == []

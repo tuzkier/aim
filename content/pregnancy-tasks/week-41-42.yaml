@@ -1,0 +1,21 @@
+id: pregnancy-week-41-42
+version: 1.0.0
+source: 中华医学会妇产科学分会《孕前和孕期保健指南（2018）》；中国营养学会《中国居民膳食指南（2022）》孕期妇女膳食指南；国家卫生健康委员会公开的孕产期保健资料
+source_url: https://www.nhc.gov.cn/
+reviewed_at: "2026-10-10"
+applicability:
+  region: [CN, CN-ZJ, CN-ZJ-HZ]
+  gestational_weeks: [41, 42]
+items:
+  - id: w41-fetal-count
+    title: 每天认真数胎动
+    summary: 每天数到 10 次；2 小时内不足 10 次或比平时明显少，不用等约好的日子，尽快联系医院。
+    due_in_days: 0
+    source_type: template
+    priority: 100
+  - id: w41-admission-or-induction
+    title: 按医生安排住院或评估引产
+    summary: 过了预产期很常见；医生会加强监测，指南建议 41 周后住院引产，具体时机按医生安排。
+    due_in_days: 0
+    source_type: template
+    priority: 100
