@@ -1,9 +1,13 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from uuid import UUID, uuid4
 
+import pytest
 from fastapi.testclient import TestClient
+
+from aim_api.contexts.agent_access.adapters.inbound.http import router as agent_router
+from aim_api.contexts.guidance.domain.safety_rule import SafetyRule
 
 from aim_api.bootstrap import create_app
 from aim_api.platform.auth.context import issue_session_token
@@ -88,3 +92,59 @@ def test_context_includes_red_flags_for_current_week() -> None:
     assert "urgent" in severities and "same_day" in severities
     ids = {flag["id"] for flag in red_flags}
     assert "ectopic-signs" in ids
+    # 孕 8 周还不到这些信号的孕周窗口，接口必须按孕周过滤掉。
+    assert ids.isdisjoint(
+        {"late-bleeding", "preterm-contractions", "waters-breaking", "reduced-fetal-movement"}
+    )
+
+
+def _rule(rule_id: str, severity: str, weeks: tuple[int, int] | None = None) -> SafetyRule:
+    return SafetyRule(
+        id=rule_id,
+        condition=f"{rule_id} 的情况",
+        action=f"{rule_id} 的处理",
+        severity=severity,
+        source="测试",
+        source_url="https://example.com",
+        reviewed_at=date(2026, 10, 1),
+        weeks=weeks,
+    )
+
+
+@pytest.fixture
+def fake_rules(monkeypatch: pytest.MonkeyPatch) -> list[int | None]:
+    """把危险信号换成四条假数据，并记下 _red_flags 传进来的孕周。"""
+    rules = (
+        _rule("always-urgent", "urgent"),
+        _rule("late-urgent", "urgent", weeks=(20, 42)),
+        _rule("always-same-day", "same_day"),
+        _rule("always-routine", "routine"),
+    )
+    received: list[int | None] = []
+
+    def fake_get_safety_rules(week: int | None = None) -> tuple[SafetyRule, ...]:
+        received.append(week)
+        return tuple(rule for rule in rules if week is None or rule.applies(week))
+
+    monkeypatch.setattr(agent_router, "get_safety_rules", fake_get_safety_rules)
+    return received
+
+
+def test_red_flags_drop_routine_and_rules_outside_the_week(fake_rules: list[int | None]) -> None:
+    flags = agent_router._red_flags(8)
+    assert fake_rules == [8]
+    assert [flag["id"] for flag in flags] == ["always-urgent", "always-same-day"]
+    assert flags[0] == {
+        "id": "always-urgent",
+        "condition": "always-urgent 的情况",
+        "action": "always-urgent 的处理",
+        "severity": "urgent",
+    }
+
+
+def test_red_flags_without_week_keep_every_urgent_and_same_day(
+    fake_rules: list[int | None],
+) -> None:
+    flags = agent_router._red_flags(None)
+    assert fake_rules == [None]
+    assert [flag["id"] for flag in flags] == ["always-urgent", "late-urgent", "always-same-day"]
