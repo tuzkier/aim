@@ -17,8 +17,8 @@ items:
     action: 立即去产科急诊或拨打 120，不要在家等待观察；垫上卫生巾，方便医生估计出血量。
     severity: urgent
   - id: late-bleeding
-    condition: 20 周后阴道出血，哪怕量少（足月后少量带血黏液多是见红）
-    action: 立即去产科急诊或拨打 120，不要在家观察；足月后只是少量带血的黏液，按百科「产兆」里的见红处理。
+    condition: 20 周后阴道出血，哪怕量少（37 周后少量带血黏液多是见红）
+    action: 立即去产科急诊或拨打 120，不要在家观察；37 周后只是少量带血的黏液，按百科「产兆」里的见红处理。
     severity: urgent
     weeks: [20, 42]
   - id: ectopic-signs
@@ -54,7 +54,7 @@ items:
     action: 立即拨打 120 或去急诊，告诉医生你在怀孕。
     severity: urgent
   - id: leg-clot
-    condition: 一侧小腿肿胀疼痛，可能发红发热
+    condition: 一侧小腿持续肿胀疼痛，不像抽筋那样很快缓解，可能发红发热
     action: 立即去医院急诊，可能是下肢静脉血栓；不要揉捏按摩这条腿，伴胸痛或气短时拨打 120。
     severity: urgent
   - id: high-fever
@@ -68,17 +68,17 @@ items:
 
   # ---------- same_day ----------
   - id: early-spotting
-    condition: 少量出血或褐色分泌物，没有剧痛、头晕
-    action: 今天或明天联系你的产检医院；还没做 B 超确认宫内孕的要主动说明。出血变多或腹痛加重时立即就医。
+    condition: 阴道少量出血或褐色分泌物，没有剧痛、头晕
+    action: 今天或明天联系你的产检医院；还没做 B 超确认宫内孕的，或伴腹痛的，今天就联系。出血变多或腹痛加重时立即就医。
     severity: same_day
     weeks: [4, 19]
   - id: low-fever
-    condition: 体温 37.5–38.4℃ 一天没退，或伴咳嗽、腹泻、尿痛
-    action: 今天联系你的产检医院，告诉医生你在怀孕；体温到 38.5℃ 时按高热处理。
+    condition: 体温 38.0–38.4℃，或 37.5℃ 以上一天没退，或伴咳嗽、腹泻、尿痛
+    action: 今天就联系产检医院，告诉医生你在怀孕；体温到 38.5℃ 时按高热处理。
     severity: same_day
   - id: sudden-swelling
     condition: 脸、手突然明显肿起来，或几天内水肿迅速加重
-    action: 今天或明天联系你的产检医院，查血压和尿蛋白；家里有血压计先量一次，高压到 160 或低压到 110，或伴头痛、眼花，按子痫前期信号处理（立即就医）。
+    action: 今天或明天联系你的产检医院，查血压和尿蛋白；家里有血压计先量一次，高压到 140 或低压到 90 的今天就联系；高压到 160 或低压到 110，或伴头痛、眼花，按子痫前期信号处理（立即就医）。
     severity: same_day
   - id: itching-palms-soles
     condition: 手心脚心痒得厉害、夜里更重，或全身痒得睡不着

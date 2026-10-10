@@ -151,3 +151,40 @@ def test_weeks_before_4_still_get_the_early_pregnancy_red_flags():
     """刚建档时孕周可能不到 4 周：宫外孕和早孕出血的提示按 4 周给。"""
     ids = {rule.id for rule in execute(week=2)}
     assert {"ectopic-signs", "early-spotting"} <= ids
+
+
+def _by_id():
+    return {rule.id: rule for rule in execute()}
+
+
+def test_low_fever_covers_38_0_to_38_4_even_without_other_symptoms():
+    """38.0–38.4℃ 不该等「一天没退」或伴别的症状才算数，否则和 38.5℃ 高热之间有空档。"""
+    rule = _by_id()["low-fever"]
+    assert "38.0–38.4℃" in rule.condition and "37.5℃" in rule.condition
+    assert rule.action.startswith("今天就联系产检医院")
+    assert "告诉医生你在怀孕" in rule.action
+
+
+def test_leg_clot_says_it_does_not_ease_like_a_cramp():
+    """与百科「腿抽筋」一致：持续、不像抽筋那样很快缓解，才和普通抽筋区分开。"""
+    condition = _by_id()["leg-clot"].condition
+    assert "持续" in condition and "不像抽筋那样很快缓解" in condition
+
+
+def test_early_spotting_is_vaginal_and_unconfirmed_or_painful_means_today():
+    rule = _by_id()["early-spotting"]
+    assert "阴道" in rule.condition
+    assert "还没做 B 超确认宫内孕的，或伴腹痛的，今天就联系" in rule.action
+
+
+def test_late_bleeding_says_37_weeks_instead_of_full_term():
+    """「足月」不是每个人都懂，直接写 37 周后。"""
+    rule = _by_id()["late-bleeding"]
+    assert "足月" not in rule.condition and "足月" not in rule.action
+    assert "37 周后" in rule.condition
+
+
+def test_swelling_with_blood_pressure_140_90_means_today():
+    action = _by_id()["sudden-swelling"].action
+    assert "140" in action and "90" in action and "今天就联系" in action
+    assert "复测" not in action
