@@ -150,12 +150,9 @@ private struct LibraryFocusBanner: View {
         }
     }
 
+    /// 浅危险底 / 浅提醒底上再放同色胶囊会看不出来，这两档改用卡片底色。
     private var tagBackground: Color {
-        switch focus.level {
-        case .urgent: .aimDangerSoft
-        case .soon: .aimWarningSoft
-        case .info: .aimAccentSoft
-        }
+        focus.level == .info ? .aimAccentSoft : .aimSurface
     }
 
     private var background: Color {
@@ -182,9 +179,7 @@ private struct LibraryFocusBanner: View {
                             .font(.caption2)
                             .padding(.horizontal, AimMetrics.space8)
                             .padding(.vertical, 2)
-                            // 浅危险底 / 浅提醒底上再放同色胶囊会看不出来，改用卡片底色。
-                            .background(focus.level == .info ? tagBackground : Color.aimSurface,
-                                        in: Capsule())
+                            .background(tagBackground, in: Capsule())
                             .foregroundStyle(tint)
                     }
                 }

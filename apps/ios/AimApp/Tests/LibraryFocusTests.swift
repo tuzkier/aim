@@ -5,14 +5,18 @@ import XCTest
 final class LibraryFocusTests: XCTestCase {
     private static let severeHeadline = "血压很高，请立即联系产检医院或去急诊"
     private static let soonHeadline = "血压连续偏高，今天联系你的产检医院"
+    private static let recheckHeadline = "上次血压很高，今天联系产检医院复测"
 
     private func bp(_ systolic: Double?, _ diastolic: Double?) -> CheckupMetrics {
         CheckupMetrics(systolic: systolic, diastolic: diastolic)
     }
 
     private func checkup(daysAgo: Int, metrics: CheckupMetrics) -> RecordItem {
-        let when = Calendar.current.date(byAdding: .day, value: -daysAgo, to: .now)!
-        return RecordItem(
+        checkup(at: Calendar.current.date(byAdding: .day, value: -daysAgo, to: .now)!, metrics: metrics)
+    }
+
+    private func checkup(at when: Date, metrics: CheckupMetrics) -> RecordItem {
+        RecordItem(
             id: UUID(), pregnancyID: UUID(), familyID: UUID(), authorAccountID: UUID(),
             type: .checkup, occurredAt: when, visibility: .family, title: nil, content: nil,
             structuredData: .checkup(CheckupRecordData(
@@ -187,13 +191,16 @@ final class LibraryFocusTests: XCTestCase {
         XCTAssertEqual(questions?.level, .info)
     }
 
-    /// 很高档只看 7 天内的读数：8 天前量的已经不是「现在」的情况了。
-    func testASevereReadingOlderThanAWeekDoesNotTrigger() {
+    /// 很高档只看 7 天内的读数：8 天前量的已经不是「现在」的情况，
+    /// 但也不能不说话——降为今天联系医院复测。
+    func testASevereReadingOlderThanAWeekAsksForARecheck() {
         let stale = LibrarySnapshot(records: [
             checkup(daysAgo: 30, metrics: bp(118, 75)),
             checkup(daysAgo: 8, metrics: bp(165, 112)),
         ])
-        XCTAssertNil(LibraryFocus.make(from: stale))
+        let focus = LibraryFocus.make(from: stale)
+        XCTAssertEqual(focus?.level, .soon)
+        XCTAssertEqual(focus?.headline, Self.recheckHeadline)
 
         let fresh = LibrarySnapshot(records: [
             checkup(daysAgo: 30, metrics: bp(118, 75)),
@@ -221,10 +228,12 @@ final class LibraryFocusTests: XCTestCase {
     /// 时效按注入的 now 算，而不是写死的系统时间。
     func testFreshnessIsMeasuredAgainstTheInjectedNow() {
         let snapshot = LibrarySnapshot(records: [checkup(daysAgo: 3, metrics: bp(165, 112))])
-        let tenDaysLater = Calendar.current.date(byAdding: .day, value: 10, to: .now)!
+        let fiveDaysLater = Calendar.current.date(byAdding: .day, value: 5, to: .now)!
+        let twelveDaysLater = Calendar.current.date(byAdding: .day, value: 12, to: .now)!
 
         XCTAssertEqual(LibraryFocus.make(from: snapshot)?.level, .urgent)
-        XCTAssertNil(LibraryFocus.make(from: snapshot, now: tenDaysLater))
+        XCTAssertEqual(LibraryFocus.make(from: snapshot, now: fiveDaysLater)?.level, .soon)
+        XCTAssertNil(LibraryFocus.make(from: snapshot, now: twelveDaysLater))
     }
 
     /// 160/110 恰好在线就算很高；159/109 不算，但仍够得上「偏高」。
@@ -295,5 +304,39 @@ final class LibraryFocusTests: XCTestCase {
         ])
 
         XCTAssertEqual(LibraryFocus.make(from: snapshot)?.headline, Self.soonHeadline)
+    }
+
+    /// 8–14 天前很高、前一次也偏高：复测这条比「连续偏高」更具体，优先用它。
+    func testStaleSevereReadingOutranksConsecutiveHighReadings() {
+        let snapshot = LibrarySnapshot(records: [
+            checkup(daysAgo: 20, metrics: bp(145, 92)),
+            checkup(daysAgo: 10, metrics: bp(165, 112)),
+        ])
+
+        let focus = LibraryFocus.make(from: snapshot)
+        XCTAssertEqual(focus?.level, .soon)
+        XCTAssertEqual(focus?.headline, Self.recheckHeadline)
+    }
+
+    /// 7 天、14 天恰好在线都还算数，再多一天就换档或不提示。时间用注入的 now 固定住。
+    func testFreshnessBoundariesAreInclusive() {
+        let calendar = Calendar.current
+        let now = calendar.date(from: DateComponents(year: 2026, month: 10, day: 10, hour: 12))!
+        func reading(daysBefore days: Int, _ metrics: CheckupMetrics) -> RecordItem {
+            checkup(at: calendar.date(byAdding: .day, value: -days, to: now)!, metrics: metrics)
+        }
+        func make(_ records: [RecordItem]) -> LibraryFocus? {
+            LibraryFocus.make(from: LibrarySnapshot(records: records), now: now)
+        }
+
+        XCTAssertEqual(make([reading(daysBefore: 7, bp(165, 112))])?.level, .urgent)
+        XCTAssertEqual(make([reading(daysBefore: 8, bp(165, 112))])?.headline, Self.recheckHeadline)
+        XCTAssertEqual(make([reading(daysBefore: 14, bp(165, 112))])?.headline, Self.recheckHeadline)
+        XCTAssertNil(make([reading(daysBefore: 15, bp(165, 112))]))
+
+        let previous = reading(daysBefore: 30, bp(145, 92))
+        XCTAssertEqual(make([previous, reading(daysBefore: 14, bp(148, 95))])?.headline,
+                       Self.soonHeadline)
+        XCTAssertNil(make([previous, reading(daysBefore: 15, bp(148, 95))]))
     }
 }

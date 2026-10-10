@@ -30,8 +30,9 @@ struct LibraryFocus: Equatable, Sendable {
     /// 「很高」的门槛：高压 ≥160 或低压 ≥110。和危险信号的升档线一致，一次就够。
     private static let severeSystolic: Double = 160
     private static let severeDiastolic: Double = 110
-    /// 时效：很高档只认 7 天内的读数，连续偏高档要求最近一次在 14 天内。
-    /// 几周前量的血压已经说明不了「现在」，拿它喊立即就医只会让人不再信这个位置。
+    /// 时效：很高档只认 7 天内的读数（8–14 天前的降为「今天联系复测」），
+    /// 连续偏高档要求最近一次在 14 天内。几周前量的血压已经说明不了「现在」，
+    /// 拿它喊立即就医只会让人不再信这个位置。
     private static let severeFreshnessDays = 7
     private static let highFreshnessDays = 14
     private static let repeatedSymptomThreshold = 3
@@ -56,14 +57,23 @@ struct LibraryFocus: Equatable, Sendable {
             .sorted { $0.date < $1.date }
         guard let latest = readings.last else { return nil }
 
+        let latestIsSevere = (latest.metrics.systolic ?? 0) >= severeSystolic
+            || (latest.metrics.diastolic ?? 0) >= severeDiastolic
         // 最近一次就到了升档线，不能再等第二次——和危险信号一样要立即就医。
-        if isWithin(days: severeFreshnessDays, of: latest.date, now: now),
-           (latest.metrics.systolic ?? 0) >= severeSystolic
-            || (latest.metrics.diastolic ?? 0) >= severeDiastolic {
+        if latestIsSevere, isWithin(days: severeFreshnessDays, of: latest.date, now: now) {
             return LibraryFocus(
                 headline: "血压很高，请立即联系产检医院或去急诊",
                 tags: ["指标 1 条"],
                 level: .urgent
+            )
+        }
+        // 一周多以前很高、之后没再量：说不清现在怎样，但不能比「两次偏高」提示得还弱。
+        // 它单独成立，也优先于「连续偏高」——要做的事更具体：复测。
+        if latestIsSevere, isWithin(days: highFreshnessDays, of: latest.date, now: now) {
+            return LibraryFocus(
+                headline: "上次血压很高，今天联系产检医院复测",
+                tags: ["指标 1 条"],
+                level: .soon
             )
         }
 
