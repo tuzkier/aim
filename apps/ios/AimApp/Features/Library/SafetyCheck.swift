@@ -39,6 +39,16 @@ enum SafetyCheck {
         return Verdict(level: .mention, headline: "记下来，下次产检时告诉医生", actions: actions)
     }
 
+    /// 结论只看当前孕周能看到的条目：被孕周藏起来的勾选不能再左右结论。
+    static func verdict(for selected: Set<String>, in rules: [SafetyRule], forWeek week: Int?) -> Verdict? {
+        verdict(for: selected, in: self.rules(rules, forWeek: week))
+    }
+
+    /// 孕周或条目变了之后还留得住的勾选：看不见的、不认识的都清掉。
+    static func visibleSelection(_ selected: Set<String>, in rules: [SafetyRule], forWeek week: Int?) -> Set<String> {
+        selected.intersection(self.rules(rules, forWeek: week).map(\.id))
+    }
+
     /// 自查页要显示的条目：只留当前孕周适用的，紧急 → 当天联系 → 下次产检，同档保持原序。
     ///
     /// 孕周取不到时返回全部。20 周以后的出血会同时命中两条紧急项，两条都留着——

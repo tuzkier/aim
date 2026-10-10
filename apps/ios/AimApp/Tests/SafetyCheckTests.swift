@@ -131,6 +131,32 @@ final class SafetyCheckTests: XCTestCase {
         XCTAssertTrue(early.applies(week: nil))
     }
 
+    /// 孕周写坏了（起点比终点大、个数不对）一律当作适用，不能把危险信号藏起来。
+    func testMalformedWeekRangesAlwaysApply() {
+        XCTAssertTrue(rule("x", severity: "urgent", weeks: [20, 4]).applies(week: 34))
+        XCTAssertTrue(rule("x", severity: "urgent", weeks: [20]).applies(week: 34))
+    }
+
+    /// 结论只看当前孕周能看到的条目：被孕周藏起来的勾选不能再左右结论。
+    func testVerdictOnlyConsidersRulesVisibleThisWeek() {
+        let verdict = SafetyCheck.verdict(
+            for: ["early-bleeding", "itching"], in: threeTierRules, forWeek: 34)
+
+        XCTAssertEqual(verdict?.level, .soon)
+        XCTAssertEqual(verdict?.actions, ["处理 itching"])
+        XCTAssertNil(SafetyCheck.verdict(for: ["early-bleeding"], in: threeTierRules, forWeek: 34))
+        XCTAssertEqual(
+            SafetyCheck.verdict(for: ["early-bleeding"], in: threeTierRules, forWeek: 8)?.level, .now)
+    }
+
+    /// 孕周变了要把看不见的勾选清掉，留着会在用户看不到的地方影响结论。
+    func testSelectionDropsRulesThatAreNoLongerVisible() {
+        let kept = SafetyCheck.visibleSelection(
+            ["early-bleeding", "itching", "not-a-rule"], in: threeTierRules, forWeek: 34)
+
+        XCTAssertEqual(kept, ["itching"])
+    }
+
     func testSameDayIsRecognised() {
         XCTAssertTrue(rule("x", severity: "same_day", weeks: nil).isSameDay)
         XCTAssertFalse(rule("x", severity: "urgent", weeks: nil).isSameDay)

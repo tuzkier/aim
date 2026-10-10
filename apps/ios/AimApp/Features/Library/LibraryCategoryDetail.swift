@@ -66,6 +66,11 @@ struct LibraryCategoryDetail: View {
         SafetyCheck.rules(store.safetyRules, forWeek: store.currentWeek)
     }
 
+    private func pruneHiddenSignals() {
+        checkedSignals = SafetyCheck.visibleSelection(
+            checkedSignals, in: store.safetyRules, forWeek: store.currentWeek)
+    }
+
     /// 危险信号做成自查而不是阅读材料：真出血的时候没人有心情通读一屏文字。
     /// 勾出正在经历的情况，直接给结论。
     private var safetyList: some View {
@@ -99,7 +104,7 @@ struct LibraryCategoryDetail: View {
                             if rule.isUrgent {
                                 severityTag("紧急", color: .aimDanger, background: .aimDangerSoft)
                             } else if rule.isSameDay {
-                                severityTag("尽快", color: .aimAccent, background: .aimAccentSoft)
+                                severityTag("尽快", color: .aimWarning, background: .aimWarningSoft)
                             }
                         }
                     }
@@ -111,9 +116,12 @@ struct LibraryCategoryDetail: View {
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .accessibilityIdentifier("library-safety-list")
+        // 孕周或条目变了，看不见的勾选要清掉，不能在用户看不到的地方左右结论。
+        .onChange(of: store.currentWeek) { pruneHiddenSignals() }
+        .onChange(of: store.safetyRules) { pruneHiddenSignals() }
         .safeAreaInset(edge: .bottom) {
-            // 结论只看列表上能看到的条目：孕周变了被藏起来的勾选不该再影响结论。
-            if let verdict = SafetyCheck.verdict(for: checkedSignals, in: visibleSafetyRules) {
+            if let verdict = SafetyCheck.verdict(
+                for: checkedSignals, in: store.safetyRules, forWeek: store.currentWeek) {
                 safetyVerdict(verdict)
             }
         }
@@ -133,7 +141,7 @@ struct LibraryCategoryDetail: View {
         // 三档各有颜色：立即就医用危险色，当天联系用提醒色，下次产检保持中性。
         let (tint, background): (Color, Color) = switch verdict.level {
         case .now: (.aimDanger, .aimDangerSoft)
-        case .soon: (.aimAccent, .aimAccentSoft)
+        case .soon: (.aimWarning, .aimWarningSoft)
         case .mention: (.aimTextPrimary, .aimSurfaceSunken)
         }
         VStack(alignment: .leading, spacing: AimMetrics.space8) {

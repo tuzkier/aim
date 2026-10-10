@@ -1,0 +1,38 @@
+{
+  "colors": [
+    {
+      "color": {
+        "color-space": "srgb",
+        "components": {
+          "alpha": "1.000",
+          "red": "0.984",
+          "green": "0.941",
+          "blue": "0.851"
+        }
+      },
+      "idiom": "universal"
+    },
+    {
+      "appearances": [
+        {
+          "appearance": "luminosity",
+          "value": "dark"
+        }
+      ],
+      "color": {
+        "color-space": "srgb",
+        "components": {
+          "alpha": "1.000",
+          "red": "0.180",
+          "green": "0.141",
+          "blue": "0.071"
+        }
+      },
+      "idiom": "universal"
+    }
+  ],
+  "info": {
+    "author": "aim",
+    "version": 1
+  }
+}

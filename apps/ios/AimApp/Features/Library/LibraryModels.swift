@@ -16,10 +16,10 @@ struct SafetyRule: Identifiable, Equatable, Sendable {
 
     /// 这一条在给定孕周是否适用。
     ///
-    /// 孕周取不到、条目没写孕周、或孕周写坏了，一律当作适用——
+    /// 孕周取不到、条目没写孕周、或孕周写坏了（个数不对、起点大于终点），一律当作适用——
     /// 危险信号宁可多显示一条，也不能因为缺数据把它藏起来。
     func applies(week: Int?) -> Bool {
-        guard let week, let weeks, weeks.count == 2 else { return true }
+        guard let week, let weeks, weeks.count == 2, weeks[0] <= weeks[1] else { return true }
         return weeks[0] <= week && week <= weeks[1]
     }
 }

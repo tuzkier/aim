@@ -17,6 +17,9 @@ extension Color {
     static let aimSuccessSoft = Color("AimSuccessSoft")
     static let aimDanger = Color("AimDanger")
     static let aimDangerSoft = Color("AimDangerSoft")
+    /// 提醒色（琥珀）：「今天或明天联系医院」这一档，介于强调色与危险色之间。
+    static let aimWarning = Color("AimWarning")
+    static let aimWarningSoft = Color("AimWarningSoft")
 }
 
 struct AimCard: ViewModifier {
