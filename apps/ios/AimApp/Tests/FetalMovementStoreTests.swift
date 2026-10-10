@@ -279,6 +279,38 @@ final class FetalMovementStoreTests: XCTestCase {
         XCTAssertEqual(data.outcome, .stopped)
     }
 
+    /// 标记残留（计数页被「问问 AIM」盖住时整条呈现链被拆掉）时，下次打开计数页
+    /// 仍要先把过期断点记为未数完，不能沿用它、到点误报成「不足 10 次」。
+    func testCounterAppearSettlesAnExpiredCountEvenIfAPresentationLingers() {
+        let store = makeStore()
+        store.start()
+        now += 60; _ = store.tap()
+        store.beginCounterPresentation()
+        now += FetalMovementCounter.window + 1
+
+        XCTAssertTrue(store.queueExpiredActiveBeforeCounting())
+
+        XCTAssertNil(store.active)
+        XCTAssertEqual(store.unsaved.map(\.outcome), [.stopped])
+        XCTAssertEqual(store.unsaved.first?.count, 1)
+    }
+
+    func testUnbindingClearsLingeringCounterPresentations() {
+        let store = makeStore()
+        store.beginCounterPresentation()
+        store.unbind()
+        XCTAssertFalse(store.isCounterPresented)
+    }
+
+    func testSwitchingScopeClearsLingeringCounterPresentations() {
+        let store = makeStore()
+        store.beginCounterPresentation()
+        store.bind(accountID: accountA, pregnancyID: pregnancyA)
+        XCTAssertTrue(store.isCounterPresented, "同一作用域重复绑定不算换家")
+        store.bind(accountID: accountB, pregnancyID: pregnancyB)
+        XCTAssertFalse(store.isCounterPresented)
+    }
+
     /// 多关一次不会把计数减成负数，否则下次打开计数页时标记就失灵了。
     func testClosingMoreThanOpenedDoesNotGoNegative() {
         let store = makeStore()

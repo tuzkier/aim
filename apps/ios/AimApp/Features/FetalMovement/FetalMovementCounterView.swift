@@ -90,14 +90,13 @@ struct FetalMovementCounterView: View {
             if !startAttempted, phase == .counting {
                 // 恢复出来的断点已经过了 2 小时：那段时间计数页没开着，不是真的「不足 10 次」，
                 // 不弹安全页。先记为未数完（后台保存），再开始一个新计数。
-                if store.queueExpiredActive() { Task { await store.saveUnsaved() } }
+                if store.queueExpiredActiveBeforeCounting() { Task { await store.saveUnsaved() } }
                 store.start()
                 startAttempted = true
                 // 上次数到第 10 次就被系统杀掉、没来得及结束：直接显示结果，不用再点一下。
                 if (store.active?.count ?? 0) >= FetalMovementCounter.target { end() }
             }
-            // 必须在上面收尾旧断点之后再登记，否则那次收尾会被标记拦住。
-            // 从此刻起后台不再收尾：断点满 2 小时由计数页自己结束、弹安全页。
+            // 登记放在开始计数之后：从此刻起后台不再收尾，断点满 2 小时由计数页自己结束、弹安全页。
             markPresented()
         }
         .onDisappear {
