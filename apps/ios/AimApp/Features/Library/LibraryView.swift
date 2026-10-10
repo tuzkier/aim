@@ -192,7 +192,7 @@ private struct LibraryFocusBanner: View {
                         .padding(.vertical, AimMetrics.space8)
                         .background(Color.aimDanger, in: RoundedRectangle(
                             cornerRadius: AimMetrics.radiusButton, style: .continuous))
-                        .foregroundStyle(Color.aimTextOnAccent)
+                        .foregroundStyle(Color.aimTextOnDanger)
                 }
                 .accessibilityIdentifier("library-focus-call")
             }

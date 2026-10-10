@@ -1,3 +1,4 @@
+import UIKit
 import XCTest
 @testable import AimApp
 
@@ -195,5 +196,34 @@ final class SafetyCheckTests: XCTestCase {
             .items.map(SafetyRule.init(dto:))
 
         XCTAssertEqual(rules.map(\.weeks), [[20, 42], nil, nil])
+    }
+
+    // MARK: - 「拨打 120」按钮的对比度
+
+    /// 危险色底上的「拨打 120」文字，浅色、深色模式下对比度都要达到 4.5:1。
+    /// 深色模式的危险色偏浅，原来的浅色字只有约 2.7:1，急的时候最该看清的按钮反而看不清。
+    func testCallButtonTextIsReadableOnDangerInBothAppearances() throws {
+        for style in [UIUserInterfaceStyle.light, .dark] {
+            let traits = UITraitCollection(userInterfaceStyle: style)
+            let text = try XCTUnwrap(UIColor(named: "AimTextOnDanger", in: .main, compatibleWith: traits))
+            let danger = try XCTUnwrap(UIColor(named: "AimDanger", in: .main, compatibleWith: traits))
+            let ratio = contrast(text.resolvedColor(with: traits), danger.resolvedColor(with: traits))
+            XCTAssertGreaterThanOrEqual(ratio, 4.5, "style \(style.rawValue)")
+        }
+    }
+
+    /// WCAG 相对亮度对比度。
+    private func contrast(_ a: UIColor, _ b: UIColor) -> Double {
+        func luminance(_ color: UIColor) -> Double {
+            var (r, g, bl, alpha): (CGFloat, CGFloat, CGFloat, CGFloat) = (0, 0, 0, 0)
+            color.getRed(&r, green: &g, blue: &bl, alpha: &alpha)
+            func linear(_ c: CGFloat) -> Double {
+                let c = Double(c)
+                return c <= 0.04045 ? c / 12.92 : pow((c + 0.055) / 1.055, 2.4)
+            }
+            return 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(bl)
+        }
+        let (la, lb) = (luminance(a), luminance(b))
+        return (max(la, lb) + 0.05) / (min(la, lb) + 0.05)
     }
 }
