@@ -11,7 +11,7 @@
 |---|---|---|---|
 | 0 | 资料库 2.0 第 1 期：孕期百科 | ✅ 已合并 development | specs/2026-10-09-library-2-design.md、plans/2026-10-09-library-2-phase1-encyclopedia.md |
 | 0 | 胎动计数 | ✅ 已合并 development（e608582） | specs/2026-10-09-fetal-movement-design.md、plans/2026-10-09-fetal-movement.md |
-| 1 | 胎动收尾：Agent 对 under / reported_less 用「现在」；计数页显示时跳过过期断点收尾 | 待做 | — |
+| 1 | 胎动收尾：Agent 对 under / reported_less 用「现在」；计数页显示时跳过过期断点收尾 | ✅ 已合并 development | 遗留：指令里「慢一倍」仍按 latest or today's，与 under 只看今天不一致（下次动 Agent 指令时顺手统一） |
 | 2 | 补缺口：孕期任务内容 4–40 周；危险信号扩充到约 15 条；孕周推进时自动续上本周任务 | 待做 | — |
 | 3 | 资料库第 2 期：AIM 翻目录（list_library / get_library_entry）与引用渲染、原生跳转、各资料页问 AIM 上下文 | 待做 | specs/2026-10-09-library-2-design.md §7.1–7.2 |
 | 4 | 资料库第 3 期：档案可编辑、产检报告结构与表单/详情、create_checkup_report 与预览卡、本周关注新规则 | 待做 | 同上 §5、§6.3、§7.3 |
