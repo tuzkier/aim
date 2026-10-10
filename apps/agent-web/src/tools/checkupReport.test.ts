@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { flagMark, metricRows, sortedOtherItems } from "./checkupReport";
+import { flagMark, metricRows, reportHeadline, sortedOtherItems } from "./checkupReport";
 
 test("metrics come out with Chinese names and units in a fixed order", () => {
   expect(
@@ -72,4 +72,29 @@ test("flags map to arrows", () => {
   expect(flagMark("low")).toBe("↓");
   expect(flagMark("abnormal")).toBe("!");
   expect(flagMark(undefined)).toBe("");
+});
+
+test("half-streamed or unknown flags count as unflagged", () => {
+  const items = [
+    { name: "白细胞", value: "6.1" },
+    { name: "尿蛋白", value: "+", flag: "hi" as never },
+    { name: "总胆汁酸", value: "12.4", flag: "high" as const },
+  ];
+  expect(sortedOtherItems(items).map((item) => item.name)).toEqual(["总胆汁酸", "白细胞", "尿蛋白"]);
+  expect(flagMark("hi" as never)).toBe("");
+});
+
+test("headline says saved only once the save is approved and came back", () => {
+  const result = { data: { record_id: "r1" } };
+  // 流式中还没有审批对象。
+  expect(reportHeadline(undefined, undefined)).toBe("整理中");
+  expect(reportHeadline({ id: "a" }, undefined)).toBe("将记下一份产检报告");
+  expect(reportHeadline({ id: "a", approved: true }, result)).toBe("已记下一份产检报告");
+  // 批准了但执行还没返回。
+  expect(reportHeadline({ id: "a", approved: true }, undefined)).toBe("正在记下一份产检报告");
+  expect(reportHeadline({ id: "a", approved: false }, undefined)).toBe("没有记下这份报告");
+  expect(reportHeadline({ id: "a", resolution: "expired" }, undefined)).toBe("没有记下这份报告");
+  expect(reportHeadline({ id: "a", resolution: "cancelled" }, undefined)).toBe("没有记下这份报告");
+  // 业务接口报错时也会带着结果回来，不能算记下了。
+  expect(reportHeadline({ id: "a", approved: true }, { error: "boom" }, true)).toBe("没有记下这份报告");
 });

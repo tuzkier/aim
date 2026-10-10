@@ -3,12 +3,14 @@ import {
   type CheckupMetrics,
   flagMark,
   metricRows,
+  isKnownFlag,
   type OtherItem,
+  reportHeadline,
   sortedOtherItems,
 } from "./checkupReport";
 import { OpenNative } from "./OpenNative";
 import { ApprovalSlot, ToolCard, ToolStatusLine } from "./ToolCard";
-import { isAwaitingApproval, type ToolRenderProps } from "./types";
+import type { ToolRenderProps } from "./types";
 
 /**
  * 记产检报告前的确认卡。
@@ -23,8 +25,6 @@ type Args = {
   hospital?: string;
   metrics?: CheckupMetrics;
   otherItems?: OtherItem[];
-  // 兼容蛇形命名：Agent 侧 zod 用驼峰，但别的入口可能原样转发业务接口的参数。
-  other_items?: OtherItem[];
   result?: string;
   doctorAdvice?: string;
   followUpQuestions?: string[];
@@ -58,13 +58,15 @@ const OtherItems = ({ items }: { items?: OtherItem[] }) => {
         {sorted.map((item, index) => (
           <li
             key={`${index}-${item.name}`}
-            className={item.flag ? `checkup-item checkup-item--${item.flag}` : "checkup-item"}
+            className={isKnownFlag(item.flag) ? `checkup-item checkup-item--${item.flag}` : "checkup-item"}
           >
             <span className="checkup-item__name">{item.name}</span>
             <span className="checkup-item__value">
               {item.value}
               {item.unit ? <span className="checkup-unit"> {item.unit}</span> : null}
-              {item.flag ? <span className="checkup-item__flag"> {flagMark(item.flag)}</span> : null}
+              {isKnownFlag(item.flag) ? (
+                <span className="checkup-item__flag"> {flagMark(item.flag)}</span>
+              ) : null}
             </span>
             {item.reference ? (
               <span className="checkup-item__reference">参考 {item.reference}</span>
@@ -104,12 +106,12 @@ export const CreateCheckupReportUI = makeAssistantToolUI({
     return (
       <ToolCard>
         <p className="tool-card__eyebrow">
-          {isAwaitingApproval(props.approval) ? "将记下" : "已记下"}一份产检报告
+          {reportHeadline(props.approval, props.result, props.isError)}
         </p>
         <h3 className="tool-card__title">产检报告</h3>
         {meta ? <p className="tool-card__meta">{meta}</p> : null}
         <Metrics metrics={args.metrics} />
-        <OtherItems items={args.otherItems ?? args.other_items} />
+        <OtherItems items={args.otherItems} />
         <TextSection label="报告结论" text={args.result} />
         <TextSection label="医生建议" text={args.doctorAdvice} />
         <Questions values={args.followUpQuestions} />

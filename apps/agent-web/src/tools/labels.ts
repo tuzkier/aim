@@ -91,6 +91,13 @@ const APPROVAL_COPY: Record<string, ApprovalCopy> = {
     pendingNo: "待提交：不收录",
     rejected: "没有收录",
   },
+  create_checkup_report: {
+    confirm: "记下",
+    reject: "先不记",
+    pendingYes: "待提交：记下",
+    pendingNo: "待提交：不记",
+    rejected: "没有记下",
+  },
   reschedule_task: {
     confirm: "确认改期",
     reject: "不改了",

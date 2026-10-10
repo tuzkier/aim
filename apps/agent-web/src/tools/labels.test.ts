@@ -26,3 +26,10 @@ test("nothing says 收录 unless the batch is only knowledge", () => {
 test("the checkup report tool has a Chinese step title", () => {
   expect(toolTitle("create_checkup_report")).toBe("记一份产检报告");
 });
+
+test("the checkup report approval speaks of saving the report", () => {
+  const copy = approvalCopy(["create_checkup_report"]);
+  expect(copy.confirm).toBe("记下");
+  expect(copy.reject).toBe("先不记");
+  expect(copy.rejected).toBe("没有记下");
+});
