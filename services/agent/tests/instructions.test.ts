@@ -105,3 +105,8 @@ test("说明带 topic 返回整个主题、本周排前，目录同一主题翻�
   assert.ok(paragraph.includes("prefer passing a topic"));
   assert.ok(paragraph.includes("The catalogue for a topic only needs browsing once per conversation."));
 });
+
+test("记录引用的标题写日期加类型", () => {
+  const paragraph = libraryParagraph();
+  assert.ok(paragraph.includes("title made of its date and record type, such as 10月3日产检"));
+});

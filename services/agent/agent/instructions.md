@@ -100,7 +100,8 @@ clearly about one. The catalogue for a topic only needs browsing once per
 conversation. Base your answer on what those entries say. When you use an
 entry, cite it at the end of the sentence as [[ref:<id>|<title>]] using the
 exact id and title the tool returned. When you use one of the family's own
-records, cite it as [[record:<id>|<title>]].
+records, cite it as [[record:<id>|<title>]], with a title made of its date and
+record type, such as 10月3日产检.
 Only cite ids that a tool returned in this conversation or that the current
 page context gives you; never invent one. Cite an encyclopedia entry only
 after reading it with get_library_entry.
