@@ -102,7 +102,8 @@ private struct DeleteAccountSheet: View {
             Form {
                 Section {
                     SecureField("输入密码以确认", text: $password)
-                        .textContentType(.password)
+                        // UI 测试下不声明内容类型，免得系统弹密码相关提示挡住流程。
+                        .textContentType(LaunchFlags.isUITesting ? nil : .password)
                         .accessibilityIdentifier("account-delete-password")
                 } footer: {
                     Text("提交后会退回登录页。")

@@ -40,7 +40,9 @@ struct OnboardingView: View {
                         .accessibilityIdentifier("auth-phone")
 
                     SecureField("密码", text: $store.form.password)
-                        .textContentType(store.form.mode == .register ? .newPassword : .password)
+                        // UI 测试下不声明内容类型，免得系统弹「使用强密码」「保存密码」挡住流程。
+                        .textContentType(LaunchFlags.isUITesting
+                            ? nil : (store.form.mode == .register ? .newPassword : .password))
                         .accessibilityIdentifier("auth-password")
 
                     if store.form.mode == .register {

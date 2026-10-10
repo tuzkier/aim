@@ -1,6 +1,15 @@
 import Foundation
 import Observation
 
+/// 启动参数开关。UI 测试都以 `-reset-session` 启动，借它识别测试环境；
+/// 显式传 `-ui-testing` 也算。
+enum LaunchFlags {
+    static var isUITesting: Bool {
+        let arguments = ProcessInfo.processInfo.arguments
+        return arguments.contains("-reset-session") || arguments.contains("-ui-testing")
+    }
+}
+
 @MainActor
 @Observable
 final class AppSessionStore {
