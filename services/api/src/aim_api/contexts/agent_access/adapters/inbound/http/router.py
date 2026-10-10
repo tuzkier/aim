@@ -471,6 +471,11 @@ async def _list_library(session, context: AgentToolContext, body: dict[str, Any]
     if rank_week is not None:
         rank_week = min(max(rank_week, 4), 42)
     catalog = get_encyclopedia().catalog(topic=topic, week=filter_week, rank_week=rank_week)
+    # pick 只决定首页推荐，Agent 用不上；去掉它给模型的目录短一点（公开接口不变）。
+    catalog["entries"] = [
+        {key: value for key, value in entry.items() if key != "pick"}
+        for entry in catalog["entries"]
+    ]
     return (catalog, f"翻了 {len(catalog['entries'])} 条资料目录")
 
 

@@ -56,6 +56,8 @@ def test_list_library_defaults_to_the_current_week() -> None:
     assert entries
     # 目录只给摘要，不给正文。
     assert all("sections" not in entry for entry in entries)
+    # pick 只给首页推荐用，Agent 用不上，不占它的上下文（公开接口仍带）。
+    assert all("pick" not in entry for entry in entries)
     assert all(
         {"id", "topic", "title", "aliases", "weeks", "summary"} <= set(entry) for entry in entries
     )
