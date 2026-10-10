@@ -290,6 +290,106 @@ final class FetalMovementStoreTests: XCTestCase {
         XCTAssertEqual(store.active?.count, 1, "绑回来能找回断点")
         XCTAssertEqual(store.unsaved.count, 1, "绑回来能找回未保存结果")
     }
+
+    /// 解绑后旧仓库还带着上一家的身份：不能再拿它把上一家的历史读回来。
+    func testLoadingAfterUnbindDoesNotFetchTheOldFamily() async {
+        let repository = FakeFetalRepository()
+        repository.seed(seconds: 600, at: now - 86_400)
+        let store = makeStore(repository: repository)
+
+        store.unbind()
+        XCTAssertNil(store.repository, "解绑时一并丢掉旧仓库")
+        await store.load()
+        XCTAssertTrue(store.sessions.isEmpty)
+        XCTAssertEqual(repository.fetchCalls, 0, "解绑后不发拉取请求")
+
+        // 调用方先设了仓库、还没绑定：仍然不知道是哪一家，照样不拉。
+        store.repository = repository
+        await store.load()
+        XCTAssertTrue(store.sessions.isEmpty)
+        XCTAssertEqual(repository.fetchCalls, 0)
+    }
+
+    /// 解绑后、或者已经换到另一家时，不能删掉上一家的记录。
+    func testDeletingAfterUnbindDoesNotTouchTheOldFamily() async throws {
+        let repository = FakeFetalRepository()
+        repository.seed(seconds: 600, at: now - 86_400)
+        let store = makeStore(repository: repository)
+        await store.load()
+        let old = try XCTUnwrap(store.sessions.first)
+
+        store.unbind()
+        await store.delete(old)
+        XCTAssertTrue(repository.deletedIDs.isEmpty, "解绑后不发删除请求")
+
+        store.repository = repository
+        await store.delete(old)
+        XCTAssertTrue(repository.deletedIDs.isEmpty, "未绑定时即使有仓库也不删")
+
+        store.bind(accountID: accountB, pregnancyID: pregnancyB)
+        await store.delete(old)
+        XCTAssertTrue(repository.deletedIDs.isEmpty, "不在当前这一家列表里的记录不删")
+        XCTAssertEqual(repository.records.count, 1)
+    }
+
+    /// 保存成功后正在刷新历史时又结束了一次计数：这一次必须立刻保存，不能被当成重入挡掉。
+    func testFinishingWhileTheSaveRefreshIsInFlightStillSaves() async {
+        let repository = FakeFetalRepository()
+        repository.seed(seconds: 600, at: now - 86_400)
+        let store = makeStore(repository: repository)
+        // 先拉过历史，第二次 finish 就不会自己去拉，直接进入保存。
+        await store.load()
+        let fetchGate = Gate()
+        repository.fetchGate = fetchGate
+
+        store.start(); now += 30; _ = store.tap()
+        let firstFinishing = Task { await store.finish() }
+        // 第一条已保存，卡在保存后的那次刷新上。
+        while await fetchGate.calls == 0 { await Task.yield() }
+        XCTAssertEqual(repository.createdDrafts.count, 1)
+
+        now += 3_600
+        store.start(); now += 30; _ = store.tap()
+        let secondFinishing = Task { await store.finish() }
+        // 修好时第二条保存后也卡在刷新上（calls == 2）；没修好时它会直接返回 saved == false。
+        // 有上限地等，避免在没修好时挂起。
+        for _ in 0..<1_000 {
+            if await fetchGate.calls >= 2 { break }
+            await Task.yield()
+        }
+
+        await fetchGate.release()
+        let first = await firstFinishing.value
+        let second = await secondFinishing.value
+
+        XCTAssertEqual(first?.saved, true)
+        XCTAssertEqual(second?.saved, true, "刷新期间结束的计数要立刻保存")
+        XCTAssertEqual(repository.createdDrafts.count, 2, "一共保存了 2 条")
+        XCTAssertTrue(store.unsaved.isEmpty)
+        XCTAssertEqual(store.sessions.count, 3)
+    }
+
+    /// 两次拉历史并发、先发的后回来：旧响应不能盖掉新结果。
+    func testAnOlderReloadThatReturnsLateDoesNotOverwriteANewerOne() async {
+        let repository = FakeFetalRepository()
+        repository.seed(seconds: 600, at: now - 86_400)
+        let fetchGate = Gate()
+        repository.fetchGate = fetchGate
+        let store = makeStore(repository: repository)
+
+        let older = Task { await store.load() }
+        while await fetchGate.calls == 0 { await Task.yield() }
+
+        // 第二次请求不卡，并且看得到新增的那条。
+        repository.fetchGate = nil
+        repository.seed(seconds: 620, at: now - 3_600)
+        await store.load()
+        XCTAssertEqual(store.sessions.count, 2)
+
+        await fetchGate.release()
+        await older.value
+        XCTAssertEqual(store.sessions.count, 2, "先发的请求后回来，只看到 1 条，不能采用")
+    }
 }
 
 /// 让替身的请求停在半路，直到测试放行；同时数一共被调了几次。
@@ -321,6 +421,8 @@ private final class FakeFetalRepository: BusinessRepositoryProtocol, @unchecked 
     var gate: Gate?
     /// 卡住 fetchRecords。
     var fetchGate: Gate?
+    private(set) var fetchCalls = 0
+    private(set) var deletedIDs: [UUID] = []
 
     func seed(seconds: Int, at date: Date) {
         records.append(item(FetalMovementResult(
@@ -337,8 +439,11 @@ private final class FakeFetalRepository: BusinessRepositoryProtocol, @unchecked 
     }
 
     func fetchRecords(type: RecordType?) async throws -> RecordSnapshot {
+        fetchCalls += 1
+        // 先取快照再等闸门：卡在半路的请求返回的是发出那一刻的数据，才能构造出乱序的旧响应。
+        let snapshot = RecordSnapshot(records: records.filter { type == nil || $0.type == type })
         if let fetchGate { await fetchGate.pass() }
-        return RecordSnapshot(records: records.filter { type == nil || $0.type == type })
+        return snapshot
     }
 
     func createRecord(draft: RecordDraft) async throws -> RecordItem {
@@ -350,7 +455,10 @@ private final class FakeFetalRepository: BusinessRepositoryProtocol, @unchecked 
         return created
     }
 
-    func deleteRecord(recordID: UUID) async throws { records.removeAll { $0.id == recordID } }
+    func deleteRecord(recordID: UUID) async throws {
+        deletedIDs.append(recordID)
+        records.removeAll { $0.id == recordID }
+    }
 
     // 以下照抄 Tests/LibraryStoreTests.swift 里 FakeLibraryRepository 的其余必需方法，
     // 全部 throw APIError.notConfigured（返回 Void 的写成空实现）。

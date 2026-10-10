@@ -36,6 +36,9 @@ final class FetalMovementStore {
     private let defaults: UserDefaults
     private var scope: Scope?
     private var isSaving = false
+    /// 每次拉历史递增；用来丢掉比已采用的结果更旧的响应，免得并发拉取时旧结果盖掉新结果。
+    private var reloadGeneration = 0
+    private var appliedReloadGeneration = 0
 
     private struct Scope: Equatable {
         let accountID: UUID
@@ -66,8 +69,10 @@ final class FetalMovementStore {
 
     /// 没有账号或孕期时（退出登录、切到还没建孕期的家庭）解绑，
     /// 免得下一位用户看到并接着写上一位的断点。只清内存，落盘的数据留着，绑回来还能找到。
+    /// 仓库也一并清掉：它按值带着上一家的身份，留着就可能把上一家的历史读回来或删掉上一家的记录。
     func unbind() {
         scope = nil
+        repository = nil
         active = nil
         unsaved = []
         sessions = []
@@ -168,7 +173,8 @@ final class FetalMovementStore {
     }
 
     func delete(_ session: FetalMovementSession) async {
-        guard let repository else { return }
+        // 只删当前这一家列表里的记录：解绑后、或拿着别家的记录来删，都不发请求。
+        guard let repository, scope != nil, sessions.contains(where: { $0.id == session.id }) else { return }
         do {
             try await repository.deleteRecord(recordID: session.id)
             await load()
@@ -178,11 +184,24 @@ final class FetalMovementStore {
     }
 
     private func reloadSessions() async throws {
-        guard let repository else { return }
-        let requestedScope = scope
-        let snapshot = try await repository.fetchRecords(type: .fetalMovement)
+        // 未绑定时不拉：此时的仓库（如果还有）不知道属于哪一家。
+        guard let repository, let requestedScope = scope else { return }
+        reloadGeneration += 1
+        let generation = reloadGeneration
+        let snapshot: RecordSnapshot
+        do {
+            snapshot = try await repository.fetchRecords(type: .fetalMovement)
+        } catch {
+            // 已经换了一家、或者后面又发了新的请求：这次的失败不代表现在的状态，不往外报。
+            guard scope == requestedScope, generation == reloadGeneration else { return }
+            throw error
+        }
         // 拉取途中换了作用域，这份历史属于上一家，丢掉。
         guard scope == requestedScope else { return }
+        // 并发拉取时响应可能乱序：比已采用的那次更旧的结果直接丢掉。
+        // 不要求「必须是最后发出的那次」，免得 finish() 自己拉回的历史被一次还在路上的刷新作废、拿不到平时。
+        guard generation > appliedReloadGeneration else { return }
+        appliedReloadGeneration = generation
         sessions = snapshot.records
             .compactMap(FetalMovementSession.init(record:))
             .sorted { $0.startedAt > $1.startedAt }
