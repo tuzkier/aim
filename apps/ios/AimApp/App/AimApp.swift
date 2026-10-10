@@ -2,12 +2,14 @@ import SwiftUI
 
 @main
 struct AimApp: App {
+    @UIApplicationDelegateAdaptor(ReminderAppDelegate.self) private var reminderDelegate
     @State private var session = AppSessionStore()
 
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environment(session)
+                .environment(ReminderCoordinator.shared)
                 .tint(.aimAccent)
         }
     }
@@ -15,6 +17,7 @@ struct AimApp: App {
 
 private struct RootView: View {
     @Environment(AppSessionStore.self) private var session
+    @Environment(ReminderCoordinator.self) private var reminders
 
     var body: some View {
         Group {
@@ -28,11 +31,15 @@ private struct RootView: View {
                 MainTabView()
             }
         }
+        .task { reminders.bind(ReminderScope(session: session)) }
     }
 }
 
 private struct MainTabView: View {
     @Environment(AppSessionStore.self) private var session
+    @Environment(ReminderCoordinator.self) private var reminders
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var reminderPresentation: ReminderPresentation?
     @State private var timelineStore = TimelineStore()
     @State private var planStore = PlanStore()
     @State private var recordStore = RecordStore()
@@ -102,7 +109,33 @@ private struct MainTabView: View {
             Task { await reloadRepositories() }
         }
         .onChange(of: session.familyID) { _, _ in
+            reminderPresentation = nil
             Task { await reloadRepositories() }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { Task { await reminders.refresh(activeCount: fetalMovementStore.active?.startedAt) } }
+        }
+        .onChange(of: fetalMovementStore.active) { _, value in
+            Task { await reminders.refresh(activeCount: value?.startedAt) }
+        }
+        .onChange(of: reminders.pendingRoute) { _, _ in Task { await openReminder() } }
+        .sheet(item: $reminderPresentation) { target in
+            NavigationStack {
+                Group {
+                    switch target {
+                    case let .task(task): TaskDetailView(task: task, repository: planStore.repository)
+                    case .fetal: FetalMovementView(agentStore: agentStore)
+                    case .weekly:
+                        if let repository = planStore.repository { WeeklyBriefView(repository: repository) }
+                    case .unavailable: Text("这条提醒已更新，请查看当前安排。")
+                    }
+                }
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("关闭") { reminderPresentation = nil }.accessibilityIdentifier("reminder-close")
+                    }
+                }
+            }
         }
         // 家人发来的邀请：进入主界面时查一次，没「暂不」过的逐条弹出。
         .sheet(item: Binding(
@@ -149,6 +182,8 @@ private struct MainTabView: View {
 
     private func reloadRepositories() async {
         let repository = BusinessRepository(environment: session.environment)
+        reminders.bind(ReminderScope(session: session), repository: repository)
+        reminders.setRepository(repository)
         timelineStore.repository = repository
         planStore.repository = repository
         recordStore.repository = repository
@@ -181,6 +216,40 @@ private struct MainTabView: View {
         if fetalMovementBound {
             await fetalMovementStore.settleExpiredActive()
             await fetalMovementStore.load()
+        }
+        await reminders.refresh(activeCount: fetalMovementStore.active?.startedAt)
+        await openReminder()
+    }
+
+    private func openReminder() async {
+        guard let pending = reminders.pendingRoute else { return }
+        let route = pending.route
+        guard route.scope == ReminderScope(session: session) else { reminders.pendingRoute = nil; return }
+        // 冷启动时 delegate 可能先于仓储初始化到达；保留到 reloadRepositories 完成再消费。
+        guard let repository = planStore.repository else { return }
+        reminders.pendingRoute = nil
+        switch route.kind {
+        case .task:
+            let plan = try? await repository.fetchPlan()
+            guard route.scope == ReminderScope(session: session) else { return }
+            selectedTab = .tasks
+            if let task = plan?.tasks.first(where: { $0.id == route.taskID }) {
+                reminderPresentation = .task(task)
+            } else { reminderPresentation = .unavailable }
+        case .fetalMovement: selectedTab = .library; reminderPresentation = .fetal
+        case .weekly: selectedTab = .home; reminderPresentation = .weekly
+        }
+    }
+}
+
+private enum ReminderPresentation: Identifiable {
+    case task(TaskItem), fetal, weekly, unavailable
+    var id: String {
+        switch self {
+        case let .task(task): "task-\(task.id)"
+        case .fetal: "fetal"
+        case .weekly: "weekly"
+        case .unavailable: "unavailable"
         }
     }
 }

@@ -36,6 +36,13 @@ struct ProfileView: View {
 
             pregnancySection
 
+            Section("提醒") {
+                NavigationLink { ReminderSettingsView() } label: {
+                    Label("提醒设置", systemImage: "bell")
+                }
+                .accessibilityIdentifier("reminder-settings-entry")
+            }
+
             if !store.myInvitations.isEmpty {
                 Section {
                     ForEach(store.myInvitations) { invitation in

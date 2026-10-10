@@ -153,6 +153,10 @@
 		A20000000000000000000168 /* Tests/CheckupReportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000168 /* Tests/CheckupReportTests.swift */; };
 		A20000000000000000000169 /* Features/Library/MemoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000169 /* Features/Library/MemoryView.swift */; };
 		A20000000000000000000170 /* Tests/MemoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000170 /* Tests/MemoryTests.swift */; };
+		A20000000000000000000171 /* Features/Reminders/ReminderModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000171 /* Features/Reminders/ReminderModels.swift */; };
+		A20000000000000000000172 /* Core/Notifications/ReminderCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000172 /* Core/Notifications/ReminderCenter.swift */; };
+		A20000000000000000000173 /* Features/Reminders/ReminderSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000173 /* Features/Reminders/ReminderSettingsView.swift */; };
+		A20000000000000000000174 /* Tests/ReminderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000174 /* Tests/ReminderTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -325,6 +329,10 @@
 		A10000000000000000000168 /* Tests/CheckupReportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/CheckupReportTests.swift; sourceTree = "<group>"; };
 		A10000000000000000000169 /* Features/Library/MemoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Library/MemoryView.swift; sourceTree = "<group>"; };
 		A10000000000000000000170 /* Tests/MemoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/MemoryTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000171 /* Features/Reminders/ReminderModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Reminders/ReminderModels.swift; sourceTree = "<group>"; };
+		A10000000000000000000172 /* Core/Notifications/ReminderCenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Notifications/ReminderCenter.swift; sourceTree = "<group>"; };
+		A10000000000000000000173 /* Features/Reminders/ReminderSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Reminders/ReminderSettingsView.swift; sourceTree = "<group>"; };
+		A10000000000000000000174 /* Tests/ReminderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/ReminderTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -623,6 +631,7 @@
 				A10000000000000000000056 /* Tests/AgentChangePreviewTests.swift */,
 				A10000000000000000000059 /* Tests/TaskRecordSuggestionTests.swift */,
 				A10000000000000000000170 /* Tests/MemoryTests.swift */,
+				A10000000000000000000174 /* Tests/ReminderTests.swift */,
 			);
 			name = Tests;
 			sourceTree = "<group>";
@@ -1334,6 +1343,9 @@
 				A10000000000000000000157 /* Features/Library/EncyclopediaTopicView.swift */,
 				A10000000000000000000158 /* Features/Library/EncyclopediaEntryView.swift */,
 				A10000000000000000000169 /* Features/Library/MemoryView.swift */,
+				A10000000000000000000171 /* Features/Reminders/ReminderModels.swift */,
+				A10000000000000000000172 /* Core/Notifications/ReminderCenter.swift */,
+				A10000000000000000000173 /* Features/Reminders/ReminderSettingsView.swift */,
 			);
 			name = Library;
 			sourceTree = "<group>";
@@ -1502,6 +1514,9 @@
 				A20000000000000000000070 /* Features/Library/LibraryStore.swift in Sources */,
 				A20000000000000000000069 /* Features/Library/LibraryModels.swift in Sources */,
 				A20000000000000000000066 /* Features/Library/LibraryCatalog.swift in Sources */,
+				A20000000000000000000173 /* Features/Reminders/ReminderSettingsView.swift in Sources */,
+				A20000000000000000000172 /* Core/Notifications/ReminderCenter.swift in Sources */,
+				A20000000000000000000171 /* Features/Reminders/ReminderModels.swift in Sources */,
 				A20000000000000000000169 /* Features/Library/MemoryView.swift in Sources */,
 				A20000000000000000000155 /* Features/Library/EncyclopediaModels.swift in Sources */,
 				A20000000000000000000156 /* Features/Library/EncyclopediaSections.swift in Sources */,
@@ -1595,6 +1610,7 @@
 				A20000000000000000000120 /* Tests/AgentSessionTests.swift in Sources */,
 				A20000000000000000000073 /* Tests/LibraryStoreTests.swift in Sources */,
 				A20000000000000000000068 /* Tests/LibraryCatalogTests.swift in Sources */,
+				A20000000000000000000174 /* Tests/ReminderTests.swift in Sources */,
 				A20000000000000000000170 /* Tests/MemoryTests.swift in Sources */,
 				A20000000000000000000065 /* Tests/AgentActivityLogTests.swift in Sources */,
 				A20000000000000000000063 /* Tests/PregnancySetupModelTests.swift in Sources */,

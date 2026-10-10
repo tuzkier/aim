@@ -26,4 +26,8 @@ make ios-build
 make ios-test
 ```
 
+模拟器构建与测试使用本地 ad-hoc 签名（`CODE_SIGN_IDENTITY=-`），用于覆盖 Keychain 登录态恢复和通知冷启动，不需要发行证书。当前本机验证目标可用 `make ios-test IOS_DESTINATION='platform=iOS Simulator,name=iPhone 18 Pro'` 指定。
+
+本地提醒入口是「家庭 → 个人资料 → 提醒设置」。保存开启后申请系统权限；按北京时间安排未来 28 天的胎动、待办与每周简报，打开 App 后重新同步。其他设备上的改动在本机下次同步后生效。
+
 本地 Docker 环境启动后，App 首屏是手机号 + 密码的注册／登录；注册时选择家庭角色和称呼。进入后可录入预产期或末次月经，Aim 按 280 天互相换算，不发送短信，也不要求用户填写内部 ID 或 Token。当前工程已通过 iOS Simulator 编译，并在 iPhone 17 Pro（iOS 26.5）上通过 XCTest；后端和 Eve Runtime 的真实集成验收仍按仓库根目录的验证命令执行。

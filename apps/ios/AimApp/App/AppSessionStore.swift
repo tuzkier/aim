@@ -94,6 +94,7 @@ final class AppSessionStore {
             defaults.removeObject(forKey: Keys.pregnancyID)
         }
         try? keychain.write(bearerToken, for: Keys.bearerToken)
+        publishReminderScope()
     }
 
     /// 换到另一个家庭：接受邀请、退出、被移出之后。孕期可能为空（新的空家庭）。
@@ -106,11 +107,13 @@ final class AppSessionStore {
         } else {
             defaults.removeObject(forKey: Keys.pregnancyID)
         }
+        publishReminderScope()
     }
 
     func setPregnancyID(_ pregnancyID: UUID) {
         self.pregnancyID = pregnancyID
         defaults.set(pregnancyID.uuidString, forKey: Keys.pregnancyID)
+        publishReminderScope()
     }
 
     func clear() {
@@ -122,6 +125,13 @@ final class AppSessionStore {
         defaults.removeObject(forKey: Keys.familyID)
         defaults.removeObject(forKey: Keys.pregnancyID)
         keychain.delete(Keys.bearerToken)
+        publishReminderScope()
+    }
+
+    private func publishReminderScope() {
+        var info: [String: Any] = [:]
+        if let scope = ReminderScope(session: self) { info["scope"] = scope }
+        NotificationCenter.default.post(name: .aimReminderScopeChanged, object: nil, userInfo: info)
     }
 
     private enum Keys {

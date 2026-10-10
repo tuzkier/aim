@@ -416,6 +416,7 @@ actor BusinessRepository: BusinessRepositoryProtocol {
             method: "DELETE"
         )
         _ = try await session.aimData(for: request)
+        NotificationCenter.default.post(name: .aimDataChanged, object: nil, userInfo: ["kinds": ["task"]])
     }
 
     func createTaskFromRecord(record: RecordItem, title: String, description: String?, dueAt: Date?) async throws -> TaskItem {
@@ -440,7 +441,9 @@ actor BusinessRepository: BusinessRepositoryProtocol {
             body: try encoder.encode(body)
         )
         let (data, _) = try await session.aimData(for: request)
-        return map(try decoder.decode(APITaskDTO.self, from: data))
+        let item = map(try decoder.decode(APITaskDTO.self, from: data))
+        NotificationCenter.default.post(name: .aimDataChanged, object: nil, userInfo: ["kinds": ["task"]])
+        return item
     }
 
     func complete(task: TaskItem) async throws -> TaskItem {
@@ -608,7 +611,9 @@ actor BusinessRepository: BusinessRepositoryProtocol {
         let data = try encoder.encode(body)
         let request = environment.businessRequest(path: path, method: "POST", body: data)
         let (responseData, _) = try await session.aimData(for: request)
-        return map(try decoder.decode(APITaskDTO.self, from: responseData))
+        let item = map(try decoder.decode(APITaskDTO.self, from: responseData))
+        NotificationCenter.default.post(name: .aimDataChanged, object: nil, userInfo: ["kinds": ["task"]])
+        return item
     }
 
     private func requiredPregnancyID() throws -> UUID {

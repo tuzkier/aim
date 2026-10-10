@@ -1,6 +1,16 @@
 import XCTest
 
 final class CoreJourneyUITests: XCTestCase {
+    override func setUpWithError() throws {
+        continueAfterFailure = false
+        addUIInterruptionMonitor(withDescription: "关闭测试账号的系统保存密码提示") { alert in
+            for label in ["以后", "Not Now", "Later"] {
+                let button = alert.buttons[label]
+                if button.exists { button.tap(); return true }
+            }
+            return false
+        }
+    }
     func testGlobalAgentButtonShowsCurrentTabContext() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-reset-session"]
@@ -663,6 +673,97 @@ final class CoreJourneyUITests: XCTestCase {
             app.staticTexts["1 次记录"].waitForExistence(timeout: 10),
             "录入的产检应出现在资料库"
         )
+    }
+
+    /// 真正申请系统权限，在后台收到本地通知并点击；重启 App 后也能从通知进简报。
+    func testLocalReminderSettingsDeliverAndOpenWeeklyBriefAfterColdLaunch() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-reset-session"]
+        app.launch()
+        registerNewAccount(in: app)
+        completePregnancySetup(in: app)
+        app.tabBars.buttons["家庭"].tap()
+        app.buttons["profile-entry"].tap()
+        let settings = app.buttons["reminder-settings-entry"]
+        reveal(settings, in: app)
+        settings.tap()
+        let enabled = app.switches["reminder-enabled"]
+        XCTAssertTrue(enabled.waitForExistence(timeout: 10))
+        if enabled.value as? String != "1" { enabled.switches.firstMatch.tap() }
+        XCTAssertEqual(enabled.value as? String, "1")
+        app.buttons["reminder-save"].tap()
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        for label in ["Allow", "允许"] {
+            let allow = springboard.buttons[label]
+            if allow.waitForExistence(timeout: 2) { allow.tap(); break }
+        }
+        XCTAssertTrue(app.staticTexts["提醒设置已保存"].waitForExistence(timeout: 15), app.debugDescription)
+        // 先用无 reset 参数真正重启一次，确认偏好恢复，也让下一次系统启动保留登录态。
+        app.launchArguments = []
+        app.terminate()
+        app.launch()
+        XCTAssertTrue(app.tabBars.buttons["家庭"].waitForExistence(timeout: 15))
+        app.tabBars.buttons["家庭"].tap()
+        app.buttons["profile-entry"].tap()
+        reveal(settings, in: app)
+        settings.tap()
+        XCTAssertTrue(enabled.waitForExistence(timeout: 10))
+        XCTAssertEqual(enabled.value as? String, "1", "重启后应保留当前账号的提醒偏好")
+        let test = app.buttons["reminder-test"]
+        reveal(test, in: app)
+        XCTAssertTrue(test.isEnabled)
+        let screenshot = XCTAttachment(screenshot: app.screenshot())
+        screenshot.name = "提醒设置与系统授权状态"
+        screenshot.lifetime = .keepAlways
+        add(screenshot)
+        test.tap()
+        let sent = app.staticTexts["测试提醒将在 10 秒后送达，可切到后台等待。"]
+        XCTAssertTrue(sent.waitForExistence(timeout: 5))
+
+        // 去掉 reset-session 参数；冷启动要保留同一个账号与孕期。
+        app.launchArguments = []
+        app.terminate()
+        XCUIDevice.shared.press(.home)
+        let notification = springboard.descendants(matching: .any).matching(
+            NSPredicate(format: "label CONTAINS %@", "Aim 测试提醒")).firstMatch
+        XCTAssertTrue(notification.waitForExistence(timeout: 25), "系统应当实际收到本地通知")
+        let delivered = XCTAttachment(screenshot: springboard.screenshot())
+        delivered.name = "系统收到本地提醒"
+        delivered.lifetime = .keepAlways
+        add(delivered)
+        notification.tap()
+        XCTAssertTrue(app.navigationBars["本周简报"].waitForExistence(timeout: 20), "冷启动点击通知应进入简报")
+        XCTAssertTrue(app.staticTexts["weekly-brief-summary"].waitForExistence(timeout: 15))
+        let opened = XCTAttachment(screenshot: app.screenshot())
+        opened.name = "通知点击后本周简报"
+        opened.lifetime = .keepAlways
+        add(opened)
+        app.buttons["reminder-close"].tap()
+        app.tabBars.buttons["家庭"].tap()
+        app.buttons["profile-entry"].tap()
+        reveal(settings, in: app)
+        settings.tap()
+        enabled.switches.firstMatch.tap()
+        app.buttons["reminder-save"].tap()
+        let empty = app.staticTexts["已安排 0 条最近提醒"]
+        reveal(empty, in: app)
+        XCTAssertTrue(empty.waitForExistence(timeout: 10))
+        XCTAssertFalse(test.isEnabled, "关闭提醒后不能再发测试通知")
+        app.swipeDown(); app.swipeDown()
+        XCTAssertTrue(enabled.isHittable)
+        enabled.switches.firstMatch.tap()
+        app.buttons["reminder-save"].tap()
+        reveal(test, in: app)
+        XCTAssertTrue(test.isEnabled)
+        test.tap()
+        XCTAssertTrue(sent.waitForExistence(timeout: 5))
+        app.navigationBars.buttons.firstMatch.tap()
+        let logout = app.buttons["account-sign-out"]
+        reveal(logout, in: app)
+        logout.tap()
+        XCTAssertTrue(app.textFields["auth-phone"].waitForExistence(timeout: 10))
+        XCUIDevice.shared.press(.home)
+        XCTAssertFalse(notification.waitForExistence(timeout: 12), "退出登录后不能再收到旧账号的测试提醒")
     }
 
     /// 直接记忆有明确的小卡和撤销；遗忘必须由用户在卡片上确认。
@@ -1360,6 +1461,10 @@ final class CoreJourneyUITests: XCTestCase {
         XCTAssertTrue(submit.waitForExistence(timeout: 5))
         XCTAssertTrue(submit.isEnabled, "手机号、密码、身份、同意都填齐后应当可以注册")
         submit.tap()
+        // 有签名的模拟器包会获得系统密码自动填充能力，提示不一定跟随 textContentType。
+        // 不把一次性测试账号的密码保存到系统里。
+        let later = app.buttons["以后"]
+        if later.waitForExistence(timeout: 2) { later.tap() }
         return phone
     }
 
@@ -1517,7 +1622,17 @@ final class CoreJourneyUITests: XCTestCase {
         guard save.waitForExistence(timeout: 10) else { return }
 
         app.buttons["pregnancy-setup-choose-date"].tap()
-        XCTAssertTrue(app.pickerWheels.element(boundBy: 0).waitForExistence(timeout: 3))
+        let firstWheel = app.pickerWheels.element(boundBy: 0)
+        if !firstWheel.waitForExistence(timeout: 3) {
+            // 自动填充的保存提示可能晚于注册接口返回，且不是标准系统 Alert。
+            for label in ["以后", "Not Now", "Not now", "Later"] {
+                let later = app.buttons[label]
+                if later.exists { later.tap(); break }
+            }
+            let choose = app.buttons["pregnancy-setup-choose-date"]
+            if choose.exists { choose.tap() }
+        }
+        XCTAssertTrue(firstWheel.waitForExistence(timeout: 5), app.debugDescription)
 
         // 拨到「今天 + 154 天」= 孕 18 周。content/ 里只有 5–12 周和 18–19 周
         // 有任务，随便拨一个日期会得到空计划，后续断言就无从谈起。
