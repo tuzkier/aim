@@ -29,6 +29,55 @@ describe("parseCitations", () => {
   it("没有标记时原样返回", () => {
     expect(parseCitations("普通的一句话")).toEqual([{ kind: "text", text: "普通的一句话" }]);
   });
+
+  it("空标题用编号兜底，不漏出方括号", () => {
+    expect(parseCitations("[[ref:a.b|]]")).toEqual([{ kind: "text", text: "a.b" }]);
+  });
+
+  it("标题里含竖线时整体保留", () => {
+    expect(parseCitations("[[ref:checkup.ogtt|糖耐量|OGTT]]")).toEqual([
+      { kind: "ref", id: "checkup.ogtt", title: "糖耐量|OGTT" },
+    ]);
+  });
+
+  it("没闭合的标记不吞掉后面的正文和合法引用", () => {
+    expect(parseCitations("[[ref:bad 正文[[ref:checkup.ogtt|糖耐量]]")).toEqual([
+      { kind: "text", text: "[[ref:bad 正文" },
+      { kind: "ref", id: "checkup.ogtt", title: "糖耐量" },
+    ]);
+  });
+});
+
+describe("parseCitations：流式中写到一半的标记", () => {
+  it("编号还没写完时整段隐藏", () => {
+    expect(parseCitations("前文[[ref:che")).toEqual([{ kind: "text", text: "前文" }]);
+    expect(parseCitations("前文[[record:0b6c1a2e-11")).toEqual([{ kind: "text", text: "前文" }]);
+  });
+
+  it("已写出标题时只显示标题文字，不成胶囊", () => {
+    expect(parseCitations("前文[[ref:checkup.ogtt|糖耐")).toEqual([
+      { kind: "text", text: "前文" },
+      { kind: "text", text: "糖耐" },
+    ]);
+  });
+
+  it("末尾的标记前缀先隐藏", () => {
+    for (const tail of ["[", "[[", "[[r", "[[re", "[[ref", "[[ref:", "[[rec", "[[reco", "[[recor", "[[record", "[[record:"]) {
+      expect(parseCitations(`前文${tail}`), tail).toEqual([{ kind: "text", text: "前文" }]);
+    }
+  });
+
+  it("不影响前面已闭合的合法引用", () => {
+    expect(parseCitations("见[[ref:checkup.ogtt|糖耐量]]，还有[[record:0b6c")).toEqual([
+      { kind: "text", text: "见" },
+      { kind: "ref", id: "checkup.ogtt", title: "糖耐量" },
+      { kind: "text", text: "，还有" },
+    ]);
+  });
+
+  it("只有写到一半的标记时什么都不显示", () => {
+    expect(parseCitations("[[ref:che")).toEqual([]);
+  });
 });
 
 const RECORD_ID = "0b6c1a2e-1111-4a2b-9c3d-123456789abc";

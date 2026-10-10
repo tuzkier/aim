@@ -9,9 +9,24 @@ export type CitationPiece =
   | { kind: "ref"; id: string; title: string }
   | { kind: "record"; id: string; title: string };
 
-const MARK = /\[\[(ref|record):([^\]|]+)(?:\|([^\]]+))?\]\]/g;
+/**
+ * 编号不含空白和方括号：模型写坏一个标记（没闭合）时，不能把后面的正文连同下一个
+ * 合法标记一起吞进编号里。标题可以为空、可以含 `|`，但不含方括号。
+ */
+const MARK = /\[\[(ref|record):([^\]|\s\[]+)(?:\|([^\[\]]*))?\]\]/g;
 const REF_ID = /^[a-z]+\.[a-z0-9-]+$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * 文本末尾还没闭合的标记，或者标记的前缀（`[`、`[[`、`[[r` … `[[record`）。
+ *
+ * 流式输出时标记是一点点长出来的，不藏的话原文会先闪一下；流若中途断掉，
+ * 原文还会一直留在页面上。所以末尾这一段先不显示，下一帧补全了自然变成胶囊。
+ * 只认「接下去仍可能写成合法标记」的形状（字符集与 MARK 一致），
+ * 已经不可能闭合成标记的残片照常显示，免得把正文藏掉。
+ */
+const PENDING =
+  /\[\[(?:ref|record):[^\]|\s\[]*(?:\|([^\[\]]*))?$|\[(?:\[(?:r(?:e(?:f|c(?:o(?:r(?:d)?)?)?)?)?)?)?$/;
 
 export const parseCitations = (text: string): CitationPiece[] => {
   const pieces: CitationPiece[] = [];
@@ -30,8 +45,15 @@ export const parseCitations = (text: string): CitationPiece[] => {
     }
     last = index + whole.length;
   }
-  if (last < text.length) pieces.push({ kind: "text", text: text.slice(last) });
-  return pieces.length > 0 ? pieces : [{ kind: "text", text }];
+
+  const tail = text.slice(last);
+  const pending = PENDING.exec(tail);
+  const visible = pending ? tail.slice(0, pending.index) : tail;
+  if (visible) pieces.push({ kind: "text", text: visible });
+  // 已经写出 `|标题` 的，先把标题当普通文字露出来，不做成胶囊。
+  const partialTitle = pending?.[1]?.trim();
+  if (partialTitle) pieces.push({ kind: "text", text: partialTitle });
+  return pieces;
 };
 
 /** 一段行内文字：要么普通、要么加粗，里面可以夹着引用。 */

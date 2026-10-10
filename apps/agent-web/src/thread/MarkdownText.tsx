@@ -27,12 +27,13 @@ const renderPiece = (piece: CitationPiece, key: number): ReactNode => {
       key={key}
       type="button"
       className="aim-citation"
+      title={piece.title}
       onClick={() => openNative({ kind: piece.kind === "ref" ? "encyclopedia" : "record", id: piece.id })}
     >
       <span className="aim-citation__icon" aria-hidden="true">
         {piece.kind === "ref" ? "📖" : "🗂"}
       </span>
-      {piece.title}
+      <span className="aim-citation__title">{piece.title}</span>
     </button>
   );
 };
