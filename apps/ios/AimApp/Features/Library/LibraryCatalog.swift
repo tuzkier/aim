@@ -141,6 +141,7 @@ enum LibraryCategoryID: String, CaseIterable, Identifiable, Sendable {
 
     /// 产检与身体感受带上最近 5 条记录的编号（按时间倒序），AIM 才能在回答里
     /// 用 `[[record:<编号>|…]]` 引用具体那一次。其他分类、没有记录时不加这一行。
+    /// 编号用小写，与 API 返回、AIM 工具里出现的写法一致。
     @MainActor
     private func recordIDLine(from snapshot: LibrarySnapshot) -> String? {
         let type: RecordType
@@ -157,7 +158,7 @@ enum LibraryCategoryID: String, CaseIterable, Identifiable, Sendable {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "zh_CN")
         formatter.dateFormat = "M月d日"
-        let items = recent.map { "\($0.id.uuidString)（\(formatter.string(from: $0.occurredAt)) \($0.displayTitle)）" }
+        let items = recent.map { "\($0.id.uuidString.lowercased())（\(formatter.string(from: $0.occurredAt)) \($0.displayTitle)）" }
         return "记录编号：" + items.joined(separator: "；")
     }
 

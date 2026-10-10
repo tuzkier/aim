@@ -58,3 +58,26 @@ test("急症段落每行不超过 80 列", () => {
     .filter((line) => [...line].length > 80);
   assert.deepEqual(long, []);
 });
+
+// 资料段：知识问答先翻资料、回答里引用；但症状匹配急症时就医那句必须先于翻资料。
+const LIBRARY_START = "For pregnancy knowledge questions";
+
+function libraryParagraph(): string {
+  const start = instructions.indexOf(LIBRARY_START);
+  assert.ok(start >= 0, "指令里要有资料段");
+  const end = instructions.indexOf("\n\n", start);
+  return instructions.slice(start, end).replace(/\s+/g, " ");
+}
+
+test("只引用工具或页面上下文给出的编号，百科条目读过才引用", () => {
+  // 资料页、记录详情问 AIM 时，上下文里给了记录编号；旧规则「只能引用工具返回的」与之矛盾。
+  const paragraph = libraryParagraph();
+  assert.ok(
+    paragraph.includes(
+      "Only cite ids that a tool returned in this conversation or that the current " +
+        "page context gives you; never invent one.",
+    ),
+  );
+  assert.ok(paragraph.includes("Cite an encyclopedia entry only after reading it with get_library_entry."));
+  assert.ok(!paragraph.includes("Only cite ids that a tool returned in this conversation;"), "旧规则与页面上下文矛盾");
+});

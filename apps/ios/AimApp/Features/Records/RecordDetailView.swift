@@ -57,10 +57,7 @@ struct RecordDetailView: View {
                 Button("让 Agent 分析当前记录") {
                     agentStore.prepareAnalysis(
                         analysisPrompt(for: currentRecord),
-                        context: AgentContext(
-                            title: "记录",
-                            summary: "\(currentRecord.type.displayName)：\(currentRecord.displayTitle)"
-                        )
+                        context: currentRecord.agentContext
                     )
                     showingAgent = true
                 }

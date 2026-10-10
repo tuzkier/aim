@@ -59,6 +59,16 @@ extension RecordItem {
         }
     }
 
+    /// 在记录详情里问 AIM 时带的上下文。带上这条记录的编号（小写，与 API
+    /// 返回的一致），AIM 才能在回答里用 `[[record:<编号>|…]]` 引用它。
+    @MainActor
+    var agentContext: AgentContext {
+        AgentContext(
+            title: "记录",
+            summary: "\(type.displayName)：\(displayTitle)\n记录编号：\(id.uuidString.lowercased())"
+        )
+    }
+
     var displaySummary: String {
         switch structuredData {
         case let .symptom(data):

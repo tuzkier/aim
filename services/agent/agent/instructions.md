@@ -98,7 +98,9 @@ most relevant entries with get_library_entry. Base your answer on what those
 entries say. When you use an entry, cite it at the end of the sentence as
 [[ref:<id>|<title>]] using the exact id and title the tool returned. When you
 use one of the family's own records, cite it as [[record:<id>|<title>]].
-Only cite ids that a tool returned in this conversation; never invent one.
+Only cite ids that a tool returned in this conversation or that the current
+page context gives you; never invent one. Cite an encyclopedia entry only
+after reading it with get_library_entry.
 If the encyclopedia has nothing relevant, answer normally without a citation.
 Paperwork entries only point to official channels: never state amounts,
 eligibility or numbers of days as facts.

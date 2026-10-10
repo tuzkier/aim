@@ -115,9 +115,9 @@ final class LibraryCatalogTests: XCTestCase {
         let ask = LibraryCategoryID.checkups.askContext(from: snapshot).summary
 
         XCTAssertTrue(agent.contains("记录编号："), agent)
-        XCTAssertTrue(agent.contains(latest.id.uuidString), agent)
+        XCTAssertTrue(agent.contains(latest.id.uuidString.lowercased()), agent)
         XCTAssertTrue(agent.contains("常规"), "编号后要附上日期与标题，AIM 才知道是哪一次")
-        XCTAssertTrue(ask.contains(latest.id.uuidString), ask)
+        XCTAssertTrue(ask.contains(latest.id.uuidString.lowercased()), ask)
     }
 
     func testSymptomContextCarriesTheLatestRecordIDAndIgnoresOtherTypes() {
@@ -127,8 +127,8 @@ final class LibraryCatalogTests: XCTestCase {
 
         let summary = LibraryCategoryID.symptoms.agentContext(from: snapshot).summary
 
-        XCTAssertTrue(summary.contains(latest.id.uuidString), summary)
-        XCTAssertFalse(summary.contains(other.id.uuidString), "身体感受分类不带产检记录的编号")
+        XCTAssertTrue(summary.contains(latest.id.uuidString.lowercased()), summary)
+        XCTAssertFalse(summary.contains(other.id.uuidString.lowercased()), "身体感受分类不带产检记录的编号")
     }
 
     /// 只带最近 5 条，按时间倒序——上下文不能随记录数无限变长。
@@ -139,9 +139,9 @@ final class LibraryCatalogTests: XCTestCase {
         let summary = LibraryCategoryID.checkups.agentContext(from: snapshot).summary
         let line = summary.components(separatedBy: "\n").first { $0.hasPrefix("记录编号：") } ?? ""
 
-        for kept in records.prefix(5) { XCTAssertTrue(line.contains(kept.id.uuidString)) }
-        for dropped in records.suffix(2) { XCTAssertFalse(summary.contains(dropped.id.uuidString)) }
-        let positions = records.prefix(5).compactMap { line.range(of: $0.id.uuidString)?.lowerBound }
+        for kept in records.prefix(5) { XCTAssertTrue(line.contains(kept.id.uuidString.lowercased())) }
+        for dropped in records.suffix(2) { XCTAssertFalse(summary.contains(dropped.id.uuidString.lowercased())) }
+        let positions = records.prefix(5).compactMap { line.range(of: $0.id.uuidString.lowercased())?.lowerBound }
         XCTAssertEqual(positions, positions.sorted(), "最近的在前")
     }
 
