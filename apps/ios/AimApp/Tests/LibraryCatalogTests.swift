@@ -105,6 +105,54 @@ final class LibraryCatalogTests: XCTestCase {
             XCTAssertFalse(context.summary.isEmpty, "\(category.id) 的上下文摘要不该为空")
         }
     }
+
+    /// 在产检分类里问 AIM：要带上记录编号，AIM 才能在回答里引用具体那一次。
+    func testCheckupContextCarriesTheLatestRecordID() {
+        let latest = checkup(daysAgo: 1)
+        let snapshot = LibrarySnapshot(records: [checkup(daysAgo: 20), latest], safetyRuleCount: 0)
+
+        let agent = LibraryCategoryID.checkups.agentContext(from: snapshot).summary
+        let ask = LibraryCategoryID.checkups.askContext(from: snapshot).summary
+
+        XCTAssertTrue(agent.contains("记录编号："), agent)
+        XCTAssertTrue(agent.contains(latest.id.uuidString), agent)
+        XCTAssertTrue(agent.contains("常规"), "编号后要附上日期与标题，AIM 才知道是哪一次")
+        XCTAssertTrue(ask.contains(latest.id.uuidString), ask)
+    }
+
+    func testSymptomContextCarriesTheLatestRecordIDAndIgnoresOtherTypes() {
+        let latest = symptom("腰酸", daysAgo: 0)
+        let other = checkup(daysAgo: 0)
+        let snapshot = LibrarySnapshot(records: [symptom("恶心", daysAgo: 3), latest, other], safetyRuleCount: 0)
+
+        let summary = LibraryCategoryID.symptoms.agentContext(from: snapshot).summary
+
+        XCTAssertTrue(summary.contains(latest.id.uuidString), summary)
+        XCTAssertFalse(summary.contains(other.id.uuidString), "身体感受分类不带产检记录的编号")
+    }
+
+    /// 只带最近 5 条，按时间倒序——上下文不能随记录数无限变长。
+    func testRecordIDsAreLimitedToTheLatestFiveNewestFirst() {
+        let records = (1...7).map { checkup(daysAgo: $0) }
+        let snapshot = LibrarySnapshot(records: records.shuffled(), safetyRuleCount: 0)
+
+        let summary = LibraryCategoryID.checkups.agentContext(from: snapshot).summary
+        let line = summary.components(separatedBy: "\n").first { $0.hasPrefix("记录编号：") } ?? ""
+
+        for kept in records.prefix(5) { XCTAssertTrue(line.contains(kept.id.uuidString)) }
+        for dropped in records.suffix(2) { XCTAssertFalse(summary.contains(dropped.id.uuidString)) }
+        let positions = records.prefix(5).compactMap { line.range(of: $0.id.uuidString)?.lowerBound }
+        XCTAssertEqual(positions, positions.sorted(), "最近的在前")
+    }
+
+    /// 没有记录时不加空的编号行；其他分类不带编号。
+    func testNoRecordIDLineWithoutRecordsOrOutsideCheckupsAndSymptoms() {
+        let empty = LibrarySnapshot(records: [], safetyRuleCount: 0)
+        XCTAssertFalse(LibraryCategoryID.checkups.agentContext(from: empty).summary.contains("记录编号"))
+
+        let snapshot = LibrarySnapshot(records: [checkup(daysAgo: 1)], safetyRuleCount: 0)
+        XCTAssertFalse(LibraryCategoryID.questions.agentContext(from: snapshot).summary.contains("记录编号"))
+    }
 }
 
 @MainActor

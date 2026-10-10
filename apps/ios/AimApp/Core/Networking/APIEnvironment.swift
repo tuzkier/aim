@@ -53,6 +53,12 @@ enum APIError: LocalizedError, Equatable {
         if case let .http(status, _) = self { return status == 401 }
         return false
     }
+
+    /// 要的东西不存在（比如百科条目已下线）。和其他失败分开：重试也不会好。
+    var isNotFound: Bool {
+        if case let .http(status, _) = self { return status == 404 }
+        return false
+    }
 }
 
 extension Notification.Name {

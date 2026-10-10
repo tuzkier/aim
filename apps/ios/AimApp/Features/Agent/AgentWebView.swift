@@ -7,18 +7,35 @@ enum AgentWebRoute: Equatable {
     case record(UUID)
     case task(UUID)
     case knowledge(UUID)
+    /// 百科条目，编号形如 `checkup.ogtt`（主题.短名）。
+    case encyclopedia(String)
 
     init?(body: [String: Any]) {
         guard let kind = body["kind"] as? String,
-              let raw = body["id"] as? String,
-              let id = UUID(uuidString: raw)
+              let raw = body["id"] as? String
         else { return nil }
+        // 百科编号不是 UUID，单独校验：它会被拼进请求路径，只放行「小写主题.小写短名」。
+        if kind == "encyclopedia" {
+            guard Self.isEncyclopediaID(raw) else { return nil }
+            self = .encyclopedia(raw)
+            return
+        }
+        guard let id = UUID(uuidString: raw) else { return nil }
         switch kind {
         case "record": self = .record(id)
         case "task": self = .task(id)
         case "knowledge": self = .knowledge(id)
         default: return nil
         }
+    }
+
+    /// 等价于 `^[a-z]+\.[a-z0-9-]+$`，但不借助正则——正则的 `$` 会放过结尾的换行。
+    private static func isEncyclopediaID(_ raw: String) -> Bool {
+        let parts = raw.split(separator: ".", omittingEmptySubsequences: false)
+        guard parts.count == 2, !parts[0].isEmpty, !parts[1].isEmpty else { return false }
+        let lower = Set("abcdefghijklmnopqrstuvwxyz")
+        let slug = lower.union("0123456789-")
+        return parts[0].allSatisfy(lower.contains) && parts[1].allSatisfy(slug.contains)
     }
 }
 
