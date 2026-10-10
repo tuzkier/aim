@@ -13,7 +13,7 @@
 | 0 | 胎动计数 | ✅ 已合并 development（e608582） | specs/2026-10-09-fetal-movement-design.md、plans/2026-10-09-fetal-movement.md |
 | 1 | 胎动收尾：Agent 对 under / reported_less 用「现在」；计数页显示时跳过过期断点收尾 | ✅ 已合并 development | 遗留：指令里「慢一倍」仍按 latest or today's，与 under 只看今天不一致（下次动 Agent 指令时顺手统一） |
 | 2 | 补缺口：孕期待办 4–42 周（31 条新模板）；危险信号 19 条三档；孕周推进自动续任务；AIM 读危险信号；iOS 三档自查与血压急症横幅 | ✅ 已合并 development | specs/2026-10-10-fill-gaps-design.md、plans/2026-10-10-fill-gaps.md |
-| 3 | 资料库第 2 期：AIM 翻目录（list_library / get_library_entry）与引用渲染、原生跳转、各资料页问 AIM 上下文 | 待做 | specs/2026-10-09-library-2-design.md §7.1–7.2 |
+| 3 | 资料库第 2 期：AIM 翻目录（list_library / get_library_entry）与引用渲染、原生跳转、各资料页问 AIM 上下文 | ✅ 已合并 development（真实模型端到端通过） | plans/2026-10-10-library-2-phase2-aim-citations.md |
 | 4 | 资料库第 3 期：档案可编辑、产检报告结构与表单/详情、create_checkup_report 与预览卡、本周关注新规则 | 待做 | 同上 §5、§6.3、§7.3 |
 | 5 | 资料库第 4 期：AIM 记得的事（memory 类型、remember / forget_memory、会话开始注入、记忆页） | 待做 | 同上 §5.3、§6.4、§7.4 |
 | 6 | 主动提醒（本地通知版）：每日胎动、产检/待办到期、每周简报、通知偏好与免打扰、点通知跳转 | 待做 | — |
@@ -34,3 +34,10 @@
   需要「通知家人」的场景（如「我们去医院了」）先落为家庭动态 + 家人打开 App 时的醒目提示。
 - 医学内容一律离线起草、对照权威指南自审，文案集中放常量或 content/ 便于复核；AI 审核不替代临床医生。
 - 新记录类型复用 records 表；旧版 App 把未知类型解码为 unknown，不会崩。
+
+## 待处理的小尾巴（不阻塞，择机顺手做）
+
+- web `citations.ts` 的 `PENDING` 编号部分收紧为只容忍两侧空白（现在段末坏标记会藏掉到段尾的正文）；`RecordStoreTests` 注释「网页端只认小写」不准确。
+- 模拟器会弹系统「使用强密码？」「保存密码？」，挡住 UI 测试的注册步骤——在 UI 测试里处理系统弹窗（interruption monitor 或关闭密码自动填充）。
+- 本地后端在保存孕期信息时偶发 500（一次 UI 回归中出现），待查。
+- Agent 目录每次约 5K token：中期可把「编号｜标题｜别名」紧凑索引放进系统指令做缓存前缀。
