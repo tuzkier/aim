@@ -56,3 +56,19 @@ struct CheckupMetricInput: Equatable, Sendable {
         return value
     }
 }
+
+extension CheckupRecordData {
+    /// 记录编辑器保存时组装的产检数据。文字段去掉首尾空白后为空就传 nil；
+    /// 表单只管四段文字和三项指标，其他指标与其他化验项从原报告原样带回，编辑一次不会丢。
+    static func composed(
+        from original: CheckupRecordData?,
+        hospital: String, examItems: String, result: String, doctorAdvice: String,
+        metrics: CheckupMetricInput
+    ) -> CheckupRecordData {
+        CheckupRecordData(
+            hospital: hospital.trimmed.nilIfEmpty, examItems: examItems.trimmed.nilIfEmpty,
+            result: result.trimmed.nilIfEmpty, doctorAdvice: doctorAdvice.trimmed.nilIfEmpty,
+            metrics: metrics.merged(into: original?.metrics ?? CheckupMetrics()),
+            otherItems: original?.otherItems ?? [])
+    }
+}

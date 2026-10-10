@@ -2584,6 +2584,15 @@
             "additionalProperties": true,
             "type": "object",
             "title": "Structured Data"
+          },
+          "attachment_ids": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "maxItems": 4,
+            "title": "Attachment Ids"
           }
         },
         "type": "object",

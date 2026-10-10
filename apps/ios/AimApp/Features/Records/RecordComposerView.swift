@@ -256,13 +256,10 @@ struct RecordComposerView: View {
         }
     }
 
-    /// 文字段为空时传 nil；表单管不到的字段从原报告带回。
     private var checkupDraft: CheckupRecordData {
-        CheckupRecordData(
-            hospital: hospital.trimmed.nilIfEmpty, examItems: examItems.trimmed.nilIfEmpty,
-            result: result.trimmed.nilIfEmpty, doctorAdvice: doctorAdvice.trimmed.nilIfEmpty,
-            metrics: metrics.merged(into: originalCheckup?.metrics ?? CheckupMetrics()),
-            otherItems: originalCheckup?.otherItems ?? [])
+        .composed(
+            from: originalCheckup, hospital: hospital, examItems: examItems,
+            result: result, doctorAdvice: doctorAdvice, metrics: metrics)
     }
 
     private func toggle(_ symptom: String) {

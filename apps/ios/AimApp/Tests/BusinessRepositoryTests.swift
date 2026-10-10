@@ -332,4 +332,46 @@ final class ImageCompressionTests: XCTestCase {
         XCTAssertEqual(pixelSize(data), CGSize(width: 800, height: 600))
         XCTAssertEqual(Array(data.prefix(2)), [0xFF, 0xD8], "应当是 JPEG")
     }
+
+    /// 只有几十像素的小图（截图里的二维码、裁过的局部）也要能传，而不是返回 nil。
+    func testTinyImageIsStillCompressed() throws {
+        let data = try XCTUnwrap(ImageCompression.jpegUnder2MB(noise(width: 100, height: 100)))
+
+        XCTAssertEqual(pixelSize(data), CGSize(width: 100, height: 100))
+    }
+
+    /// JPEG 没有透明通道。透明的地方不填底色会变成黑的，截图类图片整张发黑。
+    func testTransparentAreasBecomeWhite() throws {
+        let format = UIGraphicsImageRendererFormat.default()
+        format.scale = 1
+        format.opaque = false
+        let image = UIGraphicsImageRenderer(size: CGSize(width: 64, height: 64), format: format).image { context in
+            UIColor.red.setFill()
+            context.fill(CGRect(x: 32, y: 32, width: 32, height: 32))
+        }
+
+        let data = try XCTUnwrap(ImageCompression.jpegUnder2MB(image))
+        let cgImage = try XCTUnwrap(UIImage(data: data)?.cgImage)
+
+        let topLeft = try pixel(of: cgImage, x: 0, y: 0)
+        XCTAssertGreaterThan(topLeft[0], 240)
+        XCTAssertGreaterThan(topLeft[1], 240)
+        XCTAssertGreaterThan(topLeft[2], 240)
+        // 对照：不透明的红块仍是红的，证明读的确实是那个像素。
+        let bottomRight = try pixel(of: cgImage, x: 63, y: 63)
+        XCTAssertGreaterThan(bottomRight[0], 200)
+        XCTAssertLessThan(bottomRight[1], 60)
+    }
+
+    /// 读 (x, y) 处的 RGB，坐标以左上角为原点。
+    private func pixel(of image: CGImage, x: Int, y: Int) throws -> [UInt8] {
+        var pixel = [UInt8](repeating: 0, count: 4)
+        let context = try XCTUnwrap(CGContext(
+            data: &pixel, width: 1, height: 1, bitsPerComponent: 8, bytesPerRow: 4,
+            space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue))
+        // CGContext 原点在左下：把目标像素挪到 1×1 画布上。
+        context.draw(image, in: CGRect(
+            x: -x, y: -(image.height - 1 - y), width: image.width, height: image.height))
+        return Array(pixel.prefix(3))
+    }
 }

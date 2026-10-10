@@ -37,6 +37,8 @@ class CreateRecordRequest(BaseModel):
     title: str | None = Field(default=None, max_length=200)
     content: str | None = Field(default=None, max_length=5000)
     structured_data: dict[str, Any]
+    #: 先经 /attachments 上传拿到的图片编号。必须属于同一家庭、尚未挂到别的记录。
+    attachment_ids: list[UUID] = Field(default_factory=list, max_length=4)
 
 
 class UpdateRecordRequest(BaseModel):
@@ -133,6 +135,7 @@ async def create_record_endpoint(
                     title=payload.title,
                     content=payload.content,
                     structured_data=payload.structured_data,
+                    attachment_ids=tuple(payload.attachment_ids),
                 ),
                 uow,
             )

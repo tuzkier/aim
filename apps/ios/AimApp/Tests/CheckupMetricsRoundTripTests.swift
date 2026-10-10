@@ -218,4 +218,35 @@ final class CheckupMetricsRoundTripTests: XCTestCase {
         XCTAssertEqual(merged.fetalHeartRate, 145)
         XCTAssertEqual(merged.fundalHeightCm, 29)
     }
+
+    /// 编辑一份 AIM 建的报告：表单只有四段文字和三项指标，其他化验项与胎心不能丢；空文字段传 nil。
+    func testEditingAReportKeepsOtherItemsAndFetalHeartRate() {
+        let original = CheckupRecordData(
+            hospital: "市一医院", examItems: nil, result: "尿蛋白弱阳性", doctorAdvice: nil,
+            metrics: CheckupMetrics(weightKg: 60, fetalHeartRate: 145),
+            otherItems: [CheckupOtherItem(name: "尿蛋白", value: "+-", reference: "阴性", flag: .abnormal)])
+
+        let draft = CheckupRecordData.composed(
+            from: original,
+            hospital: " 市一医院 ", examItems: "", result: "尿蛋白弱阳性", doctorAdvice: "  ",
+            metrics: CheckupMetricInput(weight: "61", systolic: "", diastolic: ""))
+
+        XCTAssertEqual(draft.hospital, "市一医院")
+        XCTAssertNil(draft.examItems)
+        XCTAssertNil(draft.doctorAdvice)
+        XCTAssertEqual(draft.metrics.weightKg, 61)
+        XCTAssertEqual(draft.metrics.fetalHeartRate, 145)
+        XCTAssertEqual(draft.otherItems, original.otherItems)
+    }
+
+    func testANewReportStartsWithoutOtherItems() {
+        let draft = CheckupRecordData.composed(
+            from: nil, hospital: "", examItems: "常规", result: "", doctorAdvice: "",
+            metrics: CheckupMetricInput())
+
+        XCTAssertEqual(draft.examItems, "常规")
+        XCTAssertNil(draft.hospital)
+        XCTAssertTrue(draft.metrics.isEmpty)
+        XCTAssertTrue(draft.otherItems.isEmpty)
+    }
 }

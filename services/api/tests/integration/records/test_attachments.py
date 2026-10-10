@@ -154,3 +154,60 @@ def test_a_photo_cannot_be_attached_twice_or_across_families() -> None:
         )
         assert foreign.status_code == 409
         assert "找不到这张图片" in foreign.json()["error"]["message"]
+
+
+RECORDS = "/api/v1/pregnancies/{}/records"
+
+
+def _note(**extra):
+    return {
+        "type": "note",
+        "occurred_at": "2026-10-03T01:00:00Z",
+        "visibility": "family",
+        "content": "化验单",
+        "structured_data": {},
+        **extra,
+    }
+
+
+def test_app_attaches_uploaded_photos_when_creating_a_record() -> None:
+    """App 先上传、再带编号建记录。此前 REST 不收 attachment_ids，pydantic 静默丢掉。"""
+    with TestClient(create_app()) as client:
+        headers, pregnancy_id, *_ = _family(client)
+        attachment_id = _upload(client, headers, pregnancy_id).json()["id"]
+
+        created = client.post(
+            RECORDS.format(pregnancy_id),
+            headers=headers,
+            json=_note(attachment_ids=[attachment_id]),
+        )
+
+        assert created.status_code == 201, created.text
+        assert created.json()["attachment_refs"] == [attachment_id]
+
+
+def test_app_cannot_attach_another_familys_photo() -> None:
+    with TestClient(create_app()) as client:
+        headers, pregnancy_id, *_ = _family(client)
+        other_headers, other_pregnancy, *_ = _family(client)
+        theirs = _upload(client, other_headers, other_pregnancy).json()["id"]
+
+        created = client.post(
+            RECORDS.format(pregnancy_id), headers=headers, json=_note(attachment_ids=[theirs])
+        )
+
+        # RecordValidationError 经 _translate 映射为 409。
+        assert created.status_code == 409, created.text
+        assert "找不到这张图片" in created.text
+
+
+def test_app_cannot_attach_more_than_four_photos() -> None:
+    with TestClient(create_app()) as client:
+        headers, pregnancy_id, *_ = _family(client)
+        ids = [_upload(client, headers, pregnancy_id).json()["id"] for _ in range(5)]
+
+        created = client.post(
+            RECORDS.format(pregnancy_id), headers=headers, json=_note(attachment_ids=ids)
+        )
+
+        assert created.status_code == 422, created.text

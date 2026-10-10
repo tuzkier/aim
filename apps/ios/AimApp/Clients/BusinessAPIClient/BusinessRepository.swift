@@ -716,12 +716,13 @@ enum ImageCompression {
     static let maxEdge: CGFloat = 2048
 
     /// 先把长边缩到 2048 以内，再逐步降低质量；最低质量仍超限就再缩小一圈。
+    /// 第一轮无条件尝试——长边本来就不到 256 的小图也要能传。
     /// 实在压不下来（极端情况）返回 nil，由调用方提示换一张。
     static func jpegUnder2MB(_ image: UIImage) -> Data? {
         let longest = max(image.size.width * image.scale, image.size.height * image.scale)
         guard longest > 0 else { return nil }
         var edge = min(maxEdge, longest)
-        while edge >= 256 {
+        repeat {
             let resized = resize(image, longestEdge: edge)
             for quality in stride(from: 0.85, through: 0.35, by: -0.1) {
                 if let data = resized.jpegData(compressionQuality: quality), data.count <= maxBytes {
@@ -729,7 +730,7 @@ enum ImageCompression {
                 }
             }
             edge = (edge * 0.75).rounded(.down)
-        }
+        } while edge >= 256
         return nil
     }
 
@@ -742,7 +743,10 @@ enum ImageCompression {
         let format = UIGraphicsImageRendererFormat.default()
         format.scale = 1
         format.opaque = true
-        return UIGraphicsImageRenderer(size: target, format: format).image { _ in
+        return UIGraphicsImageRenderer(size: target, format: format).image { context in
+            // JPEG 没有透明通道：先铺白底，透明的截图、贴纸才不会变黑。
+            UIColor.white.setFill()
+            context.fill(CGRect(origin: .zero, size: target))
             image.draw(in: CGRect(origin: .zero, size: target))
         }
     }
