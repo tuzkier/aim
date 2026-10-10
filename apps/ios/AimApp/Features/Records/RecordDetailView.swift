@@ -100,10 +100,11 @@ struct RecordDetailView: View {
             }
         case let .checkup(data):
             Section("产检信息") {
-                LabeledContent("医院", value: data.hospital)
-                LabeledContent("检查项目", value: data.examItems)
-                LabeledContent("检查结果", value: data.result)
-                LabeledContent("医生建议", value: data.doctorAdvice)
+                // 没填的段落不显示，不留一行空白。完整的报告详情在 Task 6 重做。
+                if let hospital = data.hospital?.trimmed.nilIfEmpty { LabeledContent("医院", value: hospital) }
+                if let examItems = data.examItems?.trimmed.nilIfEmpty { LabeledContent("检查项目", value: examItems) }
+                if let result = data.result?.trimmed.nilIfEmpty { LabeledContent("检查结果", value: result) }
+                if let advice = data.doctorAdvice?.trimmed.nilIfEmpty { LabeledContent("医生建议", value: advice) }
             }
         case .note:
             Section("内容") { Text(currentRecord.content ?? "没有补充内容") }

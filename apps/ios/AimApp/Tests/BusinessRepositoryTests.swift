@@ -1,3 +1,4 @@
+import UIKit
 import XCTest
 @testable import AimApp
 
@@ -190,5 +191,145 @@ final class TaskActorMappingTests: XCTestCase {
     func testUnrecognisedActorFallsBackToUnknown() {
         XCTAssertEqual(TaskActor(rawValue: "robot"), .unknown)
         XCTAssertFalse(TaskActor.unknown.isAgent)
+    }
+}
+
+/// 记下发出去的请求，并回一个固定的响应。
+private final class CapturingProtocol: URLProtocol {
+    nonisolated(unsafe) static var request: URLRequest?
+    nonisolated(unsafe) static var body: Data?
+    nonisolated(unsafe) static var responseBody = Data()
+    nonisolated(unsafe) static var status = 201
+
+    override class func canInit(with request: URLRequest) -> Bool { true }
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+
+    override func startLoading() {
+        Self.request = request
+        // URLSession 会把 httpBody 换成流交给 URLProtocol。
+        Self.body = request.httpBody ?? request.httpBodyStream.map(Self.read)
+        let response = HTTPURLResponse(
+            url: request.url!, statusCode: Self.status, httpVersion: "HTTP/1.1", headerFields: nil
+        )!
+        client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+        client?.urlProtocol(self, didLoad: Self.responseBody)
+        client?.urlProtocolDidFinishLoading(self)
+    }
+
+    override func stopLoading() {}
+
+    private static func read(_ stream: InputStream) -> Data {
+        stream.open()
+        defer { stream.close() }
+        var data = Data()
+        var buffer = [UInt8](repeating: 0, count: 4096)
+        while stream.hasBytesAvailable {
+            let count = stream.read(&buffer, maxLength: buffer.count)
+            guard count > 0 else { break }
+            data.append(buffer, count: count)
+        }
+        return data
+    }
+}
+
+final class AttachmentUploadTests: XCTestCase {
+    private let pregnancyID = UUID()
+
+    private func repository() -> BusinessRepository {
+        let config = URLSessionConfiguration.ephemeral
+        config.protocolClasses = [CapturingProtocol.self]
+        return BusinessRepository(
+            environment: APIEnvironment(
+                baseURL: URL(string: "http://stub.local")!,
+                eveBaseURL: URL(string: "http://stub.local")!,
+                bearerToken: "t", accountID: UUID(), familyID: UUID(), pregnancyID: pregnancyID),
+            session: URLSession(configuration: config))
+    }
+
+    /// 上传接口收的是原始字节，靠 Content-Type 判断类型——不是 JSON，也不是 multipart。
+    func testUploadPostsRawJPEGBytesAndReturnsTheAttachmentID() async throws {
+        let attachmentID = UUID()
+        CapturingProtocol.status = 201
+        CapturingProtocol.responseBody = Data("""
+        {"id":"\(attachmentID.uuidString.lowercased())","media_type":"image/jpeg","byte_size":4}
+        """.utf8)
+        let jpeg = Data([0xFF, 0xD8, 0xFF, 0xD9])
+
+        let id = try await repository().uploadAttachment(jpeg: jpeg)
+
+        XCTAssertEqual(id, attachmentID)
+        let request = try XCTUnwrap(CapturingProtocol.request)
+        XCTAssertEqual(request.httpMethod, "POST")
+        XCTAssertEqual(request.url?.path, "/api/v1/pregnancies/\(pregnancyID.uuidString)/attachments")
+        XCTAssertEqual(request.value(forHTTPHeaderField: "Content-Type"), "image/jpeg")
+        XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer t")
+        XCTAssertEqual(CapturingProtocol.body, jpeg)
+    }
+
+    func testRejectedUploadThrows() async {
+        CapturingProtocol.status = 413
+        CapturingProtocol.responseBody = Data(#"{"code":"attachment.too_large"}"#.utf8)
+
+        do {
+            _ = try await repository().uploadAttachment(jpeg: Data([0xFF, 0xD8]))
+            XCTFail("413 应当抛错")
+        } catch let error as APIError {
+            XCTAssertEqual(error, .http(status: 413, body: #"{"code":"attachment.too_large"}"#))
+        } catch {
+            XCTFail("应当是 APIError，实际：\(error)")
+        }
+    }
+
+    /// 新建记录带上已上传的图片；没有图片时不发这个字段。
+    func testCreateRecordCarriesAttachmentIDsOnlyWhenThereAreSome() throws {
+        let photo = UUID()
+        func body(_ ids: [UUID]) throws -> [String: Any] {
+            let draft = RecordDraft(
+                type: .checkup, occurredAt: .now, visibility: .family, title: nil, content: nil,
+                structuredData: .checkup(CheckupRecordData(
+                    hospital: nil, examItems: nil, result: nil, doctorAdvice: nil,
+                    metrics: CheckupMetrics(weightKg: 60), otherItems: [])),
+                attachmentIDs: ids)
+            let data = try JSONEncoder.aim.encode(APICreateRecordDTO(draft: draft))
+            return try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        }
+
+        XCTAssertEqual(try body([photo])["attachment_ids"] as? [String], [photo.uuidString])
+        XCTAssertNil(try body([])["attachment_ids"])
+    }
+}
+
+final class ImageCompressionTests: XCTestCase {
+    /// 噪点图几乎压不动，是最难压到 2 MB 以内的那种照片。
+    private func noise(width: Int, height: Int) -> UIImage {
+        var pixels = [UInt8](repeating: 0, count: width * height * 4)
+        arc4random_buf(&pixels, pixels.count)
+        let context = CGContext(
+            data: &pixels, width: width, height: height, bitsPerComponent: 8,
+            bytesPerRow: width * 4, space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue)!
+        return UIImage(cgImage: context.makeImage()!, scale: 1, orientation: .up)
+    }
+
+    private func pixelSize(_ data: Data) -> CGSize {
+        let image = UIImage(data: data)!
+        return CGSize(width: image.size.width * image.scale, height: image.size.height * image.scale)
+    }
+
+    func testLargeNoisyPhotoEndsUpUnder2MBWithLongEdgeAtMost2048() throws {
+        let data = try XCTUnwrap(ImageCompression.jpegUnder2MB(noise(width: 4032, height: 3024)))
+
+        XCTAssertLessThanOrEqual(data.count, 2 * 1024 * 1024)
+        let size = pixelSize(data)
+        XCTAssertLessThanOrEqual(max(size.width, size.height), 2048)
+        XCTAssertEqual(size.width / size.height, 4032.0 / 3024.0, accuracy: 0.01, "不能变形")
+    }
+
+    /// 小图不放大。
+    func testSmallPhotoKeepsItsSize() throws {
+        let data = try XCTUnwrap(ImageCompression.jpegUnder2MB(noise(width: 800, height: 600)))
+
+        XCTAssertEqual(pixelSize(data), CGSize(width: 800, height: 600))
+        XCTAssertEqual(Array(data.prefix(2)), [0xFF, 0xD8], "应当是 JPEG")
     }
 }

@@ -43,7 +43,8 @@ extension RecordItem {
     var displayTitle: String {
         switch structuredData {
         case let .symptom(data): data.symptoms.joined(separator: "、")
-        case let .checkup(data): data.examItems
+        // AIM 建的报告常常没有检查项目，用它的标题（如「10月3日 产检报告」）。
+        case let .checkup(data): data.examItems?.trimmed.nilIfEmpty ?? title?.trimmed.nilIfEmpty ?? "产检报告"
         case .note: title?.isEmpty == false ? title! : "随手记"
         case .question: content?.isEmpty == false ? content! : "想问医生"
         case let .checklist(data):
@@ -74,7 +75,10 @@ extension RecordItem {
         case let .symptom(data):
             let note = data.note?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             return "程度 \(data.severity)" + (note.isEmpty ? "" : " · \(note)")
-        case let .checkup(data): return data.result
+        case let .checkup(data):
+            // 四段文字都可选：先看结果，再看医生建议，只有数字的报告就说有指标。
+            if let text = data.result?.trimmed.nilIfEmpty ?? data.doctorAdvice?.trimmed.nilIfEmpty { return text }
+            return data.metrics.isEmpty && data.otherItems.isEmpty ? "没有补充内容" : "已记下化验指标"
         case .note: return content?.isEmpty == false ? content! : "没有补充内容"
         case let .question(data): return data.answered ? (data.answer ?? "已解答") : "还没问"
         case let .checklist(data): return data.done ? "已完成" : "待完成"

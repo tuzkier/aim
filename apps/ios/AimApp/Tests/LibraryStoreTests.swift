@@ -120,6 +120,30 @@ final class LibraryStoreTests: XCTestCase {
         XCTAssertEqual(data.answer, "可以，注意水温")
     }
 
+    /// 标记已问会整段替换 structured_data。从报告攒出来的问题要继续指着那份报告。
+    func testMarkingAReportQuestionAnsweredKeepsItsReportLink() async {
+        let reportID = UUID()
+        let question = RecordItem(
+            id: UUID(), pregnancyID: UUID(), familyID: UUID(), authorAccountID: UUID(),
+            type: .question, occurredAt: .now, visibility: .family,
+            title: nil, content: "尿蛋白弱阳性要紧吗？",
+            structuredData: .question(QuestionRecordData(answered: false, answer: nil, reportID: reportID)),
+            attachmentRefs: [], createdAt: .now, updatedAt: .now
+        )
+        let (store, repository) = makeStore(records: [question])
+
+        await store.markQuestionAnswered(question, answer: "多喝水，两周后复查")
+        await store.markQuestionsAnswered(ids: [question.id])
+
+        XCTAssertEqual(repository.updatedDrafts.count, 2)
+        for draft in repository.updatedDrafts {
+            guard case let .question(data) = draft.structuredData else {
+                return XCTFail("应当是 question 结构")
+            }
+            XCTAssertEqual(data.reportID, reportID)
+        }
+    }
+
     /// 百科出问题也不能让资料库打不开：主题编号重复时取第一个，而不是闪退。
     func testDuplicateEncyclopediaTopicsKeepTheFirstCountInsteadOfCrashing() async {
         let (store, repository) = makeStore()

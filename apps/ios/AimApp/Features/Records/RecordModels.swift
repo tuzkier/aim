@@ -87,17 +87,57 @@ struct SymptomRecordData: Codable, Equatable, Sendable {
 }
 
 struct CheckupRecordData: Codable, Equatable, Sendable {
-    let hospital: String
-    let examItems: String
-    let result: String
-    let doctorAdvice: String
+    /// 四段文字都可选：AIM 从化验单读出来的报告常常只有数字，没有医生建议。
+    /// 为 nil 时界面不显示那一行。
+    let hospital: String?
+    let examItems: String?
+    let result: String?
+    let doctorAdvice: String?
     /// 可计算的指标。四段文字画不出趋势，趋势要靠这里。
     var metrics: CheckupMetrics = CheckupMetrics()
+    /// 七项指标之外的化验结果，原样记下。
+    var otherItems: [CheckupOtherItem] = []
+
+    /// 什么都没记。四段文字都可选之后，得靠这个挡住一份空报告。
+    var isBlank: Bool {
+        [hospital, examItems, result, doctorAdvice].allSatisfy {
+            ($0?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "").isEmpty
+        } && metrics.isEmpty && otherItems.isEmpty
+    }
+}
+
+/// 化验单上偏离参考范围的标记。
+enum CheckupFlag: String, Codable, Sendable {
+    case high, low, abnormal
+}
+
+/// 一项「其他化验」：数值按化验单原样存文字，如 `+-`、`12.1`。
+struct CheckupOtherItem: Codable, Equatable, Sendable {
+    var name: String
+    var value: String
+    var unit: String?
+    var reference: String?
+    var flag: CheckupFlag?
+}
+
+extension CheckupOtherItem {
+    /// 写在扩展里以保留逐成员初始化器。不认识的标记按没有标记处理——
+    /// 一个新标记不能让整份记录列表解不出来。
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        name = try container.decode(String.self, forKey: .name)
+        value = try container.decode(String.self, forKey: .value)
+        unit = try container.decodeIfPresent(String.self, forKey: .unit)
+        reference = try container.decodeIfPresent(String.self, forKey: .reference)
+        flag = (try? container.decodeIfPresent(String.self, forKey: .flag)).flatMap(CheckupFlag.init(rawValue:))
+    }
 }
 
 struct QuestionRecordData: Codable, Equatable, Sendable {
     let answered: Bool
     let answer: String?
+    /// 从产检报告里攒出来的问题指回那份报告；手动加的问题没有。
+    var reportID: UUID?
 }
 
 enum FetalMovementOutcome: String, Codable, Sendable {
@@ -248,6 +288,8 @@ struct RecordDraft: Equatable, Sendable {
     let title: String?
     let content: String?
     let structuredData: RecordStructuredData
+    /// 已上传、要挂到这条新记录上的图片。只在新建时发送：后端更新记录的接口不收它。
+    var attachmentIDs: [UUID] = []
 }
 
 struct RecordSnapshot: Equatable, Sendable {

@@ -225,8 +225,11 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
     let doctorAdvice: String?
     /// 可计算的产检指标。缺了它，趋势条与「本周关注」的血压规则永远没有数据。
     let metrics: CheckupMetrics?
+    let otherItems: [CheckupOtherItem]?
     let answered: Bool?
     let answer: String?
+    /// 小写标准写法的 UUID 字符串。服务端按字符串配对，只认小写。
+    let reportID: String?
     let collection: String?
     let itemID: String?
     let done: Bool?
@@ -255,8 +258,10 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
         result: String? = nil,
         doctorAdvice: String? = nil,
         metrics: CheckupMetrics? = nil,
+        otherItems: [CheckupOtherItem]? = nil,
         answered: Bool? = nil,
         answer: String? = nil,
+        reportID: String? = nil,
         collection: String? = nil,
         itemID: String? = nil,
         done: Bool? = nil,
@@ -283,8 +288,10 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
         self.result = result
         self.doctorAdvice = doctorAdvice
         self.metrics = metrics
+        self.otherItems = otherItems
         self.answered = answered
         self.answer = answer
+        self.reportID = reportID
         self.collection = collection
         self.itemID = itemID
         self.done = done
@@ -308,7 +315,9 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
         case symptoms, severity, note, hospital, result, metrics
         case examItems = "exam_items"
         case doctorAdvice = "doctor_advice"
+        case otherItems = "other_items"
         case answered, answer, collection, done
+        case reportID = "report_id"
         case category, form, ingredients, steps, verdict, reason, body, purposes
         case itemID = "item_id"
         case count, target, outcome, taps
@@ -322,12 +331,15 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
             guard let symptoms, let severity else { return .unknown }
             return .symptom(SymptomRecordData(symptoms: symptoms, severity: severity, note: note))
         case .checkup:
-            guard let hospital, let examItems, let result, let doctorAdvice else { return .unknown }
+            // 四段文字都可选：只有指标的报告也是一份完整的产检记录。
             return .checkup(CheckupRecordData(
                 hospital: hospital, examItems: examItems, result: result,
-                doctorAdvice: doctorAdvice, metrics: metrics ?? CheckupMetrics()))
+                doctorAdvice: doctorAdvice, metrics: metrics ?? CheckupMetrics(),
+                otherItems: otherItems ?? []))
         case .question:
-            return .question(QuestionRecordData(answered: answered ?? false, answer: answer))
+            return .question(QuestionRecordData(
+                answered: answered ?? false, answer: answer,
+                reportID: reportID.flatMap(UUID.init(uuidString:))))
         case .checklist:
             guard let collection, let itemID else { return .unknown }
             return .checklist(ChecklistRecordData(collection: collection, itemID: itemID, done: done ?? false))
@@ -362,13 +374,17 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
         case let .symptom(data):
             self.init(symptoms: data.symptoms, severity: data.severity, note: data.note)
         case let .checkup(data):
+            // 空文字段不发：没填就是没有，而不是一段空串。
             self.init(
-                hospital: data.hospital, examItems: data.examItems, result: data.result,
-                doctorAdvice: data.doctorAdvice,
+                hospital: data.hospital?.nilIfBlank, examItems: data.examItems?.nilIfBlank,
+                result: data.result?.nilIfBlank, doctorAdvice: data.doctorAdvice?.nilIfBlank,
                 // 没测的指标不发空对象，避免把 null 当成 0。
-                metrics: data.metrics.isEmpty ? nil : data.metrics)
+                metrics: data.metrics.isEmpty ? nil : data.metrics,
+                otherItems: data.otherItems.isEmpty ? nil : data.otherItems)
         case let .question(data):
-            self.init(answered: data.answered, answer: data.answer)
+            self.init(
+                answered: data.answered, answer: data.answer,
+                reportID: data.reportID?.uuidString.lowercased())
         case let .checklist(data):
             self.init(collection: data.collection, itemID: data.itemID, done: data.done)
         case let .knowledge(data):
@@ -395,6 +411,8 @@ struct APICreateRecordDTO: Encodable, Sendable {
     let title: String?
     let content: String?
     let structuredData: APIRecordStructuredDataDTO
+    /// 没有图片时为 nil，不发这个字段。
+    let attachmentIDs: [UUID]?
 
     init(draft: RecordDraft) {
         type = draft.type
@@ -403,6 +421,7 @@ struct APICreateRecordDTO: Encodable, Sendable {
         title = draft.title
         content = draft.content
         structuredData = APIRecordStructuredDataDTO(recordData: draft.structuredData)
+        attachmentIDs = draft.attachmentIDs.isEmpty ? nil : draft.attachmentIDs
     }
 
     enum CodingKeys: String, CodingKey {
@@ -410,9 +429,11 @@ struct APICreateRecordDTO: Encodable, Sendable {
         case occurredAt = "occurred_at"
         case visibility, title, content
         case structuredData = "structured_data"
+        case attachmentIDs = "attachment_ids"
     }
 }
 
+/// 不带 attachment_ids：后端 PATCH 记录的接口不收它，图片只能在新建时挂上。
 struct APIUpdateRecordDTO: Encodable, Sendable {
     let occurredAt: Date
     let visibility: RecordVisibility
@@ -432,6 +453,12 @@ struct APIUpdateRecordDTO: Encodable, Sendable {
         case occurredAt = "occurred_at"
         case visibility, title, content
         case structuredData = "structured_data"
+    }
+}
+
+private extension String {
+    var nilIfBlank: String? {
+        trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : self
     }
 }
 

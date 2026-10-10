@@ -6,7 +6,7 @@ final class AgentActivityLogTests: XCTestCase {
     private func actionResult(
         toolName: String,
         summary: String,
-        data: [String: String] = [:]
+        data: [String: Any] = [:]
     ) -> EveEvent {
         let payload: [String: Any] = [
             "result": [
@@ -70,7 +70,7 @@ final class AgentActivityLogTests: XCTestCase {
         XCTAssertEqual(store.activityLog.count, 1)
         let entry = store.activityLog[0]
         XCTAssertEqual(entry.title, "已添加待办「买孕妇钙片」")
-        XCTAssertEqual(entry.undoTarget, .task(taskID))
+        XCTAssertEqual(entry.undoTarget, .tasks([taskID]))
     }
 
     func testCreatingARecordIsLoggedWithAnUndoTarget() {
@@ -86,7 +86,93 @@ final class AgentActivityLogTests: XCTestCase {
         )
 
         XCTAssertEqual(store.activityLog.count, 1)
-        XCTAssertEqual(store.activityLog[0].undoTarget, .record(recordID))
+        XCTAssertEqual(store.activityLog[0].undoTarget, .records([recordID]))
+    }
+
+    /// 批量建待办的结果是 `tasks` 数组。此前按 `[String: String]` 解码，遇到数组整个
+    /// 解析静默失败，撤销入口就没了。
+    func testBatchCreatedTasksAreAllUndoTargets() {
+        let store = AgentStore()
+        let first = UUID(), second = UUID()
+
+        store.consume(
+            actionResult(
+                toolName: "create_task",
+                summary: "已添加 2 项待办",
+                data: [
+                    "tasks": [
+                        ["task_id": first.uuidString, "title": "买钙片"],
+                        ["task_id": second.uuidString, "title": "约 NT"],
+                    ],
+                    "failed": [],
+                ]
+            )
+        )
+
+        XCTAssertEqual(store.activityLog.count, 1)
+        XCTAssertEqual(store.activityLog[0].title, "已添加 2 项待办")
+        XCTAssertEqual(store.activityLog[0].undoTarget, .tasks([first, second]))
+    }
+
+    /// 只有一条时服务端把字段平铺到外层，同时仍带 `tasks` 数组。
+    func testSingleCreatedTaskWithFlattenedFieldsKeepsItsTitle() {
+        let store = AgentStore()
+        let taskID = UUID()
+
+        store.consume(
+            actionResult(
+                toolName: "create_task",
+                summary: "已添加待办：买钙片",
+                data: [
+                    "tasks": [["task_id": taskID.uuidString, "title": "买钙片"]],
+                    "failed": [],
+                    "task_id": taskID.uuidString,
+                    "title": "买钙片",
+                ]
+            )
+        )
+
+        XCTAssertEqual(store.activityLog[0].title, "已添加待办「买钙片」")
+        XCTAssertEqual(store.activityLog[0].undoTarget, .tasks([taskID]))
+    }
+
+    /// 产检报告连同攒下的问题一次建好，撤销要整批删掉。
+    func testCheckupReportUndoesEveryRecordItCreated() {
+        let store = AgentStore()
+        let report = UUID(), question = UUID()
+
+        store.consume(
+            actionResult(
+                toolName: "create_checkup_report",
+                summary: "已记下 10月3日产检报告，并攒了 1 个想问医生的问题",
+                data: [
+                    "record_id": report.uuidString,
+                    "record_ids": [report.uuidString.lowercased(), question.uuidString.lowercased()],
+                    "title": "10月3日 产检报告",
+                    "question_count": 1,
+                ]
+            )
+        )
+
+        XCTAssertEqual(store.activityLog.count, 1)
+        XCTAssertEqual(store.activityLog[0].title, "已记下「10月3日 产检报告」")
+        XCTAssertEqual(store.activityLog[0].undoTarget, .records([report, question]))
+    }
+
+    /// 带图片的记录结果里 `attachment_count` 是整数，不能让整个解析失败。
+    func testRecordResultWithAnIntegerFieldStillHasAnUndoTarget() {
+        let store = AgentStore()
+        let recordID = UUID()
+
+        store.consume(
+            actionResult(
+                toolName: "create_record",
+                summary: "已记录",
+                data: ["record_id": recordID.uuidString, "attachment_count": 2]
+            )
+        )
+
+        XCTAssertEqual(store.activityLog[0].undoTarget, .records([recordID]))
     }
 
     /// 修改既有任务仍走既有的 undo_operation 语义，本次改动不该动它。
@@ -133,7 +219,7 @@ final class AgentUndoTests: XCTestCase {
         let taskID = UUID()
         let activity = AgentActivity(
             id: UUID(), title: "已添加待办「买钙片」", occurredAt: .now,
-            canUndo: true, undoTarget: .task(taskID)
+            canUndo: true, undoTarget: .tasks([taskID])
         )
         store.activityLog = [activity]
 
@@ -150,13 +236,87 @@ final class AgentUndoTests: XCTestCase {
         let recordID = UUID()
         let activity = AgentActivity(
             id: UUID(), title: "已记录", occurredAt: .now,
-            canUndo: true, undoTarget: .record(recordID)
+            canUndo: true, undoTarget: .records([recordID])
         )
         store.activityLog = [activity]
 
         await store.undoDirectly(activity)
 
         XCTAssertEqual(repository.deletedRecordIDs, [recordID])
+    }
+
+    /// 报告和它的问题整批删：问题先删，报告最后，和服务端撤销的顺序一致。
+    func testUndoingACheckupReportDeletesQuestionsBeforeTheReport() async {
+        let repository = SpyRepository()
+        let store = AgentStore()
+        store.repository = repository
+        let report = UUID(), first = UUID(), second = UUID()
+        let activity = AgentActivity(
+            id: UUID(), title: "已记下「10月3日 产检报告」", occurredAt: .now,
+            canUndo: true, undoTarget: .records([report, first, second])
+        )
+        store.activityLog = [activity]
+
+        await store.undoDirectly(activity)
+
+        XCTAssertEqual(repository.deletedRecordIDs, [second, first, report])
+        XCTAssertTrue(store.activityLog.isEmpty)
+    }
+
+    func testUndoingBatchCreatedTasksDeletesEveryOne() async {
+        let repository = SpyRepository()
+        let store = AgentStore()
+        store.repository = repository
+        let first = UUID(), second = UUID()
+        let activity = AgentActivity(
+            id: UUID(), title: "已添加 2 项待办", occurredAt: .now,
+            canUndo: true, undoTarget: .tasks([first, second])
+        )
+        store.activityLog = [activity]
+
+        await store.undoDirectly(activity)
+
+        XCTAssertEqual(Set(repository.deletedTaskIDs), [first, second])
+        XCTAssertTrue(store.activityLog.isEmpty)
+    }
+
+    /// 删到一半失败：已删掉的不再留在撤销目标里，重试只删剩下的。
+    func testPartiallyFailedUndoKeepsOnlyWhatIsLeft() async {
+        let repository = SpyRepository()
+        let store = AgentStore()
+        store.repository = repository
+        let report = UUID(), question = UUID()
+        repository.failingRecordIDs = [report]
+        let activity = AgentActivity(
+            id: UUID(), title: "已记下「10月3日 产检报告」", occurredAt: .now,
+            canUndo: true, undoTarget: .records([report, question])
+        )
+        store.activityLog = [activity]
+
+        await store.undoDirectly(activity)
+
+        XCTAssertEqual(repository.deletedRecordIDs, [question])
+        XCTAssertEqual(store.activityLog.count, 1)
+        XCTAssertEqual(store.activityLog[0].undoTarget, .records([report]))
+    }
+
+    /// 已经被别人删掉的（404）算撤销成功，否则这条台账永远撤不掉。
+    func testAlreadyDeletedRecordsCountAsUndone() async {
+        let repository = SpyRepository()
+        let store = AgentStore()
+        store.repository = repository
+        let gone = UUID(), question = UUID()
+        repository.missingRecordIDs = [gone]
+        let activity = AgentActivity(
+            id: UUID(), title: "已记下「10月3日 产检报告」", occurredAt: .now,
+            canUndo: true, undoTarget: .records([gone, question])
+        )
+        store.activityLog = [activity]
+
+        await store.undoDirectly(activity)
+
+        XCTAssertEqual(repository.deletedRecordIDs, [question])
+        XCTAssertTrue(store.activityLog.isEmpty)
     }
 
     /// 删除失败时台账条目要留着，否则撤销入口消失、数据却还在。
@@ -167,7 +327,7 @@ final class AgentUndoTests: XCTestCase {
         store.repository = repository
         let activity = AgentActivity(
             id: UUID(), title: "已添加待办「买钙片」", occurredAt: .now,
-            canUndo: true, undoTarget: .task(UUID())
+            canUndo: true, undoTarget: .tasks([UUID()])
         )
         store.activityLog = [activity]
 
@@ -221,8 +381,12 @@ private final class SpyRepository: BusinessRepositoryProtocol, @unchecked Sendab
         ContentCollection(id: name, source: "test", sourceURL: "", items: [])
     }
 
+    var failingRecordIDs: Set<UUID> = []
+    var missingRecordIDs: Set<UUID> = []
+
     func deleteRecord(recordID: UUID) async throws {
-        if shouldFail { throw APIError.invalidResponse }
+        if shouldFail || failingRecordIDs.contains(recordID) { throw APIError.invalidResponse }
+        if missingRecordIDs.contains(recordID) { throw APIError.http(status: 404, body: "") }
         deletedRecordIDs.append(recordID)
     }
 

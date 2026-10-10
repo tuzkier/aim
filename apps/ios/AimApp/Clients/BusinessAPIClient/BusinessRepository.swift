@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 struct TaskItem: Identifiable, Codable, Hashable, Sendable {
     let id: UUID
@@ -259,6 +260,7 @@ protocol BusinessRepositoryProtocol: Sendable {
     func fetchWeeklyContent() async throws -> WeeklyContentBook
     func fetchEncyclopediaCatalog() async throws -> EncyclopediaCatalog
     func fetchEncyclopediaEntry(id: String) async throws -> EncyclopediaEntry
+    func uploadAttachment(jpeg: Data) async throws -> UUID
 }
 
 /// 新加的家庭接口给出默认实现：只关心别的接口的测试替身不必逐个补齐。
@@ -277,6 +279,7 @@ extension BusinessRepositoryProtocol {
     func fetchWeeklyContent() async throws -> WeeklyContentBook { throw APIError.notConfigured }
     func fetchEncyclopediaCatalog() async throws -> EncyclopediaCatalog { throw APIError.notConfigured }
     func fetchEncyclopediaEntry(id: String) async throws -> EncyclopediaEntry { throw APIError.notConfigured }
+    func uploadAttachment(jpeg: Data) async throws -> UUID { throw APIError.notConfigured }
 }
 
 actor BusinessRepository: BusinessRepositoryProtocol {
@@ -374,6 +377,20 @@ actor BusinessRepository: BusinessRepositoryProtocol {
             method: "DELETE"
         )
         _ = try await session.aimData(for: request)
+    }
+
+    /// 上传一张图片，拿到附件 id，再在新建记录时通过 attachmentIDs 挂上去。
+    /// 请求体是原始 JPEG 字节，不是 JSON 也不是 multipart；先用 ImageCompression 压到 2 MB 以内。
+    func uploadAttachment(jpeg: Data) async throws -> UUID {
+        let pregnancyID = try requiredPregnancyID()
+        var request = environment.businessRequest(
+            path: "/api/v1/pregnancies/\(pregnancyID.uuidString)/attachments",
+            method: "POST",
+            body: jpeg
+        )
+        request.setValue("image/jpeg", forHTTPHeaderField: "Content-Type")
+        let (data, _) = try await session.aimData(for: request)
+        return try decoder.decode(UploadedAttachment.self, from: data).id
     }
 
     /// 危险信号是静态安全内容，不含个人数据，后端也不要求登录。
@@ -686,6 +703,49 @@ private struct CreatePregnancyBody: Encodable {
 
 private struct CreatePregnancyResponse: Decodable {
     let id: UUID
+}
+
+private struct UploadedAttachment: Decodable {
+    let id: UUID
+}
+
+/// 把照片压到上传接口的 2 MB 上限以内。
+enum ImageCompression {
+    /// 与后端 MAX_ATTACHMENT_BYTES 一致。
+    static let maxBytes = 2 * 1024 * 1024
+    static let maxEdge: CGFloat = 2048
+
+    /// 先把长边缩到 2048 以内，再逐步降低质量；最低质量仍超限就再缩小一圈。
+    /// 实在压不下来（极端情况）返回 nil，由调用方提示换一张。
+    static func jpegUnder2MB(_ image: UIImage) -> Data? {
+        let longest = max(image.size.width * image.scale, image.size.height * image.scale)
+        guard longest > 0 else { return nil }
+        var edge = min(maxEdge, longest)
+        while edge >= 256 {
+            let resized = resize(image, longestEdge: edge)
+            for quality in stride(from: 0.85, through: 0.35, by: -0.1) {
+                if let data = resized.jpegData(compressionQuality: quality), data.count <= maxBytes {
+                    return data
+                }
+            }
+            edge = (edge * 0.75).rounded(.down)
+        }
+        return nil
+    }
+
+    /// 按像素缩放（scale = 1），顺带把拍照方向画正。
+    private static func resize(_ image: UIImage, longestEdge: CGFloat) -> UIImage {
+        let ratio = longestEdge / max(image.size.width * image.scale, image.size.height * image.scale)
+        let target = CGSize(
+            width: (image.size.width * image.scale * ratio).rounded(),
+            height: (image.size.height * image.scale * ratio).rounded())
+        let format = UIGraphicsImageRendererFormat.default()
+        format.scale = 1
+        format.opaque = true
+        return UIGraphicsImageRenderer(size: target, format: format).image { _ in
+            image.draw(in: CGRect(origin: .zero, size: target))
+        }
+    }
 }
 
 private struct EmptyPlanRequest: Encodable {

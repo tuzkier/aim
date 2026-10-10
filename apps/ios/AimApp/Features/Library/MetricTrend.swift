@@ -7,10 +7,16 @@ struct CheckupMetrics: Codable, Equatable, Sendable {
     var diastolic: Double?
     var fastingGlucose: Double?
     var hemoglobin: Double?
+    /// 胎心，次/分。
+    var fetalHeartRate: Double?
+    /// 宫高，厘米。
+    var fundalHeightCm: Double?
 
+    /// 判断要不要发 metrics。新增指标必须算进来，否则只测了胎心的报告会被当成没填。
     var isEmpty: Bool {
         weightKg == nil && systolic == nil && diastolic == nil
             && fastingGlucose == nil && hemoglobin == nil
+            && fetalHeartRate == nil && fundalHeightCm == nil
     }
 
     enum CodingKeys: String, CodingKey {
@@ -18,6 +24,8 @@ struct CheckupMetrics: Codable, Equatable, Sendable {
         case systolic, diastolic
         case fastingGlucose = "fasting_glucose"
         case hemoglobin
+        case fetalHeartRate = "fetal_heart_rate"
+        case fundalHeightCm = "fundal_height_cm"
     }
 }
 

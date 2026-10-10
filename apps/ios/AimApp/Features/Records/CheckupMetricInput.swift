@@ -17,6 +17,17 @@ struct CheckupMetricInput: Equatable, Sendable {
         )
     }
 
+    /// 把表单里的三项盖到原有指标上。表单管不到的指标（血糖、胎心等）原样保留——
+    /// 编辑一份 AIM 建的报告时，不能因为表单没有那一栏就把它清掉。
+    func merged(into original: CheckupMetrics) -> CheckupMetrics {
+        var metrics = original
+        let edited = parsed()
+        metrics.weightKg = edited.weightKg
+        metrics.systolic = edited.systolic
+        metrics.diastolic = edited.diastolic
+        return metrics
+    }
+
     /// 后端会拒收明显不可能的值，客户端先拦一道，让用户当场知道
     /// 而不是保存失败后猜原因。范围与后端保持一致。
     var validationMessage: String? {

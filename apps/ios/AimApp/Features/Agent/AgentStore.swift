@@ -250,17 +250,32 @@ final class AgentStore {
         }
     }
 
-    /// 直接删除 Agent 刚创建的对象。删除失败时保留台账条目——否则撤销入口消失，
-    /// 数据却还在。
+    /// 直接删除 Agent 刚创建的对象，整批的逐个删。
+    ///
+    /// 删到一半失败时保留台账条目，但只留下还没删掉的——否则撤销入口消失、
+    /// 数据却还在，或者重试时去删已经不存在的东西。已经不存在（404）的算删掉了。
     func undoDirectly(_ activity: AgentActivity) async {
         guard let target = activity.undoTarget, let repository else { return }
+        // 记录倒着删：产检报告排在最前，它的问题先删，报告最后，和服务端撤销的顺序一致。
+        let (order, delete): ([UUID], (UUID) async throws -> Void) = switch target {
+        case let .tasks(ids): (ids, { try await repository.deleteTask(taskID: $0) })
+        case let .records(ids): (ids.reversed(), { try await repository.deleteRecord(recordID: $0) })
+        }
+        var remaining = target.ids
         do {
-            switch target {
-            case let .task(taskID): try await repository.deleteTask(taskID: taskID)
-            case let .record(recordID): try await repository.deleteRecord(recordID: recordID)
+            for id in order {
+                do {
+                    try await delete(id)
+                } catch let error as APIError where error.isNotFound {
+                    // 已经不在了，撤销的目的达到了。
+                }
+                remaining.removeAll { $0 == id }
             }
             activityLog.removeAll { $0.id == activity.id }
         } catch {
+            if let index = activityLog.firstIndex(where: { $0.id == activity.id }) {
+                activityLog[index].undoTarget = target.replacingIDs(with: remaining)
+            }
             fail(error.localizedDescription)
         }
     }
@@ -364,7 +379,7 @@ struct AgentActivity: Identifiable, Equatable, Sendable {
     let occurredAt: Date
     let canUndo: Bool
     /// 新建类操作的撤销对象。既有的「修改」类走 undo_operation，没有撤销对象。
-    let undoTarget: AgentUndoTarget?
+    var undoTarget: AgentUndoTarget?
 
     init(
         id: UUID,
@@ -383,9 +398,25 @@ struct AgentActivity: Identifiable, Equatable, Sendable {
 
 /// 撤销「Agent 新建」的目标。undo_operation 做的是字段级还原，新建没有可还原的
 /// 前值，所以撤销走的是删除。
+///
+/// 一次调用可能建了多个：批量建待办、产检报告连同它攒下的问题。撤销要整批删掉。
 enum AgentUndoTarget: Equatable, Sendable {
-    case task(UUID)
-    case record(UUID)
+    case tasks([UUID])
+    /// 按服务端返回的顺序；撤销时倒着删。
+    case records([UUID])
+
+    var ids: [UUID] {
+        switch self {
+        case let .tasks(ids), let .records(ids): ids
+        }
+    }
+
+    func replacingIDs(with ids: [UUID]) -> AgentUndoTarget {
+        switch self {
+        case .tasks: .tasks(ids)
+        case .records: .records(ids)
+        }
+    }
 }
 
 /// 一次工具调用的结果。
@@ -420,22 +451,31 @@ struct AgentToolOutcome: Equatable, Sendable {
         let data = result.output.data ?? [:]
         switch toolName {
         case "create_task":
-            let title = data["title"] ?? "新的待办"
+            // 批量结果在 tasks 数组里；只有一条时服务端还会把字段平铺到外层，旧结果只有平铺的。
+            let created = data["tasks"]?.array ?? []
+            let ids = created.compactMap { $0["task_id"]?.uuid }
+            let taskIDs = ids.isEmpty ? (data["task_id"]?.uuid).map { [$0] } ?? [] : ids
+            let title = taskIDs.count > 1
+                ? "已添加 \(taskIDs.count) 项待办"
+                : "已添加待办「\(created.first?["title"]?.string ?? data["title"]?.string ?? "新的待办")」"
             activity = AgentActivity(
                 id: UUID(),
-                title: "已添加待办「\(title)」",
+                title: title,
                 occurredAt: .now,
                 canUndo: true,
-                undoTarget: data["task_id"].flatMap(UUID.init(uuidString:)).map(AgentUndoTarget.task)
+                undoTarget: taskIDs.isEmpty ? nil : .tasks(taskIDs)
             )
-        case "create_record":
+        case "create_record", "create_checkup_report":
+            let recordIDs = Self.recordIDs(in: data)
+            let title = toolName == "create_checkup_report"
+                ? "已记下「\(data["title"]?.string ?? "产检报告")」"
+                : "已记录"
             activity = AgentActivity(
                 id: UUID(),
-                title: "已记录",
+                title: title,
                 occurredAt: .now,
                 canUndo: true,
-                undoTarget: data["record_id"].flatMap(UUID.init(uuidString:))
-                    .map(AgentUndoTarget.record)
+                undoTarget: recordIDs.isEmpty ? nil : .records(recordIDs)
             )
         case "delete_task", "delete_record":
             // 撤销本身不该再产生一条可撤销的台账。
@@ -451,11 +491,61 @@ struct AgentToolOutcome: Equatable, Sendable {
     }
 }
 
+extension AgentToolOutcome {
+    /// 整批建的记录在 record_ids 里；旧结果只有 record_id。
+    fileprivate static func recordIDs(in data: [String: LooseJSON]) -> [UUID] {
+        let ids = (data["record_ids"]?.array ?? []).compactMap(\.uuid)
+        if !ids.isEmpty { return ids }
+        return (data["record_id"]?.uuid).map { [$0] } ?? []
+    }
+}
+
+/// 工具结果 data 里的任意 JSON。只取需要的字符串、数组和对象，其余（数字、布尔、null）一律忽略。
+///
+/// 此前按 `[String: String]` 解码：只要出现一个数组或数字（批量建待办的 tasks、
+/// 记录的 attachment_count），整个解析就静默失败，撤销入口也跟着没了。
+private enum LooseJSON: Decodable {
+    case string(String)
+    case array([LooseJSON])
+    case object([String: LooseJSON])
+    case other
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        if let value = try? container.decode(String.self) {
+            self = .string(value)
+        } else if let value = try? container.decode([LooseJSON].self) {
+            self = .array(value)
+        } else if let value = try? container.decode([String: LooseJSON].self) {
+            self = .object(value)
+        } else {
+            self = .other
+        }
+    }
+
+    var string: String? {
+        if case let .string(value) = self { return value }
+        return nil
+    }
+
+    var uuid: UUID? { string.flatMap(UUID.init(uuidString:)) }
+
+    var array: [LooseJSON]? {
+        if case let .array(value) = self { return value }
+        return nil
+    }
+
+    subscript(key: String) -> LooseJSON? {
+        if case let .object(value) = self { return value[key] }
+        return nil
+    }
+}
+
 private struct EveActionResultPayload: Decodable {
     struct Result: Decodable {
         struct Output: Decodable {
             let summary: String?
-            let data: [String: String]?
+            let data: [String: LooseJSON]?
         }
         let toolName: String
         let output: Output

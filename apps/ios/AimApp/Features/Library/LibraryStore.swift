@@ -91,11 +91,18 @@ final class LibraryStore {
             visibility: record.visibility,
             title: record.title,
             content: record.content,
-            structuredData: .question(
-                QuestionRecordData(answered: true, answer: trimmed?.isEmpty == true ? nil : trimmed)
-            )
+            structuredData: .question(QuestionRecordData(
+                answered: true, answer: trimmed?.isEmpty == true ? nil : trimmed,
+                // 整段替换 structured_data，从报告攒出来的问题要继续指着那份报告。
+                reportID: Self.reportID(of: record)
+            ))
         )
         await perform { _ = try await repository.updateRecord(recordID: record.id, draft: draft) }
+    }
+
+    private static func reportID(of record: RecordItem) -> UUID? {
+        if case let .question(data) = record.structuredData { return data.reportID }
+        return nil
     }
 
     /// 勾选 / 取消勾选一个清单条目。
@@ -137,7 +144,8 @@ final class LibraryStore {
             let draft = RecordDraft(
                 type: .question, occurredAt: record.occurredAt, visibility: record.visibility,
                 title: record.title, content: record.content,
-                structuredData: .question(QuestionRecordData(answered: true, answer: nil)))
+                structuredData: .question(QuestionRecordData(
+                    answered: true, answer: nil, reportID: Self.reportID(of: record))))
             do {
                 _ = try await repository.updateRecord(recordID: record.id, draft: draft)
             } catch {

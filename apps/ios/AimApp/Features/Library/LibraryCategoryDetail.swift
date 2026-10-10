@@ -732,7 +732,7 @@ struct LibraryCategoryDetail: View {
         if let title = record.title, !title.isEmpty { return title }
         switch record.structuredData {
         case let .symptom(data): return data.symptoms.joined(separator: "、")
-        case let .checkup(data): return data.examItems
+        case let .checkup(data): return data.examItems?.trimmed.nilIfEmpty ?? "产检报告"
         default: return record.content ?? "记录"
         }
     }

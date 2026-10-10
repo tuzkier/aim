@@ -17,6 +17,9 @@ struct RecordComposerView: View {
     @State private var result: String
     @State private var doctorAdvice: String
     @State private var metrics: CheckupMetricInput
+    /// 编辑时的原报告。表单只管四段文字和三项指标，其余字段（其他指标、其他化验项）
+    /// 保存时从这里原样带回去，否则编辑一次就丢了。
+    private let originalCheckup: CheckupRecordData?
     @State private var title: String
     @State private var content: String
     @State private var savedCount = 0
@@ -47,16 +50,18 @@ struct RecordComposerView: View {
             _symptomNote = State(initialValue: "")
         }
         if case let .checkup(data) = source?.structuredData {
-            _hospital = State(initialValue: data.hospital)
-            _examItems = State(initialValue: data.examItems)
-            _result = State(initialValue: data.result)
-            _doctorAdvice = State(initialValue: data.doctorAdvice)
+            originalCheckup = data
+            _hospital = State(initialValue: data.hospital ?? "")
+            _examItems = State(initialValue: data.examItems ?? "")
+            _result = State(initialValue: data.result ?? "")
+            _doctorAdvice = State(initialValue: data.doctorAdvice ?? "")
             _metrics = State(initialValue: CheckupMetricInput(
                 weight: data.metrics.weightKg.map { Self.text($0) } ?? "",
                 systolic: data.metrics.systolic.map { Self.text($0) } ?? "",
                 diastolic: data.metrics.diastolic.map { Self.text($0) } ?? ""
             ))
         } else {
+            originalCheckup = nil
             _metrics = State(initialValue: CheckupMetricInput())
             _hospital = State(initialValue: "")
             _examItems = State(initialValue: source == nil && suggestedType == .checkup ? (suggestedText ?? "") : "")
@@ -242,13 +247,22 @@ struct RecordComposerView: View {
         switch type {
         case .symptom: !symptoms.isEmpty
         case .checkup:
-            !hospital.trimmed.isEmpty && !examItems.trimmed.isEmpty
-                && !result.trimmed.isEmpty && !doctorAdvice.trimmed.isEmpty
+            // 四段文字都可选，但总得记下点什么。
+            !checkupDraft.isBlank
                 // 指标填错了不让存——后端也会拒，不如当场说清楚。
                 && metrics.validationMessage == nil
         case .note: !content.trimmed.isEmpty
         case .question, .checklist, .knowledge, .fetalMovement, .none, .unknown: false
         }
+    }
+
+    /// 文字段为空时传 nil；表单管不到的字段从原报告带回。
+    private var checkupDraft: CheckupRecordData {
+        CheckupRecordData(
+            hospital: hospital.trimmed.nilIfEmpty, examItems: examItems.trimmed.nilIfEmpty,
+            result: result.trimmed.nilIfEmpty, doctorAdvice: doctorAdvice.trimmed.nilIfEmpty,
+            metrics: metrics.merged(into: originalCheckup?.metrics ?? CheckupMetrics()),
+            otherItems: originalCheckup?.otherItems ?? [])
     }
 
     private func toggle(_ symptom: String) {
@@ -270,10 +284,7 @@ struct RecordComposerView: View {
         case .symptom:
             data = .symptom(SymptomRecordData(symptoms: symptoms.sorted(), severity: severity, note: symptomNote.trimmed.nilIfEmpty))
         case .checkup:
-            data = .checkup(CheckupRecordData(
-                hospital: hospital.trimmed, examItems: examItems.trimmed,
-                result: result.trimmed, doctorAdvice: doctorAdvice.trimmed,
-                metrics: metrics.parsed()))
+            data = .checkup(checkupDraft)
         case .note: data = .note
         case .question, .checklist, .knowledge, .fetalMovement, .unknown: return nil
         }
