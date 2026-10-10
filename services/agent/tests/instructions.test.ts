@@ -23,14 +23,18 @@ test("急症清单只有一份，并且是两处原清单的并集", () => {
   const list = emergencyList();
   for (const sign of [
     "heavy bleeding",
+    "any vaginal bleeding after 20 weeks",
     "severe belly pain",
+    "regular tightening or pressure before 37 weeks",
     "a seizure",
     "confusion or fainting",
     "chest pain or shortness of breath",
     "waters breaking or fluid that keeps leaking",
     "the baby moving clearly less or not at all",
-    "160/110",
-    "severe headache or blurred vision",
+    "a severe headache, blurred vision or constant upper-right belly pain",
+    "blood pressure of 160 systolic or 110 diastolic or higher",
+    "a temperature of 38.5℃ or higher",
+    "one calf swollen and painful",
     "thoughts of harming oneself or the baby",
   ]) {
     assert.ok(list.includes(sign), sign);
