@@ -31,6 +31,7 @@ enum LibraryCategoryID: String, CaseIterable, Identifiable, Sendable {
     case paperwork
     case preparation
     case safety
+    case fetalMovement
 
     var id: String { rawValue }
 
@@ -43,6 +44,7 @@ enum LibraryCategoryID: String, CaseIterable, Identifiable, Sendable {
         case .paperwork: "办事指南"
         case .preparation: "待产准备"
         case .safety: "危险信号"
+        case .fetalMovement: "胎动"
         }
     }
 
@@ -55,6 +57,7 @@ enum LibraryCategoryID: String, CaseIterable, Identifiable, Sendable {
         case .paperwork: "doc.text"
         case .preparation: "suitcase"
         case .safety: "exclamationmark.triangle"
+        case .fetalMovement: "hand.tap"
         }
     }
 
@@ -90,6 +93,12 @@ enum LibraryCategoryID: String, CaseIterable, Identifiable, Sendable {
                 : LibrarySummary(headline: "\(snapshot.safetyRuleCount) 条")
         case .questions:
             return Self.questionSummary(from: snapshot)
+        case .fetalMovement:
+            let latest = snapshot.records
+                .compactMap(FetalMovementSession.init(record:))
+                .max { $0.startedAt < $1.startedAt }
+            guard let latest else { return LibrarySummary(headline: "28 周起每天数一数") }
+            return LibrarySummary(headline: FetalMovementFormat.summary(latest.data))
         case .paperwork:
             return Self.checklistSummary(
                 from: snapshot, collection: "hangzhou", format: { "\($0)/\($1) 已办妥" })
@@ -216,6 +225,7 @@ enum LibraryCatalog {
         LibraryCategory(id: .nutrition, isBanner: false),
         LibraryCategory(id: .symptoms, isBanner: false),
         LibraryCategory(id: .questions, isBanner: false),
+        LibraryCategory(id: .fetalMovement, isBanner: false),
         LibraryCategory(id: .paperwork, isBanner: false),
         LibraryCategory(id: .preparation, isBanner: false),
         LibraryCategory(id: .safety, isBanner: true),

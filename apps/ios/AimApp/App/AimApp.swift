@@ -45,6 +45,10 @@ private struct MainTabView: View {
     @State private var homeStore = HomeDashboardStore()
     @State private var selectedTab: MainTab = .home
     @State private var invitationPrompt = InvitationPromptStore()
+    /// UI 测试要在一秒内连点 10 次，用启动参数关掉防误触去重。
+    @State private var fetalMovementStore = FetalMovementStore(
+        dedupeInterval: ProcessInfo.processInfo.arguments.contains("-fetal-dedupe-zero")
+            ? 0 : FetalMovementCounter.defaultDedupeInterval)
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -75,6 +79,7 @@ private struct MainTabView: View {
                 .tag(MainTab.family)
         }
         .environment(agentDestinations)
+        .environment(fetalMovementStore)
         .onAppear {
             if refreshCoalescer == nil {
                 refreshCoalescer = AgentRefreshCoalescer { kinds in await refresh(after: kinds) }
@@ -153,6 +158,15 @@ private struct MainTabView: View {
         agentStore.repository = repository
         agentStore.sessions = agentSessions
         libraryStore.repository = repository
+        // 胎动计数的本地断点按「账号 + 孕期」分开存；还没有孕期时解绑，免得接着写别家的断点。
+        // unbind() 会清掉仓库，所以每次绑定前都要重新设置。
+        fetalMovementStore.repository = repository
+        if let accountID = session.accountID, let pregnancyID = session.pregnancyID {
+            fetalMovementStore.bind(accountID: accountID, pregnancyID: pregnancyID)
+            await fetalMovementStore.load()
+        } else {
+            fetalMovementStore.unbind()
+        }
         await timelineStore.load()
         await planStore.load()
         await recordStore.load()

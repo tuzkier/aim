@@ -34,6 +34,10 @@ struct HomeDashboardView: View {
                     heroCard
                     weekCard
                     todayCard
+                    // 数胎动从孕 28 周开始。
+                    if (store.pregnancy?.weeks ?? 0) >= 28 {
+                        FetalMovementHomeCard(agentStore: agentStore)
+                    }
                     quickActions
                     familyCard
                     safetyBar

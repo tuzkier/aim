@@ -461,6 +461,34 @@ final class CoreJourneyUITests: XCTestCase {
                       "点推荐问题应当打开 AIM")
     }
 
+    /// 孕 28 周起首页有「数胎动」：数到 10 次后看到完成页，首页显示今天的结果。
+    func testCountingFetalMovementFromHome() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-reset-session", "-fetal-dedupe-zero"]
+        app.launch()
+
+        registerNewAccount(in: app)
+        // 距预产期 70 天 ≈ 孕 30 周。
+        completePregnancySetup(in: app, daysUntilDue: 70)
+
+        let start = app.buttons["home-fetal-movement-start"]
+        reveal(start, in: app)
+        start.tap()
+
+        let tap = app.buttons["fetal-movement-tap"]
+        XCTAssertTrue(tap.waitForExistence(timeout: 10))
+        for _ in 1...10 { tap.tap() }
+
+        XCTAssertTrue(app.otherElements["fetal-movement-finished"].waitForExistence(timeout: 10),
+                      "数到 10 次应当自动结束并显示完成页")
+        app.buttons["fetal-movement-done"].tap()
+
+        let card = app.buttons["home-fetal-movement-card"]
+        reveal(card, in: app)
+        XCTAssertTrue(card.label.contains("10 次") || app.staticTexts["今天 10 次 · 不到 1 分钟"].exists,
+                      "首页卡应当显示今天这次的结果")
+    }
+
     /// 「想问医生」此前缺了最关键的一步：产检那天怎么把攒下的问题一次带走。
     /// 这条用例守住完整闭环——攒问题、生成清单、问完一次性标记。
     func testConsultationListClosesTheQuestionLoop() throws {
@@ -1275,7 +1303,7 @@ final class CoreJourneyUITests: XCTestCase {
         tab.tap()
     }
 
-    private func completePregnancySetup(in app: XCUIApplication) {
+    private func completePregnancySetup(in app: XCUIApplication, daysUntilDue: Int = 154) {
         let save = app.buttons["pregnancy-setup-save"]
         guard save.waitForExistence(timeout: 10) else { return }
 
@@ -1288,7 +1316,7 @@ final class CoreJourneyUITests: XCTestCase {
         // 滚轮是 [月(英文全称), 日, 年] 三列 —— 由 XCUITest 的报错反馈确定，
         // 不是猜的。月份用英文是选择器自身的呈现，与 App 的中文界面无关。
         let target = Calendar(identifier: .gregorian)
-            .date(byAdding: .day, value: 154, to: Date())!
+            .date(byAdding: .day, value: daysUntilDue, to: Date())!
         let formatter = DateFormatter()
         formatter.calendar = Calendar(identifier: .gregorian)
         formatter.locale = Locale(identifier: "en_US_POSIX")
