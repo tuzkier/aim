@@ -9,7 +9,7 @@ applicability:
 items:
   - id: w13-screening
     title: 预约中期唐筛或无创 DNA
-    summary: 中期唐筛常在孕 15–20 周，无创 DNA 在 12–22 周；做哪项、做过的还要不要再做，按医生安排。
+    summary: 中期唐筛常在孕 15–20 周，无创 DNA 在 12 周到 22 周 6 天；做哪项、要不要再做，按医生安排。
     due_in_days: 2
     source_type: template
     priority: 100
@@ -29,5 +29,11 @@ items:
     title: 饮食加奶类补钙
     summary: 孕中期起每天喝奶 300–500 克，也可换成酸奶、奶酪；要不要吃钙片听医生的。
     due_in_days: 1
+    source_type: template
+    priority: 60
+  - id: w13-iron
+    title: 饮食加红肉补铁
+    summary: 孕中期起适当多吃红肉，每周一两次动物血或肝；要不要吃铁剂看血常规，听医生的。
+    due_in_days: 2
     source_type: template
     priority: 60

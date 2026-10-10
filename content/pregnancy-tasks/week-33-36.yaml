@@ -9,13 +9,13 @@ applicability:
 items:
   - id: w33-labor-signs
     title: 学会认产兆
-    summary: 见红、破水、规律宫缩是常见产兆；破水、出血多、胎动明显减少，或不足 37 周就规律宫缩，直接去医院。
+    summary: 产兆有见红、破水、规律宫缩；破水、出血多、胎动明显减少，或不足 37 周出现见红、破水或规律宫缩，都直接去医院。
     due_in_days: 3
     source_type: template
     priority: 100
   - id: w33-nst
     title: 按医生安排做胎心监护
-    summary: 胎心监护多从孕 32–34 周开始，频次按医生安排；去之前正常吃饭，别空腹。
+    summary: 胎心监护一般 34 周左右开始，有高危因素的会更早，频次按医生安排；去之前正常吃饭。
     due_in_days: 3
     source_type: template
     priority: 90

@@ -94,3 +94,9 @@ def test_task_titles_and_summaries_stay_short() -> None:
         if len(item["title"]) > 20 or len(item["summary"]) > 60
     ]
     assert too_long == []
+
+
+def test_initial_plan_items_is_not_empty_for_weeks_4_to_42() -> None:
+    from aim_api.contexts.guidance.application.queries.get_guidance import initial_plan_items
+
+    assert [week for week in range(4, 43) if not initial_plan_items(week)] == []

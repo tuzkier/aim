@@ -9,13 +9,13 @@ applicability:
 items:
   - id: w20-anomaly-scan
     title: 确认大排畸已预约
-    summary: 大排畸一般在孕 20–24 周做，很多医院要提前约；还没约的这周联系医院，时间按医生安排。
+    summary: 大排畸就是系统超声，一般在孕 20–24 周做；18 周已约好的确认时间即可，还没约的这周联系医院。
     due_in_days: 0
     source_type: template
     priority: 100
   - id: w20-first-movement
     title: 留意第一次胎动
-    summary: 第一次怀孕多在 18–20 周左右感到胎动，像冒泡泡；早几周晚几周都常见，现在还不用数。
+    summary: 第一次怀孕多在 18–20 周感到胎动，早晚几周都常见；到 24 周左右还没感觉到胎动，产检时告诉医生。
     due_in_days: 7
     source_type: template
     priority: 70

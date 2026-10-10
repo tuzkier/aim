@@ -15,7 +15,7 @@ items:
     priority: 100
   - id: w41-admission-or-induction
     title: 按医生安排住院或评估引产
-    summary: 过了预产期很常见；医生会加强监测，指南建议 41 周后住院引产，具体时机按医生安排。
+    summary: 过了预产期很常见；指南建议 41 周后住院引产，时机按医生安排；还没约好住院的，这一两天联系产检医院。
     due_in_days: 0
     source_type: template
     priority: 100
