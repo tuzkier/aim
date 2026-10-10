@@ -3534,7 +3534,8 @@
           "note",
           "question",
           "checklist",
-          "knowledge"
+          "knowledge",
+          "fetal_movement"
         ],
         "title": "RecordType"
       },

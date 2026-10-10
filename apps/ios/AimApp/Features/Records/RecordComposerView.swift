@@ -124,8 +124,8 @@ struct RecordComposerView: View {
         case .note:
             noteFields
             occurredAtSection
-        // question / checklist 由资料库和 AIM 创建，不在手动新建里提供。
-        case .question, .checklist, .knowledge, .unknown: EmptyView()
+        // question / checklist 由资料库和 AIM 创建，胎动由计数器创建，都不在手动新建里提供。
+        case .question, .checklist, .knowledge, .fetalMovement, .unknown: EmptyView()
         }
     }
 
@@ -247,7 +247,7 @@ struct RecordComposerView: View {
                 // 指标填错了不让存——后端也会拒，不如当场说清楚。
                 && metrics.validationMessage == nil
         case .note: !content.trimmed.isEmpty
-        case .question, .checklist, .knowledge, .none, .unknown: false
+        case .question, .checklist, .knowledge, .fetalMovement, .none, .unknown: false
         }
     }
 
@@ -275,7 +275,7 @@ struct RecordComposerView: View {
                 result: result.trimmed, doctorAdvice: doctorAdvice.trimmed,
                 metrics: metrics.parsed()))
         case .note: data = .note
-        case .question, .checklist, .knowledge, .unknown: return nil
+        case .question, .checklist, .knowledge, .fetalMovement, .unknown: return nil
         }
         return RecordDraft(type: type, occurredAt: occurredAt, visibility: visibility, title: type == .note ? title.trimmed.nilIfEmpty : nil, content: type == .note ? content.trimmed.nilIfEmpty : nil, structuredData: data)
     }

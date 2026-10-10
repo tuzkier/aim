@@ -271,3 +271,49 @@ def test_record_can_be_explicitly_converted_to_task_without_cross_family_leakage
     assert task.json()["changed_by_actor_id"] == author_id
     assert task.json()["due_at"] == "2026-08-30T09:00:00+08:00"
     assert cross_family.status_code == 403
+
+
+def test_fetal_movement_records_can_be_created_filtered_and_rejected() -> None:
+    account_id = str(uuid4())
+    phone = _phone(account_id)
+    headers = _headers(account_id, phone)
+    with TestClient(create_app()) as client:
+        _, pregnancy_id = _create_pregnancy(client, account_id, phone)
+        created = _create_record(
+            client,
+            pregnancy_id,
+            headers,
+            type="fetal_movement",
+            title="数胎动 10 次 · 32 分钟",
+            structured_data={
+                "duration_seconds": 1920,
+                "count": 10,
+                "target": 10,
+                "outcome": "reached",
+                "taps": [30, 200, 400, 600, 800, 1000, 1200, 1500, 1700, 1920],
+            },
+        )
+        rejected = _create_record(
+            client,
+            pregnancy_id,
+            headers,
+            type="fetal_movement",
+            structured_data={
+                "duration_seconds": 60,
+                "count": 1,
+                "target": 6,
+                "outcome": "stopped",
+                "taps": [5],
+            },
+        )
+        listed = client.get(
+            f"/api/v1/pregnancies/{pregnancy_id}/records",
+            params={"type": "fetal_movement"},
+            headers=headers,
+        )
+
+    assert created.status_code == 201, created.text
+    assert created.json()["structured_data"]["outcome"] == "reached"
+    assert rejected.status_code == 409, rejected.text
+    assert listed.status_code == 200, listed.text
+    assert [r["type"] for r in listed.json()["records"]] == ["fetal_movement"]

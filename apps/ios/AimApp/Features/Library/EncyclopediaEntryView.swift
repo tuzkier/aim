@@ -9,6 +9,7 @@ struct EncyclopediaEntryView: View {
     @State private var entry: EncyclopediaEntry?
     @State private var failed = false
     @State private var showingAgent = false
+    @State private var countingFetalMovement = false
 
     var body: some View {
         Group {
@@ -28,6 +29,9 @@ struct EncyclopediaEntryView: View {
         .task(id: entryID) { await load() }
         .fullScreenCover(isPresented: $showingAgent) {
             AgentView(store: agentStore) { showingAgent = false }
+        }
+        .fullScreenCover(isPresented: $countingFetalMovement) {
+            FetalMovementCounterView(agentStore: agentStore) { countingFetalMovement = false }
         }
     }
 
@@ -93,6 +97,15 @@ struct EncyclopediaEntryView: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .aimCard()
+                }
+
+                if entry.id == "body.fetal-movement" {
+                    Button { countingFetalMovement = true } label: {
+                        Label("开始数胎动", systemImage: "hand.tap")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .accessibilityIdentifier("encyclopedia-start-fetal-movement")
                 }
 
                 Text(footer(entry))

@@ -26,6 +26,7 @@ struct LibraryCategoryDetail: View {
             case .paperwork: checklist(collection: "hangzhou")
             case .preparation: checklist(collection: "preparation")
             case .nutrition: nutritionView
+            case .fetalMovement: FetalMovementView(agentStore: agentStore)
             default: comingSoon
             }
         }
@@ -480,6 +481,7 @@ struct LibraryCategoryDetail: View {
         case .symptoms: "「今天腰酸」"
         case .questions: "「帮我记个想问医生的问题」"
         case .safety: "问问什么情况需要立刻就医"
+        case .fetalMovement: "「最近胎动正常吗」"
         }
     }
 

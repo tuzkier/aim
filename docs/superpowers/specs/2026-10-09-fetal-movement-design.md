@@ -33,14 +33,13 @@
 
 | 字段 | 说明 |
 | --- | --- |
-| `started_at` | 开始时间（ISO 8601），同时作为记录的 `occurred_at` |
-| `ended_at` | 结束时间 |
+| `duration_seconds` | 用时（秒）：数到 10 次时为第 10 次的时刻；满 2 小时为 7200；中途结束为已用时间。开始时间就是记录的 `occurred_at`，不另存 |
 | `count` | 计到的次数，0–200 |
 | `target` | 固定 10，存下来以便将来换方法时旧数据仍可解读 |
 | `outcome` | `reached`（数到 10 次）/ `under`（满 2 小时不足 10 次）/ `stopped`（中途手动结束） |
 | `taps` | 每次计数距开始的秒数，整数数组，长度等于 `count` |
 
-校验：`ended_at ≥ started_at`；时长不超过 3 小时；`outcome = reached` 时 `count ≥ 10`；`outcome = under` 时 `count < 10` 且时长 ≥ 2 小时；`taps` 递增且不超过时长。默认家庭可见。不需要数据库迁移（`record_type` 是字符串列，长度够）。旧版 App 把不认识的类型解码为 `unknown`，不会出错。
+校验：`duration_seconds` 为 0–10800 的整数；`target` 必须是 10；`outcome = reached` 时 `count ≥ 10`；`outcome = under` 时 `count < 10` 且 `duration_seconds ≥ 7200`；`taps` 为不递减的整数、长度等于 `count`、每项不超过 `duration_seconds`。记录 `title` 由客户端填一句摘要（如「数胎动 10 次 · 32 分钟」），家庭动态直接用它。默认家庭可见。不需要数据库迁移（`record_type` 是字符串列，长度够）。旧版 App 把不认识的类型解码为 `unknown`，不会出错。
 
 ## 5. 界面
 

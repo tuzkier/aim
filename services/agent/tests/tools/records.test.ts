@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import createRecord from "../../agent/tools/create_record.ts";
 import listRecords from "../../agent/tools/list_records.ts";
 
 const scope = {
@@ -59,4 +60,15 @@ test("list_records sends only optional record filters in its request body", asyn
     if (previousBaseUrl === undefined) delete process.env.AIM_API_INTERNAL_URL;
     else process.env.AIM_API_INTERNAL_URL = previousBaseUrl;
   }
+});
+
+test("AIM can read fetal movement records but cannot create them", () => {
+  // 对外类型是通用结构描述，实际是 zod 对象。
+  type Schema = { safeParse(value: unknown): { success: boolean } };
+  const listSchema = listRecords.inputSchema as unknown as Schema;
+  const createSchema = createRecord.inputSchema as unknown as Schema;
+
+  assert.equal(listSchema.safeParse({ type: "fetal_movement" }).success, true);
+  // 胎动只能在计数页实时产生，AIM 不得创建。
+  assert.equal(createSchema.safeParse({ recordType: "fetal_movement" }).success, false);
 });

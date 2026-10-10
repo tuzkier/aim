@@ -19,6 +19,15 @@ struct LibraryView: View {
         GridItem(.flexible(), spacing: AimMetrics.space12),
     ]
 
+    /// 胎动卡 28 周起显示；更早但已经有胎动记录的（比如改过预产期）也显示。
+    private var visibleGridCategories: [LibraryCategory] {
+        LibraryCatalog.gridCategories.filter { category in
+            guard category.id == .fetalMovement else { return true }
+            return (store.currentWeek ?? 0) >= 28
+                || store.snapshot.records.contains { $0.type == .fetalMovement }
+        }
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -37,7 +46,7 @@ struct LibraryView: View {
                     }
                     sectionTitle("我的档案", identifier: "library-section-archive")
                     LazyVGrid(columns: columns, spacing: AimMetrics.space12) {
-                        ForEach(LibraryCatalog.gridCategories) { category in
+                        ForEach(visibleGridCategories) { category in
                             Button { openCategory = category.id } label: {
                                 LibraryCategoryCard(
                                     category: category,

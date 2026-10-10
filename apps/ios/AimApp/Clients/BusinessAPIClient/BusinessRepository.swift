@@ -660,7 +660,7 @@ actor BusinessRepository: BusinessRepositoryProtocol {
         // 类型与结构化数据是配套的。
         case (.symptom, .symptom), (.checkup, .checkup), (.note, .note),
              (.question, .question), (.checklist, .checklist),
-             (.knowledge, .knowledge):
+             (.knowledge, .knowledge), (.fetalMovement, .fetalMovement):
             return
         default:
             throw APIError.invalidResponse
