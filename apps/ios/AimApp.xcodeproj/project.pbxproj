@@ -64,6 +64,8 @@
 		A20000000000000000000058 /* Features/Home/HomeHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000057 /* Features/Home/HomeHeader.swift */; };
 		A20000000000000000000160 /* Features/FetalMovement/FetalMovementModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000160 /* Features/FetalMovement/FetalMovementModels.swift */; };
 		A20000000000000000000161 /* Features/FetalMovement/FetalMovementStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000161 /* Features/FetalMovement/FetalMovementStore.swift */; };
+		A20000000000000000000162 /* Features/FetalMovement/FetalMovementCounterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000162 /* Features/FetalMovement/FetalMovementCounterView.swift */; };
+		A20000000000000000000163 /* Features/FetalMovement/FetalMovementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000163 /* Features/FetalMovement/FetalMovementView.swift */; };
 		A20000000000000000000059 /* Features/Records/TaskRecordSuggestion.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000058 /* Features/Records/TaskRecordSuggestion.swift */; };
 		A20000000000000000000060 /* Tests/TaskRecordSuggestionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000059 /* Tests/TaskRecordSuggestionTests.swift */; };
 		A20000000000000000000061 /* Core/Networking/APIEndpointConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000060 /* Core/Networking/APIEndpointConfiguration.swift */; };
@@ -228,6 +230,8 @@
 		A10000000000000000000057 /* Features/Home/HomeHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Home/HomeHeader.swift; sourceTree = "<group>"; };
 		A10000000000000000000160 /* Features/FetalMovement/FetalMovementModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FetalMovement/FetalMovementModels.swift; sourceTree = "<group>"; };
 		A10000000000000000000161 /* Features/FetalMovement/FetalMovementStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FetalMovement/FetalMovementStore.swift; sourceTree = "<group>"; };
+		A10000000000000000000162 /* Features/FetalMovement/FetalMovementCounterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FetalMovement/FetalMovementCounterView.swift; sourceTree = "<group>"; };
+		A10000000000000000000163 /* Features/FetalMovement/FetalMovementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FetalMovement/FetalMovementView.swift; sourceTree = "<group>"; };
 		A10000000000000000000058 /* Features/Records/TaskRecordSuggestion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Records/TaskRecordSuggestion.swift; sourceTree = "<group>"; };
 		A10000000000000000000059 /* Tests/TaskRecordSuggestionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/TaskRecordSuggestionTests.swift; sourceTree = "<group>"; };
 		A10000000000000000000060 /* Core/Networking/APIEndpointConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Networking/APIEndpointConfiguration.swift; sourceTree = "<group>"; };
@@ -672,6 +676,8 @@
 			children = (
 				A10000000000000000000160 /* Features/FetalMovement/FetalMovementModels.swift */,
 				A10000000000000000000161 /* Features/FetalMovement/FetalMovementStore.swift */,
+				A10000000000000000000162 /* Features/FetalMovement/FetalMovementCounterView.swift */,
+				A10000000000000000000163 /* Features/FetalMovement/FetalMovementView.swift */,
 			);
 			name = FetalMovement;
 			sourceTree = "<group>";
@@ -1538,6 +1544,8 @@
 				A20000000000000000000058 /* Features/Home/HomeHeader.swift in Sources */,
 				A20000000000000000000160 /* Features/FetalMovement/FetalMovementModels.swift in Sources */,
 				A20000000000000000000161 /* Features/FetalMovement/FetalMovementStore.swift in Sources */,
+				A20000000000000000000162 /* Features/FetalMovement/FetalMovementCounterView.swift in Sources */,
+				A20000000000000000000163 /* Features/FetalMovement/FetalMovementView.swift in Sources */,
 				A20000000000000000000059 /* Features/Records/TaskRecordSuggestion.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
