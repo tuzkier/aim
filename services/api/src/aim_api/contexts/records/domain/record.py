@@ -83,8 +83,12 @@ class Record:
         )
 
     def assert_can_mutate(self, account_id: UUID) -> None:
+        # 家庭可见的记录属于整个家庭，家里任何成员都能改（成员资格由命令层先校验）；
+        # 仅自己可见的只有作者能改。
+        if self.visibility is RecordVisibility.family:
+            return
         if self.author_account_id != account_id:
-            raise RecordAccessDenied("only the record author can mutate it")
+            raise RecordAccessDenied("only the record author can mutate a private record")
 
     def assert_attachment_refs_valid(self) -> None:
         _validate_attachment_refs(self.attachment_refs)
@@ -108,7 +112,14 @@ class Record:
         "diastolic": (30.0, 150.0),
         "fasting_glucose": (2.0, 20.0),
         "hemoglobin": (50.0, 200.0),
+        "fetal_heart_rate": (100, 200),
+        "fundal_height_cm": (10, 45),
     }
+
+    # 产检报告里没有专门字段的化验项，按报告原样记名称和结果。
+    # 标记只表达报告上的箭头/异常提示，不做判断。
+    OTHER_ITEM_FLAGS: ClassVar[frozenset[str]] = frozenset({"high", "low", "abnormal"})
+    MAX_OTHER_ITEMS: ClassVar[int] = 60
 
     KNOWLEDGE_CATEGORIES: ClassVar[frozenset[str]] = frozenset(
         {"nutrition", "paperwork", "preparation", "checkups", "symptoms", "questions"}
@@ -257,6 +268,48 @@ class Record:
         ):
             raise RecordValidationError("diastolic pressure must be below systolic")
 
+    @classmethod
+    def _validate_other_items(cls, items: Any) -> None:
+        if items is None:
+            return
+        if not isinstance(items, list):
+            raise RecordValidationError("checkup other_items must be a list")
+        if len(items) > cls.MAX_OTHER_ITEMS:
+            raise RecordValidationError(
+                f"checkup other_items allows at most {cls.MAX_OTHER_ITEMS} entries"
+            )
+        allowed_keys = {"name", "value", "unit", "reference", "flag"}
+        for entry in items:
+            if not isinstance(entry, dict):
+                raise RecordValidationError("checkup other_items entries must be JSON objects")
+            unknown = set(entry) - allowed_keys
+            if unknown:
+                # 和指标一样挡住未知键，错别字不能静默变成没人读的数据。
+                raise RecordValidationError(
+                    f"unsupported checkup other_items field: {sorted(unknown)[0]}"
+                )
+            for field in ("name", "value"):
+                value = entry.get(field)
+                if not isinstance(value, str) or not value.strip() or len(value) > 40:
+                    raise RecordValidationError(
+                        f"checkup other_items {field} must be non-empty text"
+                        " of at most 40 characters"
+                    )
+            for field, limit in (("unit", 20), ("reference", 60)):
+                value = entry.get(field)
+                if value is not None and (not isinstance(value, str) or len(value) > limit):
+                    raise RecordValidationError(
+                        f"checkup other_items {field} must be text of at most {limit} characters"
+                    )
+            flag = entry.get("flag")
+            # 先判类型：列表等不可哈希的值直接 in frozenset 会抛 TypeError。
+            if flag is not None and (
+                not isinstance(flag, str) or flag not in cls.OTHER_ITEM_FLAGS
+            ):
+                raise RecordValidationError(
+                    "checkup other_items flag must be high, low or abnormal"
+                )
+
     @staticmethod
     def _with_defaults(record_type: RecordType, structured_data: dict[str, Any]) -> dict[str, Any]:
         """把可选状态字段的默认值显式写进去。
@@ -297,9 +350,10 @@ class Record:
         if record_type is RecordType.checkup:
             for field in ("hospital", "exam_items", "result", "doctor_advice"):
                 value = structured_data.get(field)
-                if not isinstance(value, str):
+                if value is not None and not isinstance(value, str):
                     raise RecordValidationError(f"checkup {field} must be a string")
             cls._validate_checkup_metrics(structured_data.get("metrics"))
+            cls._validate_other_items(structured_data.get("other_items"))
             return
 
         if record_type is RecordType.note:

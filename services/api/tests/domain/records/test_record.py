@@ -53,9 +53,9 @@ def test_record_rejects_invalid_symptom_severity() -> None:
         make_record(structured_data={"symptoms": ["nausea"], "severity": 6})
 
 
-def test_record_requires_complete_checkup_payload() -> None:
+def test_checkup_rejects_non_string_text_section() -> None:
     with pytest.raises(RecordValidationError):
-        make_record(record_type=RecordType.checkup, structured_data={"hospital": "市妇幼"})
+        make_record(record_type=RecordType.checkup, structured_data={"hospital": 1})
 
 
 def test_note_record_requires_non_empty_content() -> None:
@@ -63,14 +63,29 @@ def test_note_record_requires_non_empty_content() -> None:
         make_record(record_type=RecordType.note, content="  ", structured_data={})
 
 
-def test_only_author_can_edit_or_soft_delete_record() -> None:
+def test_any_family_member_can_edit_or_soft_delete_family_record() -> None:
+    """家庭可见的记录属于整个家庭；成员资格由命令层校验，这里不再限作者。"""
+    author_id = UUID("00000000-0000-0000-0000-000000000004")
+    other_member_id = uuid4()
+    record = make_record(author_account_id=author_id, visibility=RecordVisibility.family)
+
+    record.assert_can_mutate(author_id)
+    record.assert_can_mutate(other_member_id)
+
+    record.soft_delete(other_member_id, now=NOW)
+    assert record.deleted_at == NOW
+
+
+def test_only_author_can_edit_or_soft_delete_private_record() -> None:
     author_id = UUID("00000000-0000-0000-0000-000000000004")
     other_account_id = uuid4()
-    record = make_record(author_account_id=author_id)
+    record = make_record(author_account_id=author_id, visibility=RecordVisibility.private)
 
     record.assert_can_mutate(author_id)
     with pytest.raises(RecordAccessDenied):
         record.assert_can_mutate(other_account_id)
+    with pytest.raises(RecordAccessDenied):
+        record.soft_delete(other_account_id, now=NOW)
 
     record.soft_delete(author_id, now=NOW)
     assert record.deleted_at == NOW

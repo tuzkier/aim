@@ -180,7 +180,79 @@ def test_records_get_edit_and_soft_delete() -> None:
     assert after_delete.status_code == 404
 
 
-def test_records_enforce_visibility_author_mutation_and_family_boundary() -> None:
+def test_knowledge_entry_title_can_be_edited() -> None:
+    account_id = str(uuid4())
+    phone = _phone(account_id)
+    headers = _headers(account_id, phone)
+
+    with TestClient(create_app()) as client:
+        _, pregnancy_id = _create_pregnancy(client, account_id, phone)
+        created = _create_record(
+            client,
+            pregnancy_id,
+            headers,
+            type="knowledge",
+            title="补铁菜谱",
+            structured_data={"category": "nutrition", "form": "tip", "body": "多吃红肉"},
+        )
+        record_id = created.json()["id"]
+        renamed = client.patch(
+            f"/api/v1/pregnancies/{pregnancy_id}/records/{record_id}",
+            headers=headers,
+            json={"title": "补铁小贴士"},
+        )
+        blanked = client.patch(
+            f"/api/v1/pregnancies/{pregnancy_id}/records/{record_id}",
+            headers=headers,
+            json={"title": "  "},
+        )
+
+    assert created.status_code == 201, created.text
+    assert renamed.status_code == 200, renamed.text
+    assert renamed.json()["title"] == "补铁小贴士"
+    assert blanked.status_code == 409
+
+
+def test_checkup_report_can_be_created_and_edited_with_partial_fields() -> None:
+    account_id = str(uuid4())
+    phone = _phone(account_id)
+    headers = _headers(account_id, phone)
+
+    with TestClient(create_app()) as client:
+        _, pregnancy_id = _create_pregnancy(client, account_id, phone)
+        created = _create_record(
+            client,
+            pregnancy_id,
+            headers,
+            type="checkup",
+            structured_data={"metrics": {"fetal_heart_rate": 145}},
+        )
+        record_id = created.json()["id"]
+        edited = client.patch(
+            f"/api/v1/pregnancies/{pregnancy_id}/records/{record_id}",
+            headers=headers,
+            json={
+                "structured_data": {
+                    "metrics": {"fetal_heart_rate": 150, "fundal_height_cm": 28},
+                    "other_items": [
+                        {"name": "尿蛋白", "value": "+", "flag": "abnormal"},
+                    ],
+                }
+            },
+        )
+        rejected = client.patch(
+            f"/api/v1/pregnancies/{pregnancy_id}/records/{record_id}",
+            headers=headers,
+            json={"structured_data": {"metrics": {"fundal_height_cm": 9}}},
+        )
+
+    assert created.status_code == 201, created.text
+    assert edited.status_code == 200, edited.text
+    assert edited.json()["structured_data"]["other_items"][0]["flag"] == "abnormal"
+    assert rejected.status_code == 409
+
+
+def test_records_enforce_visibility_family_mutation_and_family_boundary() -> None:
     author_id = str(uuid4())
     member_id = str(uuid4())
     stranger_id = str(uuid4())
@@ -211,13 +283,35 @@ def test_records_enforce_visibility_author_mutation_and_family_boundary() -> Non
         member_private = client.get(
             f"/api/v1/pregnancies/{pregnancy_id}/records/{private_id}", headers=member_headers
         )
-        non_author_edit = client.patch(
+        member_edit = client.patch(
             f"/api/v1/pregnancies/{pregnancy_id}/records/{family_id_record}",
             headers=member_headers,
+            json={"title": "家人补充"},
+        )
+        member_private_edit = client.patch(
+            f"/api/v1/pregnancies/{pregnancy_id}/records/{private_id}",
+            headers=member_headers,
+            json={"title": "不应修改"},
+        )
+        member_private_delete = client.delete(
+            f"/api/v1/pregnancies/{pregnancy_id}/records/{private_id}", headers=member_headers
+        )
+        stranger_edit = client.patch(
+            f"/api/v1/pregnancies/{pregnancy_id}/records/{family_id_record}",
+            headers=stranger_headers,
             json={"title": "不应修改"},
         )
         cross_family = client.get(
             f"/api/v1/pregnancies/{pregnancy_id}/records/{family_id_record}", headers=stranger_headers
+        )
+        private_after = client.get(
+            f"/api/v1/pregnancies/{pregnancy_id}/records/{private_id}", headers=author_headers
+        )
+        member_delete = client.delete(
+            f"/api/v1/pregnancies/{pregnancy_id}/records/{family_id_record}", headers=member_headers
+        )
+        family_after_delete = client.get(
+            f"/api/v1/pregnancies/{pregnancy_id}/records/{family_id_record}", headers=author_headers
         )
 
     assert family_record.status_code == 201, family_record.text
@@ -225,8 +319,18 @@ def test_records_enforce_visibility_author_mutation_and_family_boundary() -> Non
     assert member_list.status_code == 200, member_list.text
     assert [record["id"] for record in member_list.json()["records"]] == [family_id_record]
     assert member_private.status_code == 404
-    assert non_author_edit.status_code == 403
+    # 家庭可见的记录属于整个家庭：家人可以改，也可以删。
+    assert member_edit.status_code == 200, member_edit.text
+    assert member_edit.json()["title"] == "家人补充"
+    # 仅自己可见的记录对家人不存在，改和删都只能得到「找不到」。
+    assert member_private_edit.status_code == 404
+    assert member_private_delete.status_code == 404
+    assert private_after.status_code == 200
+    assert private_after.json()["title"] == "晨吐"
+    assert stranger_edit.status_code == 403
     assert cross_family.status_code == 403
+    assert member_delete.status_code == 204, member_delete.text
+    assert family_after_delete.status_code == 404
 
 
 def test_record_can_be_explicitly_converted_to_task_without_cross_family_leakage() -> None:

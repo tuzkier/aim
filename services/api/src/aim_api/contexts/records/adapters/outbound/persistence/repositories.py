@@ -84,7 +84,9 @@ class SqlAlchemyRecordsRepository:
             update(RecordModel)
             .where(
                 RecordModel.id == record.id,
-                RecordModel.author_account_id == account_id,
+                RecordModel.family_id == record.family_id,
+                # 按库里现有的可见性判断：家庭记录家人可改，私密记录只有作者能改。
+                _visibility_clause(account_id),
                 RecordModel.deleted_at.is_(None),
             )
             .values(
@@ -106,7 +108,9 @@ class SqlAlchemyRecordsRepository:
             update(RecordModel)
             .where(
                 RecordModel.id == record.id,
-                RecordModel.author_account_id == account_id,
+                RecordModel.family_id == record.family_id,
+                # 按库里现有的可见性判断：家庭记录家人可改，私密记录只有作者能改。
+                _visibility_clause(account_id),
                 RecordModel.deleted_at.is_(None),
             )
             .values(deleted_at=record.deleted_at, updated_at=record.updated_at)
