@@ -9,7 +9,7 @@ applicability:
 items:
   - id: w29-fetal-count
     title: 每天数一次胎动
-    summary: 选宝宝活跃的时段数到 10 次；2 小时内不足 10 次或比平时明显少，尽快联系医院。
+    summary: 选宝宝活跃的时段数到 10 次；2 小时内不足 10 次或比平时明显少，立即联系医院或去产科急诊。
     due_in_days: 0
     source_type: template
     priority: 100

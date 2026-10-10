@@ -15,7 +15,7 @@ items:
     priority: 100
   - id: w20-first-movement
     title: 留意第一次胎动
-    summary: 第一次怀孕多在 18–20 周感到胎动，早晚几周都常见；到 24 周左右还没感觉到胎动，产检时告诉医生。
+    summary: 第一次怀孕多在 18–20 周感到胎动，早晚几周都常见；到 24 周左右还没感觉到胎动，尽快联系产检医院。
     due_in_days: 7
     source_type: template
     priority: 70

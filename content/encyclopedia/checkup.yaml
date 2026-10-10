@@ -203,7 +203,7 @@ entries:
       - heading: 风险与术后
         text: 羊水穿刺有很小的流产和感染风险，医生会在术前说明。术后当天注意休息，避免剧烈运动。出结果通常需要几周，具体问医院。
       - heading: 什么时候找医生
-        text: 术后出现阴道流血、流水、发热、持续腹痛或明显宫缩时，尽快回医院就诊。
+        text: 术后出现阴道流血、流水、发热、持续腹痛或明显宫缩时，立即回医院就诊。
     ask: [羊穿疼不疼, 羊穿有流产风险吗, 羊穿结果要等多久]
     related: [checkup.nipt, checkup.early-screening, checkup.second-trimester-screening]
 

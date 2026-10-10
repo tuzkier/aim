@@ -9,7 +9,7 @@ applicability:
 items:
   - id: w41-fetal-count
     title: 每天认真数胎动
-    summary: 每天数到 10 次；2 小时内不足 10 次或比平时明显少，不用等约好的日子，尽快联系医院。
+    summary: 每天数到 10 次；2 小时内不足 10 次或比平时明显少，不用等约好的日子，立即联系医院或去产科急诊。
     due_in_days: 0
     source_type: template
     priority: 100

@@ -15,7 +15,7 @@ items:
     priority: 100
   - id: w25-fetal-count
     title: 28 周起学会数胎动
-    summary: 28 周开始每天数，先学会方法：数到 10 次记下用时；2 小时内不足 10 次或比平时明显少，尽快联系医院。
+    summary: 28 周起每天数，先学会方法：数到 10 次记下用时；2 小时内不足 10 次或比平时明显少，立即联系医院或去产科急诊。
     due_in_days: 3
     source_type: template
     priority: 100

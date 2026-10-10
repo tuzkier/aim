@@ -72,3 +72,55 @@ def test_nutrition_basics_moved_into_diet() -> None:
         entry = encyclopedia.get(f"diet.{item['id']}")
         assert entry is not None, item["id"]
         assert entry.title == item["title"]
+
+
+def _section_text(entry_id: str, heading: str) -> str:
+    for path in DOCUMENTS:
+        for entry in yaml.safe_load(path.read_text(encoding="utf-8"))["entries"]:
+            if entry["id"] == entry_id:
+                return next(s["text"] for s in entry["sections"] if s["heading"] == heading)
+    raise AssertionError(f"找不到 {entry_id}/{heading}")
+
+
+#: 这些小节写的都是危险信号里的 urgent 情况（胎动减少、子痫前期、破水或出血、自伤念头），
+#: 措辞要和危险信号一样说「立即」，不能写成「尽快」让人以为可以等一等。
+URGENT_SECTIONS = [
+    ("body.fetal-movement", "怎么数"),
+    ("body.edema", "什么时候找医生"),
+    ("body.heartburn", "什么时候找医生"),
+    ("body.discharge", "什么时候找医生"),
+    ("body.mood", "什么时候找医生"),
+    ("body.frequent-urination", "什么时候找医生"),
+    ("birth.signs-of-labor", "破水"),
+    ("checkup.amniocentesis", "什么时候找医生"),
+]
+
+
+@pytest.mark.parametrize("entry_id,heading", URGENT_SECTIONS, ids=lambda v: str(v))
+def test_urgent_signs_say_go_now_like_the_red_flags(entry_id: str, heading: str) -> None:
+    text = _section_text(entry_id, heading)
+    assert "立即" in text
+    assert "尽快" not in text
+
+
+#: 对应 same_day 危险信号（孕早期少量出血、剧吐、手脚心瘙痒）的小节写「今天」联系，
+#: 与危险信号同档，不写含糊的「尽快」，也不升成「立即」吓人。
+SAME_DAY_SECTIONS = [
+    ("body.early-bleeding-pain", "什么时候找医生"),
+    ("body.morning-sickness", "什么时候找医生"),
+    ("diet.eating-with-nausea", "什么时候找医生"),
+    ("body.stretch-marks", "什么时候找医生"),
+]
+
+
+@pytest.mark.parametrize("entry_id,heading", SAME_DAY_SECTIONS, ids=lambda v: str(v))
+def test_same_day_signs_say_today_like_the_red_flags(entry_id: str, heading: str) -> None:
+    text = _section_text(entry_id, heading)
+    assert "今天" in text
+    assert "尽快" not in text
+
+
+def test_self_harm_thoughts_point_to_the_hotline_and_emergency() -> None:
+    text = _section_text("body.mood", "什么时候找医生")
+    assert "立即告诉身边的人" in text
+    assert "12356" in text and "急诊" in text

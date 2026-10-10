@@ -113,3 +113,24 @@ def test_initial_plan_items_is_not_empty_for_weeks_4_to_42() -> None:
     from aim_api.contexts.guidance.application.queries.get_guidance import initial_plan_items
 
     assert [week for week in range(4, 43) if not initial_plan_items(week)] == []
+
+
+def test_fetal_movement_tasks_say_go_now_like_the_red_flag() -> None:
+    """胎动不足 10 次或明显减少是 urgent 危险信号；待办文本生成后就固定在任务里，必须写「立即」。"""
+    items = [
+        item
+        for document in _task_documents()
+        for item in document["items"]
+        if "不足 10 次" in item["summary"]
+    ]
+    assert items, "应当有提醒数胎动的待办"
+    for item in items:
+        assert "立即联系医院或去产科急诊" in item["summary"], item["id"]
+        assert "尽快" not in item["summary"], item["id"]
+
+
+def test_no_first_movement_by_24_weeks_does_not_wait_for_the_next_visit() -> None:
+    by_id = {item["id"]: item for document in _task_documents() for item in document["items"]}
+    summary = by_id["w20-first-movement"]["summary"]
+    assert "尽快联系产检医院" in summary
+    assert "产检时告诉医生" not in summary
