@@ -68,8 +68,12 @@ export const hasNativeShell = (): boolean =>
  *
  * 流里的条目点开后应当落到原生页面，而不是在 WebView 里再画一遍——资料库和记录
  * 已经有原生实现，重画一份意味着两处要同步维护，而且返回手势会错乱。
+ * `encyclopedia` 是 AIM 回答里引用的百科条目，id 形如 `checkup.ogtt`。
  */
-export const openNative = (route: { kind: "record" | "task" | "knowledge"; id: string }): void => {
+export const openNative = (route: {
+  kind: "record" | "task" | "knowledge" | "encyclopedia";
+  id: string;
+}): void => {
   const handler = window.webkit?.messageHandlers?.aimNavigate;
   if (!handler) {
     console.warn("[aim] 没有原生外壳，忽略跳转", route);
