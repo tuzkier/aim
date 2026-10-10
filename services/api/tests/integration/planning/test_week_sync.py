@@ -374,3 +374,31 @@ def test_migration_backfills_seeds_for_existing_template_tasks() -> None:
 
     assert seeded == {task["source_id"] for task in created["tasks"]}
     assert seeded
+
+
+def test_seed_template_id_is_as_long_as_task_source_id() -> None:
+    """种子记的就是任务的 source_id，两列长度必须一致，否则长模板 id 写种子会失败。"""
+    from sqlalchemy import text
+
+    from aim_api.contexts.planning.adapters.outbound.persistence.models import (
+        PlanTemplateSeedModel,
+        TaskModel,
+    )
+
+    source_length = TaskModel.__table__.c.source_id.type.length
+    assert PlanTemplateSeedModel.__table__.c.template_id.type.length == source_length
+
+    with TestClient(create_app()) as client:
+        database = client.app.state.database
+
+        async def column_length() -> int:
+            async with database.session() as session:
+                return await session.scalar(
+                    text(
+                        "SELECT character_maximum_length FROM information_schema.columns"
+                        " WHERE table_name = 'plan_template_seeds'"
+                        " AND column_name = 'template_id'"
+                    )
+                )
+
+        assert client.portal.call(column_length) == source_length

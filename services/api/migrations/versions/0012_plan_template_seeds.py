@@ -21,7 +21,7 @@ def upgrade() -> None:
             sa.ForeignKey("pregnancy_plans.id", ondelete="CASCADE"),
             nullable=False,
         ),
-        sa.Column("template_id", sa.String(100), nullable=False),
+        sa.Column("template_id", sa.String(160), nullable=False),
         sa.Column("seeded_at", sa.DateTime(timezone=True), nullable=False),
         sa.PrimaryKeyConstraint("plan_id", "template_id"),
     )

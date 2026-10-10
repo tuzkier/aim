@@ -30,7 +30,7 @@ class PlanTemplateSeedModel(Base):
         ForeignKey("pregnancy_plans.id", ondelete="CASCADE"),
         primary_key=True,
     )
-    template_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    template_id: Mapped[str] = mapped_column(String(160), primary_key=True)
     seeded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
