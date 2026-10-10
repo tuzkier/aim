@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Protocol
 from uuid import UUID
 
@@ -16,6 +17,12 @@ class PlanningRepositoryPort(Protocol):
     async def get_plan(self, pregnancy_id: UUID) -> PregnancyPlan | None: ...
 
     async def get_task(self, task_id: UUID) -> Task | None: ...
+
+    async def seeded_template_ids(self, plan_id: UUID) -> set[str]: ...
+
+    async def try_seed(self, plan_id: UUID, template_id: str, now: datetime) -> bool:
+        """记下这个计划生成过该模板。已记过（含并发的另一方刚记下）返回 False。"""
+        ...
 
     async def delete_task(self, task_id: UUID) -> None: ...
 

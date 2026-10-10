@@ -33,6 +33,11 @@ struct LibraryView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: AimMetrics.space12) {
                     header
+                    // 立即就医级别的提示放在最前，不能让它排在「这周读什么」后面。
+                    let focus = LibraryFocus.make(from: store.snapshot)
+                    if let focus, focus.level == .urgent {
+                        LibraryFocusBanner(focus: focus)
+                    }
                     if let week = store.currentWeek {
                         let picks = store.encyclopedia.picks(forWeek: week)
                         if !picks.isEmpty {
@@ -41,7 +46,7 @@ struct LibraryView: View {
                             ) { openEntryID = $0.id }
                         }
                     }
-                    if let focus = LibraryFocus.make(from: store.snapshot) {
+                    if let focus, focus.level != .urgent {
                         LibraryFocusBanner(focus: focus)
                     }
                     sectionTitle("我的档案", identifier: "library-section-archive")
@@ -131,17 +136,41 @@ struct LibraryView: View {
 }
 
 /// 「本周关注」。只在真有值得看的事时出现——空横幅比没有横幅更糟。
+///
+/// 颜色跟着急迫程度走：立即就医用危险色并直接给出拨号按钮，
+/// 今天联系医院用提醒色，其余保持强调色。
 private struct LibraryFocusBanner: View {
     let focus: LibraryFocus
+
+    private var tint: Color {
+        switch focus.level {
+        case .urgent: .aimDanger
+        case .soon: .aimWarning
+        case .info: .aimAccent
+        }
+    }
+
+    /// 浅危险底 / 浅提醒底上再放同色胶囊会看不出来，这两档改用卡片底色。
+    private var tagBackground: Color {
+        focus.level == .info ? .aimAccentSoft : .aimSurface
+    }
+
+    private var background: Color {
+        switch focus.level {
+        case .urgent: .aimDangerSoft
+        case .soon: .aimWarningSoft
+        case .info: .aimSurface
+        }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: AimMetrics.space8) {
             Text("本周关注")
                 .font(.caption2)
-                .foregroundStyle(Color.aimAccent)
+                .foregroundStyle(tint)
             Text(focus.headline)
-                .font(.subheadline)
-                .foregroundStyle(Color.aimTextPrimary)
+                .font(focus.level == .urgent ? .subheadline.weight(.semibold) : .subheadline)
+                .foregroundStyle(focus.level == .urgent ? Color.aimDanger : Color.aimTextPrimary)
                 .fixedSize(horizontal: false, vertical: true)
             if !focus.tags.isEmpty {
                 HStack(spacing: AimMetrics.space4) {
@@ -150,16 +179,34 @@ private struct LibraryFocusBanner: View {
                             .font(.caption2)
                             .padding(.horizontal, AimMetrics.space8)
                             .padding(.vertical, 2)
-                            .background(Color.aimAccentSoft, in: Capsule())
-                            .foregroundStyle(Color.aimAccent)
+                            .background(tagBackground, in: Capsule())
+                            .foregroundStyle(tint)
                     }
                 }
             }
+            if focus.level == .urgent {
+                // 紧急时不该还要用户自己去翻通讯录。
+                Link(destination: URL(string: "tel://120")!) {
+                    Label("拨打 120", systemImage: "phone.fill")
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, AimMetrics.space8)
+                        .background(Color.aimDanger, in: RoundedRectangle(
+                            cornerRadius: AimMetrics.radiusButton, style: .continuous))
+                        .foregroundStyle(Color.aimTextOnDanger)
+                }
+                .accessibilityIdentifier("library-focus-call")
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .aimCard()
+        .padding(AimMetrics.space16)
+        .background(background, in: RoundedRectangle(
+            cornerRadius: AimMetrics.radiusCard, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: AimMetrics.radiusCard, style: .continuous)
+                .stroke(Color.aimSeparator, lineWidth: 1)
+        }
         .overlay(alignment: .leading) {
-            Rectangle().fill(Color.aimAccent).frame(width: 3)
+            Rectangle().fill(tint).frame(width: 3)
         }
         .accessibilityIdentifier("library-focus-banner")
     }

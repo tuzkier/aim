@@ -17,6 +17,11 @@ extension Color {
     static let aimSuccessSoft = Color("AimSuccessSoft")
     static let aimDanger = Color("AimDanger")
     static let aimDangerSoft = Color("AimDangerSoft")
+    /// 危险色底上的文字（「拨打 120」按钮）：浅色模式白字，深色模式危险色偏浅，改用深色字，两种模式对比度都 ≥4.5:1。
+    static let aimTextOnDanger = Color("AimTextOnDanger")
+    /// 提醒色（琥珀）：「今天或明天联系医院」这一档，介于强调色与危险色之间。
+    static let aimWarning = Color("AimWarning")
+    static let aimWarningSoft = Color("AimWarningSoft")
 }
 
 struct AimCard: ViewModifier {

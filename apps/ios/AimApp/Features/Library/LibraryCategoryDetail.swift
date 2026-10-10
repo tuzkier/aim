@@ -61,6 +61,16 @@ struct LibraryCategoryDetail: View {
         }
     }
 
+    /// 只列当前孕周适用的，紧急项排在最前。
+    private var visibleSafetyRules: [SafetyRule] {
+        SafetyCheck.rules(store.safetyRules, forWeek: store.currentWeek)
+    }
+
+    private func pruneHiddenSignals() {
+        checkedSignals = SafetyCheck.visibleSelection(
+            checkedSignals, in: store.safetyRules, forWeek: store.currentWeek)
+    }
+
     /// 危险信号做成自查而不是阅读材料：真出血的时候没人有心情通读一屏文字。
     /// 勾出正在经历的情况，直接给结论。
     private var safetyList: some View {
@@ -74,7 +84,7 @@ struct LibraryCategoryDetail: View {
             }
             .listRowBackground(Color.aimSurface)
 
-            ForEach(store.safetyRules) { rule in
+            ForEach(visibleSafetyRules) { rule in
                 Button {
                     if checkedSignals.contains(rule.id) {
                         checkedSignals.remove(rule.id)
@@ -92,12 +102,9 @@ struct LibraryCategoryDetail: View {
                                 .foregroundStyle(Color.aimTextPrimary)
                                 .fixedSize(horizontal: false, vertical: true)
                             if rule.isUrgent {
-                                Text("紧急")
-                                    .font(.caption2)
-                                    .padding(.horizontal, AimMetrics.space8)
-                                    .padding(.vertical, 1)
-                                    .background(Color.aimDangerSoft, in: Capsule())
-                                    .foregroundStyle(Color.aimDanger)
+                                severityTag("紧急", color: .aimDanger, background: .aimDangerSoft)
+                            } else if rule.isSameDay {
+                                severityTag("尽快", color: .aimWarning, background: .aimWarningSoft)
                             }
                         }
                     }
@@ -109,19 +116,38 @@ struct LibraryCategoryDetail: View {
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .accessibilityIdentifier("library-safety-list")
+        // 孕周或条目变了，看不见的勾选要清掉，不能在用户看不到的地方左右结论。
+        .onChange(of: store.currentWeek) { pruneHiddenSignals() }
+        .onChange(of: store.safetyRules) { pruneHiddenSignals() }
         .safeAreaInset(edge: .bottom) {
-            if let verdict = SafetyCheck.verdict(for: checkedSignals, in: store.safetyRules) {
+            if let verdict = SafetyCheck.verdict(
+                for: checkedSignals, in: store.safetyRules, forWeek: store.currentWeek) {
                 safetyVerdict(verdict)
             }
         }
     }
 
+    private func severityTag(_ text: String, color: Color, background: Color) -> some View {
+        Text(text)
+            .font(.caption2)
+            .padding(.horizontal, AimMetrics.space8)
+            .padding(.vertical, 1)
+            .background(background, in: Capsule())
+            .foregroundStyle(color)
+    }
+
     @ViewBuilder
     private func safetyVerdict(_ verdict: SafetyCheck.Verdict) -> some View {
+        // 三档各有颜色：立即就医用危险色，当天联系用提醒色，下次产检保持中性。
+        let (tint, background): (Color, Color) = switch verdict.level {
+        case .now: (.aimDanger, .aimDangerSoft)
+        case .soon: (.aimWarning, .aimWarningSoft)
+        case .mention: (.aimTextPrimary, .aimSurfaceSunken)
+        }
         VStack(alignment: .leading, spacing: AimMetrics.space8) {
             Text(verdict.headline)
                 .font(.headline)
-                .foregroundStyle(verdict.level == .now ? Color.aimDanger : Color.aimTextPrimary)
+                .foregroundStyle(tint)
                 .fixedSize(horizontal: false, vertical: true)
             ForEach(verdict.actions, id: \.self) { action in
                 Text("· " + action)
@@ -137,14 +163,14 @@ struct LibraryCategoryDetail: View {
                         .padding(.vertical, AimMetrics.space8)
                         .background(Color.aimDanger, in: RoundedRectangle(
                             cornerRadius: AimMetrics.radiusButton, style: .continuous))
-                        .foregroundStyle(Color.aimTextOnAccent)
+                        .foregroundStyle(Color.aimTextOnDanger)
                 }
                 .accessibilityIdentifier("safety-call")
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(AimMetrics.space16)
-        .background(verdict.level == .now ? Color.aimDangerSoft : Color.aimSurfaceSunken)
+        .background(background)
         .accessibilityIdentifier("safety-verdict")
     }
 

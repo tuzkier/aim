@@ -1,0 +1,33 @@
+id: pregnancy-week-25-28
+version: 1.0.0
+source: 中华医学会妇产科学分会《孕前和孕期保健指南（2018）》；中国营养学会《中国居民膳食指南（2022）》孕期妇女膳食指南；国家卫生健康委员会公开的孕产期保健资料
+source_url: https://www.nhc.gov.cn/
+reviewed_at: "2026-10-10"
+applicability:
+  region: [CN, CN-ZJ, CN-ZJ-HZ]
+  gestational_weeks: [25, 26, 27, 28]
+items:
+  - id: w25-ogtt
+    title: 预约糖耐量检查
+    summary: 糖耐量一般在孕 24–28 周做，按医生安排预约；前 3 天正常吃饭，检查前一晚起空腹 8 小时以上。
+    due_in_days: 2
+    source_type: template
+    priority: 100
+  - id: w25-fetal-count
+    title: 28 周起学会数胎动
+    summary: 28 周起每天数，先学会方法：数到 10 次记下用时；2 小时内不足 10 次或比平时明显少，立即联系医院或去产科急诊。
+    due_in_days: 3
+    source_type: template
+    priority: 100
+  - id: w25-weight
+    title: 对照体重增长目标
+    summary: 每周固定时间称一次体重并记下来，产检时请医生按孕前 BMI 看增长是否合适。
+    due_in_days: 3
+    source_type: template
+    priority: 70
+  - id: w25-leave-allowance
+    title: 了解产假与生育津贴怎么办
+    summary: 问单位人事，或在浙里办、杭州医保局官方栏目查最新办事指南，先列好要准备的材料。
+    due_in_days: 7
+    source_type: template
+    priority: 40

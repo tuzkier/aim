@@ -1,0 +1,33 @@
+id: pregnancy-week-20-24
+version: 1.0.0
+source: 中华医学会妇产科学分会《孕前和孕期保健指南（2018）》；中国营养学会《中国居民膳食指南（2022）》孕期妇女膳食指南；国家卫生健康委员会公开的孕产期保健资料
+source_url: https://www.nhc.gov.cn/
+reviewed_at: "2026-10-10"
+applicability:
+  region: [CN, CN-ZJ, CN-ZJ-HZ]
+  gestational_weeks: [20, 21, 22, 23, 24]
+items:
+  - id: w20-anomaly-scan
+    title: 确认大排畸已预约
+    summary: 大排畸就是系统超声，一般在孕 20–24 周做；18 周已约好的确认时间即可，还没约的这周联系医院。
+    due_in_days: 0
+    source_type: template
+    priority: 100
+  - id: w20-first-movement
+    title: 留意第一次胎动
+    summary: 第一次怀孕多在 18–20 周感到胎动，早晚几周都常见；到 24 周左右还没感觉到胎动，尽快联系产检医院。
+    due_in_days: 7
+    source_type: template
+    priority: 70
+  - id: w20-dental
+    title: 做一次口腔检查
+    summary: 孕中期看牙相对合适；看牙时告诉牙医你怀孕了、现在几周，牙龈出血、牙疼别硬扛。
+    due_in_days: 7
+    source_type: template
+    priority: 60
+  - id: w20-prenatal-class
+    title: 报名医院孕妇学校
+    summary: 问产检医院孕妇学校的课表和报名方式，挑几节分娩、母乳喂养的课，可以和家人一起去。
+    due_in_days: 7
+    source_type: template
+    priority: 50

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from aim_api.contexts.planning.application.ports import PlanningUnitOfWork
@@ -64,5 +64,8 @@ async def execute(command: GenerateInitialPlanCommand, uow: PlanningUnitOfWork) 
         )
         plan.add_task(task)
         await uow.repository.add_task(task)
+        if seed.source_type is TaskSourceType.template and seed.source_id:
+            # 记下生成过，孕周推进时 sync_week_tasks 才不会再生成一遍。
+            await uow.repository.try_seed(plan.id, seed.source_id, command.now or datetime.now(UTC))
     await uow.commit()
     return plan

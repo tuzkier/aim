@@ -1390,14 +1390,44 @@
           "guidance"
         ],
         "summary": "Get Safety Rules Endpoint",
-        "description": "危险信号。不含个人数据，因此不要求登录——\n真出事的时候不该被登录态挡在外面。",
+        "description": "危险信号。不含个人数据，因此不要求登录——\n真出事的时候不该被登录态挡在外面。\n\nweek 可选：传了只返回该孕周适用的条目；不传返回全部，兼容旧版 App。",
         "operationId": "get_safety_rules_endpoint_api_v1_safety_rules_get",
+        "parameters": [
+          {
+            "name": "week",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 45,
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Week"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
               }
             }
           }

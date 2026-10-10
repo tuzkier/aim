@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hmac
 from dataclasses import asdict
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import Any, Literal
 from uuid import UUID
 
@@ -31,6 +31,9 @@ from aim_api.contexts.guidance.application.queries.get_guidance import (
 from aim_api.contexts.guidance.application.queries.get_guidance import (
     execute as get_guidance,
 )
+from aim_api.contexts.guidance.application.queries.get_safety_rules import (
+    execute as get_safety_rules,
+)
 from aim_api.contexts.planning.adapters.outbound.persistence.repositories import (
     SqlAlchemyPlanningUnitOfWork,
 )
@@ -48,6 +51,7 @@ from aim_api.contexts.planning.application.commands.create_task import CreateTas
 from aim_api.contexts.planning.application.commands.delay_task import DelayTaskCommand
 from aim_api.contexts.planning.application.commands.delete_task import DeleteTaskCommand
 from aim_api.contexts.planning.application.commands.schedule_task import ScheduleTaskCommand
+from aim_api.contexts.planning.application.commands.sync_week_tasks import sync_quietly
 from aim_api.contexts.planning.domain.errors import PlanningDomainError, TaskNotFound
 from aim_api.contexts.planning.domain.task import ActorType
 from aim_api.contexts.planning.domain.task_status import (
@@ -331,6 +335,25 @@ async def _run(
 _ROLE_NAMES = {"mother": "妈妈", "father": "爸爸", "other_caregiver": "家人"}
 
 
+# 给 AIM 的危险信号只要需要尽快就医的两档；routine（下次产检再说）不放进来，
+# 免得 AIM 把每条都当成要劝就医的信号。
+_RED_FLAG_SEVERITIES = ("urgent", "same_day")
+
+
+def _red_flags(week: int | None) -> list[dict[str, str]]:
+    """当前孕周适用的危险信号，urgent 在前。读不到孕周时不按孕周过滤，宁可多给。"""
+    return [
+        {
+            "id": rule.id,
+            "condition": rule.condition,
+            "action": rule.action,
+            "severity": rule.severity,
+        }
+        for rule in get_safety_rules(week)
+        if rule.severity in _RED_FLAG_SEVERITIES
+    ]
+
+
 async def _get_context(session, context: AgentToolContext, body: dict[str, Any]):
     pregnancy = await SqlAlchemyPregnancyRepository(session).get_pregnancy(context.pregnancy_id)
     plan = await SqlAlchemyPlanningUnitOfWork(session).repository.get_plan(context.pregnancy_id)
@@ -356,13 +379,17 @@ async def _get_context(session, context: AgentToolContext, body: dict[str, Any])
             "plan_id": str(plan.id) if plan else None,
             "self_member_id": str(context.account_id),
             "members": members,
+            "red_flags": _red_flags(age.weeks if age else None),
         },
         "已读取当前孕期上下文",
     )
 
 
 async def _list_tasks(session, context: AgentToolContext, body: dict[str, Any]):
-    plan = await SqlAlchemyPlanningUnitOfWork(session).repository.get_plan(context.pregnancy_id)
+    uow = SqlAlchemyPlanningUnitOfWork(session)
+    # 调用方 _run 已用 authorize_tool 校验过 agent 的家庭与孕期作用域。
+    await sync_quietly(uow, context.pregnancy_id, date.today())
+    plan = await uow.repository.get_plan(context.pregnancy_id)
     tasks = (
         []
         if plan is None

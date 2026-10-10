@@ -182,6 +182,25 @@ final class LibraryStoreTests: XCTestCase {
         XCTAssertNil(store.collections["nutrition"])
         XCTAssertNotNil(store.collections["preparation"])
     }
+
+    /// 危险信号通栏的条数要和自查页实际显示的一致：按当前孕周过滤后再数。
+    func testSafetyRuleCountOnlyCountsRulesForTheCurrentWeek() async {
+        let (store, repository) = makeStore()
+        repository.safetyRules = [
+            SafetyRule(id: "fever", condition: "高热", action: "就医", severity: "urgent",
+                       sourceURL: "https://example.test"),
+            SafetyRule(id: "early-bleeding", condition: "孕早期出血", action: "就医",
+                       severity: "urgent", sourceURL: "https://example.test", weeks: [4, 13]),
+            SafetyRule(id: "late-bleeding", condition: "孕中晚期出血", action: "就医",
+                       severity: "urgent", sourceURL: "https://example.test", weeks: [20, 42]),
+        ]
+        repository.pregnancy = PregnancySummary(id: UUID(), dueDate: .now, weeks: 34, days: 0)
+
+        await store.load()
+
+        XCTAssertEqual(store.snapshot.safetyRuleCount, 2)
+        XCTAssertEqual(store.safetyRules.count, 3, "原始列表保留全部，过滤只在显示时做")
+    }
 }
 
 private final class FakeLibraryRepository: BusinessRepositoryProtocol, @unchecked Sendable {
@@ -194,8 +213,15 @@ private final class FakeLibraryRepository: BusinessRepositoryProtocol, @unchecke
     /// 各内容集合返回几条假条目；没列出的集合返回空集合。
     var collectionItemCounts: [String: Int] = [:]
     var failingCollections: Set<String> = []
+    var safetyRules: [SafetyRule] = []
+    var pregnancy: PregnancySummary?
 
     init(records: [RecordItem]) { self.records = records }
+
+    func fetchPregnancy() async throws -> PregnancySummary? {
+        guard let pregnancy else { throw APIError.notConfigured }
+        return pregnancy
+    }
 
     func fetchEncyclopediaCatalog() async throws -> EncyclopediaCatalog {
         if let encyclopediaFailure { throw encyclopediaFailure }
@@ -227,7 +253,7 @@ private final class FakeLibraryRepository: BusinessRepositoryProtocol, @unchecke
         )
     }
 
-    func fetchSafetyRules() async throws -> [SafetyRule] { [] }
+    func fetchSafetyRules() async throws -> [SafetyRule] { safetyRules }
     func fetchContentCollection(_ name: String) async throws -> ContentCollection {
         if failingCollections.contains(name) { throw APIError.notConfigured }
         let items = (0..<(collectionItemCounts[name] ?? 0)).map { index in

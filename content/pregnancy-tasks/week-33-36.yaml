@@ -1,0 +1,33 @@
+id: pregnancy-week-33-36
+version: 1.0.0
+source: 中华医学会妇产科学分会《孕前和孕期保健指南（2018）》；中国营养学会《中国居民膳食指南（2022）》孕期妇女膳食指南；国家卫生健康委员会公开的孕产期保健资料
+source_url: https://www.nhc.gov.cn/
+reviewed_at: "2026-10-10"
+applicability:
+  region: [CN, CN-ZJ, CN-ZJ-HZ]
+  gestational_weeks: [33, 34, 35, 36]
+items:
+  - id: w33-labor-signs
+    title: 学会认产兆
+    summary: 产兆有见红、破水、规律宫缩；破水、出血多、胎动明显减少，或不足 37 周出现见红、破水或规律宫缩，都直接去医院。
+    due_in_days: 3
+    source_type: template
+    priority: 100
+  - id: w33-nst
+    title: 按医生安排做胎心监护
+    summary: 胎心监护一般 34 周左右开始，有高危因素的会更早，频次按医生安排；去之前正常吃饭。
+    due_in_days: 3
+    source_type: template
+    priority: 90
+  - id: w33-hospital-bag-ready
+    title: 待产包收齐放门口
+    summary: 对照清单把证件、产检资料、妈妈和宝宝用品收齐，放在出门顺手能拿到的地方。
+    due_in_days: 7
+    source_type: template
+    priority: 70
+  - id: w33-family-roles
+    title: 家人分工谁陪产谁照顾家
+    summary: 和家人商量好谁陪产、谁在家照顾、夜里谁送你去医院，把医院电话存进大家手机。
+    due_in_days: 7
+    source_type: template
+    priority: 60

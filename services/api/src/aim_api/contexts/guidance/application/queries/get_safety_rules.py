@@ -5,9 +5,17 @@ import yaml
 from aim_api.contexts.guidance.application.queries.get_guidance import CONTENT_ROOT
 from aim_api.contexts.guidance.domain.safety_rule import SafetyRule
 
+#: 危险信号孕周窗口覆盖的范围，超出的孕周按最近的边界算。
+_FIRST_WEEK = 4
+_LAST_WEEK = 42
 
-def execute() -> tuple[SafetyRule, ...]:
-    """读取危险信号。按紧急程度排序，最要命的排最前。"""
+
+def execute(week: int | None = None) -> tuple[SafetyRule, ...]:
+    """读取危险信号。按紧急程度排序，最要命的排最前。
+
+    传入 week 时只保留该孕周适用的条目；不传返回全部（旧版 App 依赖这一点）。
+    孕周先夹到 4–42：孕周不封顶，过了 42 周晚孕信号不能消失；不到 4 周也要看到早孕信号。
+    """
     content_dir = CONTENT_ROOT / "safety-rules"
     if not content_dir.is_dir():
         return ()
@@ -15,4 +23,7 @@ def execute() -> tuple[SafetyRule, ...]:
     for path in sorted(content_dir.glob("*.yaml")):
         document = yaml.safe_load(path.read_text(encoding="utf-8"))
         rules.extend(SafetyRule.from_document(document, item) for item in document["items"])
+    if week is not None:
+        week = min(max(week, _FIRST_WEEK), _LAST_WEEK)
+        rules = [rule for rule in rules if rule.applies(week)]
     return tuple(sorted(rules, key=lambda rule: (rule.severity_rank, rule.id)))

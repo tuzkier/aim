@@ -1,0 +1,33 @@
+id: pregnancy-week-37-40
+version: 1.0.0
+source: 中华医学会妇产科学分会《孕前和孕期保健指南（2018）》；中国营养学会《中国居民膳食指南（2022）》孕期妇女膳食指南；国家卫生健康委员会公开的孕产期保健资料
+source_url: https://www.nhc.gov.cn/
+reviewed_at: "2026-10-10"
+applicability:
+  region: [CN, CN-ZJ, CN-ZJ-HZ]
+  gestational_weeks: [37, 38, 39, 40]
+items:
+  - id: w37-when-to-go
+    title: 记住什么时候去医院
+    summary: 破水、出血较多、胎动明显减少，或宫缩规律到医生交代的间隔就去医院；拿不准先打电话问。
+    due_in_days: 0
+    source_type: template
+    priority: 100
+  - id: w37-weekly-checkup
+    title: 每周按时产检
+    summary: 37 周后产检一般每周一次，按医生约好的时间去，记得带上产检资料。
+    due_in_days: 3
+    source_type: template
+    priority: 80
+  - id: w37-admission
+    title: 确认住院流程与证件
+    summary: 问清医院住院走哪个入口、要带哪些证件，把身份证、医保卡和产检资料放进待产包。
+    due_in_days: 3
+    source_type: template
+    priority: 70
+  - id: w37-birth-services
+    title: 准备出生「一件事」材料
+    summary: 在浙里办搜「出生一件事」看流程和材料清单，提前备好父母双方证件，想好宝宝名字。
+    due_in_days: 7
+    source_type: template
+    priority: 40

@@ -1,0 +1,39 @@
+id: pregnancy-week-13-17
+version: 1.0.0
+source: 中华医学会妇产科学分会《孕前和孕期保健指南（2018）》；中国营养学会《中国居民膳食指南（2022）》孕期妇女膳食指南；国家卫生健康委员会公开的孕产期保健资料
+source_url: https://www.nhc.gov.cn/
+reviewed_at: "2026-10-10"
+applicability:
+  region: [CN, CN-ZJ, CN-ZJ-HZ]
+  gestational_weeks: [13, 14, 15, 16, 17]
+items:
+  - id: w13-screening
+    title: 预约中期唐筛或无创 DNA
+    summary: 中期唐筛常在孕 15–20 周，无创 DNA 在 12 周到 22 周 6 天；做哪项、要不要再做，按医生安排。
+    due_in_days: 2
+    source_type: template
+    priority: 100
+  - id: w13-early-results
+    title: 整理早孕检查结果
+    summary: 把建档抽血、B 超、NT 等报告按日期收好并拍照留存，下次产检带上。
+    due_in_days: 3
+    source_type: template
+    priority: 70
+  - id: w13-exercise
+    title: 开始规律温和运动
+    summary: 医生没说不能动的话，从散步开始，慢慢做到每天约 30 分钟，运动时还能正常说话为宜。
+    due_in_days: 3
+    source_type: template
+    priority: 60
+  - id: w13-calcium
+    title: 饮食加奶类补钙
+    summary: 孕中期起每天喝奶 300–500 克，也可换成酸奶、奶酪；要不要吃钙片听医生的。
+    due_in_days: 1
+    source_type: template
+    priority: 60
+  - id: w13-iron
+    title: 饮食加红肉补铁
+    summary: 孕中期起适当多吃红肉，每周一两次动物血或肝；要不要吃铁剂看血常规，听医生的。
+    due_in_days: 2
+    source_type: template
+    priority: 60
