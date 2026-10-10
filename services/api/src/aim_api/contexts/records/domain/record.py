@@ -112,8 +112,8 @@ class Record:
         "diastolic": (30.0, 150.0),
         "fasting_glucose": (2.0, 20.0),
         "hemoglobin": (50.0, 200.0),
-        "fetal_heart_rate": (100, 200),
-        "fundal_height_cm": (10, 45),
+        "fetal_heart_rate": (100.0, 200.0),
+        "fundal_height_cm": (10.0, 45.0),
     }
 
     # 产检报告里没有专门字段的化验项，按报告原样记名称和结果。

@@ -296,6 +296,26 @@ def test_records_enforce_visibility_family_mutation_and_family_boundary() -> Non
         member_private_delete = client.delete(
             f"/api/v1/pregnancies/{pregnancy_id}/records/{private_id}", headers=member_headers
         )
+        member_hide = client.patch(
+            f"/api/v1/pregnancies/{pregnancy_id}/records/{family_id_record}",
+            headers=member_headers,
+            json={"visibility": "private"},
+        )
+        member_after_hide = client.get(
+            f"/api/v1/pregnancies/{pregnancy_id}/records/{family_id_record}", headers=member_headers
+        )
+        member_same_visibility = client.patch(
+            f"/api/v1/pregnancies/{pregnancy_id}/records/{family_id_record}",
+            headers=member_headers,
+            json={"visibility": "family"},
+        )
+        stranger_delete = client.delete(
+            f"/api/v1/pregnancies/{pregnancy_id}/records/{family_id_record}",
+            headers=stranger_headers,
+        )
+        family_after_stranger_delete = client.get(
+            f"/api/v1/pregnancies/{pregnancy_id}/records/{family_id_record}", headers=author_headers
+        )
         stranger_edit = client.patch(
             f"/api/v1/pregnancies/{pregnancy_id}/records/{family_id_record}",
             headers=stranger_headers,
@@ -327,6 +347,18 @@ def test_records_enforce_visibility_family_mutation_and_family_boundary() -> Non
     assert member_private_delete.status_code == 404
     assert private_after.status_code == 200
     assert private_after.json()["title"] == "晨吐"
+    # 可见性只有作者能改：家人把家庭记录改成私密会被拒，记录保持原样。
+    assert member_hide.status_code == 403
+    assert member_hide.json()["error"]["message"] == (
+        "only the author can change who can see a record"
+    )
+    assert member_after_hide.status_code == 200
+    assert member_after_hide.json()["visibility"] == "family"
+    # 带上与当前相同的可见性不算修改，放行。
+    assert member_same_visibility.status_code == 200, member_same_visibility.text
+    # 非家庭成员删不了，记录仍在。
+    assert stranger_delete.status_code == 403
+    assert family_after_stranger_delete.status_code == 200
     assert stranger_edit.status_code == 403
     assert cross_family.status_code == 403
     assert member_delete.status_code == 204, member_delete.text

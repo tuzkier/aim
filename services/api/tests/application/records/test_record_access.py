@@ -5,7 +5,6 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from aim_api.contexts.records.application.commands.save_record import SaveRecordCommand, execute
 from aim_api.contexts.records.application.commands.delete_record import DeleteRecordCommand
 from aim_api.contexts.records.application.commands.delete_record import execute as delete_record
 from aim_api.contexts.records.application.queries.get_record import GetRecordQuery
@@ -34,7 +33,6 @@ def make_record(visibility: RecordVisibility = RecordVisibility.family) -> Recor
 class FakeRepository:
     def __init__(self, record: Record) -> None:
         self.record = record
-        self.saved_by: UUID | None = None
         self.deleted_by: UUID | None = None
 
     async def get_visible_record(self, record_id, family_id, account_id):
@@ -45,10 +43,6 @@ class FakeRepository:
         ):
             return self.record
         return None
-
-    async def save_record(self, record, account_id):
-        record.assert_can_mutate(account_id)
-        self.saved_by = account_id
 
     async def soft_delete(self, record, account_id):
         record.assert_can_mutate(account_id)
@@ -85,18 +79,6 @@ async def test_known_family_non_member_cannot_read_family_record() -> None:
         await get_record(
             GetRecordQuery(record_id=record.id, family_id=record.family_id, account_id=uuid4()), uow
         )
-
-
-@pytest.mark.asyncio
-async def test_save_command_rejects_non_author_of_private_record_before_repository_write() -> None:
-    record = make_record(RecordVisibility.private)
-    uow = FakeUow(record, member=True)
-
-    with pytest.raises(RecordAccessDenied):
-        await execute(SaveRecordCommand(record=record, account_id=uuid4()), uow)
-
-    assert uow.repository.saved_by is None
-    assert uow.committed is False
 
 
 @pytest.mark.asyncio

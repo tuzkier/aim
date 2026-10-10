@@ -33,6 +33,13 @@ async def execute(command: UpdateRecordCommand, uow: RecordsUnitOfWork) -> Recor
     if record is None or record.pregnancy_id != command.pregnancy_id:
         raise RecordNotFound("record does not exist or is not visible")
     record.assert_can_mutate(command.account_id)
+    # 家人能改家庭记录的内容，但「谁能看」只有作者能定；带上与当前相同的值不算修改。
+    if (
+        "visibility" in command.changes
+        and RecordVisibility(command.changes["visibility"]) is not record.visibility
+        and record.author_account_id != command.account_id
+    ):
+        raise RecordAccessDenied("only the author can change who can see a record")
 
     if "occurred_at" in command.changes:
         record.occurred_at = command.changes["occurred_at"]
