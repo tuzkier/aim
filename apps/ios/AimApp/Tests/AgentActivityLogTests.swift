@@ -44,6 +44,17 @@ final class AgentActivityLogTests: XCTestCase {
         XCTAssertTrue(store.activityLog.isEmpty)
     }
 
+    /// 翻资料目录、读资料、看时间也都是只读的，同样不该进台账。
+    func testLibraryAndTimeToolsDoNotEnterTheActivityLog() {
+        let store = AgentStore()
+
+        for tool in ["list_library", "get_library_entry", "get_current_time"] {
+            store.consume(actionResult(toolName: tool, summary: "已读取"))
+        }
+
+        XCTAssertTrue(store.activityLog.isEmpty)
+    }
+
     func testCreatingATaskIsLoggedWithItsTitleAndAnUndoTarget() {
         let store = AgentStore()
         let taskID = UUID()

@@ -109,6 +109,21 @@ def test_catalog_for_a_week_ranks_the_closest_start_first(tmp_path: Path) -> Non
     assert [e["id"] for e in entries] == ["body.now", "body.mid", "body.always"]
 
 
+def test_catalog_rank_week_only_sorts_and_never_filters(tmp_path: Path) -> None:
+    """rank_week 只决定顺序：不在这一周的条目照样列出，只是排在后面。"""
+    _write(tmp_path, "body", [
+        _entry("body.early", weeks=(4, 12)),
+        _entry("body.always"),
+        _entry("body.late", weeks=(36, 40)),
+        _entry("body.now", weeks=(24, 28)),
+    ])
+    encyclopedia = load_encyclopedia(tmp_path, include_drafts=True)
+
+    entries = encyclopedia.catalog(topic="body", rank_week=25)["entries"]
+
+    assert [e["id"] for e in entries] == ["body.now", "body.late", "body.early", "body.always"]
+
+
 def test_catalog_lists_topics_with_counts_and_filters_by_topic(tmp_path: Path) -> None:
     _write(tmp_path, "diet", [_entry("diet.iron"), _entry("diet.fish")])
     _write(tmp_path, "body", [_entry("body.cramp", weeks=(20, 36))])

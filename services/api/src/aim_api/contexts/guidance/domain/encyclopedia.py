@@ -78,15 +78,26 @@ class Encyclopedia:
     def get(self, entry_id: str) -> EncyclopediaEntry | None:
         return next((entry for entry in self.entries if entry.id == entry_id), None)
 
-    def catalog(self, *, topic: str | None = None, week: int | None = None) -> dict[str, Any]:
+    def catalog(
+        self,
+        *,
+        topic: str | None = None,
+        week: int | None = None,
+        rank_week: int | None = None,
+    ) -> dict[str, Any]:
+        """`week` 只用来过滤；`rank_week` 只用来排序，不丢掉任何条目。
+
+        不传 `rank_week` 时按 `week` 排序，所以只传 `week` 就是「过滤并排序」。
+        """
         selected = [
             entry
             for entry in self.entries
             if (topic is None or entry.topic == topic) and (week is None or entry.covers(week))
         ]
-        if week is not None:
+        order_week = rank_week if rank_week is not None else week
+        if order_week is not None:
             # sort 是稳定的：同一档内保持内容文件里的顺序。
-            selected.sort(key=lambda entry: entry.week_rank(week))
+            selected.sort(key=lambda entry: entry.week_rank(order_week))
         counts = {name: 0 for name, _ in TOPICS}
         for entry in self.entries:
             counts[entry.topic] += 1

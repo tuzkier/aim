@@ -451,17 +451,26 @@ async def _list_records(session, context: AgentToolContext, body: dict[str, Any]
 
 
 async def _list_library(session, context: AgentToolContext, body: dict[str, Any]):
+    topic = body.get("topic")
     week = body.get("week")
-    if week is None:
-        # 没指定孕周就按当前孕周挑；读不到孕期时不按孕周过滤。
+    if week is not None:
+        # 指定了孕周：按它过滤并排序（查看别的孕期阶段）。
+        filter_week = rank_week = week
+    else:
         pregnancy = await SqlAlchemyPregnancyRepository(session).get_pregnancy(
             context.pregnancy_id
         )
-        week = pregnancy.gestational_age().weeks if pregnancy else None
-    if week is not None:
-        # 百科条目的孕周范围在 4–42 之间，超出的夹回边界，免得早孕或过期时目录全空。
-        week = min(max(week, 4), 42)
-    catalog = get_encyclopedia().catalog(topic=body.get("topic"), week=week)
+        current = pregnancy.gestational_age().weeks if pregnancy else None
+        # 带主题浏览时给整个主题，只按本周排序——孕 12 周问分娩也要看得到分娩条目。
+        # 什么都没带时按本周过滤并排序。读不到孕期时不过滤也不排序。
+        filter_week = None if topic is not None else current
+        rank_week = current
+    # 百科条目的孕周范围在 4–42 之间，超出的夹回边界，免得早孕或过期时目录全空。
+    if filter_week is not None:
+        filter_week = min(max(filter_week, 4), 42)
+    if rank_week is not None:
+        rank_week = min(max(rank_week, 4), 42)
+    catalog = get_encyclopedia().catalog(topic=topic, week=filter_week, rank_week=rank_week)
     return (catalog, f"翻了 {len(catalog['entries'])} 条资料目录")
 
 

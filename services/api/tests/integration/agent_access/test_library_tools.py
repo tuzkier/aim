@@ -6,6 +6,7 @@ from uuid import UUID, uuid4
 from fastapi.testclient import TestClient
 
 from aim_api.bootstrap import create_app
+from aim_api.contexts.guidance.application.queries.get_encyclopedia import get_encyclopedia
 from aim_api.platform.auth.context import issue_session_token
 from aim_api.platform.config.settings import get_settings
 
@@ -115,3 +116,68 @@ def test_get_library_entry_returns_the_full_text_or_not_found() -> None:
     assert missing.status_code == 200, missing.text
     assert missing.json()["status"] == "completed"
     assert missing.json()["data"] == {"found": False, "id": "body.nope"}
+
+
+def test_list_library_by_topic_returns_the_whole_topic_not_only_this_week() -> None:
+    """孕 12 周问分娩：birth 的条目都不在 12 周，带 topic 时也要看得到。"""
+    account_id = str(uuid4())
+    with TestClient(create_app()) as client:
+        headers = _scope(client, account_id, weeks=12, days=0)
+        response = client.post(
+            "/internal/agent-tools/list-library",
+            headers={**headers, "Idempotency-Key": "library-birth"},
+            json={"topic": "birth"},
+        )
+    assert response.status_code == 200, response.text
+    entries = response.json()["data"]["entries"]
+    assert entries
+    assert {entry["topic"] for entry in entries} == {"birth"}
+    # 整个主题都在：条数等于目录里该主题的总数。
+    topics = {topic["id"]: topic["count"] for topic in response.json()["data"]["topics"]}
+    assert len(entries) == topics["birth"]
+    # 仍按当前孕周排序：有孕周范围的在前、起点越接近 12 越靠前。
+    ranks = [
+        (1, 0) if entry["weeks"] is None else (0, abs(12 - entry["weeks"][0]))
+        for entry in entries
+    ]
+    assert ranks == sorted(ranks)
+
+
+def test_list_library_with_an_explicit_week_filters_by_that_week() -> None:
+    account_id = str(uuid4())
+    with TestClient(create_app()) as client:
+        headers = _scope(client, account_id, weeks=25, days=3)
+        response = client.post(
+            "/internal/agent-tools/list-library",
+            headers={**headers, "Idempotency-Key": "library-week-36"},
+            json={"week": 36},
+        )
+    assert response.status_code == 200, response.text
+    entries = response.json()["data"]["entries"]
+    assert entries
+    assert all(
+        entry["weeks"] is None or entry["weeks"][0] <= 36 <= entry["weeks"][1]
+        for entry in entries
+    )
+    # 确实换成了 36 周：至少有一条明确覆盖 36 周、但不覆盖当前 25 周的条目。
+    assert any(
+        entry["weeks"] is not None and not entry["weeks"][0] <= 25 <= entry["weeks"][1]
+        for entry in entries
+    )
+
+
+def test_list_library_clamps_an_early_pregnancy_to_week_4() -> None:
+    """孕 2 周时百科没有任何条目从 2 周开始，按 4 周过滤，目录不至于只剩全程条目。"""
+    account_id = str(uuid4())
+    with TestClient(create_app()) as client:
+        headers = _scope(client, account_id, weeks=2, days=0)
+        response = client.post(
+            "/internal/agent-tools/list-library",
+            headers={**headers, "Idempotency-Key": "library-clamp"},
+            json={},
+        )
+    assert response.status_code == 200, response.text
+    entries = response.json()["data"]["entries"]
+    expected = get_encyclopedia().catalog(week=4)["entries"]
+    assert [entry["id"] for entry in entries] == [entry["id"] for entry in expected]
+    assert any(entry["weeks"] is not None and entry["weeks"][0] == 4 for entry in entries)

@@ -103,7 +103,11 @@ If the encyclopedia has nothing relevant, answer normally without a citation.
 Paperwork entries only point to official channels: never state amounts,
 eligibility or numbers of days as facts.
 Urgent symptoms still come first: the emergency rules above apply before any
-library lookup.
+library lookup. When the user describes a symptom, judge it against
+`red_flags` first, including the `same_day` advice and the conditional first
+sentence when you cannot tell which one it matches, and only then look things
+up in the library. An entry already read in this conversation does not need
+to be read again.
 
 Writes come in two tiers, decided by the business service:
 

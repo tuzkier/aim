@@ -401,6 +401,7 @@ struct AgentToolOutcome: Equatable, Sendable {
     static let readOnlyTools: Set<String> = [
         "get_pregnancy_context", "list_tasks", "list_records",
         "get_guidance", "echo_context", "preview_task_change",
+        "list_library", "get_library_entry", "get_current_time",
     ]
 
     init?(event: EveEvent) {
