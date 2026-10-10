@@ -29,6 +29,7 @@ from aim_api.contexts.planning.application.commands.generate_initial_plan import
     TaskSeed,
 )
 from aim_api.contexts.planning.application.commands.schedule_task import ScheduleTaskCommand
+from aim_api.contexts.planning.application.commands.sync_week_tasks import sync_quietly
 from aim_api.contexts.planning.application.commands.undo_change import UndoChangeCommand
 from aim_api.contexts.planning.application.queries import get_plan
 from aim_api.contexts.planning.application.queries.get_plan import GetPlanQuery
@@ -196,6 +197,9 @@ async def get_plan_endpoint(pregnancy_id: UUID, request: Request) -> PlanRespons
     async with database.session() as session:
         uow = SqlAlchemyPlanningUnitOfWork(session)
         try:
+            # 先校验再续任务：非家庭成员的请求不能触发写入。
+            if await get_plan.can_read(uow, pregnancy_id, actor.account_id):
+                await sync_quietly(uow, pregnancy_id, date.today())
             plan = await get_plan.execute(
                 GetPlanQuery(pregnancy_id=pregnancy_id, account_id=actor.account_id), uow
             )

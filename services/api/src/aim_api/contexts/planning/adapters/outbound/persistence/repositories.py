@@ -5,6 +5,7 @@ from typing import Any
 from uuid import UUID
 
 from sqlalchemy import select, update
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,6 +14,7 @@ from aim_api.contexts.family.adapters.outbound.persistence.repositories import (
 )
 from aim_api.contexts.family.application.ports import PersistenceConflict
 from aim_api.contexts.planning.adapters.outbound.persistence.models import (
+    PlanTemplateSeedModel,
     PregnancyPlanModel,
     TaskChangeModel,
     TaskModel,
@@ -64,6 +66,24 @@ class SqlAlchemyPlanningRepository:
         for task_model in task_models:
             plan.add_task(_to_task(task_model))
         return plan
+
+    async def seeded_template_ids(self, plan_id: UUID) -> set[str]:
+        rows = await self.session.scalars(
+            select(PlanTemplateSeedModel.template_id).where(
+                PlanTemplateSeedModel.plan_id == plan_id
+            )
+        )
+        return set(rows.all())
+
+    async def try_seed(self, plan_id: UUID, template_id: str, now: datetime) -> bool:
+        # 并发的两次 sync 只有一方能插入成功，另一方据此跳过建任务。
+        result = await self.session.execute(
+            postgresql.insert(PlanTemplateSeedModel)
+            .values(plan_id=plan_id, template_id=template_id, seeded_at=now)
+            .on_conflict_do_nothing()
+            .returning(PlanTemplateSeedModel.template_id)
+        )
+        return result.scalar_one_or_none() is not None
 
     async def get_task(self, task_id: UUID) -> Task | None:
         model = await self.session.get(TaskModel, task_id)

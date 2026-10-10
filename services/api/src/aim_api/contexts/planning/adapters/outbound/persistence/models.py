@@ -20,6 +20,20 @@ class PregnancyPlanModel(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
+class PlanTemplateSeedModel(Base):
+    """计划生成过哪些模板。任务删了种子还在，所以删掉的模板任务不会复活。"""
+
+    __tablename__ = "plan_template_seeds"
+
+    plan_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("pregnancy_plans.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    template_id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    seeded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
 class TaskModel(Base):
     __tablename__ = "tasks"
     __table_args__ = (Index("ix_tasks_plan_due_at", "plan_id", "due_at"),)

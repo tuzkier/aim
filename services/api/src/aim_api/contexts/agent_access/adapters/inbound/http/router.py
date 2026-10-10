@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hmac
 from dataclasses import asdict
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from typing import Any, Literal
 from uuid import UUID
 
@@ -48,6 +48,7 @@ from aim_api.contexts.planning.application.commands.create_task import CreateTas
 from aim_api.contexts.planning.application.commands.delay_task import DelayTaskCommand
 from aim_api.contexts.planning.application.commands.delete_task import DeleteTaskCommand
 from aim_api.contexts.planning.application.commands.schedule_task import ScheduleTaskCommand
+from aim_api.contexts.planning.application.commands.sync_week_tasks import sync_quietly
 from aim_api.contexts.planning.domain.errors import PlanningDomainError, TaskNotFound
 from aim_api.contexts.planning.domain.task import ActorType
 from aim_api.contexts.planning.domain.task_status import (
@@ -362,7 +363,10 @@ async def _get_context(session, context: AgentToolContext, body: dict[str, Any])
 
 
 async def _list_tasks(session, context: AgentToolContext, body: dict[str, Any]):
-    plan = await SqlAlchemyPlanningUnitOfWork(session).repository.get_plan(context.pregnancy_id)
+    uow = SqlAlchemyPlanningUnitOfWork(session)
+    # 调用方 _run 已用 authorize_tool 校验过 agent 的家庭与孕期作用域。
+    await sync_quietly(uow, context.pregnancy_id, date.today())
+    plan = await uow.repository.get_plan(context.pregnancy_id)
     tasks = (
         []
         if plan is None
