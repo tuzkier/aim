@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from aim_api.contexts.guidance.application.queries.get_safety_rules import execute
 
 
@@ -48,6 +50,7 @@ def test_rules_cover_the_key_red_flags():
         "preterm-contractions", "preeclampsia-signs", "seizure", "chest-pain-breathing",
         "leg-clot", "high-fever", "self-harm-thoughts", "sudden-swelling",
         "itching-palms-soles", "urinary-infection", "severe-vomiting", "persistent-low-mood",
+        "late-bleeding", "early-spotting", "low-fever",
     } <= ids
 
 
@@ -69,8 +72,17 @@ def test_week_ranges_follow_the_spec():
     assert weeks["ectopic-signs"] == (4, 13)
     assert weeks["preterm-contractions"] == (20, 36)
     assert weeks["reduced-fetal-movement"] == (24, 42)
-    assert weeks["waters-breaking"] == (20, 42)
+    assert weeks["waters-breaking"] == (16, 42)
+    assert weeks["late-bleeding"] == (20, 42)
+    assert weeks["early-spotting"] == (4, 19)
     assert weeks["urgent-bleeding"] is None
+
+
+def test_any_bleeding_is_covered_in_every_week():
+    """出血不论多少都要有去处：孕早期少量出血当天联系，20 周后出血立即就医。"""
+    for week in range(4, 43):
+        ids = {rule.id for rule in execute(week=week)}
+        assert {"early-spotting", "late-bleeding"} & ids, week
 
 
 def test_week_range_bounds_are_inclusive():
@@ -87,12 +99,30 @@ def test_conditions_are_short_plain_language():
     assert too_long == []
 
 
+def _first_sentence(text: str) -> str:
+    return re.split(r"[；。]", text, maxsplit=1)[0]
+
+
 def test_same_day_actions_do_not_send_people_to_the_emergency_room():
-    """same_day 写成立即急诊就成了狼来了，真正紧急的反而没人当回事。"""
+    """same_day 写成立即急诊就成了狼来了，真正紧急的反而没人当回事。
+    只看第一句：后面允许写「出现什么情况升为立即就医」的升档线。"""
     for rule in execute():
         if rule.severity == "same_day":
-            assert rule.action.startswith("今天"), rule.id
-            assert "120" not in rule.action and "急诊" not in rule.action, rule.id
+            first = _first_sentence(rule.action)
+            assert first.startswith("今天"), rule.id
+            assert "120" not in first and "急诊" not in first, rule.id
+
+
+def test_fetal_movement_count_threshold_starts_at_28_weeks():
+    """百科从 28 周起数胎动；24–27 周只按「比平时明显减少」判断，免得误报。"""
+    by_id = {rule.id: rule for rule in execute()}
+    assert "28 周后 2 小时不足 10 次" in by_id["reduced-fetal-movement"].condition
+
+
+def test_swelling_carries_the_blood_pressure_escalation_line():
+    by_id = {rule.id: rule for rule in execute()}
+    action = by_id["sudden-swelling"].action
+    assert "160" in action and "110" in action and "立即就医" in action
 
 
 def test_urgent_actions_say_go_now():

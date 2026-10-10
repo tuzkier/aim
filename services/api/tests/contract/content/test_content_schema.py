@@ -42,6 +42,19 @@ def test_safety_and_hangzhou_content_have_source_and_review_date() -> None:
     )
 
 
+def test_safety_rule_week_ranges_are_ordered() -> None:
+    """schema 只管得了 weeks 是两个 4–42 的整数，管不了起止颠倒。"""
+    document = yaml.safe_load(
+        (ROOT / "content/safety-rules/pregnancy-red-flags.yaml").read_text(encoding="utf-8")
+    )
+    reversed_ranges = [
+        item["id"]
+        for item in document["items"]
+        if "weeks" in item and item["weeks"][0] > item["weeks"][1]
+    ]
+    assert reversed_ranges == []
+
+
 def test_weekly_content_matches_its_schema() -> None:
     _validate(ROOT / "content/weekly/schema.json", ROOT / "content/weekly/weeks.yaml")
 

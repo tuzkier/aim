@@ -16,6 +16,11 @@ items:
     condition: 阴道出血像月经那么多或更多，或肚子持续剧痛、发硬不缓解
     action: 立即去产科急诊或拨打 120，不要在家等待观察；垫上卫生巾，方便医生估计出血量。
     severity: urgent
+  - id: late-bleeding
+    condition: 20 周后阴道出血，哪怕量少（足月后少量带血黏液多是见红）
+    action: 立即去产科急诊或拨打 120，不要在家观察；足月后只是少量带血的黏液，按百科「产兆」里的见红处理。
+    severity: urgent
+    weeks: [20, 42]
   - id: ectopic-signs
     condition: 孕早期一侧下腹剧痛，或伴头晕眼花、晕倒、肩膀疼
     action: 立即去医院急诊或拨打 120，可能是宫外孕破裂；不要自己吃止痛药硬扛。
@@ -25,14 +30,14 @@ items:
     condition: 阴道突然流出清水样液体，或一直往外渗、控制不住
     action: 立即去产科急诊，垫上干净卫生巾，不要洗澡；胎位不正或医生说过宝宝没入盆的，平躺并拨打 120。
     severity: urgent
-    weeks: [20, 42]
+    weeks: [16, 42]
   - id: reduced-fetal-movement
-    condition: 胎动比平时明显减少、变弱或停止，或 2 小时不足 10 次
+    condition: 胎动比平时明显减少、变弱或停止，或 28 周后 2 小时不足 10 次
     action: 立即联系产检医院或去产科急诊，不用数完、不要等到第二天；别靠吃甜食、喝冷水「叫醒」宝宝而拖延。
     severity: urgent
     weeks: [24, 42]
   - id: preterm-contractions
-    condition: 不到 37 周，肚子一阵阵规律发紧发痛，或下坠感、腰酸明显
+    condition: 不到 37 周，肚子规律发紧发痛，或腰酸、下坠感一阵阵出现或越来越重
     action: 立即去产科急诊，可能是早产信号；同时有流血或流水时拨打 120。
     severity: urgent
     weeks: [20, 36]
@@ -49,7 +54,7 @@ items:
     action: 立即拨打 120 或去急诊，告诉医生你在怀孕。
     severity: urgent
   - id: leg-clot
-    condition: 一侧小腿肿胀疼痛、发红发热，不像抽筋那样很快缓解
+    condition: 一侧小腿肿胀疼痛，可能发红发热
     action: 立即去医院急诊，可能是下肢静脉血栓；不要揉捏按摩这条腿，伴胸痛或气短时拨打 120。
     severity: urgent
   - id: high-fever
@@ -62,17 +67,26 @@ items:
     severity: urgent
 
   # ---------- same_day ----------
+  - id: early-spotting
+    condition: 少量出血或褐色分泌物，没有剧痛、头晕
+    action: 今天或明天联系你的产检医院；还没做 B 超确认宫内孕的要主动说明。出血变多或腹痛加重时立即就医。
+    severity: same_day
+    weeks: [4, 19]
+  - id: low-fever
+    condition: 体温 37.5–38.4℃ 一天没退，或伴咳嗽、腹泻、尿痛
+    action: 今天联系你的产检医院，告诉医生你在怀孕；体温到 38.5℃ 时按高热处理。
+    severity: same_day
   - id: sudden-swelling
     condition: 脸、手突然明显肿起来，或几天内水肿迅速加重
-    action: 今天或明天联系你的产检医院，查一下血压和尿蛋白；家里有血压计的先量一次。
+    action: 今天或明天联系你的产检医院，查血压和尿蛋白；家里有血压计先量一次，高压到 160 或低压到 110，或伴头痛、眼花，按子痫前期信号处理（立即就医）。
     severity: same_day
   - id: itching-palms-soles
     condition: 手心脚心痒得厉害、夜里更重，或全身痒得睡不着
-    action: 今天或明天联系你的产检医院，可能需要查肝功能和胆汁酸；不要自己涂药止痒。
+    action: 今天或明天联系你的产检医院，可能需要查肝功能和胆汁酸；别只靠涂药止痒拖着。
     severity: same_day
   - id: urinary-infection
     condition: 排尿疼痛、灼热或尿里带血，或伴发热、腰痛
-    action: 今天或明天联系你的产检医院查尿常规，不要自己吃消炎药；体温到 38.5℃ 时按高热处理。
+    action: 今天就联系你的产检医院；伴发热或腰痛的当天去门诊，不要自己吃消炎药；体温到 38.5℃ 时按高热处理。
     severity: same_day
   - id: severe-vomiting
     condition: 吐得吃不下也喝不下，尿很少、颜色很深，或头晕站不稳
