@@ -239,6 +239,88 @@ final class FetalMovementStoreTests: XCTestCase {
         XCTAssertTrue(repository.createdDrafts.isEmpty)
     }
 
+    /// 冷启动慢、孕妈已经点「继续」打开计数页：这时满 2 小时是真实的「不足 10 次」，
+    /// 由计数页自己结束并弹安全页，后台的收尾不能抢先记成未数完。
+    func testSettlingLeavesAnExpiredCountAloneWhileTheCounterIsShowing() async {
+        let repository = FakeFetalRepository()
+        let store = makeStore(repository: repository)
+        store.start()
+        now += 60; _ = store.tap()
+        store.beginCounterPresentation()
+        now += FetalMovementCounter.window + 1
+
+        XCTAssertFalse(store.queueExpiredActive())
+        await store.settleExpiredActive()
+
+        XCTAssertEqual(store.active?.count, 1, "计数页开着，断点留给它自己结束")
+        XCTAssertTrue(store.unsaved.isEmpty)
+        XCTAssertTrue(repository.createdDrafts.isEmpty)
+    }
+
+    func testSettlingResumesOnceTheCounterCloses() async throws {
+        let repository = FakeFetalRepository()
+        let store = makeStore(repository: repository)
+        store.start()
+        now += 60; _ = store.tap()
+        // 嵌套或重复出现：每次出现各自配一次关闭，全部关掉才恢复收尾。
+        store.beginCounterPresentation()
+        store.beginCounterPresentation()
+        now += FetalMovementCounter.window + 1
+        store.endCounterPresentation()
+        await store.settleExpiredActive()
+        XCTAssertEqual(store.active?.count, 1, "还有一个计数页开着")
+
+        store.endCounterPresentation()
+        await store.settleExpiredActive()
+
+        XCTAssertNil(store.active)
+        let draft = try XCTUnwrap(repository.createdDrafts.first)
+        guard case let .fetalMovement(data) = draft.structuredData else { return XCTFail("应当是胎动记录") }
+        XCTAssertEqual(data.outcome, .stopped)
+    }
+
+    /// 标记残留（计数页被「问问 AIM」盖住时整条呈现链被拆掉）时，下次打开计数页
+    /// 仍要先把过期断点记为未数完，不能沿用它、到点误报成「不足 10 次」。
+    func testCounterAppearSettlesAnExpiredCountEvenIfAPresentationLingers() {
+        let store = makeStore()
+        store.start()
+        now += 60; _ = store.tap()
+        store.beginCounterPresentation()
+        now += FetalMovementCounter.window + 1
+
+        XCTAssertTrue(store.queueExpiredActiveBeforeCounting())
+
+        XCTAssertNil(store.active)
+        XCTAssertEqual(store.unsaved.map(\.outcome), [.stopped])
+        XCTAssertEqual(store.unsaved.first?.count, 1)
+    }
+
+    func testUnbindingClearsLingeringCounterPresentations() {
+        let store = makeStore()
+        store.beginCounterPresentation()
+        store.unbind()
+        XCTAssertFalse(store.isCounterPresented)
+    }
+
+    func testSwitchingScopeClearsLingeringCounterPresentations() {
+        let store = makeStore()
+        store.beginCounterPresentation()
+        store.bind(accountID: accountA, pregnancyID: pregnancyA)
+        XCTAssertTrue(store.isCounterPresented, "同一作用域重复绑定不算换家")
+        store.bind(accountID: accountB, pregnancyID: pregnancyB)
+        XCTAssertFalse(store.isCounterPresented)
+    }
+
+    /// 多关一次不会把计数减成负数，否则下次打开计数页时标记就失灵了。
+    func testClosingMoreThanOpenedDoesNotGoNegative() {
+        let store = makeStore()
+        store.endCounterPresentation()
+        store.beginCounterPresentation()
+        XCTAssertTrue(store.isCounterPresented)
+        store.endCounterPresentation()
+        XCTAssertFalse(store.isCounterPresented)
+    }
+
     /// 首页卡与胎动页据此显示「继续」：过期的不算，等收尾。
     func testOnlyAnUnexpiredCountCanBeResumed() {
         let store = makeStore()

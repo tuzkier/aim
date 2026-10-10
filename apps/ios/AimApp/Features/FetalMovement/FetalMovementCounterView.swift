@@ -58,6 +58,8 @@ struct FetalMovementCounterView: View {
     @State private var startAttempted = false
     /// 已经开始结束：到点自动结束、第 10 次点击、点「胎动明显少了？」可能挨着发生，只结束一次。
     @State private var ending = false
+    /// 已向 store 登记「计数页正在显示」。与登记配对的撤销只做一次，onClose 与 onDisappear 都会走到。
+    @State private var presentationMarked = false
 
     /// 计数阶段却没有进行中的计数——给出提示，别留一个点了没反应的大按钮。
     private var unableToStart: Bool {
@@ -80,19 +82,27 @@ struct FetalMovementCounterView: View {
             .navigationTitle("数胎动")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    if phase != .counting || unableToStart { Button("关闭", action: onClose) }
+                    if phase != .counting || unableToStart { Button("关闭", action: close) }
                 }
             }
         }
         .onAppear {
-            guard !startAttempted, phase == .counting else { return }
-            // 恢复出来的断点已经过了 2 小时：那段时间计数页没开着，不是真的「不足 10 次」，
-            // 不弹安全页。先记为未数完（后台保存），再开始一个新计数。
-            if store.queueExpiredActive() { Task { await store.saveUnsaved() } }
-            store.start()
-            startAttempted = true
-            // 上次数到第 10 次就被系统杀掉、没来得及结束：直接显示结果，不用再点一下。
-            if (store.active?.count ?? 0) >= FetalMovementCounter.target { end() }
+            if !startAttempted, phase == .counting {
+                // 恢复出来的断点已经过了 2 小时：那段时间计数页没开着，不是真的「不足 10 次」，
+                // 不弹安全页。先记为未数完（后台保存），再开始一个新计数。
+                if store.queueExpiredActiveBeforeCounting() { Task { await store.saveUnsaved() } }
+                store.start()
+                startAttempted = true
+                // 上次数到第 10 次就被系统杀掉、没来得及结束：直接显示结果，不用再点一下。
+                if (store.active?.count ?? 0) >= FetalMovementCounter.target { end() }
+            }
+            // 登记放在开始计数之后：从此刻起后台不再收尾，断点满 2 小时由计数页自己结束、弹安全页。
+            markPresented()
+        }
+        .onDisappear {
+            // 「问问 AIM」全屏盖住计数页也会触发这里，那时计数页还在，不撤销；
+            // 回来时 onAppear 会再走一次 markPresented()，已登记过就不重复计数。
+            if !showingAgent { unmarkPresented() }
         }
         .sheet(isPresented: $showingGuide) { FetalMovementGuideView() }
         .fullScreenCover(isPresented: $showingAgent) {
@@ -110,7 +120,7 @@ struct FetalMovementCounterView: View {
         } description: {
             Text(FetalMovementCopy.mostImportant)
         } actions: {
-            Button("关闭", action: onClose).buttonStyle(.borderedProminent)
+            Button("关闭", action: close).buttonStyle(.borderedProminent)
         }
     }
 
@@ -168,7 +178,7 @@ struct FetalMovementCounterView: View {
                         .accessibilityIdentifier("fetal-movement-guide")
                     Spacer()
                     Button("结束") {
-                        if (store.active?.count ?? 0) == 0 { store.discardActive(); onClose() }
+                        if (store.active?.count ?? 0) == 0 { store.discardActive(); close() }
                         else { confirmingEnd = true }
                     }
                     .accessibilityIdentifier("fetal-movement-end")
@@ -244,7 +254,7 @@ struct FetalMovementCounterView: View {
             Text(result.outcome == .reached ? FetalMovementCopy.recordedNote : FetalMovementCopy.recordedStoppedNote)
                 .font(.footnote).foregroundStyle(Color.aimTextSecondary)
             FetalMovementRetryButton(busy: saving)
-            Button("完成", action: onClose)
+            Button("完成", action: close)
                 .buttonStyle(.borderedProminent)
                 .accessibilityIdentifier("fetal-movement-done")
         }
@@ -264,7 +274,7 @@ struct FetalMovementCounterView: View {
                            ? "我数胎动 2 小时不到 10 次，现在该怎么办？"
                            : "我感觉胎动比平时少了，现在该怎么办？")
             FetalMovementRetryButton(busy: saving)
-            Button("我知道了", action: onClose).buttonStyle(.borderedProminent)
+            Button("我知道了", action: close).buttonStyle(.borderedProminent)
         }
         .padding()
         .background(Color.aimDangerSoft, in: RoundedRectangle(cornerRadius: AimMetrics.radiusCard))
@@ -279,6 +289,24 @@ struct FetalMovementCounterView: View {
         } label: {
             Label("问问 AIM", systemImage: "wand.and.sparkles")
         }
+    }
+
+    /// 关闭计数页：先撤销「计数页正在显示」，呈现方的页面重新出现、发起收尾时就不会被拦住。
+    private func close() {
+        unmarkPresented()
+        onClose()
+    }
+
+    private func markPresented() {
+        guard !presentationMarked else { return }
+        presentationMarked = true
+        store.beginCounterPresentation()
+    }
+
+    private func unmarkPresented() {
+        guard presentationMarked else { return }
+        presentationMarked = false
+        store.endCounterPresentation()
     }
 
     private static func clock(_ seconds: TimeInterval) -> String {

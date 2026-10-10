@@ -43,6 +43,9 @@ final class FetalMovementStore {
     /// 每次拉历史递增；用来丢掉比已采用的结果更旧的响应，免得并发拉取时旧结果盖掉新结果。
     private var reloadGeneration = 0
     private var appliedReloadGeneration = 0
+    /// 正在显示的计数页个数。大于 0 时后台不收尾过期断点：那时满 2 小时是真实的「不足 10 次」，
+    /// 要由计数页自己结束并弹安全页。用计数而不是开关，嵌套或重复出现时各自配对、全部关掉才恢复。
+    private var counterPresentations = 0
 
     private struct Scope: Equatable {
         let accountID: UUID
@@ -71,6 +74,8 @@ final class FetalMovementStore {
         unsaved = Self.read([FetalMovementResult].self, key: next.unsavedKey, from: defaults) ?? []
         sessions = []
         errorMessage = nil
+        // 换了一家，上一家计数页的登记（可能因呈现链被拆掉而残留）不再算数。
+        counterPresentations = 0
     }
 
     /// 没有账号或孕期时（退出登录、切到还没建孕期的家庭）解绑，
@@ -83,6 +88,7 @@ final class FetalMovementStore {
         unsaved = []
         sessions = []
         errorMessage = nil
+        counterPresentations = 0
     }
 
     var baselineSeconds: Int? { FetalMovementInsights.baselineSeconds(sessions) }
@@ -92,6 +98,18 @@ final class FetalMovementStore {
         return active
     }
     var today: FetalMovementSession? { FetalMovementInsights.latest(onDayOf: clock(), in: sessions) }
+
+    var isCounterPresented: Bool { counterPresentations > 0 }
+
+    /// 计数页出现时调用，与 `endCounterPresentation()` 一一配对。
+    func beginCounterPresentation() {
+        counterPresentations += 1
+    }
+
+    /// 计数页关闭时调用。多调不会减成负数，免得下次打开时标记失灵。
+    func endCounterPresentation() {
+        counterPresentations = max(0, counterPresentations - 1)
+    }
 
     func load() async {
         do {
@@ -222,16 +240,31 @@ final class FetalMovementStore {
     /// 计数页没开着时过了 2 小时（多半是 App 被系统杀掉、孕妈忘了这次计数）：
     /// 这不是真的「2 小时不足 10 次」，不能报不足，记为「未数完」保存；一次都没数就直接丢掉。
     /// 用时取最后一次点按的秒数——那之后她并没有在数，也保证点按都落在用时之内、后端校验能过。
-    /// 计数页开着时不调用：那时到点是真实的「2 小时不足 10 次」，由计数页自己结束。
+    /// 计数页开着时（`isCounterPresented`）什么都不做：那时到点是真实的「2 小时不足 10 次」，由计数页自己结束。
+    /// 冷启动网络慢时，这里可能在孕妈已经打开计数页之后才轮到执行。
     func settleExpiredActive() async {
         guard queueExpiredActive() else { return }
         await saveUnsaved()
     }
 
     /// `settleExpiredActive()` 的同步部分：把过期的断点转进待保存队列并落盘，返回是否需要保存。
-    /// 计数页要在同一刻接着开始新计数，不能等保存，所以单独拿出来。
+    /// 计数页开着时不处理，理由同 `settleExpiredActive()`。
     @discardableResult
     func queueExpiredActive() -> Bool {
+        guard !isCounterPresented else { return false }
+        return moveExpiredActiveToUnsaved()
+    }
+
+    /// 计数页出现、开始新计数之前调用：同 `queueExpiredActive()`，但不看「计数页正在显示」的标记。
+    /// 这时断点过期发生在计数页没开着的时候，不是真的「不足 10 次」；
+    /// 标记万一残留（上一个计数页没来得及撤销），也不能因此沿用过期断点、到点误报不足。
+    /// 计数页要在同一刻接着开始新计数，不能等保存，所以只做同步部分。
+    @discardableResult
+    func queueExpiredActiveBeforeCounting() -> Bool {
+        moveExpiredActiveToUnsaved()
+    }
+
+    private func moveExpiredActiveToUnsaved() -> Bool {
         guard let scope, let counter = active, counter.isExpired(at: clock()) else { return false }
         guard counter.count > 0 else {
             discardActive()
