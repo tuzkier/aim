@@ -65,6 +65,28 @@ final class RecordStoreTests: XCTestCase {
         XCTAssertNotNil(store.errorMessage)
         XCTAssertFalse(store.isLoading)
     }
+
+    /// 在记录详情里问 AIM：上下文要带这条记录的小写编号，AIM 才能用
+    /// `[[record:<编号>|…]]` 引用它（网页端只认小写，与 API 返回的编号一致）。
+    func testRecordAgentContextCarriesItsLowercasedID() {
+        let id = UUID(uuidString: "0B6C1A2E-1111-4A2B-9C3D-123456789ABC")!
+        let record = RecordItem(
+            id: id, pregnancyID: UUID(), familyID: UUID(), authorAccountID: UUID(),
+            type: .checkup, occurredAt: .now, visibility: .family,
+            title: nil, content: nil,
+            structuredData: .checkup(CheckupRecordData(
+                hospital: "市一医院", examItems: "常规", result: "正常", doctorAdvice: "按时复查")),
+            attachmentRefs: [], createdAt: .now, updatedAt: .now
+        )
+
+        let context = record.agentContext
+
+        XCTAssertEqual(context.title, "记录")
+        let lines = context.summary.components(separatedBy: "\n")
+        XCTAssertEqual(lines.first, "产检：常规")
+        XCTAssertTrue(lines.contains("记录编号：0b6c1a2e-1111-4a2b-9c3d-123456789abc"), context.summary)
+        XCTAssertFalse(context.summary.contains(id.uuidString), "不带大写编号")
+    }
 }
 
 private actor FailingRecordRepository: BusinessRepositoryProtocol {

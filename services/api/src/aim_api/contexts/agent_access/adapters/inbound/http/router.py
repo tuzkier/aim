@@ -31,6 +31,9 @@ from aim_api.contexts.guidance.application.queries.get_guidance import (
 from aim_api.contexts.guidance.application.queries.get_guidance import (
     execute as get_guidance,
 )
+from aim_api.contexts.guidance.application.queries.get_encyclopedia import (
+    get_encyclopedia,
+)
 from aim_api.contexts.guidance.application.queries.get_safety_rules import (
     execute as get_safety_rules,
 )
@@ -214,6 +217,15 @@ class ListRecordsRequest(BaseModel):
     type: RecordType | None = None
     occurred_from: datetime | None = Field(default=None, alias="from")
     occurred_until: datetime | None = Field(default=None, alias="to")
+
+
+class ListLibraryRequest(BaseModel):
+    topic: str | None = None
+    week: int | None = Field(default=None, ge=0, le=45)
+
+
+class GetLibraryEntryRequest(BaseModel):
+    id: str = Field(min_length=1, max_length=100)
 
 
 def _service_credential(request: Request) -> None:
@@ -436,6 +448,43 @@ async def _list_records(session, context: AgentToolContext, body: dict[str, Any]
         for record in records
     ]
     return ({"records": normalized, "count": len(normalized)}, f"已读取 {len(normalized)} 条孕期记录")
+
+
+async def _list_library(session, context: AgentToolContext, body: dict[str, Any]):
+    topic = body.get("topic")
+    week = body.get("week")
+    if week is not None:
+        # 指定了孕周：按它过滤并排序（查看别的孕期阶段）。
+        filter_week = rank_week = week
+    else:
+        pregnancy = await SqlAlchemyPregnancyRepository(session).get_pregnancy(
+            context.pregnancy_id
+        )
+        current = pregnancy.gestational_age().weeks if pregnancy else None
+        # 带主题浏览时给整个主题，只按本周排序——孕 12 周问分娩也要看得到分娩条目。
+        # 什么都没带时按本周过滤并排序。读不到孕期时不过滤也不排序。
+        filter_week = None if topic is not None else current
+        rank_week = current
+    # 百科条目的孕周范围在 4–42 之间，超出的夹回边界，免得早孕或过期时目录全空。
+    if filter_week is not None:
+        filter_week = min(max(filter_week, 4), 42)
+    if rank_week is not None:
+        rank_week = min(max(rank_week, 4), 42)
+    catalog = get_encyclopedia().catalog(topic=topic, week=filter_week, rank_week=rank_week)
+    # pick 只决定首页推荐，Agent 用不上；去掉它给模型的目录短一点（公开接口不变）。
+    catalog["entries"] = [
+        {key: value for key, value in entry.items() if key != "pick"}
+        for entry in catalog["entries"]
+    ]
+    return (catalog, f"翻了 {len(catalog['entries'])} 条资料目录")
+
+
+async def _get_library_entry(session, context: AgentToolContext, body: dict[str, Any]):
+    detail = get_encyclopedia().detail(body["id"])
+    if detail is None:
+        # 不抛错：让模型拿到明确的「没有」，如实告诉用户，而不是编一条。
+        return ({"found": False, "id": body["id"]}, "没有这条资料")
+    return (detail, f"读了「{detail['title']}」")
 
 
 async def _task_in_scope(uow, context: AgentToolContext, task_id: UUID):
@@ -710,6 +759,16 @@ async def list_tasks(request: Request, payload: dict[str, Any] | None = None):
 @router.post("/list-records", response_model=ToolResult, include_in_schema=False)
 async def list_records_endpoint(request: Request, payload: ListRecordsRequest):
     return await _run(request, "list_records", payload, _list_records)
+
+
+@router.post("/list-library", response_model=ToolResult, include_in_schema=False)
+async def list_library_endpoint(request: Request, payload: ListLibraryRequest):
+    return await _run(request, "list_library", payload, _list_library)
+
+
+@router.post("/get-library-entry", response_model=ToolResult, include_in_schema=False)
+async def get_library_entry_endpoint(request: Request, payload: GetLibraryEntryRequest):
+    return await _run(request, "get_library_entry", payload, _get_library_entry)
 
 
 @router.post("/complete-task", response_model=ToolResult, include_in_schema=False)

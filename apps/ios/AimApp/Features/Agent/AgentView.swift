@@ -151,6 +151,12 @@ struct AgentDestinationView: View {
             }
         case let .knowledge(entry):
             KnowledgeDetailView(entry: entry, agentStore: nil)
+        case let .encyclopedia(id):
+            if let destinations {
+                EncyclopediaEntryView(
+                    entryID: id, store: destinations.libraryStore, agentStore: destinations.agentStore
+                )
+            }
         }
     }
 }
@@ -160,12 +166,15 @@ enum AgentDestination: Identifiable, Hashable {
     case task(TaskItem)
     case record(RecordItem)
     case knowledge(KnowledgeEntry)
+    /// 百科条目只带编号：正文由详情页自己拉，下线也由它说明。
+    case encyclopedia(String)
 
     var id: String {
         switch self {
         case let .task(task): "task-\(task.id)"
         case let .record(record): "record-\(record.id)"
         case let .knowledge(entry): "knowledge-\(entry.id)"
+        case let .encyclopedia(id): "encyclopedia-\(id)"
         }
     }
 
@@ -194,11 +203,14 @@ final class AgentDestinations {
 
     /// 先查已加载的数据；查不到就刷新一次再查——AIM 可能刚刚才建了它。
     func resolve(_ route: AgentWebRoute) async -> AgentDestination? {
+        // 百科不预取：条目详情页自己加载，404 时由它显示「已下线」。
+        if case let .encyclopedia(id) = route { return .encyclopedia(id) }
         if let hit = lookup(route) { return hit }
         switch route {
         case .task: await planStore.load()
         case .record: await recordStore.load()
         case .knowledge: await libraryStore.load()
+        case .encyclopedia: break
         }
         return lookup(route)
     }
@@ -213,6 +225,8 @@ final class AgentDestinations {
             libraryStore.snapshot.records.first { $0.id == id }
                 .flatMap(KnowledgeEntry.init(record:))
                 .map(AgentDestination.knowledge)
+        case let .encyclopedia(id):
+            AgentDestination.encyclopedia(id)
         }
     }
 }

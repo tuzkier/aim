@@ -1,10 +1,13 @@
 import type { TextMessagePartComponent } from "@assistant-ui/react";
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
+import { openNative } from "../bridge";
+import { parseInline, type CitationPiece } from "./citations";
 
 /**
  * 助手文字的渲染。
  *
- * 只认三样：段落、`-` / `1.` 列表、行内 `**加粗**`。这不是「先实现一部分」，
+ * 只认三样：段落、`-` / `1.` 列表、行内 `**加粗**`；另外把资料引用标记
+ * `[[ref:…|…]]` / `[[record:…|…]]` 渲染成可点的来源胶囊。这不是「先实现一部分」，
  * 而是刻意划的边界——指令里就是这么告诉模型的，客户端和指令必须对齐。
  * 此前指令说了「行内加粗可以」，渲染却从没实现，于是 `**待办内容**` 带着星号
  * 直接摆在用户面前。
@@ -13,13 +16,33 @@ import type { ReactNode } from "react";
  * 代码块一并带进来——那些恰恰是我们不希望模型输出、也不打算渲染的东西。
  */
 
-/** 把 `**加粗**` 切成片段。转义留给 React，这里只做结构。 */
+/**
+ * 资料引用渲染成来源胶囊，点了让原生打开对应的百科条目或记录。
+ * 浏览器里没有原生外壳时照样显示，点击只会在 `openNative` 里 warn 一下。
+ */
+const renderPiece = (piece: CitationPiece, key: number): ReactNode => {
+  if (piece.kind === "text") return piece.text;
+  return (
+    <button
+      key={key}
+      type="button"
+      className="aim-citation"
+      title={piece.title}
+      onClick={() => openNative({ kind: piece.kind === "ref" ? "encyclopedia" : "record", id: piece.id })}
+    >
+      <span className="aim-citation__icon" aria-hidden="true">
+        {piece.kind === "ref" ? "📖" : "🗂️"}
+      </span>
+      <span className="aim-citation__title">{piece.title}</span>
+    </button>
+  );
+};
+
+/** 切出引用和 `**加粗**`，规则见 `parseInline`。转义留给 React，这里只做结构。 */
 const renderInline = (text: string): ReactNode[] =>
-  text.split(/(\*\*[^*]+\*\*)/g).map((piece, index) => {
-    if (piece.startsWith("**") && piece.endsWith("**") && piece.length > 4) {
-      return <strong key={index}>{piece.slice(2, -2)}</strong>;
-    }
-    return piece;
+  parseInline(text).map((span, index) => {
+    const children = span.pieces.map(renderPiece);
+    return span.bold ? <strong key={index}>{children}</strong> : <Fragment key={index}>{children}</Fragment>;
   });
 
 type Block =

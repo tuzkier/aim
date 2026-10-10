@@ -8,6 +8,8 @@ struct EncyclopediaEntryView: View {
 
     @State private var entry: EncyclopediaEntry?
     @State private var failed = false
+    /// 服务端说没有这条（404）：多半是内容下线了，重试没有意义。
+    @State private var gone = false
     @State private var showingAgent = false
     @State private var countingFetalMovement = false
 
@@ -15,6 +17,9 @@ struct EncyclopediaEntryView: View {
         Group {
             if let entry {
                 content(entry)
+            } else if gone {
+                AimEmptyState(title: "这条资料已下线", message: "内容更新后它不再提供了，可以回到资料库看看别的。")
+                    .accessibilityIdentifier("encyclopedia-entry-gone")
             } else if failed {
                 AimErrorState(message: "这条资料暂时打不开") { Task { await load() } }
             } else {
@@ -37,7 +42,14 @@ struct EncyclopediaEntryView: View {
 
     private func load() async {
         failed = false
-        do { entry = try await store.entry(id: entryID) } catch { failed = true }
+        gone = false
+        do {
+            entry = try await store.entry(id: entryID)
+        } catch let error as APIError where error.isNotFound {
+            gone = true
+        } catch {
+            failed = true
+        }
     }
 
     private func content(_ entry: EncyclopediaEntry) -> some View {

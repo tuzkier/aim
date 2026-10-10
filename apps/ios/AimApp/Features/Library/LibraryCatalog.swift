@@ -117,22 +117,49 @@ enum LibraryCategoryID: String, CaseIterable, Identifiable, Sendable {
 
     /// 在某个分类里问 AIM 时带的上下文。要说清「这是哪个分类」，
     /// 否则模型不知道该往哪里存。
+    @MainActor
     func askContext(from snapshot: LibrarySnapshot) -> AgentContext {
         var lines = ["当前在资料库的「\(title)」分类"]
         let entries = entries(in: snapshot)
         if !entries.isEmpty {
             lines.append("已收录：" + entries.prefix(5).map(\.title).joined(separator: "、"))
         }
+        if let ids = recordIDLine(from: snapshot) { lines.append(ids) }
         lines.append("如果我要你记录什么，请存进这个分类。")
         return AgentContext(title: title, summary: lines.joined(separator: "\n"))
     }
 
     /// 进入分类后调起 AIM 时带的上下文，与时间线头部同一套机制。
+    @MainActor
     func agentContext(from snapshot: LibrarySnapshot) -> AgentContext {
         let summary = summary(from: snapshot)
         var lines = [summary.headline]
         if !summary.tags.isEmpty { lines.append(summary.tags.joined(separator: "、")) }
+        if let ids = recordIDLine(from: snapshot) { lines.append(ids) }
         return AgentContext(title: title, summary: lines.joined(separator: "\n"))
+    }
+
+    /// 产检与身体感受带上最近 5 条记录的编号（按时间倒序），AIM 才能在回答里
+    /// 用 `[[record:<编号>|…]]` 引用具体那一次。其他分类、没有记录时不加这一行。
+    /// 编号用小写，与 API 返回、AIM 工具里出现的写法一致。
+    @MainActor
+    private func recordIDLine(from snapshot: LibrarySnapshot) -> String? {
+        let type: RecordType
+        switch self {
+        case .checkups: type = .checkup
+        case .symptoms: type = .symptom
+        default: return nil
+        }
+        let recent = snapshot.records
+            .filter { $0.type == type }
+            .sorted { $0.occurredAt > $1.occurredAt }
+            .prefix(5)
+        guard !recent.isEmpty else { return nil }
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.dateFormat = "M月d日"
+        let items = recent.map { "\($0.id.uuidString.lowercased())（\(formatter.string(from: $0.occurredAt)) \($0.displayTitle)）" }
+        return "记录编号：" + items.joined(separator: "；")
     }
 
     private static func placeholderHeadline(for id: LibraryCategoryID) -> String {

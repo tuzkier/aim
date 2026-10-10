@@ -84,6 +84,30 @@ body {
 /* 列表按行距收紧，默认的 1em 上下边距在气泡里太空。 */
 .msg ul, .msg ol { margin: 6px 0; padding-left: 20px; }
 .msg li { margin: 2px 0; }
+/* 资料引用胶囊：与正文同行，按钮外观压到最小，只留一块浅色底；过长时截断。 */
+.aim-citation {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  max-width: 16em;
+  margin: 0 2px;
+  padding: 0 7px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--aim-accent-soft);
+  color: var(--aim-accent);
+  font: inherit;
+  font-size: 0.9em;
+  line-height: 1.5;
+  vertical-align: baseline;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.aim-citation:active { background: var(--aim-accent); color: var(--aim-text-on-accent); }
+.aim-citation:focus-visible { outline: 2px solid var(--aim-accent); outline-offset: 1px; }
+.aim-citation__icon { flex: none; font-size: 0.9em; }
+/* 长标题截断；完整标题在按钮的 title 属性里。省略号要落在文字所在的元素上，flex 容器本身不生效。 */
+.aim-citation__title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .msg--user { align-self: flex-end; background: var(--aim-accent); color: #fff; }
 .msg--assistant { align-self: flex-start; background: var(--aim-surface); border: 1px solid var(--aim-separator); max-width: 100%; }
 

@@ -6,7 +6,7 @@ import { toolResultSchema } from "../lib/business-api/tool-result-schema.ts";
 export default defineTool({
   description: "List pregnancy records visible to the authenticated family member.",
   inputSchema: z.object({
-    type: z.enum(["symptom", "checkup", "note", "fetal_movement"]).optional(),
+    type: z.enum(["symptom", "checkup", "note", "question", "knowledge", "fetal_movement"]).optional(),
     from: z.iso.datetime().optional(),
     to: z.iso.datetime().optional(),
   }),
