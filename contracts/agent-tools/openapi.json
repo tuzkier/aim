@@ -144,6 +144,88 @@
         }
       }
     },
+    "/internal/agent-tools/list-library": {
+      "post": {
+        "tags": [
+          "agent-tools"
+        ],
+        "summary": "List Library Endpoint",
+        "operationId": "list_library_endpoint_internal_agent_tools_list_library_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ListLibraryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/internal/agent-tools/get-library-entry": {
+      "post": {
+        "tags": [
+          "agent-tools"
+        ],
+        "summary": "Get Library Entry Endpoint",
+        "operationId": "get_library_entry_endpoint_internal_agent_tools_get_library_entry_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetLibraryEntryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/internal/agent-tools/complete-task": {
       "post": {
         "tags": [
@@ -1364,6 +1446,21 @@
         ],
         "title": "GetGuidanceRequest"
       },
+      "GetLibraryEntryRequest": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "GetLibraryEntryRequest"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -1448,6 +1545,36 @@
           "role"
         ],
         "title": "InviteMemberRequest"
+      },
+      "ListLibraryRequest": {
+        "properties": {
+          "topic": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Topic"
+          },
+          "week": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 45.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Week"
+          }
+        },
+        "type": "object",
+        "title": "ListLibraryRequest"
       },
       "ListRecordsRequest": {
         "properties": {
