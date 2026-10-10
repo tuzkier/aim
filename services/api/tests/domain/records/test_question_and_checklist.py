@@ -59,6 +59,26 @@ class TestQuestionRecords:
         with pytest.raises(RecordValidationError):
             make(RecordType.question, content="问题", structured_data={"answered": "yes"})
 
+    def test_a_question_can_point_back_at_its_report(self):
+        """从产检报告里攒出来的问题记下它来自哪份报告，资料库据此把两者连起来。"""
+        report_id = str(uuid4())
+        record = make(
+            RecordType.question,
+            content="尿蛋白一个加号要紧吗？",
+            structured_data={"answered": False, "report_id": report_id},
+        )
+
+        assert record.structured_data["report_id"] == report_id
+
+    @pytest.mark.parametrize("report_id", ["not-a-uuid", "", 123, ["x"]])
+    def test_report_id_must_be_a_uuid_string(self, report_id):
+        with pytest.raises(RecordValidationError):
+            make(
+                RecordType.question,
+                content="问题",
+                structured_data={"report_id": report_id},
+            )
+
 
 class TestChecklistRecords:
     """办事指南与待产准备共用一套机制：内容库给出条目清单，

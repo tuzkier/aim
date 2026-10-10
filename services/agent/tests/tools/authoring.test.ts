@@ -238,3 +238,61 @@ test("create_record accepts at most four photos", () => {
   const parsed = schema.safeParse({ recordType: "note", content: "x", attachmentIds: ids });
   assert.equal(parsed.success, false);
 });
+
+test("create_checkup_report is gated by approval like create_knowledge", async () => {
+  const createCheckupReport = (await import("../../agent/tools/create_checkup_report.ts")).default;
+
+  // 报告单上的数字是模型读出来的，存之前让用户在卡片上核对一遍。
+  assert.notEqual(createCheckupReport.approval, undefined);
+});
+
+test("create_checkup_report maps the report onto the gateway payload", async () => {
+  const createCheckupReport = (await import("../../agent/tools/create_checkup_report.ts")).default;
+  const photo = "33333333-3333-4333-8333-333333333333";
+  const { request } = await withStubbedApi(
+    { record_id: "id", record_ids: ["id"], title: "10月3日 产检报告", question_count: 1 },
+    () =>
+      createCheckupReport.execute(
+        {
+          date: "2026-10-03",
+          hospital: "杭州市妇产科医院",
+          metrics: { fetal_heart_rate: 145 },
+          otherItems: [{ name: "尿蛋白", value: "+", flag: "abnormal" }],
+          attachmentIds: [photo],
+          doctorAdvice: "两周后复查",
+          followUpQuestions: ["尿蛋白一个加号要紧吗？"],
+        },
+        scope,
+      ),
+  );
+
+  assert.equal(request?.url, "http://api.test/internal/agent-tools/create-checkup-report");
+  const body = (await request?.clone().json()) as Record<string, unknown>;
+  assert.deepEqual(body, {
+    date: "2026-10-03",
+    hospital: "杭州市妇产科医院",
+    metrics: { fetal_heart_rate: 145 },
+    other_items: [{ name: "尿蛋白", value: "+", flag: "abnormal" }],
+    attachment_ids: [photo],
+    doctor_advice: "两周后复查",
+    follow_up_questions: ["尿蛋白一个加号要紧吗？"],
+    // Eve 只在用户确认后才调用 execute。
+    approved: true,
+  });
+});
+
+test("create_checkup_report rejects unknown metrics and too many questions", async () => {
+  const createCheckupReport = (await import("../../agent/tools/create_checkup_report.ts")).default;
+  const schema = createCheckupReport.inputSchema as unknown as {
+    safeParse(value: unknown): { success: boolean };
+  };
+
+  const accepts = (value: unknown) => schema.safeParse(value).success;
+  const date = "2026-10-03";
+
+  assert.equal(accepts({ date, metrics: { fundal_height_cm: 28 } }), true);
+  // 指标名写错不能静默丢掉，要退回给模型改。
+  assert.equal(accepts({ date, metrics: { blood_type: 1 } }), false);
+  assert.equal(accepts({ date: "2026/10/03" }), false);
+  assert.equal(accepts({ date, followUpQuestions: ["1", "2", "3", "4", "5", "6"] }), false);
+});

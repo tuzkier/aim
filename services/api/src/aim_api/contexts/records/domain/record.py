@@ -371,6 +371,10 @@ class Record:
             answer = structured_data.get("answer")
             if answer is not None and not isinstance(answer, str):
                 raise RecordValidationError("question answer must be a string when provided")
+            # 从产检报告里攒出来的问题指回那份报告；手动加的问题没有这个字段。
+            report_id = structured_data.get("report_id")
+            if report_id is not None and not _is_uuid_text(report_id):
+                raise RecordValidationError("question report_id must be a UUID string")
             return
 
         # 知识条目：由对话积累的资料。分类决定它出现在哪张卡下，
@@ -409,3 +413,13 @@ def _validate_attachment_refs(refs: list[str]) -> None:
             UUID(ref)
         except (TypeError, ValueError) as error:
             raise RecordValidationError("附件引用必须是附件编号") from error
+
+
+def _is_uuid_text(value: Any) -> bool:
+    """是否为标准写法的 UUID 字符串。要求标准写法，客户端才能直接按字符串相等去配对记录。"""
+    if not isinstance(value, str):
+        return False
+    try:
+        return str(UUID(value)) == value
+    except ValueError:
+        return False

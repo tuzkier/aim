@@ -83,6 +83,7 @@ test("compiled runtime exposes only the intended root and specialist tools", asy
   const BUSINESS_TOOLS = [
     "assign_task",
     "complete_task",
+    "create_checkup_report",
     "create_knowledge",
     "create_record",
     "create_task",

@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import hmac
 from dataclasses import asdict
-from datetime import UTC, date, datetime
-from typing import Any, Literal
+from datetime import UTC, date, datetime, time
+from typing import Annotated, Any, Literal
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Request, status
 from fastapi.responses import JSONResponse
@@ -200,6 +201,29 @@ class CreateKnowledgeRequest(BaseModel):
     reason: str | None = None
     body: str | None = None
     note: str | None = None
+    # Eve 在用户确认后才带上它；档位判定见 _run。
+    approved: bool = False
+
+
+class OtherItem(BaseModel):
+    name: str = Field(min_length=1, max_length=40)
+    value: str = Field(min_length=1, max_length=40)
+    unit: str | None = Field(default=None, max_length=20)
+    reference: str | None = Field(default=None, max_length=60)
+    flag: Literal["high", "low", "abnormal"] | None = None
+
+
+class CreateCheckupReportRequest(BaseModel):
+    date: date
+    hospital: str | None = Field(default=None, max_length=100)
+    metrics: dict[str, float] | None = None
+    other_items: list[OtherItem] = Field(default_factory=list, max_length=60)
+    attachment_ids: list[UUID] = Field(default_factory=list, max_length=4)
+    result: str | None = Field(default=None, max_length=500)
+    doctor_advice: str | None = Field(default=None, max_length=500)
+    follow_up_questions: list[Annotated[str, Field(min_length=1, max_length=60)]] = Field(
+        default_factory=list, max_length=5
+    )
     # Eve 在用户确认后才带上它；档位判定见 _run。
     approved: bool = False
 
@@ -652,6 +676,84 @@ async def _create_knowledge(session, context: AgentToolContext, body: dict[str, 
     return ({"record_id": str(record.id), "title": body["title"]}, f"已收录：{body['title']}")
 
 
+#: 报告只有日期没有钟点；记在当天上午 9 点（上海），时间线上排在当天、不会因时区跑到前一天。
+_REPORT_TIME = time(9, 0)
+_SHANGHAI = ZoneInfo("Asia/Shanghai")
+
+
+async def _create_checkup_report(session, context: AgentToolContext, body: dict[str, Any]):
+    """AIM 读完一张产检报告：建一条 checkup，再把想问医生的问题逐条建成 question。
+
+    整批在同一个事务里：先 stage 报告、再 stage 问题，最后只提交一次。
+    任何一条被领域校验拒掉，_run 会 rollback，报告和已写的问题一起作废，照片也不会被挂走。
+    """
+    uow = SqlAlchemyRecordsUnitOfWork(session)
+    report_date = date.fromisoformat(body["date"])
+    occurred_at = datetime.combine(report_date, _REPORT_TIME, _SHANGHAI).astimezone(UTC)
+    day = f"{report_date.month}月{report_date.day}日"
+    title = f"{day} 产检报告"
+
+    structured: dict[str, Any] = {
+        key: body[key]
+        for key in ("hospital", "result", "doctor_advice")
+        if body.get(key) is not None
+    }
+    if body.get("metrics"):
+        structured["metrics"] = body["metrics"]
+    if body.get("other_items"):
+        # 没填的可选键不落库，和手动录入的形状一致。
+        structured["other_items"] = [
+            {key: value for key, value in item.items() if value is not None}
+            for item in body["other_items"]
+        ]
+
+    def command(**fields: Any) -> CreateRecordCommand:
+        return CreateRecordCommand(
+            pregnancy_id=context.pregnancy_id,
+            family_id=context.family_id,
+            account_id=context.account_id,
+            visibility=RecordVisibility.family,
+            **fields,
+        )
+
+    report = await create_record.stage(
+        command(
+            record_type=RecordType.checkup,
+            occurred_at=occurred_at,
+            title=title,
+            structured_data=structured,
+            attachment_ids=tuple(UUID(str(value)) for value in body.get("attachment_ids") or []),
+        ),
+        uow,
+    )
+    question_ids: list[str] = []
+    for question in body.get("follow_up_questions") or []:
+        record = await create_record.stage(
+            command(
+                record_type=RecordType.question,
+                occurred_at=occurred_at,
+                content=question,
+                structured_data={"answered": False, "report_id": str(report.id)},
+            ),
+            uow,
+        )
+        question_ids.append(str(record.id))
+    await uow.commit()
+
+    count = len(question_ids)
+    summary = f"已记下 {day}产检报告" + (f"，并攒了 {count} 个想问医生的问题" if count else "")
+    return (
+        {
+            "record_id": str(report.id),
+            # 撤销按这个顺序的倒序删：问题先删，报告最后。
+            "record_ids": [str(report.id), *question_ids],
+            "title": title,
+            "question_count": count,
+        },
+        summary,
+    )
+
+
 async def _create_record(session, context: AgentToolContext, body: dict[str, Any]):
     uow = SqlAlchemyRecordsUnitOfWork(session)
     record = await create_record.execute(
@@ -799,6 +901,13 @@ async def create_knowledge_endpoint(request: Request, payload: CreateKnowledgeRe
 @router.post("/create-record", response_model=ToolResult, include_in_schema=False)
 async def create_record_endpoint(request: Request, payload: CreateRecordRequest):
     return await _run(request, "create_record", payload, _create_record, write=True)
+
+
+@router.post("/create-checkup-report", response_model=ToolResult, include_in_schema=False)
+async def create_checkup_report_endpoint(request: Request, payload: CreateCheckupReportRequest):
+    return await _run(
+        request, "create_checkup_report", payload, _create_checkup_report, write=True
+    )
 
 
 @router.post("/assign-task", response_model=ToolResult, include_in_schema=False)

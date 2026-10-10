@@ -42,7 +42,7 @@ from aim_api.platform.http.errors import ConflictError, ForbiddenError, NotFound
 
 #: 撤销「新建」即删除；撤销对待办的修改即还原那条 task change。
 _DELETE_TASK = {"create_task"}
-_DELETE_RECORD = {"create_record", "create_knowledge"}
+_DELETE_RECORD = {"create_record", "create_knowledge", "create_checkup_report"}
 _REVERT_CHANGE = {"complete_task", "reschedule_task", "assign_task"}
 
 
@@ -79,20 +79,26 @@ async def undo_invocation(
             )
         summary = "已撤销新建的待办" if len(task_ids) == 1 else f"已撤销新建的 {len(task_ids)} 项待办"
     elif tool in _DELETE_RECORD:
-        try:
-            await delete_record.execute(
-                DeleteRecordCommand(
-                    record_id=UUID(data["record_id"]),
-                    family_id=invocation.family_id,
-                    account_id=account_id,
-                    pregnancy_id=invocation.pregnancy_id,
-                ),
-                SqlAlchemyRecordsUnitOfWork(session),
-            )
-        except RecordNotFound:
-            # 用户已经在别处删掉了：撤销想要的结果已经达成。
-            await session.rollback()
-        summary = "已撤销新建的记录"
+        # 产检报告一次建了报告和若干问题，都在 data.record_ids 里（报告在前）；
+        # 单条新建的旧记录只有 data.record_id。倒序删：问题先删，报告最后。
+        record_ids = data.get("record_ids") or [data["record_id"]]
+        for record_id in reversed(record_ids):
+            try:
+                await delete_record.execute(
+                    DeleteRecordCommand(
+                        record_id=UUID(record_id),
+                        family_id=invocation.family_id,
+                        account_id=account_id,
+                        pregnancy_id=invocation.pregnancy_id,
+                    ),
+                    SqlAlchemyRecordsUnitOfWork(session),
+                )
+            except RecordNotFound:
+                # 用户已经在别处删掉了：撤销想要的结果已经达成。
+                await session.rollback()
+        summary = (
+            "已撤销新建的记录" if len(record_ids) == 1 else f"已撤销新建的 {len(record_ids)} 条记录"
+        )
     elif tool in _REVERT_CHANGE:
         change_ids = [t.get("change_id") for t in data.get("tasks") or []] or [data.get("change_id")]
         if not all(change_ids):

@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { approvalCopy } from "./labels";
+import { approvalCopy, toolTitle } from "./labels";
 
 test("each gated tool gets its own verbs", () => {
   expect(approvalCopy(["reschedule_task"]).confirm).toBe("确认改期");
@@ -21,4 +21,8 @@ test("nothing says 收录 unless the batch is only knowledge", () => {
     const copy = approvalCopy([name]);
     expect(Object.values(copy).join("")).not.toContain("收录");
   }
+});
+
+test("the checkup report tool has a Chinese step title", () => {
+  expect(toolTitle("create_checkup_report")).toBe("记一份产检报告");
 });

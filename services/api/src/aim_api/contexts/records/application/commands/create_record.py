@@ -32,7 +32,18 @@ class CreateRecordCommand:
 
 
 async def execute(command: CreateRecordCommand, uow: RecordsUnitOfWork) -> Record:
-    pregnancy = await uow.pregnancy_ownership.get_pregnancy(command.pregnancy_id)
+    record = await stage(command, uow)
+    await uow.commit()
+    return record
+
+
+async def stage(command: CreateRecordCommand, uow: RecordsUnitOfWork) -> Record:
+    """校验并写入一条记录，但不提交。
+
+    要和别的记录同进同退时用它（例如产检报告与随它攒下的问题），
+    由调用方在整批写完后自己 commit；中途出错由调用方 rollback。
+    """
+    pregnancy =await uow.pregnancy_ownership.get_pregnancy(command.pregnancy_id)
     if pregnancy is None:
         raise RecordNotFound("pregnancy does not exist")
     if pregnancy.family_id != command.family_id:
@@ -57,7 +68,6 @@ async def execute(command: CreateRecordCommand, uow: RecordsUnitOfWork) -> Recor
     await uow.repository.add_record(record)
     if command.attachment_ids:
         await uow.attachments.attach(list(command.attachment_ids), record.id)
-    await uow.commit()
     return record
 
 

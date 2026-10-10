@@ -9,6 +9,8 @@ export const WRITE_KINDS: Record<string, WriteKind[]> = {
   delete_task: ["task"],
   create_record: ["record"],
   create_knowledge: ["knowledge"],
+  // 产检报告与随它攒下的「想问医生」都是记录。
+  create_checkup_report: ["record"],
   // 孕期信息可能改变预产期，首页的孕周与计划跟着变。
   record_pregnancy_fact: ["task"],
   // 撤销可能落在任何一类上；多刷一下比漏刷便宜。

@@ -36,3 +36,8 @@ test("undo touches everything it might have reverted", () => {
 test("deleting a to-do refreshes the task pages", () => {
   expect(writesIn([result("delete_task")])).toEqual(["task"]);
 });
+
+test("a saved checkup report refreshes the records pages", () => {
+  // 报告和随它攒下的「想问医生」都是记录，资料库要跟着刷新。
+  expect(writesIn([result("create_checkup_report")])).toEqual(["record"]);
+});

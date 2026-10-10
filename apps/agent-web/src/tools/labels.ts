@@ -61,6 +61,7 @@ export const TOOL_TITLES: Record<string, string> = {
   "eve:load-skill": "查阅操作指引",
   echo_context: "确认当前身份范围",
   create_knowledge: "收录到资料库",
+  create_checkup_report: "记一份产检报告",
   create_task: "新建待办",
   create_record: "新建记录",
   complete_task: "完成待办",
