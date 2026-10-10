@@ -148,3 +148,9 @@ def test_red_flags_without_week_keep_every_urgent_and_same_day(
     flags = agent_router._red_flags(None)
     assert fake_rules == [None]
     assert [flag["id"] for flag in flags] == ["always-urgent", "late-urgent", "always-same-day"]
+
+
+def test_red_flags_past_42_weeks_keep_the_late_pregnancy_signs() -> None:
+    """用真实内容：孕 45 周（过了预产期很久）也要看到晚孕急症。"""
+    ids = {flag["id"] for flag in agent_router._red_flags(45)}
+    assert {"late-bleeding", "waters-breaking", "reduced-fetal-movement"} <= ids

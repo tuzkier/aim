@@ -131,6 +131,23 @@ final class SafetyCheckTests: XCTestCase {
         XCTAssertTrue(early.applies(week: nil))
     }
 
+    /// 孕周不封顶：43 周以后晚孕信号照样显示，按 42 周算；不到 4 周按 4 周算，早孕信号也要显示。
+    func testWeeksOutsideFourToFortyTwoAreClampedToTheNearestEnd() {
+        let late = SafetyCheck.rules(threeTierRules, forWeek: 45).map(\.id)
+        XCTAssertTrue(late.contains("late-bleeding"))
+        XCTAssertFalse(late.contains("early-bleeding"))
+
+        let early = SafetyCheck.rules(threeTierRules, forWeek: 2).map(\.id)
+        XCTAssertTrue(early.contains("early-bleeding"))
+        XCTAssertFalse(early.contains("late-bleeding"))
+
+        XCTAssertEqual(
+            SafetyCheck.verdict(for: ["late-bleeding"], in: threeTierRules, forWeek: 45)?.level, .now)
+        XCTAssertEqual(
+            SafetyCheck.visibleSelection(["early-bleeding"], in: threeTierRules, forWeek: 0),
+            ["early-bleeding"])
+    }
+
     /// 孕周写坏了（起点比终点大、个数不对）一律当作适用，不能把危险信号藏起来。
     func testMalformedWeekRangesAlwaysApply() {
         XCTAssertTrue(rule("x", severity: "urgent", weeks: [20, 4]).applies(week: 34))

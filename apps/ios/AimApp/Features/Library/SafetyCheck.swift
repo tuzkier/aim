@@ -53,8 +53,12 @@ enum SafetyCheck {
     ///
     /// 孕周取不到时返回全部。20 周以后的出血会同时命中两条紧急项，两条都留着——
     /// 用户勾哪条结论都一样，去重反而可能让人找不到自己那条说法。
+    ///
+    /// 孕周先夹到 4–42（与服务端一致）：孕周不封顶，过了 42 周晚孕信号不能消失；
+    /// 不到 4 周也要看到早孕信号。
     static func rules(_ rules: [SafetyRule], forWeek week: Int?) -> [SafetyRule] {
-        rules.enumerated()
+        let week = week.map { min(max($0, firstWeek), lastWeek) }
+        return rules.enumerated()
             .filter { $0.element.applies(week: week) }
             .sorted { lhs, rhs in
                 let (l, r) = (rank(lhs.element), rank(rhs.element))
@@ -63,6 +67,10 @@ enum SafetyCheck {
             }
             .map(\.element)
     }
+
+    /// 危险信号孕周窗口覆盖的范围，超出的孕周按最近的边界算。
+    private static let firstWeek = 4
+    private static let lastWeek = 42
 
     private static func rank(_ rule: SafetyRule) -> Int {
         if rule.isUrgent { return 0 }

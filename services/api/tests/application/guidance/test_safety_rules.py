@@ -139,3 +139,15 @@ def test_self_harm_action_includes_the_national_hotline():
 def test_high_fever_threshold_is_38_5():
     by_id = {rule.id: rule for rule in execute()}
     assert "38.5" in by_id["high-fever"].condition
+
+
+def test_weeks_past_42_still_get_the_late_pregnancy_red_flags():
+    """孕周不封顶：过了预产期两周多（43 周起）晚孕信号不能消失，按 42 周给。"""
+    ids = {rule.id for rule in execute(week=45)}
+    assert {"late-bleeding", "waters-breaking", "reduced-fetal-movement"} <= ids
+
+
+def test_weeks_before_4_still_get_the_early_pregnancy_red_flags():
+    """刚建档时孕周可能不到 4 周：宫外孕和早孕出血的提示按 4 周给。"""
+    ids = {rule.id for rule in execute(week=2)}
+    assert {"ectopic-signs", "early-spotting"} <= ids
