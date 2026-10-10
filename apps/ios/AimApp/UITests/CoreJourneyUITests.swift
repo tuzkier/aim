@@ -725,6 +725,7 @@ final class CoreJourneyUITests: XCTestCase {
         row.tap()
 
         XCTAssertTrue(app.navigationBars["报告详情"].waitForExistence(timeout: 10), "应当进入报告详情")
+        XCTAssertTrue(app.staticTexts["report-date"].label.contains("年"), "报告日期应当显示中文")
         XCTAssertTrue(app.staticTexts["尿蛋白"].waitForExistence(timeout: 10))
         XCTAssertTrue(app.staticTexts["report-flag-尿蛋白"].exists, "异常项应当带标记")
         XCTAssertEqual(app.staticTexts["report-flag-尿蛋白"].label, "异常")

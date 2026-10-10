@@ -190,8 +190,10 @@ struct CheckupReportView: View {
                 Label("产检报告", systemImage: RecordType.checkup.symbolName)
                     .foregroundStyle(Color.aimAccent)
                 Text(current.displayTitle).font(.title2.weight(.semibold))
-                Text(current.occurredAt, format: .dateTime.year().month().day().locale(Locale(identifier: "zh_CN")))
+                // 先生成中文字符串，避免 SwiftUI 的环境语言覆盖 FormatStyle.locale。
+                Text(current.occurredAt.formatted(.dateTime.year().month().day().locale(Locale(identifier: "zh_CN"))))
                     .font(.subheadline).foregroundStyle(.secondary)
+                    .accessibilityIdentifier("report-date")
                 if let hospital = data.hospital?.trimmed.nilIfEmpty {
                     Label(hospital, systemImage: "building.2")
                         .font(.subheadline).foregroundStyle(Color.aimTextSecondary)

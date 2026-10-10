@@ -27,7 +27,8 @@
 - `/tmp/aim-codex-verify.log`
 - `/tmp/aim-codex-web-test.log`、`/tmp/aim-codex-web-build.log`
 - `/tmp/aim-codex-phase3-ui.xcresult`：428 个单元测试与上述 3 条 UI 流程。
-- `/tmp/aim-codex-phase3-final.xcresult`：显示修正后的报告详情回归。
+- `/tmp/aim-codex-phase3-final.xcresult`：卡片宽度修正后的报告详情回归。
+- `/tmp/aim-codex-phase3-date.xcresult`：中文日期最终修正，UI 明确断言日期包含「年」。
 - `/tmp/aim-codex-phase3-screenshots/`：从前一份 XCTest 结果导出的确认卡和详情截图。
 
 ## 验证边界
