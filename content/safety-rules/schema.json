@@ -19,7 +19,13 @@
           "id": {"type": "string"},
           "condition": {"type": "string"},
           "action": {"type": "string"},
-          "severity": {"enum": ["info", "warning", "urgent"]}
+          "severity": {"enum": ["urgent", "same_day", "routine"]},
+          "weeks": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2,
+            "items": {"type": "integer", "minimum": 4, "maximum": 42}
+          }
         }
       }
     }

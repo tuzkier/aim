@@ -1,16 +1,84 @@
 id: pregnancy-red-flags
-version: 1.0.0
-source: Aim 安全升级规则基线
+version: 2.0.0
+source: 中华医学会妇产科学分会《孕前和孕期保健指南（2018）》；国家卫生健康委员会公开的孕产期保健资料；全国心理援助热线 12356。口径与本库孕期百科「什么时候找医生」一致
 source_url: https://www.nhc.gov.cn/
-reviewed_at: "2026-08-14"
+reviewed_at: "2026-10-10"
 applicability:
   region: [CN]
+# severity 三档：
+#   urgent   —— 立即去产科急诊或拨打 120，不等待观察
+#   same_day —— 今天或明天联系产检医院，不必半夜跑急诊
+#   routine  —— 下次产检时告诉医生
+# weeks: [起, 止] 只在这段孕周显示（含两端）；不写表示整个孕期都适用。
 items:
+  # ---------- urgent ----------
   - id: urgent-bleeding
-    condition: 出血量明显增加或伴随明显腹痛
-    action: 立即联系产检医院或急救服务，不等待 Agent 继续判断
+    condition: 阴道出血像月经那么多或更多，或肚子持续剧痛、发硬不缓解
+    action: 立即去产科急诊或拨打 120，不要在家等待观察；垫上卫生巾，方便医生估计出血量。
+    severity: urgent
+  - id: ectopic-signs
+    condition: 孕早期一侧下腹剧痛，或伴头晕眼花、晕倒、肩膀疼
+    action: 立即去医院急诊或拨打 120，可能是宫外孕破裂；不要自己吃止痛药硬扛。
+    severity: urgent
+    weeks: [4, 13]
+  - id: waters-breaking
+    condition: 阴道突然流出清水样液体，或一直往外渗、控制不住
+    action: 立即去产科急诊，垫上干净卫生巾，不要洗澡；胎位不正或医生说过宝宝没入盆的，平躺并拨打 120。
+    severity: urgent
+    weeks: [20, 42]
+  - id: reduced-fetal-movement
+    condition: 胎动比平时明显减少、变弱或停止，或 2 小时不足 10 次
+    action: 立即联系产检医院或去产科急诊，不用数完、不要等到第二天；别靠吃甜食、喝冷水「叫醒」宝宝而拖延。
+    severity: urgent
+    weeks: [24, 42]
+  - id: preterm-contractions
+    condition: 不到 37 周，肚子一阵阵规律发紧发痛，或下坠感、腰酸明显
+    action: 立即去产科急诊，可能是早产信号；同时有流血或流水时拨打 120。
+    severity: urgent
+    weeks: [20, 36]
+  - id: preeclampsia-signs
+    condition: 剧烈头痛、眼花看不清，或上腹（尤其右上腹）持续疼痛
+    action: 立即去产科急诊或拨打 120，可能与血压升高（子痫前期）有关，不要等到下次产检。
+    severity: urgent
+  - id: seizure
+    condition: 抽搐，或意识不清、叫不醒、说话糊涂
+    action: 身边的人立即拨打 120；让她侧躺，移开周围硬物，不要往嘴里塞东西。
+    severity: urgent
+  - id: chest-pain-breathing
+    condition: 突然胸痛、喘不上气，休息也不缓解，或咳出血
+    action: 立即拨打 120 或去急诊，告诉医生你在怀孕。
+    severity: urgent
+  - id: leg-clot
+    condition: 一侧小腿肿胀疼痛、发红发热，不像抽筋那样很快缓解
+    action: 立即去医院急诊，可能是下肢静脉血栓；不要揉捏按摩这条腿，伴胸痛或气短时拨打 120。
     severity: urgent
   - id: high-fever
-    condition: 高热、意识异常或呼吸困难
-    action: 立即寻求线下医疗帮助
+    condition: 体温到了 38.5℃ 或更高
+    action: 立即去医院急诊或发热门诊，告诉医生你在怀孕；不要自己随便吃药。
     severity: urgent
+  - id: self-harm-thoughts
+    condition: 有伤害自己或宝宝的念头，或觉得活着没意思
+    action: 立即告诉身边的人，别一个人待着；拨打全国心理援助热线 12356，或去医院急诊，情况危急时拨打 120。
+    severity: urgent
+
+  # ---------- same_day ----------
+  - id: sudden-swelling
+    condition: 脸、手突然明显肿起来，或几天内水肿迅速加重
+    action: 今天或明天联系你的产检医院，查一下血压和尿蛋白；家里有血压计的先量一次。
+    severity: same_day
+  - id: itching-palms-soles
+    condition: 手心脚心痒得厉害、夜里更重，或全身痒得睡不着
+    action: 今天或明天联系你的产检医院，可能需要查肝功能和胆汁酸；不要自己涂药止痒。
+    severity: same_day
+  - id: urinary-infection
+    condition: 排尿疼痛、灼热或尿里带血，或伴发热、腰痛
+    action: 今天或明天联系你的产检医院查尿常规，不要自己吃消炎药；体温到 38.5℃ 时按高热处理。
+    severity: same_day
+  - id: severe-vomiting
+    condition: 吐得吃不下也喝不下，尿很少、颜色很深，或头晕站不稳
+    action: 今天就联系你的产检医院或去门诊，可能需要补液，不要硬扛。
+    severity: same_day
+  - id: persistent-low-mood
+    condition: 情绪低落、焦虑或对什么都没兴趣，持续两周以上
+    action: 今天或明天联系你的产检医院，很多医院有孕期心理门诊；也可以拨打全国心理援助热线 12356。
+    severity: same_day

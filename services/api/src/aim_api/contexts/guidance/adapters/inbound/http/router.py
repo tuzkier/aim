@@ -35,10 +35,12 @@ async def get_guidance_endpoint(week: int = Query(ge=0), region: str = Query(def
 
 
 @router.get("/api/v1/safety-rules")
-async def get_safety_rules_endpoint():
+async def get_safety_rules_endpoint(week: int | None = Query(default=None, ge=0, le=45)):
     """危险信号。不含个人数据，因此不要求登录——
-    真出事的时候不该被登录态挡在外面。"""
-    return {"items": execute_safety_rules()}
+    真出事的时候不该被登录态挡在外面。
+
+    week 可选：传了只返回该孕周适用的条目；不传返回全部，兼容旧版 App。"""
+    return {"items": execute_safety_rules(week)}
 
 
 @router.get("/api/v1/library/encyclopedia")
