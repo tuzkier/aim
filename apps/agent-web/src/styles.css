@@ -339,6 +339,25 @@ body {
 .context-chip__clear { border: none; background: none; color: inherit; font-size: 12px; padding: 0 2px; }
 .tool-card__list { margin: 6px 0 0; padding-left: 18px; font-size: 14px; line-height: 1.6; color: var(--aim-text-primary); }
 
+/* 产检报告卡：数字照报告单摆出来，异常项只标色和箭头，不加解读。 */
+.checkup-unit { font-size: 12px; color: var(--aim-text-secondary); }
+.checkup-metrics { margin: 4px 0 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 12px; }
+.checkup-metrics__row { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; line-height: 1.6; }
+.checkup-metrics__row dt { color: var(--aim-text-secondary); }
+.checkup-metrics__row dd { margin: 0; font-variant-numeric: tabular-nums; }
+.checkup-items { margin: 4px 0 0; padding: 0; list-style: none; }
+.checkup-item {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px;
+  padding: 4px 0; font-size: 14px; line-height: 1.5; border-bottom: 1px solid var(--aim-separator);
+}
+.checkup-item:last-child { border-bottom: none; }
+.checkup-item__name { flex: 1 1 auto; }
+.checkup-item__value { font-variant-numeric: tabular-nums; }
+.checkup-item__reference { flex-basis: 100%; font-size: 12px; color: var(--aim-text-tertiary); }
+.checkup-item--high, .checkup-item--low { color: var(--aim-danger); }
+.checkup-item--abnormal { color: var(--aim-warning); }
+.checkup-item__flag { font-weight: 600; }
+
 /* ---------- 图片 ---------- */
 
 .composer__image-button {
