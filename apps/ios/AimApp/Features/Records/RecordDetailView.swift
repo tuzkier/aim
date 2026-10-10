@@ -25,6 +25,8 @@ struct RecordDetailView: View {
         // 产检报告有自己的详情页：指标对比、化验项、把异常项加入想问医生。
         if record.type == .checkup {
             CheckupReportView(record: record, store: store, planStore: planStore, agentStore: agentStore)
+        } else if record.type == .memory {
+            MemoryDetailView(record: record, store: store, agentStore: agentStore)
         } else {
             genericDetail
         }
@@ -141,6 +143,8 @@ struct RecordDetailView: View {
                 LabeledContent("用时", value: FetalMovementFormat.duration(data.durationSeconds))
                 LabeledContent("结果", value: FetalMovementFormat.summary(data))
             }
+        case .memory:
+            EmptyView()
         case .unknown:
             Section { Text("这类记录暂不支持完整展示。") }
         }

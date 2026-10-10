@@ -8,6 +8,7 @@ enum RecordType: Codable, CaseIterable, Sendable, Equatable {
     case checklist
     case knowledge
     case fetalMovement
+    case memory
     case unknown
 
     init(rawValue: String) {
@@ -19,6 +20,7 @@ enum RecordType: Codable, CaseIterable, Sendable, Equatable {
         case "checklist": self = .checklist
         case "knowledge": self = .knowledge
         case "fetal_movement": self = .fetalMovement
+        case "memory": self = .memory
         default: self = .unknown
         }
     }
@@ -32,6 +34,7 @@ enum RecordType: Codable, CaseIterable, Sendable, Equatable {
         case .checklist: return "checklist"
         case .knowledge: return "knowledge"
         case .fetalMovement: return "fetal_movement"
+        case .memory: return "memory"
         case .unknown: return "unknown"
         }
     }
@@ -41,7 +44,7 @@ enum RecordType: Codable, CaseIterable, Sendable, Equatable {
     }
 
     /// 能否在通用记录编辑器里修改。胎动记录由计数页生成，编辑器改不了它的计数数据。
-    var canEditInComposer: Bool { self != .fetalMovement }
+    var canEditInComposer: Bool { self != .fetalMovement && self != .memory }
 
     func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
@@ -215,6 +218,7 @@ enum RecordStructuredData: Equatable, Sendable {
     case checklist(ChecklistRecordData)
     case knowledge(KnowledgeRecordData)
     case fetalMovement(FetalMovementRecordData)
+    case memory(MemoryRecordData)
     case note
     case unknown
 }

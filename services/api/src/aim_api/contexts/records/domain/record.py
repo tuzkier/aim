@@ -18,6 +18,7 @@ class RecordType(StrEnum):
     checklist = "checklist"
     knowledge = "knowledge"
     fetal_movement = "fetal_movement"
+    memory = "memory"
 
 
 class RecordVisibility(StrEnum):
@@ -64,6 +65,8 @@ class Record:
         _validate_attachment_refs(attachment_refs or [])
         cls._validate_payload(record_type, structured_data, content, title)
         structured_data = cls._with_defaults(record_type, structured_data)
+        if record_type is RecordType.memory:
+            title = structured_data["text"][:40]
         created_at = now or datetime.now(UTC)
         return cls(
             id=record_id,
@@ -321,6 +324,8 @@ class Record:
             return {"answered": False, **structured_data}
         if record_type is RecordType.checklist:
             return {"done": False, **structured_data}
+        if record_type is RecordType.memory:
+            return {"kind": structured_data["kind"], "text": structured_data["text"].strip()}
         return structured_data
 
     @classmethod
@@ -331,6 +336,17 @@ class Record:
         content: str | None,
         title: str | None = None,
     ) -> None:
+        if record_type is RecordType.memory:
+            if set(structured_data) != {"kind", "text"}:
+                raise RecordValidationError("记忆只能包含类别和一句话")
+            if structured_data["kind"] not in (
+                "allergy", "history", "medication", "care", "preference", "other"
+            ):
+                raise RecordValidationError("记忆类别不支持")
+            text = structured_data["text"]
+            if not isinstance(text, str) or not 1 <= len(text.strip()) <= 80:
+                raise RecordValidationError("记忆请写成 1–80 个字的一句话")
+            return
         if record_type is RecordType.symptom:
             symptoms = structured_data.get("symptoms")
             severity = structured_data.get("severity")

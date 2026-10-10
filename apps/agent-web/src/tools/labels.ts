@@ -51,6 +51,8 @@ export const READ_ONLY_TOOLS = new Set([
 
 /** 步骤行上显示的中文工具名。读不到就退回原名，不猜。 */
 export const TOOL_TITLES: Record<string, string> = {
+  remember: "记住这件事",
+  forget_memory: "遗忘记忆",
   get_pregnancy_context: "查看孕期档案",
   list_tasks: "查看待办",
   list_records: "查看记录",
@@ -84,6 +86,10 @@ type ApprovalCopy = {
 };
 
 const APPROVAL_COPY: Record<string, ApprovalCopy> = {
+  forget_memory: {
+    confirm: "遗忘", reject: "保留", pendingYes: "待提交：遗忘",
+    pendingNo: "待提交：保留", rejected: "没有遗忘",
+  },
   create_knowledge: {
     confirm: "收录",
     reject: "先不收录",

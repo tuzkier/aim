@@ -29,6 +29,8 @@ struct LibraryCategoryDetail: View {
             case .preparation: checklist(collection: "preparation")
             case .nutrition: nutritionView
             case .fetalMovement: FetalMovementView(agentStore: agentStore)
+            case .memories:
+                if let destinations { MemoryView(store: destinations.recordStore, agentStore: agentStore) }
             default: comingSoon
             }
         }
@@ -538,6 +540,7 @@ struct LibraryCategoryDetail: View {
         case .questions: "「帮我记个想问医生的问题」"
         case .safety: "问问什么情况需要立刻就医"
         case .fetalMovement: "「最近胎动正常吗」"
+        case .memories: "「记住我喜欢简短的回答」"
         }
     }
 

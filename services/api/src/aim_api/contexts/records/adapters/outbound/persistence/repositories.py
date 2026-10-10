@@ -3,10 +3,11 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import and_, or_, select, update
+from sqlalchemy import and_, func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from aim_api.contexts.family.adapters.outbound.persistence.models import FamilyModel
 from aim_api.contexts.family.adapters.outbound.persistence.repositories import (
     SqlAlchemyFamilyRepository,
 )
@@ -26,6 +27,22 @@ from aim_api.contexts.records.domain.record import Record, RecordType, RecordVis
 class SqlAlchemyRecordsRepository:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
+
+    async def reserve_memory_slot(self, family_id: UUID) -> None:
+        # 同一家庭的新增串行计数，包含其他成员的私有记忆；不能用可见列表算容量。
+        await self.session.scalar(
+            select(FamilyModel.id).where(FamilyModel.id == family_id).with_for_update()
+        )
+        await self.session.flush()
+        count = await self.session.scalar(
+            select(func.count()).select_from(RecordModel).where(
+                RecordModel.family_id == family_id,
+                RecordModel.record_type == RecordType.memory.value,
+                RecordModel.deleted_at.is_(None),
+            )
+        )
+        if count >= 50:
+            raise RecordValidationError("这个家庭的记忆已满 50 条，请先在资料库整理后再添加")
 
     async def add_record(self, record: Record) -> None:
         self.session.add(_to_model(record))

@@ -73,6 +73,18 @@ final class AgentActivityLogTests: XCTestCase {
         XCTAssertEqual(entry.undoTarget, .tasks([taskID]))
     }
 
+    func testRememberHasARecordUndoTargetButForgettingIsNotUndoable() {
+        let store = AgentStore()
+        let id = UUID()
+        store.consume(actionResult(toolName: "remember", summary: "已记住：短答",
+                                   data: ["record_id": id.uuidString.lowercased(), "text": "短答"]))
+        XCTAssertEqual(store.activityLog.first?.undoTarget, .records([id]))
+        XCTAssertEqual(store.activityLog.first?.title, "已记住「短答」")
+        let count = store.activityLog.count
+        store.consume(actionResult(toolName: "forget_memory", summary: "已遗忘：短答"))
+        XCTAssertEqual(store.activityLog.count, count)
+    }
+
     func testCreatingARecordIsLoggedWithAnUndoTarget() {
         let store = AgentStore()
         let recordID = UUID()

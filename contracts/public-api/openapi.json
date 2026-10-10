@@ -3574,7 +3574,8 @@
           "question",
           "checklist",
           "knowledge",
-          "fetal_movement"
+          "fetal_movement",
+          "memory"
         ],
         "title": "RecordType"
       },

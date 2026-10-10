@@ -248,6 +248,8 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
     let taps: [Int]?
     /// 只在为 true 时编码（可选值为 nil 时不输出），解码缺省按 false。
     let reportedLess: Bool?
+    let kind: String?
+    let text: String?
 
     init(
         symptoms: [String]? = nil,
@@ -278,7 +280,9 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
         target: Int? = nil,
         outcome: String? = nil,
         taps: [Int]? = nil,
-        reportedLess: Bool? = nil
+        reportedLess: Bool? = nil,
+        kind: String? = nil,
+        text: String? = nil
     ) {
         self.symptoms = symptoms
         self.severity = severity
@@ -309,6 +313,8 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
         self.outcome = outcome
         self.taps = taps
         self.reportedLess = reportedLess
+        self.kind = kind
+        self.text = text
     }
 
     enum CodingKeys: String, CodingKey {
@@ -321,12 +327,16 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
         case category, form, ingredients, steps, verdict, reason, body, purposes
         case itemID = "item_id"
         case count, target, outcome, taps
+        case kind, text
         case durationSeconds = "duration_seconds"
         case reportedLess = "reported_less"
     }
 
     func recordData(for type: RecordType) -> RecordStructuredData {
         switch type {
+        case .memory:
+            guard let kind, let text else { return .unknown }
+            return .memory(MemoryRecordData(kind: MemoryKind(rawValue: kind) ?? .unknown, text: text))
         case .symptom:
             guard let symptoms, let severity else { return .unknown }
             return .symptom(SymptomRecordData(symptoms: symptoms, severity: severity, note: note))
@@ -371,6 +381,8 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
 
     init(recordData: RecordStructuredData) {
         switch recordData {
+        case let .memory(data):
+            self.init(kind: data.kind.rawValue, text: data.text)
         case let .symptom(data):
             self.init(symptoms: data.symptoms, severity: data.severity, note: data.note)
         case let .checkup(data):

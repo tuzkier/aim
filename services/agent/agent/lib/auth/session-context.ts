@@ -6,7 +6,7 @@ export type AimScope = {
   pregnancyId: string;
 };
 
-type AuthenticatedSessionContext = Pick<SessionContext, "session">;
+type AuthenticatedSessionContext = { session: Pick<SessionContext["session"], "id" | "auth"> };
 
 function requiredAttribute(
   attributes: Readonly<Record<string, string | readonly string[]>> | undefined,

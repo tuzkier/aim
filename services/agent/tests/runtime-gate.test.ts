@@ -89,6 +89,7 @@ test("compiled runtime exposes only the intended root and specialist tools", asy
     "create_task",
     "delete_task",
     "echo_context",
+    "forget_memory",
     "get_current_time",
     "get_guidance",
     "get_library_entry",
@@ -97,6 +98,7 @@ test("compiled runtime exposes only the intended root and specialist tools", asy
     "list_records",
     "list_tasks",
     "record_pregnancy_fact",
+    "remember",
     "reschedule_task",
     "undo_operation",
   ];

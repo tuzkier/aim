@@ -24,7 +24,8 @@ export class BusinessApiError extends Error {
   }
 }
 
-type ToolContextLike = Pick<ToolContext, "session" | "callId"> &
+type ToolContextLike = Pick<ToolContext, "callId"> &
+  { session: Pick<ToolContext["session"], "id" | "auth"> } &
   Partial<Pick<ToolContext, "abortSignal">>;
 
 function apiBaseUrl(): string {

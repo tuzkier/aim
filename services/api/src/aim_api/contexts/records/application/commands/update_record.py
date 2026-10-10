@@ -11,7 +11,7 @@ from aim_api.contexts.records.domain.errors import (
     RecordNotFound,
     RecordValidationError,
 )
-from aim_api.contexts.records.domain.record import Record, RecordVisibility
+from aim_api.contexts.records.domain.record import Record, RecordType, RecordVisibility
 
 
 @dataclass(frozen=True, slots=True)
@@ -56,6 +56,9 @@ async def execute(command: UpdateRecordCommand, uow: RecordsUnitOfWork) -> Recor
     Record._validate_payload(
         record.record_type, record.structured_data, record.content, record.title
     )
+    if record.record_type is RecordType.memory:
+        record.structured_data = Record._with_defaults(record.record_type, record.structured_data)
+        record.title = record.structured_data["text"][:40]
     record.assert_attachment_refs_valid()
     record.updated_at = command.now or datetime.now(UTC)
     await uow.repository.save_record(record, command.account_id)

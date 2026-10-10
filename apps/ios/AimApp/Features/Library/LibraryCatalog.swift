@@ -32,6 +32,7 @@ enum LibraryCategoryID: String, CaseIterable, Identifiable, Sendable {
     case preparation
     case safety
     case fetalMovement
+    case memories
 
     var id: String { rawValue }
 
@@ -45,6 +46,7 @@ enum LibraryCategoryID: String, CaseIterable, Identifiable, Sendable {
         case .preparation: "待产准备"
         case .safety: "危险信号"
         case .fetalMovement: "胎动"
+        case .memories: "AIM 记得的事"
         }
     }
 
@@ -58,6 +60,7 @@ enum LibraryCategoryID: String, CaseIterable, Identifiable, Sendable {
         case .preparation: "suitcase"
         case .safety: "exclamationmark.triangle"
         case .fetalMovement: "hand.tap"
+        case .memories: "brain"
         }
     }
 
@@ -82,6 +85,10 @@ enum LibraryCategoryID: String, CaseIterable, Identifiable, Sendable {
         switch self {
         case .symptoms:
             return Self.symptomSummary(from: snapshot)
+        case .memories:
+            let memories = snapshot.records.filter { $0.type == .memory }
+            return LibrarySummary(headline: memories.isEmpty ? "把重要的事告诉 AIM" : "\(memories.count) 条记忆",
+                                  detail: memories.first?.title)
         case .checkups:
             let reports = snapshot.records.filter { $0.type == .checkup }
             let count = reports.count
@@ -154,6 +161,7 @@ enum LibraryCategoryID: String, CaseIterable, Identifiable, Sendable {
         switch self {
         case .checkups: type = .checkup
         case .symptoms: type = .symptom
+        case .memories: type = .memory
         default: return nil
         }
         let recent = snapshot.records
@@ -259,6 +267,7 @@ enum LibraryCatalog {
         LibraryCategory(id: .symptoms, isBanner: false),
         LibraryCategory(id: .questions, isBanner: false),
         LibraryCategory(id: .fetalMovement, isBanner: false),
+        LibraryCategory(id: .memories, isBanner: false),
         LibraryCategory(id: .paperwork, isBanner: false),
         LibraryCategory(id: .preparation, isBanner: false),
         LibraryCategory(id: .safety, isBanner: true),

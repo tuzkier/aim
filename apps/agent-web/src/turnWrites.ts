@@ -2,6 +2,8 @@ export type WriteKind = "task" | "record" | "knowledge";
 
 /** 写工具影响到的原生页面。只读工具不在表里。 */
 export const WRITE_KINDS: Record<string, WriteKind[]> = {
+  remember: ["record"],
+  forget_memory: ["record"],
   create_task: ["task"],
   complete_task: ["task"],
   reschedule_task: ["task"],

@@ -1,4 +1,5 @@
 import { AskQuestionUI } from "./AskQuestion";
+import { RememberUI, ForgetMemoryUI } from "./Memory";
 import { AssignTaskUI } from "./AssignTask";
 import { CompleteTaskUI } from "./CompleteTask";
 import { CreateCheckupReportUI } from "./CreateCheckupReport";
@@ -20,6 +21,8 @@ import { RescheduleTaskUI } from "./RescheduleTask";
  */
 export const ToolRenderers = () => (
   <>
+    <RememberUI />
+    <ForgetMemoryUI />
     <CreateKnowledgeUI />
     <CreateCheckupReportUI />
     <CreateTaskUI />

@@ -9,6 +9,8 @@ from aim_api.contexts.records.domain.record import Record, RecordType
 
 
 class RecordsRepositoryPort(Protocol):
+    async def reserve_memory_slot(self, family_id: UUID) -> None: ...
+
     async def add_record(self, record: Record) -> None: ...
 
     async def get_visible_record(

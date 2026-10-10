@@ -43,7 +43,7 @@ async def stage(command: CreateRecordCommand, uow: RecordsUnitOfWork) -> Record:
     要和别的记录同进同退时用它（例如产检报告与随它攒下的问题），
     由调用方在整批写完后自己 commit；中途出错由调用方 rollback。
     """
-    pregnancy =await uow.pregnancy_ownership.get_pregnancy(command.pregnancy_id)
+    pregnancy = await uow.pregnancy_ownership.get_pregnancy(command.pregnancy_id)
     if pregnancy is None:
         raise RecordNotFound("pregnancy does not exist")
     if pregnancy.family_id != command.family_id:
@@ -65,6 +65,8 @@ async def stage(command: CreateRecordCommand, uow: RecordsUnitOfWork) -> Record:
         attachment_refs=[str(attachment_id) for attachment_id in command.attachment_ids],
         now=command.now,
     )
+    if command.record_type is RecordType.memory:
+        await uow.repository.reserve_memory_slot(command.family_id)
     await uow.repository.add_record(record)
     if command.attachment_ids:
         await uow.attachments.attach(list(command.attachment_ids), record.id)

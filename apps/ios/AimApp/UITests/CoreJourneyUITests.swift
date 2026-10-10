@@ -665,6 +665,118 @@ final class CoreJourneyUITests: XCTestCase {
         )
     }
 
+    /// 直接记忆有明确的小卡和撤销；遗忘必须由用户在卡片上确认。
+    func testAIMMemoryCardsSupportUndoAndConfirmedForgetting() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-reset-session"]
+        app.launch()
+        registerNewAccount(in: app)
+        completePregnancySetup(in: app)
+        app.tabBars.buttons["AIM"].tap()
+        let composer = app.textViews.firstMatch
+        XCTAssertTrue(composer.waitForExistence(timeout: 30))
+        composer.tap()
+        composer.typeText("请记住一个明确偏好：我喜欢你称呼我青禾。")
+        app.buttons["发送"].tap()
+        let undo = app.buttons["撤销记忆"]
+        XCTAssertTrue(undo.waitForExistence(timeout: 90), "应该显示已记住的小卡和撤销入口")
+        XCTAssertTrue(app.staticTexts["已记住"].exists)
+        undo.tap()
+        XCTAssertTrue(app.staticTexts["已撤销记忆"].waitForExistence(timeout: 15))
+        // 撤销后另开会话，避免把旧聊天中已撤销的称呼当作仍存在的记忆。
+        app.buttons["agent-new-conversation"].tap()
+        composer.tap()
+        composer.typeText("请记住：我喜欢你称呼我阿禾。这是一个以后有用的明确偏好。")
+        app.buttons["发送"].tap()
+        XCTAssertTrue(app.staticTexts["已记住"].waitForExistence(timeout: 90))
+        let first = XCTAttachment(screenshot: app.screenshot())
+        first.name = "AIM已记住与直接撤销入口"
+        first.lifetime = .keepAlways
+        add(first)
+        app.buttons["agent-new-conversation"].tap()
+        composer.tap()
+        composer.typeText("请遗忘我喜欢被称呼为阿禾这条偏好。")
+        app.buttons["发送"].tap()
+        let forget = app.buttons["遗忘"]
+        XCTAssertTrue(forget.waitForExistence(timeout: 90), "遗忘应该先出现确认卡")
+        let confirmation = XCTAttachment(screenshot: app.screenshot())
+        confirmation.name = "AIM遗忘确认卡"
+        confirmation.lifetime = .keepAlways
+        add(confirmation)
+        forget.tap()
+        let forgotten = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "已遗忘：")).firstMatch
+        XCTAssertTrue(forgotten.waitForExistence(timeout: 30))
+        app.tabBars.buttons["资料库"].tap()
+        let memories = app.buttons["library-card-memories"]
+        reveal(memories, in: app)
+        memories.tap()
+        XCTAssertTrue(app.staticTexts["memory-empty"].waitForExistence(timeout: 15))
+    }
+
+    /// 记忆可以由人直接管理；新会话读取的是保存后的事实，不靠上一段聊天。
+    func testMemoryCanBeEditedMadePrivateRecalledAndDeleted() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-reset-session"]
+        app.launch()
+        registerNewAccount(in: app)
+        completePregnancySetup(in: app)
+        app.tabBars.buttons["资料库"].tap()
+        let memories = app.buttons["library-card-memories"]
+        reveal(memories, in: app)
+        memories.tap()
+        let addMemory = app.buttons["memory-add"]
+        XCTAssertTrue(addMemory.waitForExistence(timeout: 10))
+        addMemory.tap()
+        let text = app.textFields["memory-text"]
+        XCTAssertTrue(text.waitForExistence(timeout: 5), "应该打开添加记忆的表单")
+        text.tap()
+        text.typeText("我希望被称呼为木木")
+        app.buttons["memory-save"].tap()
+
+        let row = app.buttons["memory-row"].firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 10))
+        row.tap()
+        app.buttons["memory-edit"].tap()
+        XCTAssertTrue(text.waitForExistence(timeout: 5), "应该打开编辑记忆的表单")
+        // 点到文字末尾再退格；默认 tap 会把光标放在开头，不能删除后面的原文。
+        text.coordinate(withNormalizedOffset: CGVector(dx: 0.98, dy: 0.5)).tap()
+        text.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 40))
+        text.typeText("我希望被称呼为小木")
+        app.segmentedControls["memory-visibility"].buttons["仅自己可见"].tap()
+        app.buttons["memory-save"].tap()
+        XCTAssertTrue(app.staticTexts["memory-detail-text"].waitForExistence(timeout: 10))
+        XCTAssertEqual(app.staticTexts["memory-detail-text"].label, "我希望被称呼为小木")
+        XCTAssertTrue(app.staticTexts["仅自己可见"].exists)
+        let saved = XCTAttachment(screenshot: app.screenshot())
+        saved.name = "记忆编辑后的私有详情"
+        saved.lifetime = .keepAlways
+        self.add(saved)
+
+        app.tabBars.buttons["AIM"].tap()
+        let composer = app.textViews.firstMatch
+        XCTAssertTrue(composer.waitForExistence(timeout: 30))
+        app.buttons["agent-new-conversation"].tap()
+        composer.tap()
+        composer.typeText("你记得我喜欢的称呼是什么吗？直接告诉我称呼就好。")
+        app.buttons["发送"].tap()
+        let recall = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "小木")).firstMatch
+        XCTAssertTrue(recall.waitForExistence(timeout: 90), "新会话应当读到编辑后的私有记忆")
+        XCTAssertFalse(recall.label.contains("木木"), "新会话不应沿用编辑前的称呼")
+        let recalled = XCTAttachment(screenshot: app.screenshot())
+        recalled.name = "新会话读取更新后的记忆"
+        recalled.lifetime = .keepAlways
+        self.add(recalled)
+
+        app.tabBars.buttons["资料库"].tap()
+        let delete = app.buttons["memory-delete"]
+        XCTAssertTrue(delete.waitForExistence(timeout: 10))
+        delete.tap()
+        let confirm = app.buttons["删除"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 5))
+        confirm.tap()
+        XCTAssertTrue(app.staticTexts["memory-empty"].waitForExistence(timeout: 15), "删除后应当显示空状态")
+    }
+
     /// 手动记一份带胎心和一项异常化验的报告，在资料库点进报告详情，
     /// 把异常项加入想问医生，想问医生页能看到这条问题。照片选择器在 UI 测试里不好驱动，不选照片。
     func testCheckupReportFlagsCanBeAddedToDoctorQuestions() throws {

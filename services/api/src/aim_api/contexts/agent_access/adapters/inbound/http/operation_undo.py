@@ -42,7 +42,7 @@ from aim_api.platform.http.errors import ConflictError, ForbiddenError, NotFound
 
 #: 撤销「新建」即删除；撤销对待办的修改即还原那条 task change。
 _DELETE_TASK = {"create_task"}
-_DELETE_RECORD = {"create_record", "create_knowledge", "create_checkup_report"}
+_DELETE_RECORD = {"create_record", "create_knowledge", "create_checkup_report", "remember"}
 _REVERT_CHANGE = {"complete_task", "reschedule_task", "assign_task"}
 
 
@@ -64,6 +64,8 @@ async def undo_invocation(
         raise ConflictError("孕期信息不能撤销，直接告诉我正确的值即可")
     if tool == "delete_task":
         raise ConflictError("删除的待办不能撤销，需要的话重新建一条")
+    if tool == "forget_memory":
+        raise ConflictError("遗忘的记忆不能撤销，需要的话重新记下")
 
     if tool in _DELETE_TASK:
         # 批量新建的结果在 data.tasks 里；单条的旧记录只有 data.task_id。

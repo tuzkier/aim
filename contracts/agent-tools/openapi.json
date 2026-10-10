@@ -390,6 +390,129 @@
         }
       }
     },
+    "/internal/agent-tools/list-memories": {
+      "post": {
+        "tags": [
+          "agent-tools"
+        ],
+        "summary": "List Memories Endpoint",
+        "operationId": "list_memories_endpoint_internal_agent_tools_list_memories_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ListMemoriesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/internal/agent-tools/remember": {
+      "post": {
+        "tags": [
+          "agent-tools"
+        ],
+        "summary": "Remember Endpoint",
+        "operationId": "remember_endpoint_internal_agent_tools_remember_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RememberRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/internal/agent-tools/forget-memory": {
+      "post": {
+        "tags": [
+          "agent-tools"
+        ],
+        "summary": "Forget Memory Endpoint",
+        "operationId": "forget_memory_endpoint_internal_agent_tools_forget_memory_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgetMemoryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/internal/agent-tools/create-knowledge": {
       "post": {
         "tags": [
@@ -1510,6 +1633,25 @@
         ],
         "title": "FamilyTaskCountResponse"
       },
+      "ForgetMemoryRequest": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "approved": {
+            "type": "boolean",
+            "title": "Approved",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "ForgetMemoryRequest"
+      },
       "GeneratePlanRequest": {
         "properties": {
           "as_of": {
@@ -1712,6 +1854,11 @@
         },
         "type": "object",
         "title": "ListLibraryRequest"
+      },
+      "ListMemoriesRequest": {
+        "properties": {},
+        "type": "object",
+        "title": "ListMemoriesRequest"
       },
       "ListRecordsRequest": {
         "properties": {
@@ -2213,7 +2360,8 @@
           "question",
           "checklist",
           "knowledge",
-          "fetal_movement"
+          "fetal_movement",
+          "memory"
         ],
         "title": "RecordType"
       },
@@ -2274,6 +2422,34 @@
           "role"
         ],
         "title": "RegisterRequest"
+      },
+      "RememberRequest": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "allergy",
+              "history",
+              "medication",
+              "care",
+              "preference",
+              "other"
+            ],
+            "title": "Kind"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "text"
+        ],
+        "title": "RememberRequest"
       },
       "RenameFamilyRequest": {
         "properties": {

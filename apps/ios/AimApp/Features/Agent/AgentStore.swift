@@ -465,11 +465,14 @@ struct AgentToolOutcome: Equatable, Sendable {
                 canUndo: true,
                 undoTarget: taskIDs.isEmpty ? nil : .tasks(taskIDs)
             )
-        case "create_record", "create_checkup_report":
+        case "create_record", "create_checkup_report", "remember":
             let recordIDs = Self.recordIDs(in: data)
-            let title = toolName == "create_checkup_report"
-                ? "已记下「\(data["title"]?.string ?? "产检报告")」"
-                : "已记录"
+            let title: String
+            switch toolName {
+            case "create_checkup_report": title = "已记下「\(data["title"]?.string ?? "产检报告")」"
+            case "remember": title = "已记住「\(data["text"]?.string ?? "这件事")」"
+            default: title = "已记录"
+            }
             activity = AgentActivity(
                 id: UUID(),
                 title: title,
@@ -477,7 +480,7 @@ struct AgentToolOutcome: Equatable, Sendable {
                 canUndo: true,
                 undoTarget: recordIDs.isEmpty ? nil : .records(recordIDs)
             )
-        case "delete_task", "delete_record":
+        case "delete_task", "delete_record", "forget_memory":
             // 撤销本身不该再产生一条可撤销的台账。
             activity = nil
         default:

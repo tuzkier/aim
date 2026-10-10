@@ -10,6 +10,7 @@ extension RecordType {
         case .checklist: "清单"
         case .knowledge: "资料"
         case .fetalMovement: "胎动"
+        case .memory: "AIM 记得的事"
         case .unknown: "记录"
         }
     }
@@ -23,6 +24,7 @@ extension RecordType {
         case .checklist: "checklist"
         case .knowledge: "books.vertical"
         case .fetalMovement: "hand.tap"
+        case .memory: "brain"
         case .unknown: "doc"
         }
     }
@@ -42,6 +44,7 @@ extension RecordItem {
     @MainActor
     var displayTitle: String {
         switch structuredData {
+        case let .memory(data): data.text
         case let .symptom(data): data.symptoms.joined(separator: "、")
         // AIM 建的报告常常没有检查项目，用它的标题（如「10月3日 产检报告」）。
         case let .checkup(data): data.examItems?.trimmed.nilIfEmpty ?? title?.trimmed.nilIfEmpty ?? "产检报告"
@@ -72,6 +75,7 @@ extension RecordItem {
 
     var displaySummary: String {
         switch structuredData {
+        case let .memory(data): return data.kind.title
         case let .symptom(data):
             let note = data.note?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             return "程度 \(data.severity)" + (note.isEmpty ? "" : " · \(note)")

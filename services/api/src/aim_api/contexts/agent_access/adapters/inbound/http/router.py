@@ -71,11 +71,12 @@ from aim_api.contexts.pregnancy.domain.fact import FactSource
 from aim_api.contexts.records.adapters.outbound.persistence.repositories import (
     SqlAlchemyRecordsUnitOfWork,
 )
-from aim_api.contexts.records.application.commands import create_record
+from aim_api.contexts.records.application.commands import create_record, delete_record
 from aim_api.contexts.records.application.commands.create_record import CreateRecordCommand
-from aim_api.contexts.records.domain.errors import RecordValidationError
+from aim_api.contexts.records.application.commands.delete_record import DeleteRecordCommand
 from aim_api.contexts.records.application.queries import list_records
 from aim_api.contexts.records.application.queries.list_records import ListRecordsQuery
+from aim_api.contexts.records.domain.errors import RecordValidationError
 from aim_api.contexts.records.domain.record import RecordType, RecordVisibility
 from aim_api.platform.http.errors import (
     ApprovalRequiredError,
@@ -284,8 +285,22 @@ def _context(request: Request) -> AgentToolContext:
 # 档位在服务端声明，而不是看调用方传来的 approved 标志——否则「执行前确认」
 # 那一档等于形同虚设，任何调用方带上 approved: true 就能绕过。
 DIRECT_EXECUTION_TOOLS = frozenset(
-    {"create_task", "create_record", "complete_task", "undo_operation"}
+    {"create_task", "create_record", "complete_task", "undo_operation", "remember"}
 )
+
+
+class RememberRequest(BaseModel):
+    kind: Literal["allergy", "history", "medication", "care", "preference", "other"]
+    text: str = Field(min_length=1, max_length=80)
+
+
+class ListMemoriesRequest(BaseModel):
+    pass
+
+
+class ForgetMemoryRequest(BaseModel):
+    id: UUID
+    approved: bool = False
 
 
 async def _run(
@@ -461,6 +476,8 @@ async def _list_records(session, context: AgentToolContext, body: dict[str, Any]
     normalized = [
         {
             "id": str(record.id),
+            **({"author_account_id": str(record.author_account_id)}
+               if record.record_type is RecordType.memory else {}),
             "type": record.record_type.value,
             "occurred_at": record.occurred_at.isoformat(),
             "visibility": record.visibility.value,
@@ -472,6 +489,43 @@ async def _list_records(session, context: AgentToolContext, body: dict[str, Any]
         for record in records
     ]
     return ({"records": normalized, "count": len(normalized)}, f"已读取 {len(normalized)} 条孕期记录")
+
+
+async def _list_memories(session, context: AgentToolContext, body: dict[str, Any]):
+    return await _list_records(session, context, {"type": "memory"})
+
+
+async def _remember(session, context: AgentToolContext, body: dict[str, Any]):
+    record = await create_record.execute(
+        CreateRecordCommand(
+            pregnancy_id=context.pregnancy_id, family_id=context.family_id,
+            account_id=context.account_id, record_type=RecordType.memory,
+            occurred_at=datetime.now(UTC), visibility=RecordVisibility.family,
+            structured_data={"kind": body["kind"], "text": body["text"]},
+        ),
+        SqlAlchemyRecordsUnitOfWork(session),
+    )
+    text = record.structured_data["text"]
+    return ({"record_id": str(record.id), "kind": body["kind"], "text": text,
+             "title": record.title}, f"已记住：{text}")
+
+
+async def _forget_memory(session, context: AgentToolContext, body: dict[str, Any]):
+    uow = SqlAlchemyRecordsUnitOfWork(session)
+    record = await uow.repository.get_visible_record(
+        UUID(body["id"]), context.family_id, context.account_id
+    )
+    if record is None or record.pregnancy_id != context.pregnancy_id:
+        raise RecordValidationError("找不到这条记忆")
+    if record.record_type is not RecordType.memory:
+        raise RecordValidationError("这个工具只能遗忘记忆，不能删除其他记录")
+    await delete_record.execute(
+        DeleteRecordCommand(record_id=record.id, pregnancy_id=context.pregnancy_id,
+                            family_id=context.family_id, account_id=context.account_id),
+        uow,
+    )
+    return ({"record_id": str(record.id), "text": record.structured_data["text"]},
+            f"已遗忘：{record.structured_data['text']}")
 
 
 async def _list_library(session, context: AgentToolContext, body: dict[str, Any]):
@@ -891,6 +945,21 @@ async def reschedule_task_endpoint(request: Request, payload: RescheduleTaskRequ
 @router.post("/create-task", response_model=ToolResult, include_in_schema=False)
 async def create_task_endpoint(request: Request, payload: CreateTaskRequest):
     return await _run(request, "create_task", payload, _create_task, write=True)
+
+
+@router.post("/list-memories", response_model=ToolResult, include_in_schema=False)
+async def list_memories_endpoint(request: Request, payload: ListMemoriesRequest):
+    return await _run(request, "list_memories", payload, _list_memories)
+
+
+@router.post("/remember", response_model=ToolResult, include_in_schema=False)
+async def remember_endpoint(request: Request, payload: RememberRequest):
+    return await _run(request, "remember", payload, _remember, write=True)
+
+
+@router.post("/forget-memory", response_model=ToolResult, include_in_schema=False)
+async def forget_memory_endpoint(request: Request, payload: ForgetMemoryRequest):
+    return await _run(request, "forget_memory", payload, _forget_memory, write=True)
 
 
 @router.post("/create-knowledge", response_model=ToolResult, include_in_schema=False)
