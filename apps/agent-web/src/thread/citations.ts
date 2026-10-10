@@ -10,10 +10,12 @@ export type CitationPiece =
   | { kind: "record"; id: string; title: string };
 
 /**
- * 编号不含空白和方括号：模型写坏一个标记（没闭合）时，不能把后面的正文连同下一个
- * 合法标记一起吞进编号里。标题可以为空、可以含 `|`，但不含方括号。
+ * 编号部分不含方括号、竖线和换行：模型写坏一个标记（没闭合）时，不能把后面的正文
+ * 连同下一个合法标记一起吞进编号里，也不能跨行。编号里的空白先放进来，trim 后再校验——
+ * 两侧多写的空格（`[[ref: checkup.ogtt |…]]`）照常成胶囊；中间有空格的编号不合法，
+ * 只留标题，免得方括号原样露出来。标题可以为空、可以含 `|`，但不含方括号。
  */
-const MARK = /\[\[(ref|record):([^\]|\s\[]+)(?:\|([^\[\]]*))?\]\]/g;
+const MARK = /\[\[(ref|record):([^\]|\[\n]+)(?:\|([^\[\]]*))?\]\]/g;
 const REF_ID = /^[a-z]+\.[a-z0-9-]+$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -26,7 +28,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  * 已经不可能闭合成标记的残片照常显示，免得把正文藏掉。
  */
 const PENDING =
-  /\[\[(?:ref|record):[^\]|\s\[]*(?:\|([^\[\]]*))?$|\[(?:\[(?:r(?:e(?:f|c(?:o(?:r(?:d)?)?)?)?)?)?)?$/;
+  /\[\[(?:ref|record):[^\]|\[\n]*(?:\|([^\[\]]*))?$|\[(?:\[(?:r(?:e(?:f|c(?:o(?:r(?:d)?)?)?)?)?)?)?$/;
 
 export const parseCitations = (text: string): CitationPiece[] => {
   const pieces: CitationPiece[] = [];
@@ -41,7 +43,8 @@ export const parseCitations = (text: string): CitationPiece[] => {
     if (valid && title) {
       pieces.push({ kind: kind as "ref" | "record", id, title });
     } else {
-      pieces.push({ kind: "text", text: title || id });
+      // 记录编号是内部 UUID，对人没有意义，缺标题时只说「记录」；百科编号可读，仍用编号兜底。
+      pieces.push({ kind: "text", text: title || (kind === "record" ? "记录" : id) });
     }
     last = index + whole.length;
   }

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { parseCitations, parseInline } from "./citations";
 
+const RECORD_ID = "0b6c1a2e-1111-4a2b-9c3d-123456789abc";
+
 describe("parseCitations", () => {
   it("切出百科与记录引用", () => {
     expect(parseCitations("糖耐量前要空腹[[ref:checkup.ogtt|糖耐量]]。上次结果[[record:0b6c1a2e-1111-4a2b-9c3d-123456789abc|10月3日产检]]")).toEqual([
@@ -40,6 +42,24 @@ describe("parseCitations", () => {
     ]);
   });
 
+  it("编号两侧带空白时 trim 后照常成胶囊", () => {
+    expect(parseCitations("[[ref: checkup.ogtt |糖耐量]]")).toEqual([
+      { kind: "ref", id: "checkup.ogtt", title: "糖耐量" },
+    ]);
+    expect(parseCitations(`[[record: ${RECORD_ID} |10月3日产检]]`)).toEqual([
+      { kind: "record", id: RECORD_ID, title: "10月3日产检" },
+    ]);
+  });
+
+  it("编号中间有空白时不合法，只显示标题、不露方括号", () => {
+    expect(parseCitations("[[ref:bad id|标题]]")).toEqual([{ kind: "text", text: "标题" }]);
+  });
+
+  it("记录引用缺标题时显示「记录」，不露出编号", () => {
+    expect(parseCitations(`[[record:${RECORD_ID}]]`)).toEqual([{ kind: "text", text: "记录" }]);
+    expect(parseCitations(`[[record:${RECORD_ID}|]]`)).toEqual([{ kind: "text", text: "记录" }]);
+  });
+
   it("没闭合的标记不吞掉后面的正文和合法引用", () => {
     expect(parseCitations("[[ref:bad 正文[[ref:checkup.ogtt|糖耐量]]")).toEqual([
       { kind: "text", text: "[[ref:bad 正文" },
@@ -52,6 +72,10 @@ describe("parseCitations：流式中写到一半的标记", () => {
   it("编号还没写完时整段隐藏", () => {
     expect(parseCitations("前文[[ref:che")).toEqual([{ kind: "text", text: "前文" }]);
     expect(parseCitations("前文[[record:0b6c1a2e-11")).toEqual([{ kind: "text", text: "前文" }]);
+  });
+
+  it("编号前带空白时也先隐藏", () => {
+    expect(parseCitations("前文[[ref: che")).toEqual([{ kind: "text", text: "前文" }]);
   });
 
   it("已写出标题时只显示标题文字，不成胶囊", () => {
@@ -80,7 +104,6 @@ describe("parseCitations：流式中写到一半的标记", () => {
   });
 });
 
-const RECORD_ID = "0b6c1a2e-1111-4a2b-9c3d-123456789abc";
 
 /** 把结果里所有文字片段拼起来，用来断言标记符号没有漏到界面上。 */
 const visibleText = (spans: ReturnType<typeof parseInline>): string =>
