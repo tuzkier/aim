@@ -22,24 +22,39 @@ struct FetalMovementCounterView: View {
     let agentStore: AgentStore
     let onClose: () -> Void
 
+    /// 为什么进安全提示页：文案相同的部分不变，「问问 AIM」的问题按原因区分。
+    private enum SafetyReason: Equatable {
+        /// 满 2 小时不足 10 次。
+        case under
+        /// 计数中自己点了「胎动明显少了？」。
+        case less
+    }
+
     private enum Phase: Equatable {
         case counting
-        case finished(FetalMovementCompletion)
-        case safety(title: String, body: String)
+        /// 本地算出的结果，不等保存；保存回来的完整结果在 `completion` 里。
+        case finished(FetalMovementResult)
+        case safety(SafetyReason)
     }
 
     @State private var phase: Phase = .counting
+    /// 后台保存回来的结果，用来补上「和平时比」。保存期间为 nil。
+    @State private var completion: FetalMovementCompletion?
+    /// 后台保存进行中：期间「重试」显示为进度，不提示没保存上。
+    @State private var saving = false
     @State private var tapCount = 0
     @State private var ignoredCount = 0
     @State private var confirmingEnd = false
     @State private var showingGuide = false
     @State private var showingAgent = false
-    /// 已经调过 `store.start()`。之后 `active` 仍为 nil，说明计数没法开始（例如还没绑定账号与孕期）。
+    /// 已经调过 `store.start()`。只调一次：从「问问 AIM」返回时 onAppear 会再跑，
+    /// 那时计数已经结束，再 start 就会悄悄新建一个计数挂在本地。
+    /// 调过之后 `active` 仍为 nil，说明计数没法开始（例如还没绑定账号与孕期）。
     @State private var startAttempted = false
-    /// 正在结束：`finish()` 一开始就清掉 `active`，等待保存期间不能误判成「无法开始」，也不能重复结束。
+    /// 已经开始结束：到点自动结束、第 10 次点击、点「胎动明显少了？」可能挨着发生，只结束一次。
     @State private var ending = false
 
-    /// 计数阶段却没有进行中的计数，而且不是因为正在结束——给出提示，别留一个点了没反应的大按钮。
+    /// 计数阶段却没有进行中的计数——给出提示，别留一个点了没反应的大按钮。
     private var unableToStart: Bool {
         phase == .counting && startAttempted && !ending && store.active == nil
     }
@@ -49,16 +64,9 @@ struct FetalMovementCounterView: View {
             Group {
                 switch phase {
                 case .counting:
-                    if unableToStart {
-                        unavailable
-                    } else if ending {
-                        // 保存要等网络；这期间进行中的计数已清掉，别让大按钮显示成 0。
-                        ProgressView("正在记录…")
-                    } else {
-                        counting
-                    }
-                case let .finished(completion): finished(completion)
-                case let .safety(title, body): safety(title: title, body: body)
+                    if unableToStart { unavailable } else { counting }
+                case let .finished(result): finished(result)
+                case let .safety(reason): safety(reason)
                 }
             }
             .padding(.horizontal, AimMetrics.space16)
@@ -72,6 +80,7 @@ struct FetalMovementCounterView: View {
             }
         }
         .onAppear {
+            guard !startAttempted, phase == .counting else { return }
             store.start()
             startAttempted = true
         }
@@ -80,7 +89,7 @@ struct FetalMovementCounterView: View {
             AgentView(store: agentStore) { showingAgent = false }
         }
         .confirmationDialog("现在结束吗？这次会记为未数完。", isPresented: $confirmingEnd, titleVisibility: .visible) {
-            Button("结束并记录") { Task { await end() } }
+            Button("结束并记录") { end() }
             Button("继续数", role: .cancel) {}
         }
     }
@@ -99,9 +108,7 @@ struct FetalMovementCounterView: View {
         SwiftUI.TimelineView(.periodic(from: .now, by: 1)) { context in
             let counter = store.active
             VStack(spacing: AimMetrics.space16) {
-                Button {
-                    phase = .safety(title: FetalMovementCopy.lessTitle, body: FetalMovementCopy.lessBody)
-                } label: {
+                Button { reportLess() } label: {
                     Label("胎动明显少了？", systemImage: "exclamationmark.triangle")
                         .font(.subheadline.weight(.medium))
                         .foregroundStyle(Color.aimDanger)
@@ -126,7 +133,10 @@ struct FetalMovementCounterView: View {
                 }
                 .buttonStyle(.plain)
                 .sensoryFeedback(.impact(weight: .medium), trigger: tapCount)
-                .sensoryFeedback(.impact(weight: .light), trigger: ignoredCount)
+                // 计上一次时 ignoredCount 会清零，那次不能再轻震一下。
+                .sensoryFeedback(trigger: ignoredCount) { old, new in
+                    new > old ? .impact(weight: .light) : nil
+                }
                 .accessibilityIdentifier("fetal-movement-tap")
 
                 if ignoredCount > 0 {
@@ -158,7 +168,7 @@ struct FetalMovementCounterView: View {
             .onChange(of: context.date) { _, now in
                 // 前台计时只负责刷新显示；满 2 小时的判断以开始时间为准，
                 // 从后台回来时第一次刷新就会结束。
-                if store.active?.isExpired(at: now) == true { Task { await end() } }
+                if store.active?.isExpired(at: now) == true { end() }
             }
         }
     }
@@ -167,34 +177,50 @@ struct FetalMovementCounterView: View {
         switch store.tap() {
         case .counted: tapCount += 1; ignoredCount = 0
         case .ignored: ignoredCount += 1
-        case .reachedTarget: tapCount += 1; Task { await end() }
-        case .expired: Task { await end() }
+        case .reachedTarget: tapCount += 1; end()
+        case .expired: end()
         }
     }
 
-    private func end() async {
-        // 到点自动结束与第 10 次点击可能同时触发，只结束一次。
+    /// 结果在本地先算出来，界面立刻切过去；保存在后台进行。
+    /// 保存要等网络（弱网下可能很久），安全提示不能等它。
+    private func end() {
+        guard !ending, let counter = store.active else { return }
+        ending = true
+        let result = counter.result(at: store.clock())
+        phase = result.outcome == .under ? .safety(.under) : .finished(result)
+        saveInBackground { await store.finish() }
+    }
+
+    /// 计数中点「胎动明显少了？」：先给安全提示，再善后——0 次丢弃，数过的记为未数完。
+    private func reportLess() {
         guard !ending else { return }
         ending = true
-        guard let completion = await store.finish() else {
-            ending = false
-            return
-        }
-        if completion.result.outcome == .under {
-            phase = .safety(title: FetalMovementCopy.underTitle, body: FetalMovementCopy.underBody)
-        } else {
-            phase = .finished(completion)
+        phase = .safety(.less)
+        saveInBackground { await store.abandonForSafety() }
+    }
+
+    private func saveInBackground(_ work: @escaping @MainActor () async -> FetalMovementCompletion?) {
+        saving = true
+        Task {
+            let done = await work()
+            completion = done
+            saving = false
+            // 本地算结果与 finish() 之间隔了一小会儿，正好跨过 2 小时时以保存的结果为准，补上安全提示。
+            if done?.result.outcome == .under, case .finished = phase { phase = .safety(.under) }
         }
     }
 
-    private func finished(_ completion: FetalMovementCompletion) -> some View {
-        VStack(alignment: .leading, spacing: AimMetrics.space16) {
-            Text(completion.result.outcome == .reached
-                 ? "\(completion.result.count) 次，用了 \(FetalMovementFormat.duration(completion.result.durationSeconds))"
-                 : "\(completion.result.count) 次 · 未数完")
+    private func finished(_ local: FetalMovementResult) -> some View {
+        let result = completion?.result ?? local
+        return VStack(alignment: .leading, spacing: AimMetrics.space16) {
+            Text(result.outcome == .reached
+                 ? "\(result.count) 次，用了 \(FetalMovementFormat.duration(result.durationSeconds))"
+                 : "\(result.count) 次 · 未数完")
                 .font(.title2.weight(.semibold))
                 .foregroundStyle(Color.aimTextPrimary)
-            if completion.isSlow, let baseline = completion.baselineSeconds {
+            // 「和平时比」要等保存前拉到的历史，回来后再补上。
+            if let completion, completion.isSlow, let baseline = completion.baselineSeconds {
                 Text(FetalMovementCopy.slow(duration: completion.result.durationSeconds, baseline: baseline))
                     .font(.subheadline)
                     .foregroundStyle(Color.aimAccent)
@@ -203,8 +229,7 @@ struct FetalMovementCounterView: View {
                 askAgentButton("我数胎动用了 \(FetalMovementFormat.duration(completion.result.durationSeconds))，比平时慢了一倍多，现在该怎么办？")
             }
             Text(FetalMovementCopy.recordedNote).font(.footnote).foregroundStyle(Color.aimTextSecondary)
-            // 以队列为准：重试成功后按钮随之消失；这次已保存但队列里还有旧的，也给重试。
-            if !store.unsaved.isEmpty { retryButton }
+            FetalMovementRetryButton(busy: saving)
             Button("完成", action: onClose)
                 .buttonStyle(.borderedProminent)
                 .accessibilityIdentifier("fetal-movement-done")
@@ -213,25 +238,24 @@ struct FetalMovementCounterView: View {
         .accessibilityIdentifier("fetal-movement-finished")
     }
 
-    private func safety(title: String, body: String) -> some View {
+    private func safety(_ reason: SafetyReason) -> some View {
         VStack(alignment: .leading, spacing: AimMetrics.space16) {
-            Label(title, systemImage: "exclamationmark.triangle.fill")
+            Label(reason == .under ? FetalMovementCopy.underTitle : FetalMovementCopy.lessTitle,
+                  systemImage: "exclamationmark.triangle.fill")
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(Color.aimDanger)
-            Text(body).font(.body).foregroundStyle(Color.aimTextPrimary)
-            askAgentButton("我感觉胎动比平时少了，现在该怎么办？")
-            if !store.unsaved.isEmpty { retryButton }
+            Text(reason == .under ? FetalMovementCopy.underBody : FetalMovementCopy.lessBody)
+                .font(.body).foregroundStyle(Color.aimTextPrimary)
+            askAgentButton(reason == .under
+                           ? "我数胎动 2 小时不到 10 次，现在该怎么办？"
+                           : "我感觉胎动比平时少了，现在该怎么办？")
+            FetalMovementRetryButton(busy: saving)
             Button("我知道了", action: onClose).buttonStyle(.borderedProminent)
         }
         .padding()
         .background(Color.aimDangerSoft, in: RoundedRectangle(cornerRadius: AimMetrics.radiusCard))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("fetal-movement-safety")
-    }
-
-    private var retryButton: some View {
-        Button("没保存上，重试") { Task { await store.saveUnsaved() } }
-            .accessibilityIdentifier("fetal-movement-retry")
     }
 
     private func askAgentButton(_ question: String) -> some View {
@@ -246,6 +270,22 @@ struct FetalMovementCounterView: View {
     private static func clock(_ seconds: TimeInterval) -> String {
         let total = Int(seconds)
         return String(format: "%02d:%02d", total / 60, total % 60)
+    }
+}
+
+/// 「有 N 次没保存上，重试」。保存进行中显示进度，不提示没保存上，也不给重复点。
+struct FetalMovementRetryButton: View {
+    @Environment(FetalMovementStore.self) private var store
+    /// 调用方自己发起的保存还在进行（例如刚结束的这次）。
+    var busy = false
+
+    var body: some View {
+        if busy || store.isSaving {
+            ProgressView("正在保存…")
+        } else if !store.unsaved.isEmpty {
+            Button("有 \(store.unsaved.count) 次没保存上，重试") { Task { await store.saveUnsaved() } }
+                .accessibilityIdentifier("fetal-movement-retry")
+        }
     }
 }
 

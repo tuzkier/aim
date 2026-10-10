@@ -35,7 +35,8 @@ final class FetalMovementStore {
     let dedupeInterval: TimeInterval
     private let defaults: UserDefaults
     private var scope: Scope?
-    private var isSaving = false
+    /// 正在把队列写到档案。界面据此把「重试」换成进度，免得保存途中还提示没保存上。
+    private(set) var isSaving = false
     /// 每次拉历史递增；用来丢掉比已采用的结果更旧的响应，免得并发拉取时旧结果盖掉新结果。
     private var reloadGeneration = 0
     private var appliedReloadGeneration = 0
@@ -170,6 +171,18 @@ final class FetalMovementStore {
         guard let scope else { return }
         active = nil
         persist(scope)
+    }
+
+    /// 计数中点「胎动明显少了？」：安全提示不等这里，这里只善后进行中的计数。
+    /// 一次都没数就丢掉；数过就照常结束——没满 2 小时记为「未数完」，已满 2 小时记为「不足 10 次」。
+    @discardableResult
+    func abandonForSafety() async -> FetalMovementCompletion? {
+        guard scope != nil, let counter = active else { return nil }
+        if counter.count == 0 {
+            discardActive()
+            return nil
+        }
+        return await finish()
     }
 
     func delete(_ session: FetalMovementSession) async {

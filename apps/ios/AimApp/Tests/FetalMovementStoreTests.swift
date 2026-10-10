@@ -102,6 +102,63 @@ final class FetalMovementStoreTests: XCTestCase {
         XCTAssertNil(makeStore().active)
     }
 
+    func testAbandoningForSafetyDiscardsAnEmptyCount() async {
+        let repository = FakeFetalRepository()
+        let store = makeStore(repository: repository)
+        store.start()
+        now += 60
+
+        let completion = await store.abandonForSafety()
+
+        XCTAssertNil(completion)
+        XCTAssertNil(store.active)
+        XCTAssertNil(makeStore(repository: repository).active, "一次都没数，不留断点")
+        XCTAssertTrue(store.unsaved.isEmpty)
+        XCTAssertTrue(repository.createdDrafts.isEmpty, "一次都没数，不写档案")
+    }
+
+    func testAbandoningForSafetyRecordsAStartedCountAsStopped() async {
+        let repository = FakeFetalRepository()
+        let store = makeStore(repository: repository)
+        store.start()
+        now += 60; _ = store.tap()
+        now += 60; _ = store.tap()
+        now += 30
+
+        let completion = await store.abandonForSafety()
+
+        XCTAssertEqual(completion?.result.outcome, .stopped)
+        XCTAssertEqual(completion?.result.count, 2)
+        XCTAssertEqual(completion?.saved, true)
+        XCTAssertNil(store.active)
+        XCTAssertNil(makeStore(repository: repository).active, "不能留下一个下次打开会接着数的断点")
+        XCTAssertEqual(repository.createdDrafts.count, 1)
+    }
+
+    func testAbandoningForSafetyAfterTwoHoursRecordsUnder() async {
+        let repository = FakeFetalRepository()
+        let store = makeStore(repository: repository)
+        store.start()
+        now += 60; _ = store.tap()
+        now += FetalMovementCounter.window
+
+        let completion = await store.abandonForSafety()
+
+        XCTAssertEqual(completion?.result.outcome, .under)
+        XCTAssertEqual(repository.createdDrafts.count, 1)
+    }
+
+    func testAbandoningForSafetyBeforeBindingDoesNothing() async {
+        let repository = FakeFetalRepository()
+        let store = makeStore(repository: repository, bound: false)
+        store.start()
+
+        let completion = await store.abandonForSafety()
+
+        XCTAssertNil(completion)
+        XCTAssertTrue(repository.createdDrafts.isEmpty)
+    }
+
     /// 上一次没保存上、这一次也没保存上：两条都要留着，不能后一条把前一条覆盖掉。
     func testTwoFailedSavesAreBothQueuedAndRetriedInOrder() async {
         let repository = FakeFetalRepository()

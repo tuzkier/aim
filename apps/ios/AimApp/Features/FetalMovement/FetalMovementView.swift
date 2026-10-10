@@ -19,10 +19,7 @@ struct FetalMovementView: View {
                 .accessibilityIdentifier("fetal-movement-start")
                 Button("怎么数？") { showingGuide = true }
                     .accessibilityIdentifier("fetal-movement-guide")
-                if !store.unsaved.isEmpty {
-                    Button("有一次没保存上，重试") { Task { await store.saveUnsaved() } }
-                        .accessibilityIdentifier("fetal-movement-retry")
-                }
+                FetalMovementRetryButton()
             }
             Section("最近 14 天 · 数到 10 次的用时") {
                 FetalMovementTrendBars(days: FetalMovementInsights.dailyTrend(store.sessions, now: store.clock()))
@@ -92,6 +89,13 @@ struct FetalMovementView: View {
 struct FetalMovementTrendBars: View {
     let days: [FetalMovementDay]
 
+    /// 柱子本身对读屏没有意义，合成一句话读出来。
+    private var accessibilitySummary: String {
+        let reached = days.filter { $0.reachedSeconds != nil }.count
+        let under = days.filter(\.hadUnder).count
+        return "最近 \(days.count) 天中 \(reached) 天数完，\(under) 天不足 10 次"
+    }
+
     var body: some View {
         let longest = max(days.compactMap(\.reachedSeconds).max() ?? 1, 1)
         HStack(alignment: .bottom, spacing: 4) {
@@ -106,7 +110,8 @@ struct FetalMovementTrendBars: View {
             }
         }
         .frame(height: 80, alignment: .bottom)
-        .accessibilityLabel("最近 14 天数胎动用时")
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilitySummary)
     }
 }
 
