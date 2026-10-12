@@ -66,13 +66,32 @@ struct ContractionTimer: Codable, Equatable, Sendable {
 
     /// 存档用：只含已结束的宫缩。开始与结束都按距第一次开始的整秒向下取整，
     /// 持续 = 结束秒 − 开始秒（至少 1），这样取整后也不会和下一次重叠。
-    func entries() -> [ContractionEntry] {
+    func entries() -> [ContractionEntry] { Self.entries(of: completed) }
+
+    /// 后端只收 1–500 项、`start` ≤ 86400 的宫缩数组。
+    static let archiveMaxCount = 500
+    static let archiveMaxSpan: TimeInterval = 86_400
+
+    /// 结束计时时要保存的结果，按后端限制收窄：只留开始时刻距最后一次开始 ≤ 1 天的已结束宫缩，
+    /// 再取其中最后 500 次，以保留下来的第一次为零点重算 `start`，`startedAt` 也改为它的开始时刻。
+    /// 一直没有 6 小时停顿的计时可能跨过 1 天或超过 500 次，不收窄就会被后端拒绝、永远卡在待保存队列里。
+    /// 没有已结束的宫缩时返回 nil。
+    func archivedResult(id: UUID) -> ContractionResult? {
+        let done = completed
+        guard let lastStart = done.last?.start else { return nil }
+        let kept = Array(done.filter { lastStart.timeIntervalSince($0.start) <= Self.archiveMaxSpan }
+            .suffix(Self.archiveMaxCount))
+        guard let startedAt = kept.first?.start else { return nil }
+        return ContractionResult(id: id, startedAt: startedAt, entries: Self.entries(of: kept))
+    }
+
+    private static func entries(of completed: [Span]) -> [ContractionEntry] {
         guard let origin = completed.first?.start else { return [] }
         return completed.compactMap { span in
             guard let end = span.end else { return nil }
             let start = Int(span.start.timeIntervalSince(origin).rounded(.down))
             let finish = Int(end.timeIntervalSince(origin).rounded(.down))
-            return ContractionEntry(start: start, duration: min(max(1, finish - start), Int(Self.maxDuration)))
+            return ContractionEntry(start: start, duration: min(max(1, finish - start), Int(maxDuration)))
         }
     }
 }

@@ -230,6 +230,50 @@ final class ContractionModelsTests: XCTestCase {
         XCTAssertNil(ContractionMath.status(timer, at: t0 + 30, weeks: 39).summary, "还没有结束的宫缩")
     }
 
+    // MARK: - 存档收窄（后端只收 1–500 项、start ≤ 86400）
+
+    func testArchivedResultKeepsTheLast500WithTheFirstAtZero() throws {
+        var timer = ContractionTimer()
+        for i in 0..<520 {
+            let start = t0 + TimeInterval(i * 100)
+            _ = timer.toggle(at: start)
+            _ = timer.toggle(at: start + 40)
+        }
+        let id = UUID()
+        let result = try XCTUnwrap(timer.archivedResult(id: id))
+        XCTAssertEqual(result.id, id)
+        XCTAssertEqual(result.entries.count, 500)
+        XCTAssertEqual(result.entries.first, ContractionEntry(start: 0, duration: 40))
+        XCTAssertEqual(result.entries.last?.start, 499 * 100)
+        XCTAssertEqual(result.startedAt, t0 + 20 * 100, "最早 20 次被丢掉，零点改为第 21 次的开始")
+    }
+
+    func testArchivedResultDropsContractionsMoreThanADayBeforeTheLastStart() throws {
+        var timer = ContractionTimer()
+        // 开始时刻 0、10000、…、100000 秒；最后一次在 100000，只留开始 ≥ 13600 的。
+        for i in 0...10 {
+            let start = t0 + TimeInterval(i * 10_000)
+            _ = timer.toggle(at: start)
+            _ = timer.toggle(at: start + 60)
+        }
+        let result = try XCTUnwrap(timer.archivedResult(id: UUID()))
+        XCTAssertEqual(result.entries.count, 9)
+        XCTAssertEqual(result.entries.first?.start, 0)
+        XCTAssertEqual(result.entries.last?.start, 80_000)
+        XCTAssertEqual(result.startedAt, t0 + 20_000)
+    }
+
+    func testArchivedResultKeepsExactlyOneDayAndSkipsTheRunningOne() throws {
+        var timer = ContractionTimer()
+        _ = timer.toggle(at: t0); _ = timer.toggle(at: t0 + 60)
+        _ = timer.toggle(at: t0 + 86_400); _ = timer.toggle(at: t0 + 86_460)
+        _ = timer.toggle(at: t0 + 90_000)  // 还在进行中，不存
+        let result = try XCTUnwrap(timer.archivedResult(id: UUID()))
+        XCTAssertEqual(result.entries.map(\.start), [0, 86_400])
+        XCTAssertEqual(result.startedAt, t0)
+        XCTAssertNil(ContractionTimer().archivedResult(id: UUID()), "没有已结束的宫缩")
+    }
+
     // MARK: - 结果与格式
 
     func testResultDraftAndTitle() {
