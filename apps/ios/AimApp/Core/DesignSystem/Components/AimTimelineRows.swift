@@ -25,14 +25,14 @@ struct AimTaskRow: View {
         HStack(alignment: .top, spacing: AimMetrics.space12) {
             Button { onToggle?() } label: { checkbox }
                 .buttonStyle(.plain)
-                .disabled(onToggle == nil || isPending || isDone)
-                .accessibilityLabel(isDone ? "已完成" : "标记完成")
+                .disabled(onToggle == nil || isPending || !task.isOpen)
+                .accessibilityLabel(task.status == .cancelled ? "不再适用" : isDone ? "已完成" : "标记完成")
                 .accessibilityIdentifier("home-task-checkbox")
 
             VStack(alignment: .leading, spacing: AimMetrics.space4) {
                 Text(task.title)
                     .font(.body)
-                    .foregroundStyle(isDone ? Color.aimTextTertiary : Color.aimTextPrimary)
+                    .foregroundStyle(!task.isOpen ? Color.aimTextTertiary : Color.aimTextPrimary)
                     .strikethrough(isDone, color: Color.aimTextTertiary)
                 meta
             }
@@ -48,6 +48,10 @@ struct AimTaskRow: View {
             ProgressView()
                 .controlSize(.small)
                 .frame(width: AimMetrics.checkboxSize, height: AimMetrics.checkboxSize)
+        } else if task.status == .cancelled {
+            Image(systemName: "minus.circle")
+                .font(.body)
+                .foregroundStyle(Color.aimTextTertiary)
         } else if isDone {
             Image(systemName: "checkmark.circle.fill")
                 .font(.body)
@@ -93,6 +97,7 @@ struct AimTaskRow: View {
 
     private var metaParts: [String] {
         var parts: [String] = []
+        if task.status == .cancelled { parts.append("不再适用") }
         if let assigneeName { parts.append(assigneeName) }
         if let date = task.dueAt ?? task.scheduledFor {
             parts.append(TaskDateText.label(for: date, now: now))

@@ -53,6 +53,7 @@ from aim_api.contexts.records.application.queries import get_record
 from aim_api.contexts.records.application.queries.get_record import GetRecordQuery
 from aim_api.contexts.records.domain.errors import RecordAccessDenied, RecordNotFound
 from aim_api.platform.auth.context import ActorContext, authenticate_active
+from aim_api.platform.business_time import beijing_today
 from aim_api.platform.http.errors import (
     ConflictError,
     ForbiddenError,
@@ -199,7 +200,7 @@ async def get_plan_endpoint(pregnancy_id: UUID, request: Request) -> PlanRespons
         try:
             # 先校验再续任务：非家庭成员的请求不能触发写入。
             if await get_plan.can_read(uow, pregnancy_id, actor.account_id):
-                await sync_quietly(uow, pregnancy_id, date.today())
+                await sync_quietly(uow, pregnancy_id, beijing_today())
             plan = await get_plan.execute(
                 GetPlanQuery(pregnancy_id=pregnancy_id, account_id=actor.account_id), uow
             )
@@ -218,7 +219,7 @@ async def generate_plan_endpoint(
     pregnancy_id: UUID, payload: GeneratePlanRequest, request: Request
 ) -> PlanResponse:
     actor = await _actor(request)
-    as_of = payload.as_of or date.today()
+    as_of = payload.as_of or beijing_today()
     database = request.app.state.database
     async with database.session() as session:
         uow = SqlAlchemyPlanningUnitOfWork(session)

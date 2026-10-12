@@ -443,6 +443,9 @@ struct LibraryCategoryDetail: View {
             // 待产包页顶部给分娩页的入口：收拾包的时候，宫缩计时和去医院的时机也在这里。
             if category == .preparation {
                 Section {
+                    NavigationLink("记录分娩与宝宝照护") {
+                        PostpartumView(repository: store.repository, agentStore: agentStore)
+                    }.accessibilityIdentifier("library-postpartum-entry")
                     NavigationLink {
                         LaborView(libraryStore: store, agentStore: agentStore)
                     } label: {

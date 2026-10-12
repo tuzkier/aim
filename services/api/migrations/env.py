@@ -14,6 +14,7 @@ from aim_api.platform.config.settings import get_settings  # noqa: E402
 from aim_api.platform.database.session import Base  # noqa: E402
 from aim_api.contexts.family.adapters.outbound.persistence import models as _family_models  # noqa: E402,F401
 from aim_api.contexts.pregnancy.adapters.outbound.persistence import models as _pregnancy_models  # noqa: E402,F401
+from aim_api.contexts.babies.adapters.outbound.persistence import models as _baby_models  # noqa: E402,F401
 from aim_api.contexts.planning.adapters.outbound.persistence import models as _planning_models  # noqa: E402,F401
 from aim_api.contexts.agent_access.adapters.outbound.persistence import models as _agent_access_models  # noqa: E402,F401
 

@@ -28,7 +28,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  * 已经不可能闭合成标记的残片照常显示，免得把正文藏掉。
  */
 const PENDING =
-  /\[\[(?:ref|record):[^\]|\[\n]*(?:\|([^\[\]]*))?$|\[(?:\[(?:r(?:e(?:f|c(?:o(?:r(?:d)?)?)?)?)?)?)?$/;
+  /\[\[ref:[ \t]*[a-z]*(?:\.[a-z0-9-]*)?[ \t]*(?:\|([^\[\]]*))?$|\[\[record:[ \t]*[0-9a-f-]*[ \t]*(?:\|([^\[\]]*))?$|\[(?:\[(?:r(?:e(?:f|c(?:o(?:r(?:d)?)?)?)?)?)?)?$/i;
 
 export const parseCitations = (text: string): CitationPiece[] => {
   const pieces: CitationPiece[] = [];
@@ -54,7 +54,7 @@ export const parseCitations = (text: string): CitationPiece[] => {
   const visible = pending ? tail.slice(0, pending.index) : tail;
   if (visible) pieces.push({ kind: "text", text: visible });
   // 已经写出 `|标题` 的，先把标题当普通文字露出来，不做成胶囊。
-  const partialTitle = pending?.[1]?.trim();
+  const partialTitle = (pending?.[1] ?? pending?.[2])?.trim();
   if (partialTitle) pieces.push({ kind: "text", text: partialTitle });
   return pieces;
 };

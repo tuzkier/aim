@@ -79,6 +79,7 @@ struct FamilyActivitySection: View {
         case .memberJoined: "person.badge.plus"
         case .memberLeft, .memberRemoved: "person.badge.minus"
         case .dueDateChanged: "calendar"
+        case .birthRecorded, .birthDateChanged, .birthRetracted: "heart"
         case .unknown: "circle"
         }
     }

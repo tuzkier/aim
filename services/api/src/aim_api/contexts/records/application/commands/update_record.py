@@ -12,6 +12,8 @@ from aim_api.contexts.records.domain.errors import (
     RecordValidationError,
 )
 from aim_api.contexts.records.domain.record import Record, RecordType, RecordVisibility
+from aim_api.contexts.records.domain.baby_care import CARE_TYPES
+from aim_api.contexts.records.application.commands.create_record import check_baby_reference
 
 
 @dataclass(frozen=True, slots=True)
@@ -54,10 +56,13 @@ async def execute(command: UpdateRecordCommand, uow: RecordsUnitOfWork) -> Recor
         record.structured_data = command.changes["structured_data"]
     if not isinstance(record.structured_data, dict):
         raise RecordValidationError("structured_data must be a JSON object")
+    if record.record_type.value in CARE_TYPES:
+        await check_baby_reference(uow, record.record_type, record.structured_data, record.occurred_at,
+                                   command.pregnancy_id, command.family_id)
     Record._validate_payload(
-        record.record_type, record.structured_data, record.content, record.title
+        record.record_type, record.structured_data, record.content, record.title, occurred_at=record.occurred_at
     )
-    record.structured_data = Record._with_defaults(record.record_type, record.structured_data)
+    record.structured_data = Record._with_defaults(record.record_type, record.structured_data, occurred_at=record.occurred_at)
     if record.record_type is RecordType.memory:
         record.title = record.structured_data["text"][:40]
     record.assert_attachment_refs_valid()

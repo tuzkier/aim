@@ -60,6 +60,8 @@ class SqlAlchemyPregnancyRepository:
             created_at=model.created_at,
             updated_at=model.updated_at,
             facts=facts,
+            birth_date=model.birth_date,
+            birth_revision=model.birth_revision,
         )
 
     async def save_due_date(self, pregnancy: Pregnancy) -> None:

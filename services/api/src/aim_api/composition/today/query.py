@@ -49,7 +49,7 @@ async def execute(query: GetTodayQuery, uow: PlanningUnitOfWork) -> TodayReadMod
     upcoming = [
         task
         for task in sorted(
-            (task for task in plan.tasks if task.status.value != "done"),
+            (task for task in plan.tasks if task.status.value not in ("done", "cancelled")),
             key=lambda task: (task.due_at is None, task.due_at, task.id.hex),
         )
         if priority is None or task.id != priority.id
@@ -57,7 +57,7 @@ async def execute(query: GetTodayQuery, uow: PlanningUnitOfWork) -> TodayReadMod
 
     counts: dict[UUID | None, int] = {}
     for task in plan.tasks:
-        if task.status.value != "done":
+        if task.status.value not in ("done", "cancelled"):
             counts[task.assigned_member_id] = counts.get(task.assigned_member_id, 0) + 1
 
     return TodayReadModel(

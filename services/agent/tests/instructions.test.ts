@@ -11,6 +11,14 @@ const instructions = await readFile(
 
 const LIST_START = "These are emergencies:";
 
+test("产后不使用宫内胎动规则，宝宝小月龄发热单独处理", () => {
+  const flat = instructions.replace(/\s+/g, " ");
+  assert.ok(flat.includes("the age at birth, not a fetus still growing in the womb"));
+  assert.ok(flat.includes("temperature of 38°C or higher needs urgent medical assessment"));
+  assert.ok(flat.includes("do not use the maternal fever threshold for a baby"));
+  assert.ok(flat.includes("do not invent a baby, quantity or start/end time"));
+});
+
 test("情绪支持不以低分排除问题，不能由 AIM 代填或自动分享", () => {
   const flat = instructions.replace(/\s+/g, " ");
   assert.ok(flat.includes("without waiting for a questionnaire, a saved record, or an AI reply"));

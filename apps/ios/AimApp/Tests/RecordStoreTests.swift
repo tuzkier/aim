@@ -67,7 +67,7 @@ final class RecordStoreTests: XCTestCase {
     }
 
     /// 在记录详情里问 AIM：上下文要带这条记录的小写编号，AIM 才能用
-    /// `[[record:<编号>|…]]` 引用它（网页端只认小写，与 API 返回的编号一致）。
+    /// `[[record:<编号>|…]]` 引用它（与 API 返回的编号保持一致）。
     func testRecordAgentContextCarriesItsLowercasedID() {
         let id = UUID(uuidString: "0B6C1A2E-1111-4A2B-9C3D-123456789ABC")!
         let record = RecordItem(

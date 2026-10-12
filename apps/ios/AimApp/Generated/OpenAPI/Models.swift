@@ -262,6 +262,12 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
     let score: Int?
     let item10: Int?
     let supportLevel: String?
+    let babyID: String?
+    let mode: String?
+    let volumeMl: Double?
+    let durationMinutes: Int?
+    let side: String?
+    let endedAt: Date?
 
     init(
         symptoms: [String]? = nil,
@@ -299,7 +305,8 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
         summary: ContractionSummaryDTO? = nil,
         contractionRecordID: String? = nil,
         mood: Int? = nil, tags: [String]? = nil, version: String? = nil, answers: [Int]? = nil,
-        period: String? = nil, score: Int? = nil, item10: Int? = nil, supportLevel: String? = nil
+        period: String? = nil, score: Int? = nil, item10: Int? = nil, supportLevel: String? = nil,
+        babyID: String? = nil, mode: String? = nil, volumeMl: Double? = nil, durationMinutes: Int? = nil, side: String? = nil, endedAt: Date? = nil
     ) {
         self.symptoms = symptoms
         self.severity = severity
@@ -337,6 +344,7 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
         self.contractionRecordID = contractionRecordID
         self.mood = mood; self.tags = tags; self.version = version; self.answers = answers
         self.period = period; self.score = score; self.item10 = item10; self.supportLevel = supportLevel
+        self.babyID = babyID; self.mode = mode; self.volumeMl = volumeMl; self.durationMinutes = durationMinutes; self.side = side; self.endedAt = endedAt
     }
 
     enum CodingKeys: String, CodingKey {
@@ -357,10 +365,19 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
         case mood, tags, version, answers, period, score
         case item10 = "item_10"
         case supportLevel = "support_level"
+        case babyID = "baby_id", volumeMl = "volume_ml", durationMinutes = "duration_minutes", endedAt = "ended_at"
+        case mode, side
     }
 
     func recordData(for type: RecordType) -> RecordStructuredData {
         switch type {
+        case .feeding, .diaper, .sleep:
+            guard let raw = babyID, let id = UUID(uuidString: raw) else { return .unknown }
+            let data = BabyCareRecordData(babyID: id, mode: mode, volumeMl: volumeMl, durationMinutes: durationMinutes,
+                side: side, diaperKind: kind, endedAt: endedAt, durationSeconds: durationSeconds)
+            if type == .feeding { return .feeding(data) }
+            if type == .diaper { return .diaper(data) }
+            return .sleep(data)
         case .mood:
             guard let mood, (1...5).contains(mood) else { return .unknown }
             return .mood(MoodRecordData(mood: mood, tags: tags ?? []))
@@ -421,6 +438,13 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
 
     init(recordData: RecordStructuredData) {
         switch recordData {
+        case let .feeding(data):
+            self.init(babyID: data.babyID.uuidString.lowercased(), mode: data.mode,
+                volumeMl: data.volumeMl, durationMinutes: data.durationMinutes, side: data.side)
+        case let .diaper(data):
+            self.init(kind: data.diaperKind, babyID: data.babyID.uuidString.lowercased())
+        case let .sleep(data):
+            self.init(babyID: data.babyID.uuidString.lowercased(), endedAt: data.endedAt)
         case let .mood(data):
             self.init(mood: data.mood, tags: data.tags)
         case let .epds(data):

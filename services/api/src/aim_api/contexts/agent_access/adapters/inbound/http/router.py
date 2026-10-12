@@ -78,6 +78,10 @@ from aim_api.contexts.records.application.queries import list_records
 from aim_api.contexts.records.application.queries.list_records import ListRecordsQuery
 from aim_api.contexts.records.domain.errors import RecordValidationError
 from aim_api.contexts.records.domain.record import RecordType, RecordVisibility
+from aim_api.platform.business_time import beijing_today
+from aim_api.contexts.babies.adapters.outbound.persistence.repositories import SqlAlchemyBabyRepository
+from aim_api.composition.postpartum.router import baby_response
+from aim_api.contexts.records.domain.baby_care import CARE_TYPES
 from aim_api.platform.http.errors import (
     ApprovalRequiredError,
     ConflictError,
@@ -187,6 +191,7 @@ class CreateRecordRequest(BaseModel):
     title: str | None = None
     content: str | None = None
     occurred_at: datetime | None = None
+    visibility: RecordVisibility = RecordVisibility.family
     #: 用户在对话里发的图片编号，挂到这条记录上。
     attachment_ids: list[UUID] = Field(default_factory=list, max_length=4)
 
@@ -410,6 +415,8 @@ async def _get_context(session, context: AgentToolContext, body: dict[str, Any])
     plan = await SqlAlchemyPlanningUnitOfWork(session).repository.get_plan(context.pregnancy_id)
     family = await SqlAlchemyFamilyRepository(session).get_family(context.family_id)
     age = pregnancy.gestational_age() if pregnancy else None
+    postpartum = pregnancy is not None and pregnancy.birth_date is not None
+    babies = await SqlAlchemyBabyRepository(session).list_active(context.pregnancy_id, context.family_id)
     # member_id 就是账号 ID：assign_task 的 assigned_member_id 用的正是它。
     members = [
         {
@@ -426,20 +433,29 @@ async def _get_context(session, context: AgentToolContext, body: dict[str, Any])
             "family_id": str(context.family_id),
             "pregnancy_id": str(context.pregnancy_id),
             "due_date": pregnancy.due_date.isoformat() if pregnancy else None,
+            "stage": "postpartum" if postpartum else "pregnancy",
+            "birth_date": pregnancy.birth_date.isoformat() if postpartum else None,
+            "postpartum_days": pregnancy.postpartum_days() if postpartum else None,
+            "babies": [baby_response(b).model_dump(mode="json") for b in babies],
             "gestational_age": {"weeks": age.weeks, "days": age.days} if age else None,
             "plan_id": str(plan.id) if plan else None,
             "self_member_id": str(context.account_id),
             "members": members,
-            "red_flags": _red_flags(age.weeks if age else None),
+            "red_flags": [] if postpartum else _red_flags(age.weeks if age else None),
         },
         "已读取当前孕期上下文",
     )
 
 
+async def _list_babies(session, context: AgentToolContext, body: dict[str, Any]):
+    babies = await SqlAlchemyBabyRepository(session).list_active(context.pregnancy_id, context.family_id)
+    return ({"babies": [baby_response(b).model_dump(mode="json") for b in babies]}, f"已读取 {len(babies)} 个宝宝档案")
+
+
 async def _list_tasks(session, context: AgentToolContext, body: dict[str, Any]):
     uow = SqlAlchemyPlanningUnitOfWork(session)
     # 调用方 _run 已用 authorize_tool 校验过 agent 的家庭与孕期作用域。
-    await sync_quietly(uow, context.pregnancy_id, date.today())
+    await sync_quietly(uow, context.pregnancy_id, beijing_today())
     plan = await uow.repository.get_plan(context.pregnancy_id)
     tasks = (
         []
@@ -835,7 +851,7 @@ async def _create_record(session, context: AgentToolContext, body: dict[str, Any
             account_id=context.account_id,
             record_type=RecordType(body["record_type"]),
             occurred_at=_parse_datetime(body.get("occurred_at")) or datetime.now(UTC),
-            visibility=RecordVisibility.family,
+            visibility=RecordVisibility(body.get("visibility", "family")) if body["record_type"] in CARE_TYPES else RecordVisibility.family,
             structured_data=body.get("structured_data") or {},
             title=body.get("title"),
             content=body.get("content"),
@@ -928,6 +944,11 @@ async def get_pregnancy_context(request: Request, payload: dict[str, Any] | None
 @router.post("/list-tasks", response_model=ToolResult, include_in_schema=False)
 async def list_tasks(request: Request, payload: dict[str, Any] | None = None):
     return await _run(request, "list_tasks", _Payload(payload=payload or {}), _list_tasks)
+
+
+@router.post("/list-babies", response_model=ToolResult, include_in_schema=False)
+async def list_babies_tool(request: Request, payload: dict[str, Any] | None = None):
+    return await _run(request, "list_babies", _Payload(payload=payload or {}), _list_babies)
 
 
 @router.post("/list-records", response_model=ToolResult, include_in_schema=False)

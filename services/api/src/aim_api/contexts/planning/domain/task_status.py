@@ -7,6 +7,7 @@ class TaskStatus(StrEnum):
     todo = "todo"
     scheduled = "scheduled"
     done = "done"
+    cancelled = "cancelled"
 
 
 class TaskLifecycleError(Exception):

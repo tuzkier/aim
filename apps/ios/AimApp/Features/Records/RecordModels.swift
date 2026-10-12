@@ -12,6 +12,7 @@ enum RecordType: Codable, CaseIterable, Sendable, Equatable {
     case contraction
     case hospitalTrip
     case mood, epds
+    case feeding, diaper, sleep
     case unknown
 
     init(rawValue: String) {
@@ -28,6 +29,9 @@ enum RecordType: Codable, CaseIterable, Sendable, Equatable {
         case "hospital_trip": self = .hospitalTrip
         case "mood": self = .mood
         case "epds": self = .epds
+        case "feeding": self = .feeding
+        case "diaper": self = .diaper
+        case "sleep": self = .sleep
         default: self = .unknown
         }
     }
@@ -46,6 +50,9 @@ enum RecordType: Codable, CaseIterable, Sendable, Equatable {
         case .hospitalTrip: return "hospital_trip"
         case .mood: return "mood"
         case .epds: return "epds"
+        case .feeding: return "feeding"
+        case .diaper: return "diaper"
+        case .sleep: return "sleep"
         case .unknown: return "unknown"
         }
     }
@@ -55,7 +62,7 @@ enum RecordType: Codable, CaseIterable, Sendable, Equatable {
     }
 
     /// 能否在通用记录编辑器里修改。胎动记录由计数页生成，编辑器改不了它的计数数据。
-    var canEditInComposer: Bool { ![.fetalMovement, .memory, .contraction, .hospitalTrip, .mood, .epds].contains(self) }
+    var canEditInComposer: Bool { ![.fetalMovement, .memory, .contraction, .hospitalTrip, .mood, .epds, .feeding, .diaper, .sleep].contains(self) }
 
     func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
@@ -275,6 +282,9 @@ enum RecordStructuredData: Equatable, Sendable {
     case hospitalTrip(HospitalTripRecordData)
     case mood(MoodRecordData)
     case epds(EPDSRecordData)
+    case feeding(BabyCareRecordData)
+    case diaper(BabyCareRecordData)
+    case sleep(BabyCareRecordData)
     case note
     case unknown
 }

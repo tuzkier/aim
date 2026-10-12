@@ -30,6 +30,8 @@ struct RecordDetailView: View {
         } else if (record.type == .mood || record.type == .epds), let accountID = session.accountID {
             EmotionalRecordDetailHost(record: currentRecord, repository: store.repository, accountID: accountID, agentStore: agentStore)
                 .id("\(accountID)-\(record.id)")
+        } else if [.feeding, .diaper, .sleep].contains(record.type) {
+            PostpartumCareDetailHost(record: currentRecord, repository: store.repository, agentStore: agentStore)
         } else {
             genericDetail
         }
@@ -176,7 +178,7 @@ struct RecordDetailView: View {
             }
         case .memory:
             EmptyView()
-        case .mood, .epds:
+        case .mood, .epds, .feeding, .diaper, .sleep:
             EmptyView()
         case .unknown:
             Section { Text("这类记录暂不支持完整展示。") }

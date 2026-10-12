@@ -62,6 +62,7 @@ from aim_api.contexts.pregnancy.adapters.outbound.persistence.repositories impor
 )
 from aim_api.contexts.pregnancy.domain.errors import DueDateOutOfRange
 from aim_api.platform.auth.context import authenticate_active
+from aim_api.platform.business_time import beijing_today
 from aim_api.platform.http.errors import ApiError, ConflictError, ForbiddenError, NotFoundError
 
 router = APIRouter(tags=["family"])
@@ -98,7 +99,7 @@ async def update_pregnancy(
         ):
             raise ForbiddenError("不能修改这段孕期")
         try:
-            previous = pregnancy.change_due_date(payload.due_date, today=datetime.now(UTC).date())
+            previous = pregnancy.change_due_date(payload.due_date, today=beijing_today())
         except DueDateOutOfRange as error:
             raise UnprocessableError(str(error)) from error
         if previous != pregnancy.due_date:
@@ -485,7 +486,7 @@ async def member_detail(family_id: UUID, account_id: UUID, request: Request) -> 
                     select(PregnancyModel.id).where(PregnancyModel.family_id == family_id)
                 ),
                 TaskModel.assigned_member_id == account_id,
-                TaskModel.status != "done",
+                TaskModel.status.not_in(["done", "cancelled"]),
             )
             .order_by(TaskModel.due_at.asc().nulls_last(), TaskModel.created_at)
         )

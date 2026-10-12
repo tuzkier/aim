@@ -69,6 +69,14 @@ describe("parseCitations", () => {
 });
 
 describe("parseCitations：流式中写到一半的标记", () => {
+  it("错误编号后接正文时不隐藏正文", () => {
+    for (const tail of ["[[ref:checkup.ogtt 这段正文应保留", "[[record:0b6c1a2e 之后是正文", "[[ref:bad id|正文"]) {
+      expect(parseCitations(`前文${tail}`)).toEqual([{ kind: "text", text: `前文${tail}` }]);
+    }
+    expect(parseCitations(`前文[[record: ${RECORD_ID} |产检`)).toEqual([
+      { kind: "text", text: "前文" }, { kind: "text", text: "产检" },
+    ]);
+  });
   it("编号还没写完时整段隐藏", () => {
     expect(parseCitations("前文[[ref:che")).toEqual([{ kind: "text", text: "前文" }]);
     expect(parseCitations("前文[[record:0b6c1a2e-11")).toEqual([{ kind: "text", text: "前文" }]);

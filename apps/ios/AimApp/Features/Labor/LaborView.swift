@@ -29,6 +29,9 @@ struct LaborView: View {
                 whenToLeaveCard
                 preparationCard
                 tripButton
+                NavigationLink("记录分娩 / 产后与宝宝") {
+                    PostpartumView(repository: libraryStore.repository, agentStore: agentStore)
+                }.accessibilityIdentifier("labor-postpartum-entry")
             }
             .padding(.horizontal, AimMetrics.space16)
             .padding(.bottom, AimMetrics.space28)

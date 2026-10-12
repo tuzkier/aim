@@ -30,6 +30,17 @@ final class ReminderTests: XCTestCase {
         p.quietEnd = 8 * 60; p.fetalMinute = 1440
         XCTAssertTrue(plan(prefs: p).isEmpty)
     }
+
+    func testPostpartumStopsFetalRemindersAndCancelledPrenatalTasks() {
+        var born = pregnancy
+        born.status = "postpartum"; born.birthDate = now
+        let cancelled = task(due: now.addingTimeInterval(7200), status: .cancelled)
+        let current = task(due: now.addingTimeInterval(10800))
+        let result = plan([cancelled, current], pregnancy: born)
+        XCTAssertFalse(result.contains { $0.route.kind == .fetalMovement })
+        XCTAssertFalse(result.contains { $0.route.taskID == cancelled.id })
+        XCTAssertTrue(result.contains { $0.route.taskID == current.id })
+    }
     func testOnlyUpcomingOpenTasksForMeOrUnassignedAreScheduled() {
         let future = now.addingTimeInterval(7200)
         let items = [task(due: future), task(due: future, member: scope.accountID),

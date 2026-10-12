@@ -8,6 +8,8 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from aim_api.contexts.family.adapters.outbound.persistence.models import FamilyModel
+from aim_api.contexts.babies.adapters.outbound.persistence.models import BabyModel
+from aim_api.contexts.pregnancy.adapters.outbound.persistence.models import PregnancyModel
 from aim_api.contexts.family.adapters.outbound.persistence.repositories import (
     SqlAlchemyFamilyRepository,
 )
@@ -25,6 +27,15 @@ from aim_api.contexts.records.domain.record import Record, RecordType, RecordVis
 
 
 class SqlAlchemyRecordsRepository:
+    async def baby_birth_date(self, baby_id: UUID, pregnancy_id: UUID, family_id: UUID):
+        # 同出生/撤回/日期修正按孕期行串行；取得锁后另起查询读最新的宝宝生日。
+        await self.session.scalar(select(PregnancyModel.id).where(PregnancyModel.id == pregnancy_id,
+            PregnancyModel.family_id == family_id).with_for_update())
+        return await self.session.scalar(select(BabyModel.birth_date).join(PregnancyModel,
+            BabyModel.pregnancy_id == PregnancyModel.id).where(BabyModel.id == baby_id,
+            BabyModel.pregnancy_id == pregnancy_id, BabyModel.family_id == family_id,
+            BabyModel.archived_at.is_(None), PregnancyModel.birth_date.is_not(None),
+            BabyModel.birth_revision == PregnancyModel.birth_revision))
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 

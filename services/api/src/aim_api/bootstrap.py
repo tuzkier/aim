@@ -9,6 +9,7 @@ from fastapi import FastAPI
 
 from aim_api.composition.family.router import router as family_composition_router
 from aim_api.composition.today.router import router as today_router
+from aim_api.composition.postpartum.router import router as postpartum_router
 from aim_api.contexts.agent_access.adapters.inbound.http.operation_undo import (
     router as agent_operations_router,
 )
@@ -92,5 +93,6 @@ def create_app(*, settings: Settings | None = None, database: Database | None = 
     app.include_router(agent_operations_router)
     app.include_router(attachments_router)
     app.include_router(family_composition_router)
+    app.include_router(postpartum_router)
     _configure_observability(app, resolved_database, resolved_settings)
     return app

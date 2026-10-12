@@ -152,6 +152,8 @@ async def family_activity(
         stored_name = payload.get("display_name")
         if row.kind == "due_date_changed":
             actor, title = name(row.actor_account_id), _month_day(payload["to"])
+        elif row.kind in ("birth_recorded", "birth_date_changed", "birth_retracted"):
+            actor, title = name(row.actor_account_id), _month_day(payload.get("to") or payload["date"])
         elif row.kind == "member_removed":
             actor, title = name(row.actor_account_id), stored_name or "一位家人"
         else:

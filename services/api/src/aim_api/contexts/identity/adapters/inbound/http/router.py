@@ -122,11 +122,12 @@ async def _ensure_initial_plan(
     account_id: UUID,
     database: Database,
 ) -> None:
-    as_of = date.today()
+    from aim_api.platform.business_time import beijing_today
+    as_of = beijing_today()
     async with database.session() as session:
         uow = SqlAlchemyPlanningUnitOfWork(session)
         pregnancy = await uow.pregnancy_ownership.get_pregnancy(pregnancy_id)
-        if pregnancy is None:
+        if pregnancy is None or pregnancy.birth_date is not None:
             return
         age = pregnancy.gestational_age(as_of)
         seeds = _initial_task_seeds(age.weeks, as_of)

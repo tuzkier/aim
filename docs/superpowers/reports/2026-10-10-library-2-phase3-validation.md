@@ -36,3 +36,12 @@
 真实模型端到端按实施计划使用文字描述报告，没有覆盖照片选择器与图片识别的完整 UI 旅程。图片压缩、附件上传请求、带图创建与上传失败路径由单元测试和 API 集成测试覆盖，不能据此声称已实测照片识别准确率。
 
 此次仅重建本地 api、eve；发布顺序仍遵守路线图中的 TestFlight 与后端部署约束。
+
+## 2026-10-12 照片链路补验
+
+- `testPhotoReportCanBeRecognizedConfirmedAndReadInTheLibrary` 通过，结果包 `/tmp/aim-report-photo-ui3.xcresult` 为 Passed、1 test、0 failures。
+- 用 `scripts/ios/create-report-fixture.swift` 生成没有真人信息的合成报告，通过 `xcrun simctl addmedia` 导入目标模拟器。真实操作「拍报告 → 从相册选 → 图片进入待发送区 → 发送 → 记下 → 资料库报告详情」。
+- 运行时确认 `EVE_USE_MOCK_MODEL=0`、`AIM_AGENT_MODEL=deepseek-flash`。仅从图片读出的体重 62.5、血压 118/76、空腹血糖 4.9、血红蛋白 112、胎心 140 与合成图一致；尿蛋白 `+` 与单子上的异常标记进入预览和详情，保存后的原图能加载。
+- 预览与保存截图在 `/tmp/aim-report-photo-ui3-attachments/`，已逐张检查；异常项对应的医生问题也已创建。
+- 前两轮只用于诊断：第一轮测试把系统照片误当成 Cell（实际为 Image），第二轮本地服务重建后处于模拟模型；都没有计入真实模型通过结论。
+- 本次验证一张清晰合成图的相册链路。不能据此给出照片识别准确率，也没有验证真机摄像头、模糊或手写报告。

@@ -83,6 +83,9 @@ class PregnancyResponse(BaseModel):
     updated_at: datetime
     gestational_age: GestationalAgeResponse
     facts: list[FactResponse]
+    birth_date: date | None = None
+    birth_revision: UUID | None = None
+    postpartum_days: int | None = None
 
 
 def _response(pregnancy: Pregnancy) -> PregnancyResponse:
@@ -93,6 +96,9 @@ def _response(pregnancy: Pregnancy) -> PregnancyResponse:
         due_date=pregnancy.due_date,
         last_menstrual_period=last_menstrual_period_from_due_date(pregnancy.due_date),
         status=pregnancy.status.value,
+        birth_date=pregnancy.birth_date,
+        birth_revision=pregnancy.birth_revision,
+        postpartum_days=pregnancy.postpartum_days(),
         created_by=pregnancy.created_by,
         created_at=pregnancy.created_at,
         updated_at=pregnancy.updated_at,

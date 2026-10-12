@@ -8,6 +8,8 @@
 
 **Tech Stack:** PostgreSQL/Alembic、FastAPI/SQLAlchemy、SwiftUI/Observation、Eve、pytest/XCTest/XCUITest。
 
+**最终结果（2026-10-12）：** Task 1–5 的实现与开发验收完成，API 555、Agent 62、iOS 单元 538、网页 70 项通过；出生、照护编辑删除、日期修正、14/42 天自评、撤回恢复与核心回归通过。Release 发行导出通过。见 `../reports/2026-10-12-postpartum-validation.md`；生产部署仍遵守在用设备先升级的约束。
+
 ## Task 1：日期、生命周期与迁移
 
 **Files:** `services/api/src/aim_api/platform/business_time.py`、`contexts/pregnancy/domain/pregnancy.py`、其 persistence models/repositories、`services/api/migrations/versions/0013_postpartum_babies.py`、相关日期/孕期单元测试。

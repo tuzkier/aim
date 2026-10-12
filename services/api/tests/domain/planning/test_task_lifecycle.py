@@ -46,6 +46,20 @@ def test_task_lifecycle_records_versions_and_allows_restore() -> None:
     assert restored_change.version_after == 4
 
 
+def test_birth_cancellation_is_not_completion_and_can_only_be_undone_through_the_lifecycle():
+    task = _task(); revision = uuid4()
+    change = task.cancel_for_birth(expected_version=1, revision=revision)
+    assert task.status is TaskStatus.cancelled
+    assert change.operation == "birth_cancel"
+    assert change.after["birth_revision"] == str(revision)
+    assert task.changed_by_actor_type is ActorType.system and task.changed_by_actor_id is None
+    for operation in [lambda: task.complete(expected_version=2), lambda: task.delay(datetime.now(UTC), expected_version=2),
+                      lambda: task.undo_change(change, expected_version=2)]:
+        with pytest.raises(InvalidTaskTransition): operation()
+    task.undo_change(change, expected_version=2, allow_birth_cancel=True)
+    assert task.status is TaskStatus.todo
+
+
 def test_invalid_transition_and_stale_version_are_rejected() -> None:
     task = _task()
     task.complete(expected_version=1)

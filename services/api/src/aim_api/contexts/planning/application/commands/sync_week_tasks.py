@@ -27,7 +27,7 @@ class SyncWeekTasksCommand:
 async def execute(command: SyncWeekTasksCommand, uow: PlanningUnitOfWork) -> int:
     """返回新建的任务数。不做权限校验——调用方必须先确认读者有权看这个孕期。"""
     pregnancy = await uow.pregnancy_ownership.get_pregnancy(command.pregnancy_id)
-    if pregnancy is None:
+    if pregnancy is None or pregnancy.birth_date is not None:
         return 0
     plan = await uow.repository.get_plan(command.pregnancy_id)
     if plan is None:

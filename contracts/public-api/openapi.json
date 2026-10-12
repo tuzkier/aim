@@ -2341,6 +2341,327 @@
           }
         }
       }
+    },
+    "/api/v1/content/postpartum": {
+      "get": {
+        "tags": [
+          "postpartum"
+        ],
+        "summary": "Get Content",
+        "operationId": "get_content_api_v1_content_postpartum_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pregnancies/{pregnancy_id}/babies": {
+      "get": {
+        "tags": [
+          "postpartum"
+        ],
+        "summary": "List Babies",
+        "operationId": "list_babies_api_v1_pregnancies__pregnancy_id__babies_get",
+        "parameters": [
+          {
+            "name": "pregnancy_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Pregnancy Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BabyListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "postpartum"
+        ],
+        "summary": "Add Baby",
+        "operationId": "add_baby_api_v1_pregnancies__pregnancy_id__babies_post",
+        "parameters": [
+          {
+            "name": "pregnancy_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Pregnancy Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BabyInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BabyResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pregnancies/{pregnancy_id}/birth": {
+      "post": {
+        "tags": [
+          "postpartum"
+        ],
+        "summary": "Record Birth",
+        "operationId": "record_birth_api_v1_pregnancies__pregnancy_id__birth_post",
+        "parameters": [
+          {
+            "name": "pregnancy_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Pregnancy Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BirthInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BirthResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "postpartum"
+        ],
+        "summary": "Correct Birth",
+        "operationId": "correct_birth_api_v1_pregnancies__pregnancy_id__birth_patch",
+        "parameters": [
+          {
+            "name": "pregnancy_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Pregnancy Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BirthDateInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BirthResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "postpartum"
+        ],
+        "summary": "Retract Birth",
+        "operationId": "retract_birth_api_v1_pregnancies__pregnancy_id__birth_delete",
+        "parameters": [
+          {
+            "name": "pregnancy_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Pregnancy Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PregnancyResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pregnancies/{pregnancy_id}/babies/{baby_id}": {
+      "patch": {
+        "tags": [
+          "postpartum"
+        ],
+        "summary": "Update Baby",
+        "operationId": "update_baby_api_v1_pregnancies__pregnancy_id__babies__baby_id__patch",
+        "parameters": [
+          {
+            "name": "pregnancy_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Pregnancy Id"
+            }
+          },
+          {
+            "name": "baby_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Baby Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BabyInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BabyResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2493,6 +2814,184 @@
           "byte_size"
         ],
         "title": "AttachmentResponse"
+      },
+      "BabyInput": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 80,
+            "title": "Name",
+            "default": "宝宝"
+          },
+          "birth_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Birth Date"
+          },
+          "sex": {
+            "type": "string",
+            "enum": [
+              "male",
+              "female",
+              "unknown"
+            ],
+            "title": "Sex",
+            "default": "unknown"
+          },
+          "birth_weight_grams": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 20000.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Birth Weight Grams"
+          }
+        },
+        "type": "object",
+        "title": "BabyInput"
+      },
+      "BabyListResponse": {
+        "properties": {
+          "babies": {
+            "items": {
+              "$ref": "#/components/schemas/BabyResponse"
+            },
+            "type": "array",
+            "title": "Babies"
+          }
+        },
+        "type": "object",
+        "required": [
+          "babies"
+        ],
+        "title": "BabyListResponse"
+      },
+      "BabyResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "pregnancy_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Pregnancy Id"
+          },
+          "family_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Family Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "birth_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Birth Date"
+          },
+          "sex": {
+            "type": "string",
+            "title": "Sex"
+          },
+          "birth_weight_grams": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Birth Weight Grams"
+          },
+          "age_days": {
+            "type": "integer",
+            "title": "Age Days"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "pregnancy_id",
+          "family_id",
+          "name",
+          "birth_date",
+          "sex",
+          "birth_weight_grams",
+          "age_days"
+        ],
+        "title": "BabyResponse"
+      },
+      "BirthDateInput": {
+        "properties": {
+          "birth_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Birth Date"
+          }
+        },
+        "type": "object",
+        "required": [
+          "birth_date"
+        ],
+        "title": "BirthDateInput"
+      },
+      "BirthInput": {
+        "properties": {
+          "birth_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Birth Date"
+          },
+          "babies": {
+            "items": {
+              "$ref": "#/components/schemas/BabyInput"
+            },
+            "type": "array",
+            "maxItems": 8,
+            "title": "Babies"
+          }
+        },
+        "type": "object",
+        "required": [
+          "birth_date"
+        ],
+        "title": "BirthInput"
+      },
+      "BirthResponse": {
+        "properties": {
+          "pregnancy": {
+            "$ref": "#/components/schemas/PregnancyResponse"
+          },
+          "babies": {
+            "items": {
+              "$ref": "#/components/schemas/BabyResponse"
+            },
+            "type": "array",
+            "title": "Babies"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pregnancy",
+          "babies"
+        ],
+        "title": "BirthResponse"
       },
       "CreateFamilyRequest": {
         "properties": {
@@ -3401,6 +3900,41 @@
             },
             "type": "array",
             "title": "Facts"
+          },
+          "birth_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Birth Date"
+          },
+          "birth_revision": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Birth Revision"
+          },
+          "postpartum_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Postpartum Days"
           }
         },
         "type": "object",
@@ -3579,7 +4113,10 @@
           "contraction",
           "hospital_trip",
           "mood",
-          "epds"
+          "epds",
+          "feeding",
+          "diaper",
+          "sleep"
         ],
         "title": "RecordType"
       },

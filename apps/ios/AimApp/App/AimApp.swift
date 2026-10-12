@@ -204,7 +204,7 @@ private struct MainTabView: View {
         // 胎动计数的本地断点按「账号 + 孕期」分开存；还没有孕期时解绑，免得接着写别家的断点。
         // unbind() 会清掉仓库，所以每次绑定前都要重新设置。
         fetalMovementStore.repository = repository
-        let fetalMovementBound: Bool
+        var fetalMovementBound: Bool
         if let accountID = session.accountID, let pregnancyID = session.pregnancyID {
             fetalMovementStore.bind(accountID: accountID, pregnancyID: pregnancyID)
             fetalMovementBound = true
@@ -214,7 +214,7 @@ private struct MainTabView: View {
         }
         // 宫缩计时同理：断点按「账号 + 孕期」分开存，unbind() 也会清掉仓库。
         contractionStore.repository = repository
-        let contractionBound: Bool
+        var contractionBound: Bool
         if let accountID = session.accountID, let pregnancyID = session.pregnancyID {
             contractionStore.bind(accountID: accountID, pregnancyID: pregnancyID)
             contractionBound = true
@@ -228,6 +228,12 @@ private struct MainTabView: View {
         await familyStore.load()
         await libraryStore.load()
         await homeStore.load()
+        if homeStore.pregnancy?.isPostpartum == true {
+            fetalMovementStore.unbind()
+            contractionStore.unbind()
+            fetalMovementBound = false
+            contractionBound = false
+        }
         await invitationPrompt.check(using: repository)
         // 胎动排在最后：首页、待办等主数据先出来，不被胎动的保存与拉取拖慢。
         // 被系统杀掉后过期的断点先记为未数完并保存，再拉历史。

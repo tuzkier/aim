@@ -24,6 +24,8 @@ class PregnancyModel(Base):
     status: Mapped[str] = mapped_column(String(20), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    birth_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    birth_revision: Mapped[UUID | None] = mapped_column(Uuid(as_uuid=True), nullable=True)
 
 
 class PregnancyFactModel(Base):

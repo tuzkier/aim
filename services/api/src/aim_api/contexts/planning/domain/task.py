@@ -97,7 +97,7 @@ class Task:
         changed_by_actor_id: UUID | None = None,
     ) -> TaskChange:
         self._assert_version(expected_version)
-        if self.status is TaskStatus.done:
+        if self.status in (TaskStatus.done, TaskStatus.cancelled):
             raise InvalidTaskTransition("done task cannot be scheduled")
         return self._change(
             operation="schedule",
@@ -119,7 +119,7 @@ class Task:
         changed_by_actor_id: UUID | None = None,
     ) -> TaskChange:
         self._assert_version(expected_version)
-        if self.status is TaskStatus.done:
+        if self.status in (TaskStatus.done, TaskStatus.cancelled):
             raise InvalidTaskTransition("task is already done")
         return self._change(
             operation="complete",
@@ -138,7 +138,7 @@ class Task:
         changed_by_actor_id: UUID | None = None,
     ) -> TaskChange:
         self._assert_version(expected_version)
-        if self.status is TaskStatus.done:
+        if self.status in (TaskStatus.done, TaskStatus.cancelled):
             raise InvalidTaskTransition("done task cannot be delayed")
         return self._change(
             operation="delay",
@@ -157,6 +157,8 @@ class Task:
         changed_by_actor_id: UUID | None = None,
     ) -> TaskChange:
         self._assert_version(expected_version)
+        if self.status is TaskStatus.cancelled:
+            raise InvalidTaskTransition("不再适用的待办不能重新分工")
         return self._change(
             operation="assign",
             expected_version=expected_version,
@@ -190,8 +192,11 @@ class Task:
         expected_version: int,
         changed_by_actor_type: ActorType | None = None,
         changed_by_actor_id: UUID | None = None,
+        allow_birth_cancel: bool = False,
     ) -> TaskChange:
         self._assert_version(expected_version)
+        if change.operation == "birth_cancel" and not allow_birth_cancel:
+            raise InvalidTaskTransition("阶段切换产生的结束只能通过撤回分娩恢复")
         if change.task_id != self.id or change.version_after != expected_version:
             raise InvalidTaskTransition("task change is not the current change")
         return self._change(
@@ -222,6 +227,8 @@ class Task:
         self.updated_at = datetime.now(UTC)
         if changed_by_actor_type is not None:
             self.changed_by_actor_type = changed_by_actor_type
+            if changed_by_actor_type is ActorType.system and changed_by_actor_id is None:
+                self.changed_by_actor_id = None
         if changed_by_actor_id is not None:
             self.changed_by_actor_id = changed_by_actor_id
         after = self._snapshot()
@@ -237,6 +244,16 @@ class Task:
             changed_by_actor_id=self.changed_by_actor_id,
             created_at=self.updated_at,
         )
+
+    def cancel_for_birth(self, *, expected_version: int, revision: UUID) -> TaskChange:
+        self._assert_version(expected_version)
+        if self.status in (TaskStatus.done, TaskStatus.cancelled):
+            raise InvalidTaskTransition("已结束的待办不能再次标为不适用")
+        change = self._change(operation="birth_cancel", expected_version=expected_version,
+            changes={"status": TaskStatus.cancelled.value}, changed_by_actor_type=ActorType.system,
+            changed_by_actor_id=None)
+        change.after["birth_revision"] = str(revision)
+        return change
 
     def _assert_version(self, expected_version: int) -> None:
         if self.version != expected_version:

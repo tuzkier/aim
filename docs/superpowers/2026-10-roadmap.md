@@ -11,33 +11,33 @@
 |---|---|---|---|
 | 0 | 资料库 2.0 第 1 期：孕期百科 | ✅ 已合并 development | specs/2026-10-09-library-2-design.md、plans/2026-10-09-library-2-phase1-encyclopedia.md |
 | 0 | 胎动计数 | ✅ 已合并 development（e608582） | specs/2026-10-09-fetal-movement-design.md、plans/2026-10-09-fetal-movement.md |
-| 1 | 胎动收尾：Agent 对 under / reported_less 用「现在」；计数页显示时跳过过期断点收尾 | ✅ 已合并 development | 遗留：指令里「慢一倍」仍按 latest or today's，与 under 只看今天不一致（下次动 Agent 指令时顺手统一） |
+| 1 | 胎动收尾：Agent 对 under / reported_less 用「现在」；计数页显示时跳过过期断点收尾 | ✅ 已合并 development | 已核对：慢计数、under、reported_less 均按今天口径；旧记录只作为历史 |
 | 2 | 补缺口：孕期待办 4–42 周（31 条新模板）；危险信号 19 条三档；孕周推进自动续任务；AIM 读危险信号；iOS 三档自查与血压急症横幅 | ✅ 已合并 development | specs/2026-10-10-fill-gaps-design.md、plans/2026-10-10-fill-gaps.md |
 | 3 | 资料库第 2 期：AIM 翻目录（list_library / get_library_entry）与引用渲染、原生跳转、各资料页问 AIM 上下文 | ✅ 已合并 development（真实模型端到端通过） | plans/2026-10-10-library-2-phase2-aim-citations.md |
 | 4 | 资料库第 3 期：档案可编辑、产检报告结构与表单/详情、create_checkup_report 与预览卡、本周关注新规则 | ✅ 已完成并合并本地 development（文字输入的真实模型端到端通过） | plans/2026-10-10-library-2-phase3-reports.md、reports/2026-10-10-library-2-phase3-validation.md |
 | 5 | 资料库第 4 期：AIM 记得的事（memory 类型、remember / forget_memory、当轮读取注入、记忆页） | ✅ 已完成并合并本地 development（真实模型 UI 通过） | plans/2026-10-10-library-2-phase4-memory.md、reports/2026-10-10-library-2-phase4-validation.md |
 | 6 | 主动提醒（本地通知版）：每日胎动、产检/待办到期、每周简报、通知偏好与免打扰、点通知跳转 | ✅ 已完成并合并本地 development（系统送达、冷启动点击与退出撤销通过） | specs/2026-10-10-ios-local-reminders-design.md、plans/2026-10-10-ios-local-reminders.md、reports/2026-10-10-ios-local-reminders-validation.md |
 | 7 | 分娩模式：宫缩计时（5-1-1）、待产包核对入口、「我们去医院了」（家庭动态 + App 内提醒） | ✅ 已完成并合并本地 development | specs/2026-10-12-labor-mode-design.md、plans/2026-10-12-labor-mode.md |
-| 8 | 情绪关照：每日心情、EPDS 自评（孕晚期、产后 2/6 周）、高分时引导求助（含 12356） | ✅ 孕期与通用记录已完成；产后节点随第 9 项接入真实分娩日期 | specs/2026-10-12-emotional-care-design.md、plans/2026-10-12-emotional-care.md、reports/2026-10-12-emotional-care-validation.md |
-| 9 | 产后延续：记录分娩切换产后阶段、宝宝档案、喂养/尿布/睡眠记录、产后 42 天复查、疫苗与证件清单 | 待做 | — |
+| 8 | 情绪关照：每日心情、EPDS 自评（孕晚期、产后 2/6 周）、高分时引导求助（含 12356） | ✅ 已完成；产后 14/42 天真实日期节点 UI 通过 | specs/2026-10-12-emotional-care-design.md、plans/2026-10-12-emotional-care.md、reports/2026-10-12-emotional-care-validation.md |
+| 9 | 产后延续：记录分娩切换产后阶段、宝宝档案、喂养/尿布/睡眠记录、产后 42 天复查、疫苗与证件清单 | ✅ 开发与本地验收完成 | specs/2026-10-12-postpartum-continuity-design.md、plans/2026-10-12-postpartum-continuity.md、reports/2026-10-12-postpartum-validation.md |
 
 ## 当前接续点（2026-10-12）
 
-- 资料库第 3 期已完成并验收；照片识别的完整 UI 旅程仍未验证，范围见验收报告。
+- 资料库第 3 期已完成并验收；2026-10-12 补验相册合成图 → 真实模型预览 → 确认 → 原图和指标入库，通过。真机拍照与模糊图质量不在该单样例结论内，范围见验收报告。
 - 第 5 项「AIM 记得的事」已完成：手动管理、AIM 记住/撤销/确认遗忘、当轮读取、私有隔离与家庭容量限制均已验收。
 - 第 6 项「主动提醒」已完成：未来 28 天本地计划、设置与免打扰、业务变化重排、旧 scope 清理，以及系统真实通知冷启动均已验证。模拟器构建已采用本地签名以覆盖 Keychain。
 - 第 7 项「分娩模式」已完成：宫缩计时与档位、早产警示、分娩页与待产包入口、「我们出发去医院了」与首页横幅，主旅程 UI 用例通过。
 - 分娩记录关联已修复：两个入口统一处理旧计时；补存与出发共用保存任务、按本地结果返回准确编号；跨作用域不返回旧关联。515 个单元测试、原主旅程与旧断点重启后的两个入口 UI 通过，见 reports/2026-10-12-labor-links-validation.md。
 - 2026-10-11 已上传 TestFlight `1.0.0（202610111650）`，基于 `56be775`，含第 6 项，不含 10 月 12 日新增分娩模式；新代码待最后统一打包。Apple 已接收，当前可安装状态需另行核对。
-- 第 8 项孕期心情与 EPDS 已完成：默认私密、程序评分、第十题即时支持、共享只读与真实 API UI 通过；待第 9 项接入分娩日期验证产后节点。
-- 当前主线是第 9 项「产后延续」。
+- 第 8 项已完成：默认私密、程序评分、第十题即时支持、共享只读；第 9 项已接入真实分娩日期，14/42 天产后提示与核心 UI 回归通过。
+- 第 9 项已完成开发与验收：宝宝档案、三类照护及编辑删除、阶段首页、日期修正、撤回恢复、产后安排与 AIM 工具均已验证。当前进入提交和发布收尾，详见 reports/2026-10-12-postpartum-validation.md。
 - 继承用户最新排序要求：先做主线任务；零散小尾巴、推送与发布收尾集中到后面处理。
 
 ## 部署约束（上线前必须满足）
 
 - **后端（含新危险信号三档内容）部署前，含三档自查的 iOS 构建必须先上 TestFlight，并确认在用设备已更新。** 旧版 App 会把 same_day 条目的结论显示成「记下来，下次产检时告诉医生」，与条目自己的 action（今天或明天联系）矛盾。服务端无法区分新旧客户端。
-- 生产库迁移会新建 `plan_template_seeds` 并回填；本地开发库已手工把 `template_id` 改为 varchar(160)（早先跑过 100 的旧版 0012）。
-- 已知时区问题：服务端孕周按 UTC 日期算，北京时间 0–8 点跨周时最多晚 8 小时；后续统一时钟函数时处理。
+- 生产库迁移会新建 `plan_template_seeds` 并回填，新增分娩字段和 `babies`（0013）；本地开发库已手工把 `template_id` 改为 varchar(160)（早先跑过 100 的旧版 0012）。
+- 北京时间业务日期已统一，覆盖孕周、首页、计划、家庭修改、AIM 与登录初始化；跨午夜测试通过。持久化时间戳仍使用 UTC。
 - 分娩模式：后端先于 iOS 上线没问题（旧 App 把 `contraction`、`hospital_trip` 两种新类型解码为 unknown）；百科 `birth.when-to-go` 的改动未经产品负责人复看，上线前请复看。
 - 百科与待办、危险信号的就医措辞在 2026-10-10 多轮修订后只经 AI 审核，上线前建议产科医生复核 `content/README.md` 中「待产科医生复核」清单。
 
@@ -50,9 +50,7 @@
 
 ## 待处理的小尾巴（不阻塞，择机顺手做）
 
-- web `citations.ts` 的 `PENDING` 编号部分收紧为只容忍两侧空白（现在段末坏标记会藏掉到段尾的正文）；`RecordStoreTests` 注释「网页端只认小写」不准确。
-- 模拟器会弹系统「使用强密码？」「保存密码？」，挡住 UI 测试的注册步骤——在 UI 测试里处理系统弹窗（interruption monitor 或关闭密码自动填充）。
-- 本地后端在保存孕期信息时偶发 500（一次 UI 回归中出现），待查。
+- 历史上本地孕期保存偶发 500 尚无根因；本轮回归和日志未复现，没有当作已修复。后续再现时须保留具体请求与堆栈。
 - Agent 目录每次约 5K token：中期可把「编号｜标题｜别名」紧凑索引放进系统指令做缓存前缀。
 - 分娩模式（2026-10-12 整分支审查遗留，均为低优先级）：
   - `ContractionStore.loadError` 目前不显示，分娩页可以给轻提示；关联判断只看服务端历史，不看本地未保存的队列。

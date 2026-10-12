@@ -15,6 +15,9 @@ extension RecordType {
         case .hospitalTrip: "去医院"
         case .mood: "心情"
         case .epds: "情绪自评"
+        case .feeding: "宝宝喂养"
+        case .diaper: "宝宝尿布"
+        case .sleep: "宝宝睡眠"
         case .unknown: "记录"
         }
     }
@@ -33,6 +36,9 @@ extension RecordType {
         case .hospitalTrip: "car"
         case .mood: "face.smiling"
         case .epds: "heart.text.clipboard"
+        case .feeding: "waterbottle"
+        case .diaper: "drop"
+        case .sleep: "moon.zzz"
         case .unknown: "doc"
         }
     }
@@ -72,6 +78,9 @@ extension RecordItem {
         case .hospitalTrip: title?.trimmed.nilIfEmpty ?? "我们出发去医院了"
         case let .mood(data): "今天的心情 · " + data.label
         case .epds: "情绪自评（EPDS）"
+        case .feeding: "宝宝喂养"
+        case .diaper: "宝宝尿布"
+        case .sleep: "宝宝睡眠"
         case .unknown: type.displayName
         }
     }
@@ -105,6 +114,9 @@ extension RecordItem {
         case let .hospitalTrip(data): return data.reason.displayName
         case let .mood(data): return data.label
         case let .epds(data): return data.score.map { "\($0) / 30 · \(data.levelForDisplay?.title ?? "筛查结果")" } ?? "情绪自评"
+        case let .feeding(data): return data.feedingLabel + (data.volumeMl.map { " · \(BabyCareRecordData.amount($0)) 毫升" } ?? " · 奶量未填")
+        case let .diaper(data): return data.diaperLabel
+        case let .sleep(data): return data.durationSeconds.map { "\($0 / 60) 分钟" } ?? "睡眠记录"
         case .unknown: return "暂不支持展示这类记录"
         }
     }

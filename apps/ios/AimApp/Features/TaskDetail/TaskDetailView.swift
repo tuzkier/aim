@@ -21,7 +21,7 @@ struct TaskDetailView: View {
     var body: some View {
         Form {
             Section {
-                Label(store.task.status == .completed ? "已完成" : "待处理", systemImage: store.task.status == .completed ? "checkmark.circle.fill" : "circle")
+                Label(store.task.status == .cancelled ? "不再适用" : store.task.status == .completed ? "已完成" : "待处理", systemImage: store.task.status == .completed ? "checkmark.circle.fill" : "circle")
                     .foregroundStyle(store.task.status == .completed ? Color.green : Color.aimAccent)
                 Text(store.task.title)
                     .font(.title3.weight(.semibold))
@@ -38,7 +38,7 @@ struct TaskDetailView: View {
                     LabeledContent("已安排", value: scheduledFor.formatted(date: .abbreviated, time: .shortened))
                 }
                 Button("延期") { showingDelay = true }
-                    .disabled(store.task.status == .completed)
+                    .disabled(!store.task.isOpen)
             }
 
             if let errorMessage = store.errorMessage {
@@ -63,11 +63,11 @@ struct TaskDetailView: View {
                     // 不用 Label：图标和文字会被当成一个整体居中，文字因此被顶到
                     // 右边约 12pt。而这个 checkmark 在完成/未完成两态是同一个，
                     // 本来就没在表达状态，删掉即可，文字才真正落在中线上。
-                    Text(store.task.status == .completed ? "已完成" : "标记完成")
+                    Text(store.task.status == .cancelled ? "不再适用" : store.task.status == .completed ? "已完成" : "标记完成")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(store.task.status == .completed || store.isSaving)
+                .disabled(!store.task.isOpen || store.isSaving)
             }
 
             // 加错了、重复了、不需要了：删掉，而不是标成完成——完成代表真的做了。

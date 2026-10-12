@@ -13,6 +13,8 @@ from aim_api.contexts.records.domain.errors import (
     RecordValidationError,
 )
 from aim_api.contexts.records.domain.record import Record, RecordType, RecordVisibility
+from aim_api.contexts.records.domain.baby_care import CARE_TYPES, baby_id, validate_care
+from aim_api.platform.business_time import beijing_today
 
 
 @dataclass(frozen=True, slots=True)
@@ -51,6 +53,9 @@ async def stage(command: CreateRecordCommand, uow: RecordsUnitOfWork) -> Record:
     if not await uow.family_membership.is_active_member(command.family_id, command.account_id):
         raise RecordAccessDenied("account cannot create records for this family")
     await _check_attachments(command, uow)
+    if command.record_type.value in CARE_TYPES:
+        await check_baby_reference(uow, command.record_type, command.structured_data, command.occurred_at,
+                                   command.pregnancy_id, command.family_id)
     record = Record.create(
         record_id=uuid4(),
         pregnancy_id=command.pregnancy_id,
@@ -71,6 +76,15 @@ async def stage(command: CreateRecordCommand, uow: RecordsUnitOfWork) -> Record:
     if command.attachment_ids:
         await uow.attachments.attach(list(command.attachment_ids), record.id)
     return record
+
+
+async def check_baby_reference(uow, kind, data, occurred_at, pregnancy_id, family_id):
+    validate_care(kind.value, data, occurred_at)
+    birthday = await uow.repository.baby_birth_date(baby_id(data), pregnancy_id, family_id)
+    if birthday is None:
+        raise RecordAccessDenied("宝宝不在当前家庭与孕期，或档案已归档")
+    if beijing_today(occurred_at) < birthday:
+        raise RecordValidationError("照护时间不能早于宝宝生日")
 
 
 async def _check_attachments(command: CreateRecordCommand, uow: RecordsUnitOfWork) -> None:

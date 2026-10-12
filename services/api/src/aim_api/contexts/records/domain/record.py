@@ -9,6 +9,7 @@ from uuid import UUID
 from aim_api.contexts.records.domain.attachment import MAX_ATTACHMENTS_PER_RECORD
 from aim_api.contexts.records.domain.contraction import contraction_summary
 from aim_api.contexts.records.domain.mental_health import epds_result, validate_epds, validate_mood
+from aim_api.contexts.records.domain.baby_care import CARE_TYPES, validate_care, normalize_care
 from aim_api.contexts.records.domain.errors import RecordAccessDenied, RecordValidationError
 
 
@@ -25,6 +26,9 @@ class RecordType(StrEnum):
     hospital_trip = "hospital_trip"
     mood = "mood"
     epds = "epds"
+    feeding = "feeding"
+    diaper = "diaper"
+    sleep = "sleep"
 
 
 class RecordVisibility(StrEnum):
@@ -70,8 +74,8 @@ class Record:
             raise RecordValidationError("structured_data must be a JSON object")
         _validate_attachment_refs(attachment_refs or [])
         cls.assert_visibility_allowed(record_type, visibility)
-        cls._validate_payload(record_type, structured_data, content, title)
-        structured_data = cls._with_defaults(record_type, structured_data)
+        cls._validate_payload(record_type, structured_data, content, title, occurred_at=occurred_at)
+        structured_data = cls._with_defaults(record_type, structured_data, occurred_at=occurred_at)
         if record_type is RecordType.memory:
             title = structured_data["text"][:40]
         created_at = now or datetime.now(UTC)
@@ -384,12 +388,14 @@ class Record:
                 )
 
     @staticmethod
-    def _with_defaults(record_type: RecordType, structured_data: dict[str, Any]) -> dict[str, Any]:
+    def _with_defaults(record_type: RecordType, structured_data: dict[str, Any], *, occurred_at: datetime | None = None) -> dict[str, Any]:
         """把可选状态字段的默认值显式写进去。
 
         消费方（列表、统计、客户端）读到的永远是完整结构，
         不必各自记住「没有 answered 就等于未回答」。
         """
+        if record_type.value in CARE_TYPES:
+            return normalize_care(record_type.value, structured_data, occurred_at)
         if record_type is RecordType.question:
             return {"answered": False, **structured_data}
         if record_type is RecordType.checklist:
@@ -414,7 +420,13 @@ class Record:
         structured_data: dict[str, Any],
         content: str | None,
         title: str | None = None,
+        *, occurred_at: datetime | None = None,
     ) -> None:
+        if record_type.value in CARE_TYPES:
+            if occurred_at is None:
+                raise RecordValidationError("照护记录需要实际发生时间")
+            validate_care(record_type.value, structured_data, occurred_at)
+            return
         if record_type is RecordType.mood:
             validate_mood(structured_data, content)
             return

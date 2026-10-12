@@ -5,6 +5,7 @@ import SwiftUI
 struct HomeDashboardView: View {
     @Environment(AppSessionStore.self) private var session
     @Environment(ContractionStore.self) private var contractions
+    @Environment(FetalMovementStore.self) private var fetalMovements
     /// 横幅点开去医院记录详情要用记录仓库与待办仓库，照资料库打开报告详情的写法取。
     @Environment(AgentDestinations.self) private var destinations: AgentDestinations?
     @Environment(\.scenePhase) private var scenePhase
@@ -39,17 +40,21 @@ struct HomeDashboardView: View {
             ScrollView {
                 VStack(spacing: AimMetrics.space12) {
                     header
-                    pinnedLaborCard
-                    heroCard
-                    weekCard
+                    if store.pregnancy?.isPostpartum == true {
+                        postpartumCard
+                    } else {
+                        pinnedLaborCard
+                        heroCard
+                        weekCard
+                    }
                     todayCard
                     emotionalCareCard
                     // 数胎动从孕 28 周开始。
-                    if (store.pregnancy?.weeks ?? 0) >= 28 {
+                    if store.pregnancy?.isPostpartum != true && (store.pregnancy?.weeks ?? 0) >= 28 {
                         FetalMovementHomeCard(agentStore: agentStore)
                     }
                     // 分娩准备从孕 36 周开始出现在首页；更早也能从资料库进入。
-                    if (store.pregnancy?.weeks ?? 0) >= 36 {
+                    if store.pregnancy?.isPostpartum != true && (store.pregnancy?.weeks ?? 0) >= 36 {
                         LaborPrepCard(libraryStore: libraryStore, agentStore: agentStore)
                     }
                     quickActions
@@ -65,6 +70,14 @@ struct HomeDashboardView: View {
             // 孕周一变就同步给宫缩计时（早产提示要用）；广播触发的重载也走这里。
             .onChange(of: store.pregnancy?.weeks, initial: true) { _, weeks in
                 contractions.gestationalWeeks = weeks
+            }
+            .onChange(of: store.pregnancy?.isPostpartum, initial: true) { _, postpartum in
+                if postpartum == true {
+                    fetalMovements.unbind(); contractions.unbind()
+                } else if let account = session.accountID, let pregnancy = session.pregnancyID, let repository = store.repository {
+                    fetalMovements.repository = repository; fetalMovements.bind(accountID: account, pregnancyID: pregnancy)
+                    contractions.repository = repository; contractions.bind(accountID: account, pregnancyID: pregnancy)
+                }
             }
             // 「欢迎回来」「已加入某某家庭」这类一次性提示：启动默认进首页，就在这里显示。
             .onAppear {
@@ -163,7 +176,8 @@ struct HomeDashboardView: View {
         if let accountID = session.accountID {
             NavigationLink {
                 EmotionalCareView(repository: store.repository, accountID: accountID,
-                    weeks: store.pregnancy?.weeks, dueDate: store.pregnancy?.dueDate,
+                    weeks: store.pregnancy?.isPostpartum == true ? nil : store.pregnancy?.weeks,
+                    dueDate: store.pregnancy?.dueDate, birthDate: store.pregnancy?.birthDate,
                     isMother: myself?.role == .mother, agentStore: agentStore)
                     .id("\(accountID)-\(session.pregnancyID?.uuidString ?? "")")
             } label: {
@@ -181,6 +195,20 @@ struct HomeDashboardView: View {
             }
             .buttonStyle(.plain).accessibilityIdentifier("home-emotional-care")
         }
+    }
+
+    private var postpartumCard: some View {
+        NavigationLink {
+            PostpartumView(repository: store.repository, pregnancy: store.pregnancy, agentStore: agentStore)
+        } label: {
+            VStack(alignment: .leading, spacing: AimMetrics.space12) {
+                Text("产后 \(store.pregnancy?.postpartumDays() ?? 0) 天").font(.title2.weight(.semibold))
+                    .accessibilityIdentifier("home-postpartum-days")
+                Text("照顾好自己，也一起记下宝宝的日常").font(.subheadline)
+                Label("宝宝档案与照护", systemImage: "heart.text.square")
+            }
+            .frame(maxWidth: .infinity, alignment: .leading).aimCard()
+        }.buttonStyle(.plain).accessibilityIdentifier("home-postpartum-card")
     }
 
     // MARK: - 顶部

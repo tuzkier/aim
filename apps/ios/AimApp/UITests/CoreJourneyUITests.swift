@@ -11,7 +11,7 @@ final class CoreJourneyUITests: XCTestCase {
             return false
         }
     }
-    func testGlobalAgentButtonShowsCurrentTabContext() throws {
+    func testGlobalAgentButtonOpensOrdinaryWebConversation() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-reset-session"]
         app.launch()
@@ -28,9 +28,12 @@ final class CoreJourneyUITests: XCTestCase {
         XCTAssertTrue(agentButton.waitForExistence(timeout: 5))
         agentButton.tap()
 
-        XCTAssertTrue(app.navigationBars["AIM"].waitForExistence(timeout: 3))
-        let contextCard = app.descendants(matching: .any).matching(identifier: "agent-current-context").firstMatch
-        XCTAssertTrue(contextCard.waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["agent-close"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.textViews.firstMatch.waitForExistence(timeout: 30))
+        XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH '正在看：'")).firstMatch.exists,
+                       "全局入口按当前产品约定打开普通对话")
+        app.buttons["agent-close"].tap()
+        XCTAssertTrue(app.buttons["global-agent-button"].waitForExistence(timeout: 5))
     }
 
     func testRecordsJourneyCreatesSymptomAndOffersTaskAction() throws {
@@ -674,6 +677,188 @@ final class CoreJourneyUITests: XCTestCase {
         savedAssessment.name = "私密自评保存后的详情与支持"
         savedAssessment.lifetime = .keepAlways
         add(savedAssessment)
+    }
+
+    func testPostpartumBirthBabyCareAndSixWeekAssessmentJourney() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-reset-session"]
+        app.launch()
+        registerNewAccount(in: app)
+        completePregnancySetup(in: app, daysUntilDue: 20)
+        let labor = app.buttons["home-labor-card"]
+        reveal(labor, in: app); labor.tap()
+        let entry = app.buttons["labor-postpartum-entry"]
+        reveal(entry, in: app); entry.tap()
+        let birth = app.buttons["postpartum-record-birth"]
+        XCTAssertTrue(birth.waitForExistence(timeout: 10)); birth.tap()
+        let createBaby = app.switches["birth-create-baby"]
+        XCTAssertTrue(createBaby.waitForExistence(timeout: 5))
+        let knob = createBaby.switches.firstMatch
+        let frame = knob.exists ? knob.frame : createBaby.frame
+        app.coordinate(withNormalizedOffset: .zero)
+            .withOffset(CGVector(dx: knob.exists ? frame.midX : frame.maxX - 30, dy: frame.midY)).tap()
+        let on = NSPredicate(format: "value == '1'")
+        wait(for: [expectation(for: on, evaluatedWith: createBaby, handler: nil)], timeout: 5)
+        let name = app.textFields["baby-name"]
+        XCTAssertTrue(name.waitForExistence(timeout: 5))
+        name.tap(); name.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 2)); name.typeText("小豆")
+        dismissKeyboard(in: app)
+        app.buttons["birth-save"].tap()
+        let confirm = app.buttons["确认记录"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 5)); confirm.tap()
+        let days = app.staticTexts["postpartum-days"]
+        XCTAssertTrue(days.waitForExistence(timeout: 15))
+        XCTAssertTrue(days.label.contains("0"))
+
+        let feed = app.buttons["postpartum-log-feeding"]
+        reveal(feed, in: app); feed.tap()
+        let amount = app.textFields["baby-feeding-volume"]
+        XCTAssertTrue(amount.waitForExistence(timeout: 5)); amount.tap(); amount.typeText("60.5")
+        dismissKeyboard(in: app); app.buttons["baby-care-save"].tap()
+        let careSave = app.buttons["baby-care-save"]
+        let gone = NSPredicate(format: "exists == false")
+        let finished = XCTNSPredicateExpectation(predicate: gone, object: careSave)
+        let resultWait = XCTWaiter.wait(for: [finished], timeout: 15)
+        if resultWait != .completed { print("照护保存现场：\n" + app.debugDescription) }
+        XCTAssertEqual(resultWait, .completed, "照护表单必须保存成功并关闭")
+        let count = app.staticTexts["postpartum-feeding-count"]
+        for _ in 0..<8 where !count.exists { app.swipeDown() }
+        wait(for: [expectation(for: NSPredicate(format: "label CONTAINS '1'"), evaluatedWith: count, handler: nil)], timeout: 15)
+        let feedRow = app.buttons["postpartum-care-row-feeding"].firstMatch
+        reveal(feedRow, in: app); feedRow.tap()
+        let editFeed = app.buttons["baby-care-edit"]
+        reveal(editFeed, in: app); editFeed.tap()
+        XCTAssertTrue(amount.waitForExistence(timeout: 5))
+        amount.tap(); amount.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 4)); amount.typeText("75.5")
+        dismissKeyboard(in: app); app.buttons["baby-care-save"].tap()
+        XCTAssertEqual(XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: gone, object: careSave)], timeout: 15), .completed)
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS '75.5'")).firstMatch.waitForExistence(timeout: 10))
+        let deleteFeed = app.buttons["baby-care-delete"]
+        reveal(deleteFeed, in: app); deleteFeed.tap()
+        app.buttons["删除"].firstMatch.tap()
+        XCTAssertTrue(app.staticTexts["postpartum-days"].waitForExistence(timeout: 10) || app.buttons["postpartum-log-feeding"].waitForExistence(timeout: 5))
+        for _ in 0..<8 where !count.exists { app.swipeDown() }
+        wait(for: [expectation(for: NSPredicate(format: "label == '喂养 0 次'"), evaluatedWith: count, handler: nil)], timeout: 15)
+        let logDiaper = app.buttons["postpartum-log-diaper"]
+        reveal(logDiaper, in: app); logDiaper.tap()
+        app.buttons["都有"].tap(); app.buttons["baby-care-save"].tap()
+        let diaper = app.staticTexts["postpartum-diaper-count"]
+        for _ in 0..<8 where !diaper.exists { app.swipeDown() }
+        wait(for: [expectation(for: NSPredicate(format: "label CONTAINS '湿 1'"), evaluatedWith: diaper, handler: nil)], timeout: 15)
+        let logSleep = app.buttons["postpartum-log-sleep"]
+        reveal(logSleep, in: app); logSleep.tap()
+        app.buttons["baby-care-save"].tap()
+        let sleepTotal = app.staticTexts["postpartum-sleep-total"]
+        for _ in 0..<8 where !sleepTotal.exists { app.swipeDown() }
+        wait(for: [expectation(for: NSPredicate(format: "label CONTAINS '60'"), evaluatedWith: sleepTotal, handler: nil)], timeout: 15)
+
+        let home = app.tabBars.buttons["首页"]
+        home.tap()
+        let homeDays = app.staticTexts["home-postpartum-days"]
+        XCTAssertTrue(homeDays.waitForExistence(timeout: 15))
+        XCTAssertFalse(app.buttons["home-labor-card"].exists)
+        let homeCard = app.buttons["home-postpartum-card"]
+        homeCard.tap()
+        for milestone in [14, 42] {
+            let correct = app.buttons["postpartum-correct-date"]
+            reveal(correct, in: app); correct.tap()
+            let target = Calendar.current.date(byAdding: .day, value: -milestone, to: .now)!
+            let components = Calendar.current.dateComponents([.year, .month, .day], from: target)
+            let wheels = app.pickerWheels
+            XCTAssertTrue(wheels.element(boundBy: 0).waitForExistence(timeout: 5))
+            wheels.element(boundBy: 0).adjust(toPickerWheelValue: "\(components.year!)年")
+            wheels.element(boundBy: 1).adjust(toPickerWheelValue: "\(components.month!)月")
+            wheels.element(boundBy: 2).adjust(toPickerWheelValue: "\(components.day!)日")
+            app.buttons["birth-correct-save"].tap()
+            let correctionGone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.buttons["birth-correct-save"])
+            XCTAssertEqual(XCTWaiter.wait(for: [correctionGone], timeout: 15), .completed)
+            for _ in 0..<8 where !days.exists { app.swipeDown() }
+            let expectedDays = NSPredicate(format: "label == %@", "产后 \(milestone) 天")
+            wait(for: [expectation(for: expectedDays, evaluatedWith: days, handler: nil)], timeout: 15)
+            let emotion = app.buttons["postpartum-emotional-care"]
+            reveal(emotion, in: app); emotion.tap()
+            XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", milestone == 14 ? "产后 2 周自评" : "产后 6 周自评")).firstMatch.waitForExistence(timeout: 10))
+            let screenshot = XCTAttachment(screenshot: app.screenshot()); screenshot.name = "真实分娩日期触发产后\(milestone)天自评"; screenshot.lifetime = .keepAlways; add(screenshot)
+            if milestone == 14 { app.navigationBars.buttons.element(boundBy: 0).tap() }
+        }
+    }
+
+    func testAccidentalBirthCanBeRetractedAndAProfileAddedAfterRecordingAgain() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-reset-session"]; app.launch()
+        registerNewAccount(in: app); completePregnancySetup(in: app, daysUntilDue: 20)
+        let labor = app.buttons["home-labor-card"]
+        reveal(labor, in: app); labor.tap()
+        let entry = app.buttons["labor-postpartum-entry"]
+        reveal(entry, in: app); entry.tap()
+        for attempt in 0..<2 {
+            let record = app.buttons["postpartum-record-birth"]
+            XCTAssertTrue(record.waitForExistence(timeout: 10)); record.tap()
+            app.buttons["birth-save"].tap()
+            let confirm = app.buttons["确认记录"]
+            XCTAssertTrue(confirm.waitForExistence(timeout: 5)); confirm.tap()
+            XCTAssertTrue(app.staticTexts["postpartum-days"].waitForExistence(timeout: 15))
+            if attempt == 0 {
+                let retract = app.buttons["postpartum-retract-birth"]
+                reveal(retract, in: app); retract.tap()
+                let confirmRetract = app.buttons["确认撤回分娩"]
+                XCTAssertTrue(confirmRetract.waitForExistence(timeout: 5)); confirmRetract.tap()
+                XCTAssertTrue(record.waitForExistence(timeout: 15), "撤回成功必须恢复孕期入口")
+            }
+        }
+        let add = app.buttons["postpartum-add-baby"]
+        reveal(add, in: app); add.tap()
+        let name = app.textFields["baby-name"]
+        XCTAssertTrue(name.waitForExistence(timeout: 5)); name.tap()
+        name.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 2)); name.typeText("小豆")
+        dismissKeyboard(in: app); app.buttons["baby-profile-save"].tap()
+        let summary = app.staticTexts["postpartum-baby-summary"]
+        XCTAssertTrue(summary.waitForExistence(timeout: 15)); XCTAssertTrue(summary.label.contains("小豆"))
+        let edit = app.buttons["postpartum-edit-baby"]
+        reveal(edit, in: app); edit.tap()
+        XCTAssertTrue(name.waitForExistence(timeout: 5)); name.tap()
+        name.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 2)); name.typeText("豆豆")
+        dismissKeyboard(in: app); app.buttons["baby-profile-save"].tap()
+        wait(for: [expectation(for: NSPredicate(format: "label CONTAINS '豆豆'"), evaluatedWith: summary, handler: nil)], timeout: 15)
+    }
+
+    /// 运行前把合成报告通过 simctl addmedia 加到测试模拟器；不使用真人资料。
+    func testPhotoReportCanBeRecognizedConfirmedAndReadInTheLibrary() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-reset-session"]; app.launch()
+        defer { app.terminate() }
+        registerNewAccount(in: app); completePregnancySetup(in: app)
+        let photo = app.buttons["home-quick-photo"]
+        reveal(photo, in: app); photo.tap()
+        let library = app.buttons["从相册选"]
+        XCTAssertTrue(library.waitForExistence(timeout: 5)); library.tap()
+        let image = app.images.matching(identifier: "PXGGridLayout-Info").firstMatch
+        XCTAssertTrue(image.waitForExistence(timeout: 10), app.debugDescription)
+        image.tap()
+        let input = app.textViews.firstMatch
+        XCTAssertTrue(input.waitForExistence(timeout: 30))
+        XCTAssertTrue(app.buttons["删掉这张图"].waitForExistence(timeout: 10), "相册图片必须进入待发送区")
+        input.tap(); input.typeText("请按这张报告图片建立产检报告预览，记录图上的指标和尿蛋白异常，核对后让我确认保存。看不清不猜，不提供诊断。")
+        app.buttons["发送"].tap()
+        let confirm = app.buttons["记下"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 120), app.debugDescription)
+        let preview = XCTAttachment(screenshot: app.screenshot()); preview.name = "照片识别后的报告预览"; preview.lifetime = .keepAlways; add(preview)
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS '62.5'")).firstMatch.exists)
+        confirm.tap()
+        let view = app.buttons["查看"]
+        XCTAssertTrue(view.waitForExistence(timeout: 30), app.debugDescription)
+        app.buttons["agent-close"].tap()
+        app.tabBars.buttons["资料库"].tap()
+        let checkups = app.buttons["library-card-checkups"]
+        reveal(checkups, in: app); checkups.tap()
+        let row = app.buttons["library-checkup-record"].firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 15)); row.tap()
+        XCTAssertTrue(app.navigationBars["报告详情"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["查看大图"].waitForExistence(timeout: 15), "保存的报告必须关联原图并能加载")
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS '62.5'")).firstMatch.exists)
+        reveal(app.staticTexts["report-flag-尿蛋白"], in: app)
+        XCTAssertTrue(app.staticTexts["report-flag-尿蛋白"].exists)
+        let saved = XCTAttachment(screenshot: app.screenshot()); saved.name = "照片报告已存入资料库"; saved.lifetime = .keepAlways; add(saved)
     }
 
     /// 「想问医生」此前缺了最关键的一步：产检那天怎么把攒下的问题一次带走。
@@ -1444,13 +1629,12 @@ final class CoreJourneyUITests: XCTestCase {
         XCTAssertTrue(agentTab.waitForExistence(timeout: 15))
         agentTab.tap()
 
-        let input = app.textFields.element(
-            matching: NSPredicate(format: "placeholderValue == %@", "告诉我你现在在担心什么"))
-        XCTAssertTrue(input.waitForExistence(timeout: 10))
+        let input = app.textViews.firstMatch
+        XCTAssertTrue(input.waitForExistence(timeout: 30))
         let question = "孕期能喝咖啡吗"
         input.tap()
         input.typeText(question)
-        app.buttons["arrowSend"].tap()
+        app.buttons["发送"].tap()
 
         // 问句立刻回显，不用等模型答完——会话在发出去那一刻就登记了。
         XCTAssertTrue(app.staticTexts[question].waitForExistence(timeout: 20), "提问应当出现在对话里")
@@ -1463,12 +1647,9 @@ final class CoreJourneyUITests: XCTestCase {
             "开了新对话，上一段就不该还留在屏幕上")
 
         app.buttons["agent-history"].tap()
-        XCTAssertTrue(
-            app.otherElements["agent-session-list"].waitForExistence(timeout: 10)
-                || app.navigationBars["历史对话"].waitForExistence(timeout: 5),
-            "应当能打开历史对话列表")
+        XCTAssertTrue(app.staticTexts["历史对话"].waitForExistence(timeout: 10), "应当能打开网页历史对话面板")
 
-        let row = app.buttons["agent-session-row"].firstMatch
+        let row = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", question)).firstMatch
         XCTAssertTrue(row.waitForExistence(timeout: 15), "刚才那段应当出现在历史里")
         row.tap()
 

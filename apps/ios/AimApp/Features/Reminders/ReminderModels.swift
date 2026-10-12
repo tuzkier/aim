@@ -130,7 +130,7 @@ enum ReminderPlanner {
         let start = cal.date(byAdding: .day, value: -280, to: cal.startOfDay(for: pregnancy.dueDate))!
         for offset in 0..<horizonDays {
             let day = cal.date(byAdding: .day, value: offset, to: cal.startOfDay(for: now))!
-            if preferences.fetalMovement {
+            if preferences.fetalMovement && !pregnancy.isPostpartum {
                 let time = atMinute(preferences.fetalMinute, on: day)
                 let fire = avoidingQuiet(time, preferences, beforeDeadline: false)
                 let elapsed = cal.dateComponents([.day], from: start, to: cal.startOfDay(for: fire)).day ?? -1

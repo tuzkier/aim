@@ -18,6 +18,9 @@ class FamilyEventKind(StrEnum):
     member_left = "member_left"
     member_removed = "member_removed"
     due_date_changed = "due_date_changed"
+    birth_recorded = "birth_recorded"
+    birth_date_changed = "birth_date_changed"
+    birth_retracted = "birth_retracted"
 
 
 @dataclass(frozen=True, slots=True)

@@ -11,8 +11,9 @@ struct TaskItem: Identifiable, Codable, Hashable, Sendable {
     let scheduledFor: Date?
     let assignedMemberID: UUID?
     let changedByActor: TaskActor
+    var sourceID: String? = nil
 
-    var isOpen: Bool { status != .completed }
+    var isOpen: Bool { status != .completed && status != .cancelled }
     var isAgentChanged: Bool { changedByActor.isAgent }
 }
 
@@ -20,6 +21,7 @@ enum TaskStatus: String, Codable, CaseIterable, Sendable {
     case todo
     case scheduled
     case completed
+    case cancelled
     case delayed
     case unknown
 
@@ -28,6 +30,7 @@ enum TaskStatus: String, Codable, CaseIterable, Sendable {
         case "todo": self = .todo
         case "scheduled": self = .scheduled
         case "completed", "done": self = .completed
+        case "cancelled": self = .cancelled
         case "delayed": self = .delayed
         default: self = .unknown
         }
@@ -158,6 +161,14 @@ struct PregnancySummary: Codable, Equatable, Sendable {
     let dueDate: Date
     let weeks: Int
     let days: Int
+    var status: String = "active"
+    var birthDate: Date? = nil
+    var birthRevision: UUID? = nil
+    var isPostpartum: Bool { birthDate != nil || status == "postpartum" }
+    func postpartumDays(now: Date = .now) -> Int? {
+        birthDate.map { max(0, EmotionalSchedule.calendar.dateComponents([.day], from: EmotionalSchedule.calendar.startOfDay(for: $0),
+                                                                       to: EmotionalSchedule.calendar.startOfDay(for: now)).day ?? 0) }
+    }
 }
 
 struct MemberDetail: Equatable, Sendable {
@@ -175,6 +186,7 @@ struct FamilyActivityItem: Identifiable, Codable, Equatable, Sendable {
         case memberLeft = "member_left"
         case memberRemoved = "member_removed"
         case dueDateChanged = "due_date_changed"
+        case birthRecorded = "birth_recorded", birthDateChanged = "birth_date_changed", birthRetracted = "birth_retracted"
         case unknown
 
         init(from decoder: Decoder) throws {
@@ -203,6 +215,9 @@ struct FamilyActivityItem: Identifiable, Codable, Equatable, Sendable {
         case .memberLeft: "\(actorName) 退出了家庭"
         case .memberRemoved: "\(actorName) 把 \(title) 移出了家庭"
         case .dueDateChanged: "\(actorName) 把预产期改为 \(title)"
+        case .birthRecorded: "\(actorName) 记录了 \(title) 分娩"
+        case .birthDateChanged: "\(actorName) 把分娩日期改为 \(title)"
+        case .birthRetracted: "\(actorName) 撤回了分娩记录"
         case .unknown: "\(actorName) 有一条新动态"
         }
     }
@@ -225,6 +240,11 @@ struct FamilyActivityPage: Equatable, Sendable {
 }
 
 protocol BusinessRepositoryProtocol: Sendable {
+    func fetchBabies() async throws -> [BabyProfile]
+    func recordBirth(date: Date, babies: [BabyDraft]) async throws -> BirthSnapshot
+    func updateBirthDate(_ date: Date) async throws -> BirthSnapshot
+    func retractBirth() async throws -> PregnancySummary
+    func saveBaby(_ draft: BabyDraft, id: UUID?) async throws -> BabyProfile
     func fetchToday() async throws -> TodaySnapshot
     func fetchPlan() async throws -> PlanSnapshot
     func fetchFamily() async throws -> FamilySnapshot
@@ -265,6 +285,11 @@ protocol BusinessRepositoryProtocol: Sendable {
 
 /// 新加的家庭接口给出默认实现：只关心别的接口的测试替身不必逐个补齐。
 extension BusinessRepositoryProtocol {
+    func fetchBabies() async throws -> [BabyProfile] { throw APIError.notConfigured }
+    func recordBirth(date: Date, babies: [BabyDraft]) async throws -> BirthSnapshot { throw APIError.notConfigured }
+    func updateBirthDate(_ date: Date) async throws -> BirthSnapshot { throw APIError.notConfigured }
+    func retractBirth() async throws -> PregnancySummary { throw APIError.notConfigured }
+    func saveBaby(_ draft: BabyDraft, id: UUID?) async throws -> BabyProfile { throw APIError.notConfigured }
     func fetchPregnancy() async throws -> PregnancySummary? { throw APIError.notConfigured }
     func updateDueDate(_ dueDate: Date) async throws -> PregnancySummary { throw APIError.notConfigured }
     func fetchMemberDetail(accountID: UUID) async throws -> MemberDetail { throw APIError.notConfigured }
@@ -512,6 +537,56 @@ actor BusinessRepository: BusinessRepositoryProtocol {
         return try decoder.decode(PregnancyDTO.self, from: data).summary
     }
 
+    func fetchBabies() async throws -> [BabyProfile] {
+        let id = try requiredPregnancyID()
+        let request = environment.businessRequest(path: "/api/v1/pregnancies/\(id.uuidString)/babies")
+        let (data, _) = try await session.aimData(for: request)
+        return try decoder.decode(BabyListDTO.self, from: data).babies
+    }
+
+    func recordBirth(date: Date, babies: [BabyDraft]) async throws -> BirthSnapshot {
+        let body = BirthBody(birthDate: PostpartumCalendar.dateString(date), babies: babies.map(BabyBody.init))
+        let data = try await postpartumRequest(path: "birth", method: "POST", body: encoder.encode(body))
+        let value = try decoder.decode(BirthDTO.self, from: data)
+        notifyPostpartumChange()
+        return BirthSnapshot(pregnancy: value.pregnancy.summary, babies: value.babies)
+    }
+
+    func updateBirthDate(_ date: Date) async throws -> BirthSnapshot {
+        let body = BirthBody(birthDate: PostpartumCalendar.dateString(date), babies: nil)
+        let data = try await postpartumRequest(path: "birth", method: "PATCH", body: encoder.encode(body))
+        let value = try decoder.decode(BirthDTO.self, from: data)
+        notifyPostpartumChange()
+        return BirthSnapshot(pregnancy: value.pregnancy.summary, babies: value.babies)
+    }
+
+    func retractBirth() async throws -> PregnancySummary {
+        let data = try await postpartumRequest(path: "birth", method: "DELETE", body: nil)
+        let value = try decoder.decode(PregnancyDTO.self, from: data).summary
+        notifyPostpartumChange()
+        return value
+    }
+
+    func saveBaby(_ draft: BabyDraft, id: UUID?) async throws -> BabyProfile {
+        let path = id.map { "babies/\($0.uuidString)" } ?? "babies"
+        let data = try await postpartumRequest(path: path, method: id == nil ? "POST" : "PATCH", body: encoder.encode(BabyBody(draft)))
+        let value = try decoder.decode(BabyProfile.self, from: data)
+        notifyPostpartumChange()
+        return value
+    }
+
+    private func postpartumRequest(path: String, method: String, body: Data?) async throws -> Data {
+        let id = try requiredPregnancyID()
+        var request = environment.businessRequest(path: "/api/v1/pregnancies/\(id.uuidString)/\(path)", method: method)
+        request.httpBody = body
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        return try await session.aimData(for: request).0
+    }
+
+    private func notifyPostpartumChange() {
+        NotificationCenter.default.post(name: .aimDataChanged, object: nil, userInfo: ["kinds": ["pregnancy", "record", "task"]])
+    }
+
     func updateDueDate(_ dueDate: Date) async throws -> PregnancySummary {
         let pregnancyID = try requiredPregnancyID()
         let body = try encoder.encode(CreatePregnancyBody(dueDate: Self.dateOnlyFormatter.string(from: dueDate)))
@@ -636,7 +711,7 @@ actor BusinessRepository: BusinessRepositoryProtocol {
             dueAt: dto.dueAt,
             scheduledFor: dto.scheduledFor,
             assignedMemberID: dto.assignedMemberID,
-            changedByActor: TaskActor(rawValue: dto.changedByActorType)
+            changedByActor: TaskActor(rawValue: dto.changedByActorType), sourceID: dto.sourceID
         )
     }
 
@@ -683,7 +758,7 @@ actor BusinessRepository: BusinessRepositoryProtocol {
         case (.symptom, .symptom), (.checkup, .checkup), (.note, .note), (.memory, .memory),
              (.question, .question), (.checklist, .checklist),
              (.knowledge, .knowledge), (.fetalMovement, .fetalMovement),
-             (.contraction, .contraction), (.hospitalTrip, .hospitalTrip), (.mood, .mood), (.epds, .epds):
+             (.contraction, .contraction), (.hospitalTrip, .hospitalTrip), (.mood, .mood), (.epds, .epds), (.feeding, .feeding), (.diaper, .diaper), (.sleep, .sleep):
             return
         default:
             throw APIError.invalidResponse
@@ -835,15 +910,42 @@ private struct PregnancyDTO: Decodable {
     let id: UUID
     let dueDate: Date
     let gestationalAge: Age
+    let status: String?
+    let birthDate: Date?
+    let birthRevision: UUID?
 
     enum CodingKeys: String, CodingKey {
         case id
         case dueDate = "due_date"
         case gestationalAge = "gestational_age"
+        case status
+        case birthDate = "birth_date", birthRevision = "birth_revision"
     }
 
     var summary: PregnancySummary {
-        PregnancySummary(id: id, dueDate: dueDate, weeks: gestationalAge.weeks, days: gestationalAge.days)
+        PregnancySummary(id: id, dueDate: dueDate, weeks: gestationalAge.weeks, days: gestationalAge.days,
+                         status: status ?? "active", birthDate: birthDate, birthRevision: birthRevision)
+    }
+}
+
+private struct BabyListDTO: Decodable { let babies: [BabyProfile] }
+private struct BirthDTO: Decodable { let pregnancy: PregnancyDTO; let babies: [BabyProfile] }
+private struct BirthBody: Encodable {
+    let birthDate: String
+    let babies: [BabyBody]?
+    enum CodingKeys: String, CodingKey { case birthDate = "birth_date", babies }
+}
+private struct BabyBody: Encodable {
+    let name: String
+    let birthDate: String
+    let sex: String
+    let birthWeightGrams: Int?
+    init(_ draft: BabyDraft) {
+        name = draft.name; birthDate = PostpartumCalendar.dateString(draft.birthDate)
+        sex = draft.sex; birthWeightGrams = draft.birthWeightGrams
+    }
+    enum CodingKeys: String, CodingKey {
+        case name, sex, birthDate = "birth_date", birthWeightGrams = "birth_weight_grams"
     }
 }
 

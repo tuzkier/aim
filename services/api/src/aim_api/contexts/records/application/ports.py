@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Protocol
 from uuid import UUID
 
@@ -9,6 +9,8 @@ from aim_api.contexts.records.domain.record import Record, RecordType
 
 
 class RecordsRepositoryPort(Protocol):
+    async def baby_birth_date(self, baby_id: UUID, pregnancy_id: UUID, family_id: UUID) -> date | None: ...
+
     async def reserve_memory_slot(self, family_id: UUID) -> None: ...
 
     async def add_record(self, record: Record) -> None: ...
