@@ -344,4 +344,17 @@ final class ContractionModelsTests: XCTestCase {
         let old = session(startedAt: t0, entries: [ContractionEntry(start: 0, duration: 60)])
         XCTAssertEqual(HospitalTripLink.decide(active: nil, latest: old, now: t0 + 86_400), .none)
     }
+
+    func testTripLinkRequiresAChoiceForAStaleActiveTimer() {
+        let active = timer([(0, 60)])
+        let recent = session(startedAt: t0 + 21_000, entries: [ContractionEntry(start: 0, duration: 60)])
+        XCTAssertEqual(HospitalTripLink.decide(active: active, latest: recent, now: t0 + 60 + 21_600), .finishActive)
+        XCTAssertEqual(HospitalTripLink.decide(active: active, latest: recent, now: t0 + 60 + 21_601), .resolveStale,
+                       "旧计时必须由用户处理，不能自动保存或改关联其他历史")
+    }
+
+    func testTripLinkDoesNotAttachAHistoryRecordFromTheFuture() {
+        let future = session(startedAt: t0 + 600, entries: [ContractionEntry(start: 0, duration: 60)])
+        XCTAssertEqual(HospitalTripLink.decide(active: nil, latest: future, now: t0), .none)
+    }
 }

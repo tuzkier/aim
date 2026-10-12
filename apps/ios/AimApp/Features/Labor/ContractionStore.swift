@@ -25,6 +25,9 @@ final class ContractionStore {
     /// 保存成功后在这里广播 `.aimDataChanged`。测试注入自己的，免得惊动宿主 App。
     private let notificationCenter: NotificationCenter
     private var scope: Scope?
+    private var scopeGeneration = UUID()
+    private var savingTask: Task<Void, Never>?
+    private var savedRecordIDs: [UUID: UUID] = [:]
     private var reloadGeneration = 0
     private var appliedReloadGeneration = 0
 
@@ -40,11 +43,19 @@ final class ContractionStore {
     init(defaults: UserDefaults = .standard, notificationCenter: NotificationCenter = .default) {
         self.defaults = defaults
         self.notificationCenter = notificationCenter
+        #if DEBUG
+        // UI 回归先按过去的时钟计时，重启时取消偏移，从同一断点验收过期处理。
+        if let raw = ProcessInfo.processInfo.environment["AIM_TEST_CONTRACTION_CLOCK_OFFSET"],
+           let offset = TimeInterval(raw), offset.isFinite {
+            clock = { Date().addingTimeInterval(offset) }
+        }
+        #endif
     }
 
     func bind(accountID: UUID, pregnancyID: UUID) {
         let next = Scope(accountID: accountID, pregnancyID: pregnancyID)
         guard next != scope else { return }
+        resetSavingScope()
         scope = next
         active = Self.read(ContractionTimer.self, key: next.activeKey, from: defaults)
         unsaved = Self.read([ContractionResult].self, key: next.unsavedKey, from: defaults) ?? []
@@ -55,6 +66,7 @@ final class ContractionStore {
 
     /// 解绑时连仓库一起清掉：它按值带着上一家的身份。
     func unbind() {
+        resetSavingScope()
         scope = nil
         repository = nil
         active = nil
@@ -62,6 +74,14 @@ final class ContractionStore {
         sessions = []
         saveError = nil
         loadError = nil
+    }
+
+    /// 已发出的旧请求照常完成并清旧队列，新作用域使用独立的保存任务与编号。
+    private func resetSavingScope() {
+        scopeGeneration = UUID()
+        savingTask = nil
+        savedRecordIDs = [:]
+        isSaving = false
     }
 
     /// 实时档位：没有进行中的计时为 nil。
@@ -111,6 +131,18 @@ final class ContractionStore {
         persist(scope)
     }
 
+    /// 旧计时只归档或清理，不作为当前出发的关联；立即出发也可以保留断点稍后处理。
+    func resolveStaleTrip(_ choice: StaleContractionChoice) async -> Bool {
+        guard scope != nil, needsStaleDecision else { return false }
+        let generation = scopeGeneration
+        switch choice {
+        case .save: _ = await finish(timeout: Self.tripSaveTimeout)
+        case .discard: discardActive()
+        case .later: break
+        }
+        return scopeGeneration == generation
+    }
+
     /// 结束计时并保存：没有已结束的宫缩时返回 nil 且什么都不做。
     /// 保存成功时 savedRecordID 为新记录的 id。进行中的那一次不存；
     /// 超出后端限制（1 天、500 次）的最早部分由 `ContractionTimer.archivedResult(id:)` 丢掉。
@@ -125,12 +157,14 @@ final class ContractionStore {
     /// 失败的留在队列里等补存。没有已结束的宫缩时返回 nil 且什么都不做。
     func finish(timeout: Duration) async -> (result: ContractionResult, savedRecordID: UUID?, timedOut: Bool)? {
         guard let result = enqueueActive() else { return nil }
+        let generation = scopeGeneration
         let saving = Task { await self.saveUnsaved(returning: result.id) }
         // 外层 nil 表示超时；内层是保存后的记录 id（没保存上也是 nil）。
         let outcome: UUID?? = await withCheckedContinuation { continuation in
             let once = ResumeOnce(continuation)
             let timer = Task {
                 try? await Task.sleep(for: timeout)
+                guard !Task.isCancelled else { return }
                 once.resume(returning: nil)
             }
             Task {
@@ -139,7 +173,10 @@ final class ContractionStore {
                 once.resume(returning: .some(savedID))
             }
         }
+        guard generation == scopeGeneration else { return (result, nil, false) }
         if let savedID = outcome { return (result, savedID, false) }
+        // 编号可能已保存成功，只是队列里其他结果或历史刷新仍在等待。
+        if let savedID = savedRecordIDs[result.id] { return (result, savedID, false) }
         return (result, nil, true)
     }
 
@@ -160,34 +197,66 @@ final class ContractionStore {
 
     /// 按顺序保存队列；遇到失败就停。返回 `target` 那一条保存后的记录 id。
     private func saveUnsaved(returning target: UUID?) async -> UUID? {
-        guard !isSaving else { return nil }
-        guard !unsaved.isEmpty else {
-            saveError = nil
-            return nil
-        }
         guard let repository, let scope else {
             saveError = "没保存上，重试"
             return nil
         }
-        isSaving = true
-        var targetRecordID: UUID?
-        while let result = unsaved.first, self.scope == scope {
+        let generation = scopeGeneration
+        let task: Task<Void, Never>
+        if let savingTask {
+            task = savingTask
+        } else {
+            guard !unsaved.isEmpty else {
+                saveError = nil
+                return target.flatMap { savedRecordIDs[$0] }
+            }
+            isSaving = true
+            task = Task { await self.drainQueue(repository: repository, scope: scope, generation: generation) }
+            savingTask = task
+        }
+        await task.value
+        guard self.scope == scope, scopeGeneration == generation else { return nil }
+        return target.flatMap { savedRecordIDs[$0] }
+    }
+
+    private func drainQueue(repository: BusinessRepositoryProtocol, scope: Scope, generation: UUID) async {
+        defer {
+            if scopeGeneration == generation {
+                isSaving = false
+                savingTask = nil
+            }
+        }
+        var needsRefresh = false
+        while self.scope == scope, scopeGeneration == generation {
+            guard let result = unsaved.first else {
+                saveError = nil
+                if needsRefresh {
+                    needsRefresh = false
+                    notificationCenter.post(name: .aimDataChanged, object: nil, userInfo: ["kinds": ["record"]])
+                    await load()
+                    // 历史请求期间新增的结果仍由同一个队列处理。
+                    continue
+                }
+                return
+            }
             do {
                 let record = try await repository.createRecord(draft: result.draft)
-                if result.id == target { targetRecordID = record.id }
+                if self.scope == scope, scopeGeneration == generation {
+                    savedRecordIDs[result.id] = record.id
+                    needsRefresh = true
+                }
             } catch {
-                if self.scope == scope { saveError = "没保存上，重试" }
-                isSaving = false
-                return nil
+                if self.scope == scope, scopeGeneration == generation {
+                    saveError = "没保存上，重试"
+                    if needsRefresh {
+                        notificationCenter.post(name: .aimDataChanged, object: nil, userInfo: ["kinds": ["record"]])
+                        await load()
+                    }
+                }
+                return
             }
             removeSaved(result, from: scope)
         }
-        isSaving = false
-        guard self.scope == scope else { return targetRecordID }
-        saveError = nil
-        notificationCenter.post(name: .aimDataChanged, object: nil, userInfo: ["kinds": ["record"]])
-        await load()
-        return targetRecordID
     }
 
     /// 只采用最新一次发出的请求，且绑定没变过；旧的、乱序回来的响应丢掉。

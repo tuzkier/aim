@@ -216,7 +216,11 @@ struct ContractionSession: Identifiable, Equatable, Sendable {
 }
 
 /// 从分娩页点「我们出发去医院了」时，去医院记录关联哪次计时。
+enum StaleContractionChoice { case save, discard, later }
+
 enum HospitalTripLink: Equatable, Sendable {
+    /// 旧计时不自动当作本次出发的依据，由用户选择处理方式。
+    case resolveStale
     /// 进行中的计时里有已结束的宫缩：先结束保存，再关联保存后的记录。
     case finishActive
     /// 没有要保存的计时，但档案里最新一次计时的最后一次宫缩在 2 小时内：关联它。
@@ -227,9 +231,10 @@ enum HospitalTripLink: Equatable, Sendable {
     static let recentWindow: TimeInterval = 7200
 
     static func decide(active: ContractionTimer?, latest: ContractionSession?, now: Date) -> HospitalTripLink {
+        if active?.isStale(at: now) == true { return .resolveStale }
         if active?.completed.isEmpty == false { return .finishActive }
         guard let latest, let end = lastContractionEnd(of: latest),
-              now.timeIntervalSince(end) <= recentWindow else { return .none }
+              (0...recentWindow).contains(now.timeIntervalSince(end)) else { return .none }
         return .existing(latest.id)
     }
 

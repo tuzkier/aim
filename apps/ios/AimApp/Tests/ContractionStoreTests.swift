@@ -171,6 +171,64 @@ final class ContractionStoreTests: XCTestCase {
         XCTAssertNil(store.saveError)
     }
 
+    func testFinishJoinsAnExistingBackgroundSaveAndReturnsItsOwnRecordID() async {
+        let repository = FakeContractionRepository()
+        repository.failCreates = true
+        let store = makeStore(repository: repository)
+        contract(store)
+        _ = await store.finish()
+
+        repository.failCreates = false
+        repository.holdCreates = true
+        let background = Task { await store.saveUnsaved() }
+        await waitForHeldCreate(repository)
+        contract(store)
+        let finish = Task { await store.finish(timeout: .seconds(5)) }
+        for _ in 0..<20 { await Task.yield() }
+        repository.release()
+
+        let outcome = await finish.value
+        _ = await background.value
+        XCTAssertEqual(repository.createdIDs.count, 2, "补存和出发保存共用队列，不重复创建")
+        XCTAssertEqual(outcome?.savedRecordID, repository.createdIDs.last,
+                       "出发关联本次计时，不是补存的旧计时")
+        XCTAssertEqual(outcome?.timedOut, false)
+        XCTAssertTrue(store.unsaved.isEmpty)
+    }
+
+    func testScopeChangeDoesNotReturnAnOldLinkOrBlockTheNewQueue() async {
+        let oldRepository = FakeContractionRepository()
+        oldRepository.holdCreates = true
+        let store = makeStore(repository: oldRepository)
+        contract(store)
+        let oldFinish = Task { await store.finish(timeout: .seconds(5)) }
+        await waitForHeldCreate(oldRepository)
+
+        store.unbind()
+        let newRepository = FakeContractionRepository()
+        store.repository = newRepository
+        store.bind(accountID: UUID(), pregnancyID: UUID())
+        contract(store)
+        let current = await store.finish(timeout: .seconds(5))
+        oldRepository.release()
+        let old = await oldFinish.value
+
+        XCTAssertNotNil(current?.savedRecordID, "旧作用域的保存不能挡住新作用域")
+        XCTAssertEqual(current?.savedRecordID, newRepository.createdIDs.first)
+        XCTAssertNil(old?.savedRecordID, "旧编号不能用于当前作用域的去医院记录")
+        XCTAssertTrue(store.unsaved.isEmpty)
+        XCTAssertFalse(store.isSaving)
+        XCTAssertTrue(makeStore().unsaved.isEmpty, "旧队列成功保存后仍应清掉旧落盘结果")
+    }
+
+    private func waitForHeldCreate(_ repository: FakeContractionRepository) async {
+        for _ in 0..<200 {
+            if repository.heldCount > 0 { return }
+            try? await Task.sleep(for: .milliseconds(5))
+        }
+        XCTFail("假仓库未收到保存请求")
+    }
+
     func testStatusUsesGestationalWeeks() {
         let store = makeStore()
         store.gestationalWeeks = 34
@@ -192,6 +250,28 @@ final class ContractionStoreTests: XCTestCase {
         XCTAssertNil(store.active)
     }
 
+    func testStaleTripChoicesPreserveSaveOrDiscardTheOldTimer() async {
+        let repository = FakeContractionRepository()
+        let store = makeStore(repository: repository)
+        contract(store, then: 0)
+        now += 21_601
+        let deferred = await store.resolveStaleTrip(.later)
+        XCTAssertTrue(deferred)
+        XCTAssertNotNil(store.active, "先出发保留旧断点")
+        XCTAssertTrue(repository.createdIDs.isEmpty)
+        let saved = await store.resolveStaleTrip(.save)
+        XCTAssertTrue(saved)
+        XCTAssertNil(store.active)
+        XCTAssertEqual(repository.createdIDs.count, 1)
+
+        contract(store, then: 0)
+        now += 21_601
+        let discarded = await store.resolveStaleTrip(.discard)
+        XCTAssertTrue(discarded)
+        XCTAssertNil(store.active)
+        XCTAssertEqual(repository.createdIDs.count, 1, "丢弃不能新建档案")
+    }
+
     func testResumeAfterLaunchCapsALongRunningContraction() {
         let store = makeStore()
         store.toggle()
@@ -211,7 +291,8 @@ final class ContractionStoreTests: XCTestCase {
 
 /// 只实现宫缩计时用到的三个接口，写法照 FetalMovementStoreTests 的 FakeFetalRepository；
 /// 其余一律 `throw APIError.notConfigured`（返回 Void 的写成空实现）。
-private final class FakeContractionRepository: BusinessRepositoryProtocol, @unchecked Sendable {
+@MainActor
+private final class FakeContractionRepository: BusinessRepositoryProtocol {
     var records: [RecordItem] = []
     var createdDrafts: [RecordDraft] = []
     private(set) var createdIDs: [UUID] = []
@@ -220,6 +301,7 @@ private final class FakeContractionRepository: BusinessRepositoryProtocol, @unch
     /// 为真时 createRecord 挂起，直到 `release()`：模拟路上网络很慢。
     var holdCreates = false
     private var held: [CheckedContinuation<Void, Never>] = []
+    var heldCount: Int { held.count }
     private(set) var deletedIDs: [UUID] = []
 
     private func item(_ draft: RecordDraft) -> RecordItem {

@@ -12,6 +12,7 @@ struct ContractionTimerView: View {
     @State private var confirmingFinish = false
     /// 正在结束并保存：期间不能再次结束、也不能再点出发，免得打开两次确认页。
     @State private var finishing = false
+    @State private var resolvingStaleTrip = false
     @State private var trip: HospitalTripLaunch?
     @State private var lastAlertedStage: ContractionStage?
 
@@ -89,6 +90,7 @@ struct ContractionTimerView: View {
                 }
             }
         }
+        .staleContractionTripPrompt(isPresented: $resolvingStaleTrip, resolve: startStaleTrip)
     }
 
     /// 档位到了「去医院」这一档：状态卡里展开按钮，底部那个隐藏，页面上只留一个。
@@ -231,7 +233,7 @@ struct ContractionTimerView: View {
             .contentShape(Circle())
         }
         .buttonStyle(.plain)
-        .disabled(store.needsStaleDecision)
+        .disabled(store.needsStaleDecision || finishing)
         .accessibilityIdentifier("contraction-toggle")
     }
 
@@ -244,7 +246,7 @@ struct ContractionTimerView: View {
                 Text("本次记录").font(.headline).foregroundStyle(Color.aimTextPrimary)
                 Spacer()
                 Button("删掉上一次") { store.removeLast() }
-                    .disabled(spans.isEmpty)
+                    .disabled(spans.isEmpty || finishing)
                     .accessibilityIdentifier("contraction-remove-last")
             }
             if spans.isEmpty {
@@ -292,11 +294,7 @@ struct ContractionTimerView: View {
                 .accessibilityIdentifier("contraction-finish")
                 if !isUrgent(status) {
                     Button {
-                        if store.active?.completed.isEmpty != false {
-                            trip = HospitalTripLaunch(contractionRecordID: nil)
-                        } else {
-                            startFinish(thenTrip: true)
-                        }
+                        startFinish(thenTrip: true)
                     } label: {
                         tripLabel.frame(maxWidth: .infinity)
                     }
@@ -336,8 +334,33 @@ struct ContractionTimerView: View {
     /// 点击时同步置位 `finishing`，再启动保存：同一帧里的连点也挡得住。
     private func startFinish(thenTrip: Bool) {
         guard !finishing else { return }
+        if thenTrip {
+            switch HospitalTripLink.decide(active: store.active, latest: store.latest, now: .now) {
+            case .resolveStale:
+                resolvingStaleTrip = true
+                return
+            case let .existing(id):
+                trip = HospitalTripLaunch(contractionRecordID: id)
+                return
+            case .none:
+                trip = HospitalTripLaunch(contractionRecordID: nil)
+                return
+            case .finishActive: break
+            }
+        }
         finishing = true
         Task { await finish(thenTrip: thenTrip) }
+    }
+
+    private func startStaleTrip(_ choice: StaleContractionChoice) {
+        guard !finishing else { return }
+        finishing = true
+        Task {
+            defer { finishing = false }
+            if await store.resolveStaleTrip(choice) {
+                trip = HospitalTripLaunch(contractionRecordID: nil)
+            }
+        }
     }
 
     /// 只由 `startFinish` 调用，进来时 `finishing` 已为真；结束时复位。

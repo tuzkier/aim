@@ -10,6 +10,7 @@ struct LaborView: View {
     @State private var trip: HospitalTripLaunch?
     /// 正在结束进行中的计时并保存：期间不能再点出发，免得打开两次确认页。
     @State private var finishing = false
+    @State private var resolvingStaleTrip = false
     @State private var showingWhenToGo = false
     @State private var showingAgent = false
     @State private var toast: AimToastMessage?
@@ -63,6 +64,7 @@ struct LaborView: View {
             }
         }
         .aimToast($toast)
+        .staleContractionTripPrompt(isPresented: $resolvingStaleTrip, resolve: startStaleTrip)
     }
 
     private func showTripSaved() {
@@ -180,6 +182,8 @@ struct LaborView: View {
     private func startTrip() {
         guard !finishing else { return }
         switch HospitalTripLink.decide(active: contractions.active, latest: contractions.latest, now: .now) {
+        case .resolveStale:
+            resolvingStaleTrip = true
         case .finishActive:
             finishing = true
             Task {
@@ -191,6 +195,31 @@ struct LaborView: View {
             trip = HospitalTripLaunch(contractionRecordID: id)
         case .none:
             trip = HospitalTripLaunch(contractionRecordID: nil)
+        }
+    }
+
+    private func startStaleTrip(_ choice: StaleContractionChoice) {
+        guard !finishing else { return }
+        finishing = true
+        Task {
+            defer { finishing = false }
+            if await contractions.resolveStaleTrip(choice) {
+                trip = HospitalTripLaunch(contractionRecordID: nil)
+            }
+        }
+    }
+}
+
+extension View {
+    /// 分娩页与计时页共用同一选择，旧计时不会被当成这次出发的依据。
+    func staleContractionTripPrompt(isPresented: Binding<Bool>, resolve: @escaping (StaleContractionChoice) -> Void) -> some View {
+        confirmationDialog("上次计时还没保存", isPresented: isPresented, titleVisibility: .visible) {
+            Button("保存旧计时后继续") { resolve(.save) }
+            Button("丢弃旧计时后继续", role: .destructive) { resolve(.discard) }
+            Button("先出发，稍后处理") { resolve(.later) }
+            Button("取消", role: .cancel) {}
+        } message: {
+            Text("这次计时已经超过 6 小时，不会自动关联这次出发。立即就医不需要等待记录。")
         }
     }
 }

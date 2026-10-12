@@ -568,6 +568,51 @@ final class CoreJourneyUITests: XCTestCase {
         wait(for: [expectation(for: notExists, evaluatedWith: banner, handler: nil)], timeout: 15)
     }
 
+    /// 同一旧断点在两个入口都必须由用户选择，先出发不能悄悄保存或关联旧计时。
+    func testStaleContractionTripCanProceedWithoutLosingTheOldTimer() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-reset-session"]
+        app.launchEnvironment["AIM_TEST_CONTRACTION_CLOCK_OFFSET"] = "-22000"
+        app.launch()
+        registerNewAccount(in: app)
+        completePregnancySetup(in: app, daysUntilDue: 20)
+        let laborCard = app.buttons["home-labor-card"]
+        reveal(laborCard, in: app)
+        laborCard.tap()
+        app.buttons["labor-start-timer"].tap()
+        let toggle = app.buttons["contraction-toggle"]
+        XCTAssertTrue(toggle.waitForExistence(timeout: 10))
+        toggle.tap()
+        sleep(2)
+        toggle.tap()
+        app.terminate()
+
+        app.launchArguments = []
+        app.launchEnvironment = [:]
+        app.launch()
+        reveal(laborCard, in: app)
+        laborCard.tap()
+        app.buttons["labor-hospital-trip"].tap()
+        let later = app.buttons["先出发，稍后处理"]
+        XCTAssertTrue(later.waitForExistence(timeout: 10))
+        later.tap()
+        let confirm = app.buttons["hospital-trip-confirm"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 10), "旧计时不能阻止去医院记录")
+        app.buttons["取消"].tap()
+        app.buttons["labor-start-timer"].tap()
+        XCTAssertTrue(app.descendants(matching: .any)["contraction-stale"].waitForExistence(timeout: 10),
+                      "先出发应保留断点，不能当成已保存")
+        let trip = app.buttons["contraction-hospital-trip"]
+        reveal(trip, in: app)
+        trip.tap()
+        let discard = app.buttons["丢弃旧计时后继续"]
+        XCTAssertTrue(discard.waitForExistence(timeout: 5), "计时页与分娩页必须使用同一选择")
+        discard.tap()
+        XCTAssertTrue(confirm.waitForExistence(timeout: 10))
+        app.buttons["取消"].tap()
+        XCTAssertFalse(app.descendants(matching: .any)["contraction-stale"].exists)
+    }
+
     /// 「想问医生」此前缺了最关键的一步：产检那天怎么把攒下的问题一次带走。
     /// 这条用例守住完整闭环——攒问题、生成清单、问完一次性标记。
     func testConsultationListClosesTheQuestionLoop() throws {
