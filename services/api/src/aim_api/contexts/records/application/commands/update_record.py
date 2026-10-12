@@ -45,6 +45,7 @@ async def execute(command: UpdateRecordCommand, uow: RecordsUnitOfWork) -> Recor
         record.occurred_at = command.changes["occurred_at"]
     if "visibility" in command.changes:
         record.visibility = RecordVisibility(command.changes["visibility"])
+    Record.assert_visibility_allowed(record.record_type, record.visibility)
     if "title" in command.changes:
         record.title = command.changes["title"]
     if "content" in command.changes:

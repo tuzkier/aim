@@ -2361,7 +2361,9 @@
           "checklist",
           "knowledge",
           "fetal_movement",
-          "memory"
+          "memory",
+          "contraction",
+          "hospital_trip"
         ],
         "title": "RecordType"
       },

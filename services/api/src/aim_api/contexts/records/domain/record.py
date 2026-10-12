@@ -21,6 +21,7 @@ class RecordType(StrEnum):
     fetal_movement = "fetal_movement"
     memory = "memory"
     contraction = "contraction"
+    hospital_trip = "hospital_trip"
 
 
 class RecordVisibility(StrEnum):
@@ -65,6 +66,7 @@ class Record:
         if not isinstance(structured_data, dict):
             raise RecordValidationError("structured_data must be a JSON object")
         _validate_attachment_refs(attachment_refs or [])
+        cls.assert_visibility_allowed(record_type, visibility)
         cls._validate_payload(record_type, structured_data, content, title)
         structured_data = cls._with_defaults(record_type, structured_data)
         if record_type is RecordType.memory:
@@ -228,6 +230,33 @@ class Record:
             if start < previous_end:
                 raise RecordValidationError("contractions must not overlap")
             previous_end = start + duration
+
+    # 「我们出发去医院了」：原因决定家人看到的那句话，备注一句就够。
+    HOSPITAL_TRIP_REASONS: ClassVar[frozenset[str]] = frozenset(
+        {"contractions", "water_broke", "bleeding", "fetal_movement", "scheduled", "other"}
+    )
+    HOSPITAL_TRIP_NOTE_LIMIT: ClassVar[int] = 200
+
+    @classmethod
+    def _validate_hospital_trip(cls, data: dict[str, Any], content: str | None) -> None:
+        if set(data) - {"reason", "contraction_record_id"}:
+            raise RecordValidationError(
+                "hospital trip records only accept reason and contraction_record_id"
+            )
+        reason = data.get("reason")
+        if not isinstance(reason, str) or reason not in cls.HOSPITAL_TRIP_REASONS:
+            raise RecordValidationError("hospital trip reason is not supported")
+        linked = data.get("contraction_record_id")
+        if linked is not None and not _is_uuid_text(linked):
+            raise RecordValidationError("hospital trip contraction_record_id must be a UUID string")
+        if content is not None and len(content) > cls.HOSPITAL_TRIP_NOTE_LIMIT:
+            raise RecordValidationError("hospital trip note must be at most 200 characters")
+
+    @staticmethod
+    def assert_visibility_allowed(record_type: RecordType, visibility: RecordVisibility) -> None:
+        """去医院这条的意义就是让家人看到，不能设为仅自己可见。"""
+        if record_type is RecordType.hospital_trip and visibility is RecordVisibility.private:
+            raise RecordValidationError("hospital trip records must be visible to the family")
 
     @classmethod
     def _validate_knowledge(cls, data: dict[str, Any], title: str | None) -> None:
@@ -455,6 +484,10 @@ class Record:
 
         if record_type is RecordType.contraction:
             cls._validate_contraction(structured_data)
+            return
+
+        if record_type is RecordType.hospital_trip:
+            cls._validate_hospital_trip(structured_data, content)
             return
 
         raise RecordValidationError(f"unsupported record type: {record_type}")

@@ -453,3 +453,61 @@ def test_fetal_movement_records_can_be_created_filtered_and_rejected() -> None:
     assert rejected.status_code == 409, rejected.text
     assert listed.status_code == 200, listed.text
     assert [r["type"] for r in listed.json()["records"]] == ["fetal_movement"]
+
+
+def test_contraction_and_hospital_trip_records_round_trip() -> None:
+    account_id = str(uuid4())
+    phone = _phone(account_id)
+    headers = _headers(account_id, phone)
+    with TestClient(create_app()) as client:
+        _, pregnancy_id = _create_pregnancy(client, account_id, phone)
+        contraction = _create_record(
+            client,
+            pregnancy_id,
+            headers,
+            type="contraction",
+            title="宫缩计时 · 2 次",
+            structured_data={
+                "contractions": [{"start": 0, "duration": 60}, {"start": 300, "duration": 55}],
+                "summary": {"pattern": "go"},
+            },
+        )
+        trip = _create_record(
+            client,
+            pregnancy_id,
+            headers,
+            type="hospital_trip",
+            title="我们出发去医院了",
+            content="打车去市妇保",
+            structured_data={
+                "reason": "contractions",
+                "contraction_record_id": contraction.json()["id"],
+            },
+        )
+        private_trip = _create_record(
+            client,
+            pregnancy_id,
+            headers,
+            type="hospital_trip",
+            visibility="private",
+            title="我们出发去医院了",
+            structured_data={"reason": "other"},
+        )
+        made_private = client.patch(
+            f"/api/v1/pregnancies/{pregnancy_id}/records/{trip.json()['id']}",
+            json={"visibility": "private"},
+            headers=headers,
+        )
+        listed = client.get(
+            f"/api/v1/pregnancies/{pregnancy_id}/records",
+            params={"type": "hospital_trip"},
+            headers=headers,
+        )
+
+    assert contraction.status_code == 201, contraction.text
+    assert contraction.json()["structured_data"]["summary"]["pattern"] == "early"
+    assert contraction.json()["structured_data"]["summary"]["avg_interval_seconds"] == 300
+    assert trip.status_code == 201, trip.text
+    assert private_trip.status_code == 409, private_trip.text
+    assert made_private.status_code == 409, made_private.text
+    assert [r["id"] for r in listed.json()["records"]] == [trip.json()["id"]]

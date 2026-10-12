@@ -28,6 +28,8 @@ _RECORD_TYPE_NAMES = {
     "checklist": "清单",
     "knowledge": "知识",
     "fetal_movement": "胎动",
+    "contraction": "宫缩",
+    "hospital_trip": "去医院",
 }
 
 FORMER_MEMBER = "已离开的成员"
