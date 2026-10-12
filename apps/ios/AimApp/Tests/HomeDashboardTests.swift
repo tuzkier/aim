@@ -91,3 +91,117 @@ final class HomeTodaySelectionTests: XCTestCase {
         XCTAssertEqual(HomeDashboardStore.greeting(at: at(18)), "晚上好")
     }
 }
+
+@MainActor
+final class HomeDashboardStoreHospitalTripTests: XCTestCase {
+    func testHomeStoreLoadsHospitalTrips() async {
+        // 假仓库只对 .hospitalTrip 返回这条去医院记录，其他类型返回空。
+        let repository = FakeHomeRepository()
+        repository.records = [FakeHomeRepository.trip(), FakeHomeRepository.item(type: .symptom)]
+        let store = HomeDashboardStore()
+        store.repository = repository
+        await store.load()
+        XCTAssertEqual(store.hospitalTrips.count, 1)
+        XCTAssertEqual(store.hospitalTrips.first?.type, .hospitalTrip)
+    }
+
+    func testFailingTripsKeepThePreviousValue() async {
+        let repository = FakeHomeRepository()
+        repository.records = [FakeHomeRepository.trip()]
+        let store = HomeDashboardStore()
+        store.repository = repository
+        await store.load()
+        repository.failRecords = true
+        await store.load()
+        XCTAssertEqual(store.hospitalTrips.count, 1)
+    }
+
+    func testWithdrawDeletesRemovesAndBroadcasts() async {
+        let repository = FakeHomeRepository()
+        let trip = FakeHomeRepository.trip()
+        repository.records = [trip]
+        let store = HomeDashboardStore()
+        store.repository = repository
+        await store.load()
+
+        let broadcast = expectation(forNotification: .aimDataChanged, object: nil) { note in
+            (note.userInfo?["kinds"] as? [String]) == ["record"]
+        }
+        let ok = await store.withdraw(trip)
+        XCTAssertTrue(ok)
+        XCTAssertEqual(repository.deletedIDs, [trip.id])
+        XCTAssertTrue(store.hospitalTrips.isEmpty)
+        await fulfillment(of: [broadcast], timeout: 1)
+    }
+
+    func testFailedWithdrawKeepsTheTrip() async {
+        let repository = FakeHomeRepository()
+        let trip = FakeHomeRepository.trip()
+        repository.records = [trip]
+        let store = HomeDashboardStore()
+        store.repository = repository
+        await store.load()
+        repository.failDeletes = true
+        let ok = await store.withdraw(trip)
+        XCTAssertFalse(ok)
+        XCTAssertEqual(store.hospitalTrips.map(\.id), [trip.id])
+    }
+}
+
+/// 只实现首页去医院横幅用到的接口，写法照 FetalMovementStoreTests 的 FakeFetalRepository；
+/// 其余必需方法一律 `throw APIError.notConfigured`——首页各块独立报错，不影响这里要测的。
+private final class FakeHomeRepository: BusinessRepositoryProtocol, @unchecked Sendable {
+    var records: [RecordItem] = []
+    var failRecords = false
+    var failDeletes = false
+    private(set) var deletedIDs: [UUID] = []
+
+    static func item(type: RecordType) -> RecordItem {
+        RecordItem(
+            id: UUID(), pregnancyID: UUID(), familyID: UUID(), authorAccountID: UUID(),
+            type: type, occurredAt: .now, visibility: .family,
+            title: "记录", content: nil, structuredData: .note,
+            attachmentRefs: [], createdAt: .now, updatedAt: .now)
+    }
+
+    static func trip() -> RecordItem {
+        let draft = HospitalTrip.draft(reason: .contractions, note: "", contractionRecordID: nil, at: .now)
+        return RecordItem(
+            id: UUID(), pregnancyID: UUID(), familyID: UUID(), authorAccountID: UUID(),
+            type: draft.type, occurredAt: draft.occurredAt, visibility: draft.visibility,
+            title: draft.title, content: draft.content, structuredData: draft.structuredData,
+            attachmentRefs: [], createdAt: .now, updatedAt: .now)
+    }
+
+    func fetchRecords(type: RecordType?) async throws -> RecordSnapshot {
+        if failRecords { throw APIError.invalidResponse }
+        return RecordSnapshot(records: records.filter { type == nil || $0.type == type })
+    }
+
+    func createRecord(draft: RecordDraft) async throws -> RecordItem { throw APIError.notConfigured }
+
+    func deleteRecord(recordID: UUID) async throws {
+        if failDeletes { throw APIError.invalidResponse }
+        deletedIDs.append(recordID)
+        records.removeAll { $0.id == recordID }
+    }
+
+    func updateRecord(recordID: UUID, draft: RecordDraft) async throws -> RecordItem { throw APIError.notConfigured }
+    func fetchSafetyRules() async throws -> [SafetyRule] { throw APIError.notConfigured }
+    func fetchContentCollection(_ name: String) async throws -> ContentCollection { throw APIError.notConfigured }
+    func fetchToday() async throws -> TodaySnapshot { throw APIError.notConfigured }
+    func fetchPlan() async throws -> PlanSnapshot { throw APIError.notConfigured }
+    func fetchFamily() async throws -> FamilySnapshot { throw APIError.notConfigured }
+    func createPregnancy(dueDate: Date) async throws -> UUID { throw APIError.notConfigured }
+    func deleteTask(taskID: UUID) async throws {}
+    func createTaskFromRecord(record: RecordItem, title: String, description: String?, dueAt: Date?) async throws -> TaskItem { throw APIError.notConfigured }
+    func createTask(title: String, description: String?, dueAt: Date?, assignedMemberID: UUID?) async throws -> TaskItem { throw APIError.notConfigured }
+    func complete(task: TaskItem) async throws -> TaskItem { throw APIError.notConfigured }
+    func delay(task: TaskItem, until: Date) async throws -> TaskItem { throw APIError.notConfigured }
+    func schedule(task: TaskItem, at: Date) async throws -> TaskItem { throw APIError.notConfigured }
+    func assign(task: TaskItem, to memberID: UUID?) async throws -> TaskItem { throw APIError.notConfigured }
+    func invite(phone: String, role: FamilyRole) async throws { throw APIError.notConfigured }
+    func renameFamily(to name: String) async throws {}
+    func updateMyMembership(nickname: String?, role: FamilyRole?) async throws {}
+    func requestAccountDeletion(password: String) async throws { throw APIError.notConfigured }
+}

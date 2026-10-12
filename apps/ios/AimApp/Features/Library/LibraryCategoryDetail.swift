@@ -440,6 +440,18 @@ struct LibraryCategoryDetail: View {
         // 条目也确实存进了服务端，详情页却什么都不显示。
         let entries = category.entries(in: store.snapshot)
         return List {
+            // 待产包页顶部给分娩页的入口：收拾包的时候，宫缩计时和去医院的时机也在这里。
+            if category == .preparation {
+                Section {
+                    NavigationLink {
+                        LaborView(libraryStore: store, agentStore: agentStore)
+                    } label: {
+                        Label("宫缩计时与去医院", systemImage: "waveform.path.ecg")
+                    }
+                    .accessibilityIdentifier("library-labor-entry")
+                    .listRowBackground(Color.aimSurface)
+                }
+            }
             Section { addRows }
 
             if !entries.isEmpty {

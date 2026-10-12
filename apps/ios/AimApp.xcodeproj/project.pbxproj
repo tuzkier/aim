@@ -70,6 +70,7 @@
 		A20000000000000000000182 /* Features/Labor/LaborCopy.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000182 /* Features/Labor/LaborCopy.swift */; };
 		A20000000000000000000183 /* Features/Labor/ContractionTimerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000183 /* Features/Labor/ContractionTimerView.swift */; };
 		A20000000000000000000184 /* Features/Labor/LaborView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000184 /* Features/Labor/LaborView.swift */; };
+		A20000000000000000000186 /* Features/Labor/LaborHomeCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000186 /* Features/Labor/LaborHomeCards.swift */; };
 		A20000000000000000000162 /* Features/FetalMovement/FetalMovementCounterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000162 /* Features/FetalMovement/FetalMovementCounterView.swift */; };
 		A20000000000000000000163 /* Features/FetalMovement/FetalMovementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000163 /* Features/FetalMovement/FetalMovementView.swift */; };
 		A20000000000000000000059 /* Features/Records/TaskRecordSuggestion.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000058 /* Features/Records/TaskRecordSuggestion.swift */; };
@@ -254,6 +255,7 @@
 		A10000000000000000000182 /* Features/Labor/LaborCopy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Labor/LaborCopy.swift; sourceTree = "<group>"; };
 		A10000000000000000000183 /* Features/Labor/ContractionTimerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Labor/ContractionTimerView.swift; sourceTree = "<group>"; };
 		A10000000000000000000184 /* Features/Labor/LaborView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Labor/LaborView.swift; sourceTree = "<group>"; };
+		A10000000000000000000186 /* Features/Labor/LaborHomeCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Labor/LaborHomeCards.swift; sourceTree = "<group>"; };
 		A10000000000000000000162 /* Features/FetalMovement/FetalMovementCounterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FetalMovement/FetalMovementCounterView.swift; sourceTree = "<group>"; };
 		A10000000000000000000163 /* Features/FetalMovement/FetalMovementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FetalMovement/FetalMovementView.swift; sourceTree = "<group>"; };
 		A10000000000000000000058 /* Features/Records/TaskRecordSuggestion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Records/TaskRecordSuggestion.swift; sourceTree = "<group>"; };
@@ -735,6 +737,7 @@
 				A10000000000000000000182 /* Features/Labor/LaborCopy.swift */,
 				A10000000000000000000183 /* Features/Labor/ContractionTimerView.swift */,
 				A10000000000000000000184 /* Features/Labor/LaborView.swift */,
+				A10000000000000000000186 /* Features/Labor/LaborHomeCards.swift */,
 			);
 			name = Labor;
 			sourceTree = "<group>";
@@ -1617,6 +1620,7 @@
 				A20000000000000000000182 /* Features/Labor/LaborCopy.swift in Sources */,
 				A20000000000000000000183 /* Features/Labor/ContractionTimerView.swift in Sources */,
 				A20000000000000000000184 /* Features/Labor/LaborView.swift in Sources */,
+				A20000000000000000000186 /* Features/Labor/LaborHomeCards.swift in Sources */,
 				A20000000000000000000162 /* Features/FetalMovement/FetalMovementCounterView.swift in Sources */,
 				A20000000000000000000163 /* Features/FetalMovement/FetalMovementView.swift in Sources */,
 				A20000000000000000000059 /* Features/Records/TaskRecordSuggestion.swift in Sources */,

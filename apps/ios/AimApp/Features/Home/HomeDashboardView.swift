@@ -4,6 +4,9 @@ import SwiftUI
 /// 首页：今天孕几周、宝宝多大、还有多久见面；这一周的变化、今天要做的事、常用入口、家里的动静、安全提示。
 struct HomeDashboardView: View {
     @Environment(AppSessionStore.self) private var session
+    @Environment(ContractionStore.self) private var contractions
+    /// 横幅点开去医院记录详情要用记录仓库与待办仓库，照资料库打开报告详情的写法取。
+    @Environment(AgentDestinations.self) private var destinations: AgentDestinations?
     @Bindable var store: HomeDashboardStore
     let recordStore: RecordStore
     let familyStore: FamilyStore
@@ -21,6 +24,10 @@ struct HomeDashboardView: View {
     @State private var showingInvite = false
     @State private var showingSafety = false
     @State private var toast: AimToastMessage?
+    @State private var timingContractions = false
+    @State private var openedTrip: RecordItem?
+    /// 本机点过「知道了」的去医院记录。
+    @State private var dismissedTrips = HospitalTripDismissals().ids
 
     private var myself: FamilyMember? {
         store.members.first { $0.accountID == session.accountID }
@@ -31,12 +38,17 @@ struct HomeDashboardView: View {
             ScrollView {
                 VStack(spacing: AimMetrics.space12) {
                     header
+                    pinnedLaborCard
                     heroCard
                     weekCard
                     todayCard
                     // 数胎动从孕 28 周开始。
                     if (store.pregnancy?.weeks ?? 0) >= 28 {
                         FetalMovementHomeCard(agentStore: agentStore)
+                    }
+                    // 分娩准备从孕 36 周开始出现在首页；更早也能从资料库进入。
+                    if (store.pregnancy?.weeks ?? 0) >= 36 {
+                        LaborPrepCard(libraryStore: libraryStore, agentStore: agentStore)
                     }
                     quickActions
                     familyCard
@@ -46,8 +58,14 @@ struct HomeDashboardView: View {
                 .padding(.bottom, AimMetrics.space28)
             }
             .background(Color.aimCanvas)
-            .refreshable { await store.load() }
-            .task { await store.load() }
+            .refreshable {
+                await store.load()
+                contractions.gestationalWeeks = store.pregnancy?.weeks
+            }
+            .task {
+                await store.load()
+                contractions.gestationalWeeks = store.pregnancy?.weeks
+            }
             // 「欢迎回来」「已加入某某家庭」这类一次性提示：启动默认进首页，就在这里显示。
             .onAppear {
                 if let notice = session.welcomeBackNotice {
@@ -67,6 +85,24 @@ struct HomeDashboardView: View {
             }
             .fullScreenCover(isPresented: $showingAgent) {
                 AgentView(store: agentStore) { showingAgent = false }
+            }
+            .fullScreenCover(isPresented: $timingContractions) {
+                ContractionTimerView(agentStore: agentStore) { timingContractions = false }
+            }
+            // 详情页里也能删除或编辑这条；关掉后重新加载，横幅才跟得上。
+            .sheet(item: $openedTrip, onDismiss: { Task { await store.load() } }) { record in
+                NavigationStack {
+                    if let destinations {
+                        RecordDetailView(
+                            record: record, store: destinations.recordStore,
+                            planStore: destinations.planStore, agentStore: agentStore)
+                            .toolbar {
+                                ToolbarItem(placement: .cancellationAction) {
+                                    Button("关闭") { openedTrip = nil }
+                                }
+                            }
+                    }
+                }
             }
             .sheet(item: $recordType) { target in
                 RecordComposerView(store: recordStore, suggestedType: target.type) {
@@ -137,6 +173,33 @@ struct HomeDashboardView: View {
                 agentStore.focus(context: nil)
                 showingAgent = true
             }
+        }
+    }
+
+    // MARK: - 分娩置顶卡
+
+    /// 去医院横幅优先；没有横幅时，本机正在计时就置顶「宫缩计时中」。
+    @ViewBuilder
+    private var pinnedLaborCard: some View {
+        if let trip = HospitalTrip.banner(in: store.hospitalTrips, now: .now, me: session.accountID, dismissed: dismissedTrips) {
+            LaborBannerCard(
+                record: trip,
+                actorName: store.members.first { $0.accountID == trip.authorAccountID }?.displayName ?? "家人",
+                isMine: trip.authorAccountID == session.accountID,
+                onOpen: { openedTrip = trip },
+                onWithdraw: {
+                    Task {
+                        if !(await store.withdraw(trip)) {
+                            toast = AimToastMessage(text: "没撤回成功，稍后再试", undoTitle: "", accessibilityIdentifier: "home-hospital-trip-withdraw-failed", style: .failure)
+                        }
+                    }
+                },
+                onDismiss: {
+                    HospitalTripDismissals().dismiss(trip.id)
+                    dismissedTrips.insert(trip.id)
+                })
+        } else if contractions.active != nil {
+            ContractionActiveCard { timingContractions = true }
         }
     }
 

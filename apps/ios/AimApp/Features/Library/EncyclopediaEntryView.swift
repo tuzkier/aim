@@ -12,6 +12,7 @@ struct EncyclopediaEntryView: View {
     @State private var gone = false
     @State private var showingAgent = false
     @State private var countingFetalMovement = false
+    @State private var timingContractions = false
 
     var body: some View {
         Group {
@@ -37,6 +38,9 @@ struct EncyclopediaEntryView: View {
         }
         .fullScreenCover(isPresented: $countingFetalMovement) {
             FetalMovementCounterView(agentStore: agentStore) { countingFetalMovement = false }
+        }
+        .fullScreenCover(isPresented: $timingContractions) {
+            ContractionTimerView(agentStore: agentStore) { timingContractions = false }
         }
     }
 
@@ -118,6 +122,15 @@ struct EncyclopediaEntryView: View {
                     }
                     .buttonStyle(.borderedProminent)
                     .accessibilityIdentifier("encyclopedia-start-fetal-movement")
+                }
+
+                if entry.id == "birth.signs-of-labor" || entry.id == "birth.when-to-go" {
+                    Button { timingContractions = true } label: {
+                        Label("开始宫缩计时", systemImage: "waveform.path.ecg")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .accessibilityIdentifier("encyclopedia-start-contraction")
                 }
 
                 Text(footer(entry))

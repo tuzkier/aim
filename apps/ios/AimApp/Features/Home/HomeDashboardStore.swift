@@ -17,6 +17,8 @@ final class HomeDashboardStore {
     var nextTask: TaskItem?
     var recentActivity: [FamilyActivityItem] = []
     var members: [FamilyMember] = []
+    /// 家里的去医院记录，首页横幅从中挑 24 小时内最新的一条。
+    var hospitalTrips: [RecordItem] = []
 
     var pregnancyError: String?
     var tasksError: String?
@@ -41,6 +43,7 @@ final class HomeDashboardStore {
         async let familyResult = Self.capture { try await repository.fetchFamily() }
         async let activityResult = Self.capture { try await repository.fetchActivity(before: nil) }
         async let bookResult = Self.capture { try await repository.fetchWeeklyContent() }
+        async let tripsResult = Self.capture { try await repository.fetchRecords(type: .hospitalTrip) }
 
         switch await pregnancyResult {
         case let .success(value): pregnancy = value; pregnancyError = nil
@@ -64,6 +67,21 @@ final class HomeDashboardStore {
         if case let .success(fresh) = await bookResult {
             book = fresh
             try? cache.save(fresh)
+        }
+        // 去医院横幅拿不到不该影响别的块：失败时保留上次的结果，也不报错。
+        if case let .success(snapshot) = await tripsResult { hospitalTrips = snapshot.records }
+    }
+
+    /// 作者撤回说错了的去医院记录：删除成功后从横幅数据里移除，并通知其他页面刷新。
+    func withdraw(_ record: RecordItem) async -> Bool {
+        guard let repository else { return false }
+        do {
+            try await repository.deleteRecord(recordID: record.id)
+            hospitalTrips.removeAll { $0.id == record.id }
+            NotificationCenter.default.post(name: .aimDataChanged, object: nil, userInfo: ["kinds": ["record"]])
+            return true
+        } catch {
+            return false
         }
     }
 
