@@ -132,7 +132,9 @@ struct LaborView: View {
             HStack {
                 VStack(alignment: .leading, spacing: AimMetrics.space4) {
                     Text("待产包").font(.headline).foregroundStyle(Color.aimTextPrimary)
-                    Text(LibraryCategoryID.preparation.summary(from: libraryStore.snapshot).headline)
+                    // 清单还没拉到时沿用原来的分类摘要。
+                    Text(LibraryCategoryID.preparationProgress(from: libraryStore.snapshot)
+                         ?? LibraryCategoryID.preparation.summary(from: libraryStore.snapshot).headline)
                         .font(.subheadline)
                         .foregroundStyle(Color.aimTextSecondary)
                 }

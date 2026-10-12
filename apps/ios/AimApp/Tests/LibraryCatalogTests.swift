@@ -241,6 +241,21 @@ final class LibraryStep2CatalogTests: XCTestCase {
             collectionSizes: ["preparation": 7]
         )
         XCTAssertEqual(LibraryCategoryID.preparationProgress(from: snapshot), "待产包 1/7")
+
+        // 待产准备分类里让 AIM 记过资料：分类摘要会变成「N 条资料」，进度仍要是待产包。
+        let note = RecordItem(
+            id: UUID(), pregnancyID: UUID(), familyID: UUID(), authorAccountID: UUID(),
+            type: .knowledge, occurredAt: .now, visibility: .family,
+            title: "医院要带的证件", content: nil,
+            structuredData: .knowledge(KnowledgeRecordData(category: "preparation", form: .tip, body: "正文")),
+            attachmentRefs: [], createdAt: .now, updatedAt: .now)
+        let withNotes = LibrarySnapshot(
+            records: [checked("preparation", "documents", done: true), note],
+            safetyRuleCount: 0,
+            collectionSizes: ["preparation": 7]
+        )
+        XCTAssertEqual(LibraryCategoryID.preparation.summary(from: withNotes).headline, "1 条资料")
+        XCTAssertEqual(LibraryCategoryID.preparationProgress(from: withNotes), "待产包 1/7")
     }
 
     func testPaperworkSummaryUsesItsOwnCollection() {

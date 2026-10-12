@@ -72,12 +72,15 @@ enum LibraryCategoryID: String, CaseIterable, Identifiable, Sendable {
             .sorted { $0.createdAt > $1.createdAt }
     }
 
-    /// 待产包进度，如「待产包 5/7」，取自待产准备分类的摘要；清单还没拉到时为 nil，
-    /// 调用方不必显示占位文案。首页「分娩准备」卡用它。
+    /// 待产包进度，如「待产包 5/7」；清单还没拉到时为 nil。首页「分娩准备」卡与分娩页共用。
+    /// 直接取清单进度而不是分类摘要：分类里记过资料时，摘要会先变成「N 条资料」。
     static func preparationProgress(from snapshot: LibrarySnapshot) -> String? {
         guard (snapshot.collectionSizes["preparation"] ?? 0) > 0 else { return nil }
-        return LibraryCategoryID.preparation.summary(from: snapshot).headline
+        return checklistSummary(from: snapshot, collection: "preparation", format: preparationFormat).headline
     }
+
+    /// 待产包进度的写法，分类摘要与 `preparationProgress` 共用。
+    private static let preparationFormat: (Int, Int) -> String = { "待产包 \($0)/\($1)" }
 
     func summary(from snapshot: LibrarySnapshot) -> LibrarySummary {
         // 用户自己积累的条目优先于静态基线——那才是这个分类的价值所在。
@@ -124,7 +127,7 @@ enum LibraryCategoryID: String, CaseIterable, Identifiable, Sendable {
                 from: snapshot, collection: "hangzhou", format: { "\($0)/\($1) 已办妥" })
         case .preparation:
             return Self.checklistSummary(
-                from: snapshot, collection: "preparation", format: { "待产包 \($0)/\($1)" })
+                from: snapshot, collection: "preparation", format: Self.preparationFormat)
         case .nutrition:
             let diet = snapshot.encyclopediaCounts["diet"] ?? 0
             let total = diet > 0 ? diet : snapshot.collectionSizes["nutrition"] ?? 0
