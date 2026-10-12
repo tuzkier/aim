@@ -83,6 +83,18 @@ class TestContractionRecord:
             make({"contractions": many})
         make({"contractions": many[:500]})
 
+    @pytest.mark.parametrize(
+        "contractions",
+        [
+            entries([[0, 60], [86400, 60]]),  # start 恰好 24 小时
+            entries([[0, 1]]),  # 持续恰好 1 秒
+            entries([[0, 600]]),  # 持续恰好 10 分钟
+        ],
+        ids=["start-86400", "duration-1", "duration-600"],
+    )
+    def test_values_exactly_on_the_limits_are_accepted(self, contractions):
+        make({"contractions": contractions})
+
     def test_back_to_back_contractions_are_allowed(self):
         make({"contractions": entries([[0, 60], [60, 60]])})
 

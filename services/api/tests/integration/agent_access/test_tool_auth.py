@@ -162,3 +162,42 @@ def test_list_records_returns_only_records_visible_to_scoped_account() -> None:
             "attachment_refs": [],
         }
     ]
+
+
+def test_list_records_gives_agent_contraction_summary_without_the_entries() -> None:
+    with TestClient(create_app()) as client:
+        account_id, family_id, pregnancy_id, _, public = _scope(client)
+        created = client.post(
+            f"/api/v1/pregnancies/{pregnancy_id}/records",
+            headers=public,
+            json={
+                "type": "contraction",
+                "occurred_at": "2026-10-12T09:00:00+08:00",
+                "visibility": "family",
+                "title": "宫缩计时 · 3 次",
+                "structured_data": {
+                    "contractions": [
+                        {"start": 0, "duration": 60},
+                        {"start": 300, "duration": 55},
+                        {"start": 610, "duration": 50},
+                    ]
+                },
+            },
+        )
+        assert created.status_code == 201, created.text
+        # 对外接口照旧返回逐次数组。
+        assert len(created.json()["structured_data"]["contractions"]) == 3
+
+        response = client.post(
+            "/internal/agent-tools/list-records",
+            headers=_agent_headers(account_id, family_id, pregnancy_id, call_id="contraction-1"),
+            json={"type": "contraction"},
+        )
+
+    assert response.status_code == 200, response.text
+    [record] = response.json()["data"]["records"]
+    data = record["structured_data"]
+    assert "contractions" not in data
+    assert data["summary"]["count"] == 3
+    assert data["first_start_seconds"] == 0
+    assert data["last_start_seconds"] == 610

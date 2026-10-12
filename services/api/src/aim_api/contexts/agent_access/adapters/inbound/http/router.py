@@ -461,6 +461,20 @@ async def _list_tasks(session, context: AgentToolContext, body: dict[str, Any]):
     return ({"tasks": tasks}, f"已读取 {len(tasks)} 项家庭任务")
 
 
+def _agent_structured_data(record) -> dict[str, Any]:
+    """给 AIM 的记录内容。宫缩计时的逐次数组可达 500 项，模型用不上还占上下文：
+    只留服务端算好的 summary，另给首尾两次的开始秒数，便于说明计时跨了多久。"""
+    data = record.structured_data
+    if record.record_type is not RecordType.contraction:
+        return data
+    contractions = data.get("contractions") or []
+    return {
+        "summary": data.get("summary"),
+        "first_start_seconds": contractions[0]["start"] if contractions else None,
+        "last_start_seconds": contractions[-1]["start"] if contractions else None,
+    }
+
+
 async def _list_records(session, context: AgentToolContext, body: dict[str, Any]):
     records = await list_records.execute(
         ListRecordsQuery(
@@ -483,7 +497,7 @@ async def _list_records(session, context: AgentToolContext, body: dict[str, Any]
             "visibility": record.visibility.value,
             "title": record.title,
             "content": record.content,
-            "structured_data": record.structured_data,
+            "structured_data": _agent_structured_data(record),
             "attachment_refs": record.attachment_refs,
         }
         for record in records
