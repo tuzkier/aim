@@ -369,13 +369,3 @@ struct RecordSnapshot: Equatable, Sendable {
         }
     }
 }
-
-/// 临时最小版本，Task 5 移进 ContractionModels.swift 后删掉这里的。
-enum ContractionFormat {
-    /// 「45 秒」「4 分 50 秒」「5 分钟」。
-    static func seconds(_ value: Int) -> String {
-        guard value >= 60 else { return "\(value) 秒" }
-        let minutes = value / 60, rest = value % 60
-        return rest == 0 ? "\(minutes) 分钟" : "\(minutes) 分 \(rest) 秒"
-    }
-}

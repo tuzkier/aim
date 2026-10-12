@@ -95,8 +95,7 @@ extension RecordItem {
         case let .checklist(data): return data.done ? "已完成" : "待完成"
         case let .knowledge(data): return data.body ?? data.reason ?? "资料条目"
         case let .fetalMovement(data): return FetalMovementFormat.summary(data)
-        // Task 5 换成 ContractionFormat.summary(data)。
-        case let .contraction(data): return "\(data.contractions.count) 次宫缩"
+        case let .contraction(data): return ContractionFormat.summary(data)
         case let .hospitalTrip(data): return data.reason.displayName
         case .unknown: return "暂不支持展示这类记录"
         }
