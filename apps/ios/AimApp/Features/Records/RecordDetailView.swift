@@ -143,6 +143,34 @@ struct RecordDetailView: View {
                 LabeledContent("用时", value: FetalMovementFormat.duration(data.durationSeconds))
                 LabeledContent("结果", value: FetalMovementFormat.summary(data))
             }
+        case let .contraction(data):
+            Section("宫缩计时") {
+                LabeledContent("次数", value: "\(data.contractions.count) 次")
+                if let summary = data.summary {
+                    LabeledContent("最近 1 小时", value: "\(summary.lastHourCount) 次")
+                    if let interval = summary.avgIntervalSeconds {
+                        LabeledContent("平均间隔", value: ContractionFormat.seconds(interval))
+                    }
+                    LabeledContent("平均持续", value: ContractionFormat.seconds(summary.avgDurationSeconds))
+                }
+            }
+            Section("逐次") {
+                ForEach(Array(data.contractions.enumerated()), id: \.offset) { _, entry in
+                    LabeledContent(
+                        currentRecord.occurredAt.addingTimeInterval(TimeInterval(entry.start))
+                            .formatted(date: .omitted, time: .shortened),
+                        value: "持续 \(ContractionFormat.seconds(entry.duration))")
+                }
+            }
+        case let .hospitalTrip(data):
+            Section("去医院") {
+                LabeledContent("原因", value: data.reason.displayName)
+                LabeledContent("出发时间", value: currentRecord.occurredAt.formatted(date: .abbreviated, time: .shortened))
+                if let note = currentRecord.content, !note.isEmpty { Text(note) }
+                if data.contractionRecordID != nil {
+                    Text("附带了出发前的宫缩计时，可在档案的宫缩记录里查看。").foregroundStyle(.secondary)
+                }
+            }
         case .memory:
             EmptyView()
         case .unknown:

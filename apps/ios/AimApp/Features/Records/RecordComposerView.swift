@@ -120,8 +120,8 @@ struct RecordComposerView: View {
         case .note:
             noteFields
             occurredAtSection
-        // question / checklist 由资料库和 AIM 创建，胎动由计数器创建，都不在手动新建里提供。
-        case .question, .checklist, .knowledge, .fetalMovement, .memory, .unknown: EmptyView()
+        // question / checklist 由资料库和 AIM 创建，胎动由计数器创建，宫缩与去医院由分娩页创建，都不在手动新建里提供。
+        case .question, .checklist, .knowledge, .fetalMovement, .contraction, .hospitalTrip, .memory, .unknown: EmptyView()
         }
     }
 
@@ -353,7 +353,7 @@ struct RecordComposerView: View {
         case .checkup:
             checkup.canSave(photoCount: photos.count) && !isLoadingPhotos && photoError == nil
         case .note: !content.trimmed.isEmpty
-        case .question, .checklist, .knowledge, .fetalMovement, .memory, .none, .unknown: false
+        case .question, .checklist, .knowledge, .fetalMovement, .contraction, .hospitalTrip, .memory, .none, .unknown: false
         }
     }
 
@@ -378,7 +378,7 @@ struct RecordComposerView: View {
         case .checkup:
             data = .checkup(checkup.draft)
         case .note: data = .note
-        case .question, .checklist, .knowledge, .fetalMovement, .memory, .unknown: return nil
+        case .question, .checklist, .knowledge, .fetalMovement, .contraction, .hospitalTrip, .memory, .unknown: return nil
         }
         return RecordDraft(type: type, occurredAt: occurredAt, visibility: visibility, title: type == .note ? title.trimmed.nilIfEmpty : nil, content: type == .note ? content.trimmed.nilIfEmpty : nil, structuredData: data)
     }

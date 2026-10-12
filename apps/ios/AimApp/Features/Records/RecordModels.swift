@@ -9,6 +9,8 @@ enum RecordType: Codable, CaseIterable, Sendable, Equatable {
     case knowledge
     case fetalMovement
     case memory
+    case contraction
+    case hospitalTrip
     case unknown
 
     init(rawValue: String) {
@@ -21,6 +23,8 @@ enum RecordType: Codable, CaseIterable, Sendable, Equatable {
         case "knowledge": self = .knowledge
         case "fetal_movement": self = .fetalMovement
         case "memory": self = .memory
+        case "contraction": self = .contraction
+        case "hospital_trip": self = .hospitalTrip
         default: self = .unknown
         }
     }
@@ -35,6 +39,8 @@ enum RecordType: Codable, CaseIterable, Sendable, Equatable {
         case .knowledge: return "knowledge"
         case .fetalMovement: return "fetal_movement"
         case .memory: return "memory"
+        case .contraction: return "contraction"
+        case .hospitalTrip: return "hospital_trip"
         case .unknown: return "unknown"
         }
     }
@@ -44,7 +50,7 @@ enum RecordType: Codable, CaseIterable, Sendable, Equatable {
     }
 
     /// 能否在通用记录编辑器里修改。胎动记录由计数页生成，编辑器改不了它的计数数据。
-    var canEditInComposer: Bool { self != .fetalMovement && self != .memory }
+    var canEditInComposer: Bool { ![.fetalMovement, .memory, .contraction, .hospitalTrip].contains(self) }
 
     func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
@@ -211,6 +217,47 @@ struct ChecklistRecordData: Codable, Equatable, Sendable {
     }
 }
 
+struct ContractionEntry: Codable, Equatable, Sendable {
+    let start: Int      // 距第一次开始的秒数
+    let duration: Int   // 持续秒数
+}
+
+enum ContractionPattern: String, Codable, Sendable { case early, approaching, go }
+
+struct ContractionSummary: Codable, Equatable, Sendable {
+    let count: Int
+    let lastHourCount: Int
+    let avgIntervalSeconds: Int?
+    let avgDurationSeconds: Int
+    let pattern: ContractionPattern
+}
+
+struct ContractionRecordData: Equatable, Sendable {
+    let contractions: [ContractionEntry]
+    /// 服务端算的；新建时客户端不发。
+    var summary: ContractionSummary?
+}
+
+enum HospitalTripReason: String, CaseIterable, Sendable {
+    case contractions, waterBroke = "water_broke", bleeding, fetalMovement = "fetal_movement", scheduled, other
+
+    var displayName: String {
+        switch self {
+        case .contractions: "规律宫缩"
+        case .waterBroke: "破水"
+        case .bleeding: "出血"
+        case .fetalMovement: "胎动少了"
+        case .scheduled: "按医生安排入院"
+        case .other: "其他"
+        }
+    }
+}
+
+struct HospitalTripRecordData: Equatable, Sendable {
+    let reason: HospitalTripReason
+    var contractionRecordID: UUID?
+}
+
 enum RecordStructuredData: Equatable, Sendable {
     case symptom(SymptomRecordData)
     case checkup(CheckupRecordData)
@@ -219,6 +266,8 @@ enum RecordStructuredData: Equatable, Sendable {
     case knowledge(KnowledgeRecordData)
     case fetalMovement(FetalMovementRecordData)
     case memory(MemoryRecordData)
+    case contraction(ContractionRecordData)
+    case hospitalTrip(HospitalTripRecordData)
     case note
     case unknown
 }
@@ -318,5 +367,15 @@ struct RecordSnapshot: Equatable, Sendable {
             if $0.occurredAt != $1.occurredAt { return $0.occurredAt > $1.occurredAt }
             return $0.createdAt > $1.createdAt
         }
+    }
+}
+
+/// 临时最小版本，Task 5 移进 ContractionModels.swift 后删掉这里的。
+enum ContractionFormat {
+    /// 「45 秒」「4 分 50 秒」「5 分钟」。
+    static func seconds(_ value: Int) -> String {
+        guard value >= 60 else { return "\(value) 秒" }
+        let minutes = value / 60, rest = value % 60
+        return rest == 0 ? "\(minutes) 分钟" : "\(minutes) 分 \(rest) 秒"
     }
 }

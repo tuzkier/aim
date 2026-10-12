@@ -682,7 +682,8 @@ actor BusinessRepository: BusinessRepositoryProtocol {
         // 类型与结构化数据是配套的。
         case (.symptom, .symptom), (.checkup, .checkup), (.note, .note), (.memory, .memory),
              (.question, .question), (.checklist, .checklist),
-             (.knowledge, .knowledge), (.fetalMovement, .fetalMovement):
+             (.knowledge, .knowledge), (.fetalMovement, .fetalMovement),
+             (.contraction, .contraction), (.hospitalTrip, .hospitalTrip):
             return
         default:
             throw APIError.invalidResponse

@@ -107,6 +107,47 @@ final class FetalMovementModelsTests: XCTestCase {
         XCTAssertTrue(RecordType.note.canEditInComposer)
     }
 
+    func testDecodesContractionRecordWithServerSummary() throws {
+        let json = """
+        {"contractions": [{"start": 0, "duration": 60}, {"start": 300, "duration": 55}],
+         "summary": {"count": 2, "last_hour_count": 2, "avg_interval_seconds": 300,
+                     "avg_duration_seconds": 58, "pattern": "early"}}
+        """
+        let dto = try JSONDecoder().decode(APIRecordStructuredDataDTO.self, from: Data(json.utf8))
+        guard case let .contraction(data) = dto.recordData(for: .contraction) else {
+            return XCTFail("应当解出宫缩计时")
+        }
+        XCTAssertEqual(data.contractions, [ContractionEntry(start: 0, duration: 60), ContractionEntry(start: 300, duration: 55)])
+        XCTAssertEqual(data.summary?.pattern, .early)
+        XCTAssertEqual(data.summary?.avgIntervalSeconds, 300)
+    }
+
+    func testDecodesHospitalTripAndEncodesWithoutSummary() throws {
+        let linked = UUID()
+        let json = """
+        {"reason": "water_broke", "contraction_record_id": "\(linked.uuidString.lowercased())"}
+        """
+        let dto = try JSONDecoder().decode(APIRecordStructuredDataDTO.self, from: Data(json.utf8))
+        guard case let .hospitalTrip(data) = dto.recordData(for: .hospitalTrip) else {
+            return XCTFail("应当解出去医院")
+        }
+        XCTAssertEqual(data.reason, .waterBroke)
+        XCTAssertEqual(data.contractionRecordID, linked)
+
+        // 新建宫缩记录时不发 summary：那是服务端算的。
+        let encoded = try JSONEncoder().encode(APIRecordStructuredDataDTO(recordData: .contraction(
+            ContractionRecordData(contractions: [ContractionEntry(start: 0, duration: 60)], summary: nil))))
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        XCTAssertNil(object["summary"])
+        XCTAssertNotNil(object["contractions"])
+    }
+
+    func testRecordTypeRoundTripsNewRawValues() {
+        XCTAssertEqual(RecordType(rawValue: "contraction"), .contraction)
+        XCTAssertEqual(RecordType(rawValue: "hospital_trip"), .hospitalTrip)
+        XCTAssertEqual(RecordType.hospitalTrip.rawValue, "hospital_trip")
+    }
+
     func testFormatting() {
         XCTAssertEqual(FetalMovementFormat.duration(40), "不到 1 分钟")
         XCTAssertEqual(FetalMovementFormat.duration(1920), "32 分钟")

@@ -11,6 +11,8 @@ extension RecordType {
         case .knowledge: "资料"
         case .fetalMovement: "胎动"
         case .memory: "AIM 记得的事"
+        case .contraction: "宫缩"
+        case .hospitalTrip: "去医院"
         case .unknown: "记录"
         }
     }
@@ -25,6 +27,8 @@ extension RecordType {
         case .knowledge: "books.vertical"
         case .fetalMovement: "hand.tap"
         case .memory: "brain"
+        case .contraction: "waveform.path.ecg"
+        case .hospitalTrip: "car"
         case .unknown: "doc"
         }
     }
@@ -59,6 +63,9 @@ extension RecordItem {
                     ?? "清单条目"
         case .knowledge: title ?? "资料"
         case .fetalMovement: "数胎动"
+        // 两种都由分娩页生成，标题固定；去医院记录服务端固定写了标题。
+        case .contraction: "宫缩计时"
+        case .hospitalTrip: title?.trimmed.nilIfEmpty ?? "我们出发去医院了"
         case .unknown: type.displayName
         }
     }
@@ -88,6 +95,9 @@ extension RecordItem {
         case let .checklist(data): return data.done ? "已完成" : "待完成"
         case let .knowledge(data): return data.body ?? data.reason ?? "资料条目"
         case let .fetalMovement(data): return FetalMovementFormat.summary(data)
+        // Task 5 换成 ContractionFormat.summary(data)。
+        case let .contraction(data): return "\(data.contractions.count) 次宫缩"
+        case let .hospitalTrip(data): return data.reason.displayName
         case .unknown: return "暂不支持展示这类记录"
         }
     }

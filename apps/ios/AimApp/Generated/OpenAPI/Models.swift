@@ -250,6 +250,10 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
     let reportedLess: Bool?
     let kind: String?
     let text: String?
+    let contractions: [ContractionEntry]?
+    let summary: ContractionSummaryDTO?
+    /// 去医院记录关联的宫缩计时，小写标准 UUID 字符串。
+    let contractionRecordID: String?
 
     init(
         symptoms: [String]? = nil,
@@ -282,7 +286,10 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
         taps: [Int]? = nil,
         reportedLess: Bool? = nil,
         kind: String? = nil,
-        text: String? = nil
+        text: String? = nil,
+        contractions: [ContractionEntry]? = nil,
+        summary: ContractionSummaryDTO? = nil,
+        contractionRecordID: String? = nil
     ) {
         self.symptoms = symptoms
         self.severity = severity
@@ -315,6 +322,9 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
         self.reportedLess = reportedLess
         self.kind = kind
         self.text = text
+        self.contractions = contractions
+        self.summary = summary
+        self.contractionRecordID = contractionRecordID
     }
 
     enum CodingKeys: String, CodingKey {
@@ -330,6 +340,8 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
         case kind, text
         case durationSeconds = "duration_seconds"
         case reportedLess = "reported_less"
+        case contractions, summary
+        case contractionRecordID = "contraction_record_id"
     }
 
     func recordData(for type: RecordType) -> RecordStructuredData {
@@ -372,6 +384,13 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
             return .fetalMovement(FetalMovementRecordData(
                 durationSeconds: durationSeconds, count: count, target: target, outcome: outcome, taps: taps,
                 reportedLess: reportedLess ?? false))
+        case .contraction:
+            guard let contractions, !contractions.isEmpty else { return .unknown }
+            return .contraction(ContractionRecordData(contractions: contractions, summary: summary?.model))
+        case .hospitalTrip:
+            guard let reason, let value = HospitalTripReason(rawValue: reason) else { return .unknown }
+            return .hospitalTrip(HospitalTripRecordData(
+                reason: value, contractionRecordID: contractionRecordID.flatMap(UUID.init(uuidString:))))
         case .note:
             return .note
         case .unknown:
@@ -410,8 +429,38 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
             self.init(durationSeconds: data.durationSeconds, count: data.count, target: data.target,
                       outcome: data.outcome.rawValue, taps: data.taps,
                       reportedLess: data.reportedLess ? true : nil)
+        case let .contraction(data):
+            // summary 由服务端计算，不发。
+            self.init(contractions: data.contractions)
+        case let .hospitalTrip(data):
+            self.init(reason: data.reason.rawValue,
+                      contractionRecordID: data.contractionRecordID?.uuidString.lowercased())
         case .note, .unknown:
             self.init()
+        }
+    }
+}
+
+/// 宫缩计时摘要的接口形状：把 snake_case 键名映射到 ContractionSummary。
+struct ContractionSummaryDTO: Codable, Sendable {
+    let count: Int
+    let lastHourCount: Int
+    let avgIntervalSeconds: Int?
+    let avgDurationSeconds: Int
+    let pattern: String
+
+    enum CodingKeys: String, CodingKey {
+        case count, pattern
+        case lastHourCount = "last_hour_count"
+        case avgIntervalSeconds = "avg_interval_seconds"
+        case avgDurationSeconds = "avg_duration_seconds"
+    }
+
+    var model: ContractionSummary? {
+        ContractionPattern(rawValue: pattern).map {
+            ContractionSummary(count: count, lastHourCount: lastHourCount,
+                               avgIntervalSeconds: avgIntervalSeconds,
+                               avgDurationSeconds: avgDurationSeconds, pattern: $0)
         }
     }
 }
