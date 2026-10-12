@@ -5,11 +5,21 @@ import UIKit
 struct ContractionTimerView: View {
     @Environment(ContractionStore.self) private var store
     let agentStore: AgentStore
+    /// 刚在计时页告诉了家人：调用方据此显示「已告诉家人」的提示。随后还会调 `onClose`。
+    let onTripSaved: () -> Void
     let onClose: () -> Void
 
     @State private var confirmingFinish = false
+    /// 正在结束并保存：期间不能再次结束、也不能再点出发，免得打开两次确认页。
+    @State private var finishing = false
     @State private var trip: TripLaunch?
     @State private var lastAlertedStage: ContractionStage?
+
+    init(agentStore: AgentStore, onTripSaved: @escaping () -> Void = {}, onClose: @escaping () -> Void) {
+        self.agentStore = agentStore
+        self.onTripSaved = onTripSaved
+        self.onClose = onClose
+    }
 
     private struct TripLaunch: Identifiable {
         let id = UUID()
@@ -56,13 +66,13 @@ struct ContractionTimerView: View {
             UINotificationFeedbackGenerator().notificationOccurred(.warning)
         }
         .confirmationDialog("结束这次计时？", isPresented: $confirmingFinish, titleVisibility: .visible) {
-            Button("结束并保存") { Task { await finish(thenTrip: false) } }
+            Button("结束并保存") { startFinish(thenTrip: false) }
             Button("取消", role: .cancel) {}
         } message: {
             Text("正在进行的这次宫缩不计入。")
         }
         .alert(LaborCopy.staleTitle, isPresented: .constant(store.needsStaleDecision)) {
-            Button("保存") { Task { await finish(thenTrip: false) } }
+            Button("保存") { startFinish(thenTrip: false) }.disabled(finishing)
             Button("丢弃", role: .destructive) { store.discardActive() }
         } message: {
             Text(LaborCopy.staleMessage)
@@ -73,7 +83,10 @@ struct ContractionTimerView: View {
                 contractionRecordID: launch.contractionRecordID
             ) { saved in
                 trip = nil
-                if saved { onClose() }
+                if saved {
+                    onTripSaved()
+                    onClose()
+                }
             }
         }
     }
@@ -107,11 +120,12 @@ struct ContractionTimerView: View {
                 .foregroundStyle(Color.aimTextTertiary)
             if isUrgent(status) {
                 HStack(spacing: AimMetrics.space12) {
-                    Button { Task { await finish(thenTrip: true) } } label: {
-                        Text("我们出发去医院了").frame(maxWidth: .infinity)
+                    Button { startFinish(thenTrip: true) } label: {
+                        tripLabel.frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.borderedProminent)
                     .controlSize(.large)
+                    .disabled(finishing)
                     .accessibilityIdentifier("contraction-hospital-trip")
                     LaborCallButton(identifier: nil)
                 }
@@ -236,20 +250,21 @@ struct ContractionTimerView: View {
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.large)
-                .disabled(store.active?.completed.isEmpty != false)
+                .disabled(finishing || store.active?.completed.isEmpty != false)
                 .accessibilityIdentifier("contraction-finish")
                 if !isUrgent(status) {
                     Button {
                         if store.active?.completed.isEmpty != false {
                             trip = TripLaunch(contractionRecordID: nil)
                         } else {
-                            Task { await finish(thenTrip: true) }
+                            startFinish(thenTrip: true)
                         }
                     } label: {
-                        Text("我们出发去医院了").frame(maxWidth: .infinity)
+                        tripLabel.frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.large)
+                    .disabled(finishing)
                     .accessibilityIdentifier("contraction-hospital-trip")
                 }
             }
@@ -268,7 +283,28 @@ struct ContractionTimerView: View {
             .background(Color.aimDangerSoft, in: RoundedRectangle(cornerRadius: AimMetrics.radiusButton, style: .continuous))
     }
 
+    /// 保存期间出发按钮原地显示进度，用户知道在等什么。
+    @ViewBuilder private var tripLabel: some View {
+        if finishing {
+            HStack(spacing: AimMetrics.space8) {
+                ProgressView()
+                Text("正在保存…")
+            }
+        } else {
+            Text("我们出发去医院了")
+        }
+    }
+
+    /// 点击时同步置位 `finishing`，再启动保存：同一帧里的连点也挡得住。
+    private func startFinish(thenTrip: Bool) {
+        guard !finishing else { return }
+        finishing = true
+        Task { await finish(thenTrip: thenTrip) }
+    }
+
+    /// 只由 `startFinish` 调用，进来时 `finishing` 已为真；结束时复位。
     private func finish(thenTrip: Bool) async {
+        defer { finishing = false }
         let outcome = await store.finish()
         if thenTrip {
             trip = TripLaunch(contractionRecordID: outcome?.savedRecordID)

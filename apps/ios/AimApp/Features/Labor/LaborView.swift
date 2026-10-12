@@ -46,7 +46,7 @@ struct LaborView: View {
             EncyclopediaEntryView(entryID: Self.whenToGoEntryID, store: libraryStore, agentStore: agentStore)
         }
         .fullScreenCover(isPresented: $timing) {
-            ContractionTimerView(agentStore: agentStore) { timing = false }
+            ContractionTimerView(agentStore: agentStore, onTripSaved: showTripSaved) { timing = false }
         }
         .fullScreenCover(isPresented: $showingAgent) {
             AgentView(store: agentStore) { showingAgent = false }
@@ -54,13 +54,14 @@ struct LaborView: View {
         .sheet(isPresented: $showingTrip) {
             HospitalTripSheet(repository: contractions.repository, defaultReason: .contractions, contractionRecordID: nil) { saved in
                 showingTrip = false
-                if saved {
-                    toast = AimToastMessage(text: LaborCopy.tripSaved, undoTitle: "",
-                                            accessibilityIdentifier: "labor-trip-saved")
-                }
+                if saved { showTripSaved() }
             }
         }
         .aimToast($toast)
+    }
+
+    private func showTripSaved() {
+        toast = AimToastMessage(text: LaborCopy.tripSaved, undoTitle: "", accessibilityIdentifier: "labor-trip-saved")
     }
 
     private var agentContext: AgentContext {
@@ -201,20 +202,27 @@ struct HospitalTripSheet: View {
             .navigationTitle("我们出发去医院了")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("取消") { onDone(false) } }
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消") { onDone(false) }.disabled(saving)
+                }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("告诉家人") { Task { await save() } }
+                    Button("告诉家人") {
+                        // 同步置位再启动保存：连点只发一次，保存期间也不能取消。
+                        guard !saving else { return }
+                        saving = true
+                        Task { await save() }
+                    }
                         .disabled(saving)
                         .accessibilityIdentifier("hospital-trip-confirm")
                 }
             }
         }
+        .interactiveDismissDisabled(saving)
     }
 
     private func save() async {
-        guard let repository else { error = "没保存上，重试"; return }
-        saving = true
         defer { saving = false }
+        guard let repository else { error = "没保存上，重试"; return }
         do {
             _ = try await repository.createRecord(draft: HospitalTrip.draft(
                 reason: reason, note: note, contractionRecordID: contractionRecordID, at: .now))
