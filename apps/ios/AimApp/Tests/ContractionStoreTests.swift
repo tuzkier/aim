@@ -97,7 +97,7 @@ final class ContractionStoreTests: XCTestCase {
         let outcome = await store.finish()
         XCTAssertNil(outcome?.savedRecordID)
         XCTAssertEqual(store.unsaved.count, 1)
-        XCTAssertEqual(store.errorMessage, "没保存上，重试")
+        XCTAssertEqual(store.saveError, "没保存上，重试")
 
         // 重新绑定（模拟重启）后队列还在。
         XCTAssertEqual(makeStore().unsaved.count, 1)
@@ -107,8 +107,68 @@ final class ContractionStoreTests: XCTestCase {
         XCTAssertTrue(saved)
         XCTAssertTrue(store.unsaved.isEmpty)
         XCTAssertEqual(repository.createdDrafts.count, 1)
-        XCTAssertNil(store.errorMessage)
+        XCTAssertNil(store.saveError)
         XCTAssertTrue(makeStore().unsaved.isEmpty, "保存成功后本地队列也清掉")
+    }
+
+    func testFailedHistoryLoadIsNotReportedAsAFailedSave() async {
+        let repository = FakeContractionRepository()
+        repository.failFetches = true
+        let store = makeStore(repository: repository)
+        await store.load()
+        XCTAssertNotNil(store.loadError)
+        XCTAssertNil(store.saveError, "拉历史失败不能显示成「没保存上，重试」")
+
+        repository.failFetches = false
+        await store.load()
+        XCTAssertNil(store.loadError, "历史加载成功后清掉")
+    }
+
+    func testSaveErrorIsClearedOnceTheQueueIsEmpty() async {
+        let repository = FakeContractionRepository()
+        repository.failCreates = true
+        let store = makeStore(repository: repository)
+        contract(store)
+        _ = await store.finish()
+        XCTAssertEqual(store.saveError, "没保存上，重试")
+        XCTAssertNil(store.loadError)
+
+        repository.failCreates = false
+        repository.failFetches = true  // 保存成功、随后拉历史失败
+        _ = await store.saveUnsaved()
+        XCTAssertNil(store.saveError)
+        XCTAssertNotNil(store.loadError)
+    }
+
+    func testFinishWithTimeoutReturnsTheSavedRecordWhenFast() async {
+        let repository = FakeContractionRepository()
+        let store = makeStore(repository: repository)
+        contract(store)
+        let outcome = await store.finish(timeout: .seconds(5))
+        XCTAssertEqual(outcome?.timedOut, false)
+        XCTAssertEqual(outcome?.savedRecordID, repository.createdIDs.first)
+    }
+
+    func testFinishWithTimeoutGivesUpWaitingButKeepsSaving() async throws {
+        let repository = FakeContractionRepository()
+        repository.holdCreates = true
+        let store = makeStore(repository: repository)
+        contract(store)
+
+        let outcome = await store.finish(timeout: .milliseconds(100))
+        XCTAssertEqual(outcome?.timedOut, true)
+        XCTAssertNil(outcome?.savedRecordID, "超时就不带关联")
+        XCTAssertEqual(outcome?.result.entries.count, 1)
+        XCTAssertNil(store.active)
+        XCTAssertEqual(store.unsaved.count, 1, "保存还在进行，计时留在队列里")
+
+        // 保存没被取消：放行后照常存上、清空队列。
+        repository.release()
+        for _ in 0..<200 where !store.unsaved.isEmpty { try await Task.sleep(for: .milliseconds(10)) }
+        XCTAssertTrue(store.unsaved.isEmpty)
+        XCTAssertEqual(repository.createdDrafts.count, 1)
+        XCTAssertTrue(makeStore().unsaved.isEmpty, "落盘的队列也清掉")
+        XCTAssertNil(store.saveError)
     }
 
     func testStatusUsesGestationalWeeks() {
@@ -156,6 +216,10 @@ private final class FakeContractionRepository: BusinessRepositoryProtocol, @unch
     var createdDrafts: [RecordDraft] = []
     private(set) var createdIDs: [UUID] = []
     var failCreates = false
+    var failFetches = false
+    /// 为真时 createRecord 挂起，直到 `release()`：模拟路上网络很慢。
+    var holdCreates = false
+    private var held: [CheckedContinuation<Void, Never>] = []
     private(set) var deletedIDs: [UUID] = []
 
     private func item(_ draft: RecordDraft) -> RecordItem {
@@ -166,11 +230,19 @@ private final class FakeContractionRepository: BusinessRepositoryProtocol, @unch
             attachmentRefs: [], createdAt: .now, updatedAt: .now)
     }
 
+    func release() {
+        holdCreates = false
+        held.forEach { $0.resume() }
+        held = []
+    }
+
     func fetchRecords(type: RecordType?) async throws -> RecordSnapshot {
-        RecordSnapshot(records: records.filter { type == nil || $0.type == type })
+        if failFetches { throw APIError.invalidResponse }
+        return RecordSnapshot(records: records.filter { type == nil || $0.type == type })
     }
 
     func createRecord(draft: RecordDraft) async throws -> RecordItem {
+        if holdCreates { await withCheckedContinuation { held.append($0) } }
         if failCreates { throw APIError.invalidResponse }
         createdDrafts.append(draft)
         let created = item(draft)

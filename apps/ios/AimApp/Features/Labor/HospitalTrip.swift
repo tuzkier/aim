@@ -37,6 +37,12 @@ enum HospitalTrip {
     }
 }
 
+/// 打开「我们出发去医院了」确认页的一次请求，带上要关联的宫缩记录。
+struct HospitalTripLaunch: Identifiable {
+    let id = UUID()
+    let contractionRecordID: UUID?
+}
+
 /// 本机已点「知道了」的去医院记录。
 struct HospitalTripDismissals {
     private static let key = "aim.hospitalTrip.dismissed"

@@ -215,6 +215,32 @@ struct ContractionSession: Identifiable, Equatable, Sendable {
     }
 }
 
+/// 从分娩页点「我们出发去医院了」时，去医院记录关联哪次计时。
+enum HospitalTripLink: Equatable, Sendable {
+    /// 进行中的计时里有已结束的宫缩：先结束保存，再关联保存后的记录。
+    case finishActive
+    /// 没有要保存的计时，但档案里最新一次计时的最后一次宫缩在 2 小时内：关联它。
+    case existing(UUID)
+    /// 其余情况不关联。
+    case none
+
+    static let recentWindow: TimeInterval = 7200
+
+    static func decide(active: ContractionTimer?, latest: ContractionSession?, now: Date) -> HospitalTripLink {
+        if active?.completed.isEmpty == false { return .finishActive }
+        guard let latest, let end = lastContractionEnd(of: latest),
+              now.timeIntervalSince(end) <= recentWindow else { return .none }
+        return .existing(latest.id)
+    }
+
+    /// 最后一次宫缩结束的时刻 = 开始时刻 + 最后一项的 start + duration。
+    static func lastContractionEnd(of session: ContractionSession) -> Date? {
+        session.data.contractions.last.map {
+            session.startedAt + TimeInterval($0.start + $0.duration)
+        }
+    }
+}
+
 enum ContractionFormat {
     /// 「45 秒」「4 分 50 秒」「5 分钟」。
     static func seconds(_ value: Int) -> String {

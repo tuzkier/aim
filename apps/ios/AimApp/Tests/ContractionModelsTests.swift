@@ -294,4 +294,54 @@ final class ContractionModelsTests: XCTestCase {
         XCTAssertEqual(ContractionFormat.seconds(290), "4 分 50 秒")
         XCTAssertEqual(ContractionFormat.seconds(300), "5 分钟")
     }
+
+    // MARK: - 从分娩页出发时关联哪次计时
+
+    private func session(startedAt: Date, entries: [ContractionEntry]) -> ContractionSession {
+        let record = RecordItem(
+            id: UUID(), pregnancyID: UUID(), familyID: UUID(), authorAccountID: UUID(),
+            type: .contraction, occurredAt: startedAt, visibility: .family, title: nil, content: nil,
+            structuredData: .contraction(ContractionRecordData(contractions: entries, summary: nil)),
+            attachmentRefs: [], createdAt: startedAt, updatedAt: startedAt)
+        return ContractionSession(record: record)!
+    }
+
+    private func timer(_ spans: [(TimeInterval, TimeInterval?)]) -> ContractionTimer {
+        var timer = ContractionTimer()
+        for (start, end) in spans {
+            _ = timer.toggle(at: t0 + start)
+            if let end { _ = timer.toggle(at: t0 + end) }
+        }
+        return timer
+    }
+
+    func testTripLinkFinishesAnActiveTimerThatHasCompletedContractions() {
+        let recent = session(startedAt: t0, entries: [ContractionEntry(start: 0, duration: 60)])
+        let active = timer([(0, 60), (300, nil)])
+        XCTAssertEqual(HospitalTripLink.decide(active: active, latest: recent, now: t0 + 400), .finishActive)
+    }
+
+    func testTripLinkAttachesTheLatestSessionWhenItsLastContractionIsWithinTwoHours() {
+        // 最后一次宫缩 = 开始时刻 + 最后一项的 start + duration = t0 + 1000 + 60。
+        let latest = session(startedAt: t0, entries: [ContractionEntry(start: 0, duration: 60),
+                                                      ContractionEntry(start: 1000, duration: 60)])
+        let lastEnd: TimeInterval = 1060
+        XCTAssertEqual(HospitalTripLink.decide(active: nil, latest: latest, now: t0 + lastEnd + 7200),
+                       .existing(latest.id), "恰好 2 小时仍关联")
+        XCTAssertEqual(HospitalTripLink.decide(active: nil, latest: latest, now: t0 + lastEnd + 7201), .none,
+                       "按最后一次宫缩算，不按开始时刻：开始时刻已过 2 小时 17 分")
+        XCTAssertEqual(HospitalTripLink.lastContractionEnd(of: latest), t0 + lastEnd)
+    }
+
+    func testTripLinkWithOnlyARunningContractionFallsBackToTheLatestSession() {
+        let latest = session(startedAt: t0, entries: [ContractionEntry(start: 0, duration: 60)])
+        let running = timer([(600, nil)])
+        XCTAssertEqual(HospitalTripLink.decide(active: running, latest: latest, now: t0 + 700), .existing(latest.id))
+    }
+
+    func testTripLinkIsNoneWithoutAnyTiming() {
+        XCTAssertEqual(HospitalTripLink.decide(active: nil, latest: nil, now: t0), .none)
+        let old = session(startedAt: t0, entries: [ContractionEntry(start: 0, duration: 60)])
+        XCTAssertEqual(HospitalTripLink.decide(active: nil, latest: old, now: t0 + 86_400), .none)
+    }
 }

@@ -16,7 +16,10 @@ final class ContractionStore {
     private(set) var unsaved: [ContractionResult] = []
     private(set) var sessions: [ContractionSession] = []
     private(set) var isSaving = false
-    var errorMessage: String?
+    /// 只放「没保存上，重试」：计时页底部据此显示重试。保存成功或队列清空时清掉。
+    private(set) var saveError: String?
+    /// 拉历史失败。和保存无关，不能在计时页冒充「没保存上」；历史加载成功时清掉。
+    private(set) var loadError: String?
 
     private let defaults: UserDefaults
     /// 保存成功后在这里广播 `.aimDataChanged`。测试注入自己的，免得惊动宿主 App。
@@ -46,7 +49,8 @@ final class ContractionStore {
         active = Self.read(ContractionTimer.self, key: next.activeKey, from: defaults)
         unsaved = Self.read([ContractionResult].self, key: next.unsavedKey, from: defaults) ?? []
         sessions = []
-        errorMessage = nil
+        saveError = nil
+        loadError = nil
     }
 
     /// 解绑时连仓库一起清掉：它按值带着上一家的身份。
@@ -56,7 +60,8 @@ final class ContractionStore {
         active = nil
         unsaved = []
         sessions = []
-        errorMessage = nil
+        saveError = nil
+        loadError = nil
     }
 
     /// 实时档位：没有进行中的计时为 nil。
@@ -64,12 +69,15 @@ final class ContractionStore {
         active.map { ContractionMath.status($0, at: clock(), weeks: gestationalWeeks) }
     }
 
+    /// 出发去医院前，结束计时的保存最多等这么久。
+    static let tripSaveTimeout: Duration = .seconds(5)
+
     /// 最后一次结束超过 6 小时：先让用户选保存或丢弃，才能开始新的计时。
     var needsStaleDecision: Bool { active?.isStale(at: clock()) ?? false }
     var latest: ContractionSession? { sessions.first }
 
     func load() async {
-        do { try await reloadSessions() } catch { errorMessage = error.localizedDescription }
+        do { try await reloadSessions() } catch { loadError = error.localizedDescription }
     }
 
     @discardableResult
@@ -107,13 +115,41 @@ final class ContractionStore {
     /// 保存成功时 savedRecordID 为新记录的 id。进行中的那一次不存；
     /// 超出后端限制（1 天、500 次）的最早部分由 `ContractionTimer.archivedResult(id:)` 丢掉。
     func finish() async -> (result: ContractionResult, savedRecordID: UUID?)? {
+        guard let result = enqueueActive() else { return nil }
+        let savedID = await saveUnsaved(returning: result.id)
+        return (result, savedID)
+    }
+
+    /// 结束计时并保存，但最多等 `timeout`：出发去医院时不能让家人卡在「正在保存…」。
+    /// 超时就返回 `timedOut == true`、savedRecordID 为 nil；保存本身不取消，照常进行，
+    /// 失败的留在队列里等补存。没有已结束的宫缩时返回 nil 且什么都不做。
+    func finish(timeout: Duration) async -> (result: ContractionResult, savedRecordID: UUID?, timedOut: Bool)? {
+        guard let result = enqueueActive() else { return nil }
+        let saving = Task { await self.saveUnsaved(returning: result.id) }
+        // 外层 nil 表示超时；内层是保存后的记录 id（没保存上也是 nil）。
+        let outcome: UUID?? = await withCheckedContinuation { continuation in
+            let once = ResumeOnce(continuation)
+            let timer = Task {
+                try? await Task.sleep(for: timeout)
+                once.resume(returning: nil)
+            }
+            Task {
+                let savedID = await saving.value
+                timer.cancel()
+                once.resume(returning: .some(savedID))
+            }
+        }
+        if let savedID = outcome { return (result, savedID, false) }
+        return (result, nil, true)
+    }
+
+    /// 把进行中的计时收成待保存的结果：先落盘再等待，防止等待期间被重复结束，也保证杀掉 App 不丢。
+    private func enqueueActive() -> ContractionResult? {
         guard let scope, let timer = active, let result = timer.archivedResult(id: UUID()) else { return nil }
-        // 先落盘再等待：防止等待期间被重复结束，也保证杀掉 App 不丢。
         active = nil
         unsaved.append(result)
         persist(scope)
-        let savedID = await saveUnsaved(returning: result.id)
-        return (result, savedID)
+        return result
     }
 
     @discardableResult
@@ -124,9 +160,13 @@ final class ContractionStore {
 
     /// 按顺序保存队列；遇到失败就停。返回 `target` 那一条保存后的记录 id。
     private func saveUnsaved(returning target: UUID?) async -> UUID? {
-        guard !isSaving, !unsaved.isEmpty else { return nil }
+        guard !isSaving else { return nil }
+        guard !unsaved.isEmpty else {
+            saveError = nil
+            return nil
+        }
         guard let repository, let scope else {
-            errorMessage = "没保存上，重试"
+            saveError = "没保存上，重试"
             return nil
         }
         isSaving = true
@@ -136,7 +176,7 @@ final class ContractionStore {
                 let record = try await repository.createRecord(draft: result.draft)
                 if result.id == target { targetRecordID = record.id }
             } catch {
-                if self.scope == scope { errorMessage = "没保存上，重试" }
+                if self.scope == scope { saveError = "没保存上，重试" }
                 isSaving = false
                 return nil
             }
@@ -144,9 +184,9 @@ final class ContractionStore {
         }
         isSaving = false
         guard self.scope == scope else { return targetRecordID }
-        errorMessage = nil
+        saveError = nil
         notificationCenter.post(name: .aimDataChanged, object: nil, userInfo: ["kinds": ["record"]])
-        try? await reloadSessions()
+        await load()
         return targetRecordID
     }
 
@@ -164,6 +204,7 @@ final class ContractionStore {
         }
         guard scope == requestedScope, generation > appliedReloadGeneration else { return }
         appliedReloadGeneration = generation
+        loadError = nil
         sessions = snapshot.records
             .compactMap(ContractionSession.init(record:))
             .sorted { $0.startedAt > $1.startedAt }
@@ -196,5 +237,21 @@ final class ContractionStore {
         } else {
             defaults.removeObject(forKey: key)
         }
+    }
+}
+
+/// 只让第一个结果生效：保存与超时谁先到用谁，后到的忽略。
+private final class ResumeOnce<T>: @unchecked Sendable {
+    private let lock = NSLock()
+    private var continuation: CheckedContinuation<T, Never>?
+
+    init(_ continuation: CheckedContinuation<T, Never>) { self.continuation = continuation }
+
+    func resume(returning value: T) {
+        lock.lock()
+        let pending = continuation
+        continuation = nil
+        lock.unlock()
+        pending?.resume(returning: value)
     }
 }

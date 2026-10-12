@@ -7,7 +7,9 @@ struct LaborView: View {
     let agentStore: AgentStore
 
     @State private var timing = false
-    @State private var showingTrip = false
+    @State private var trip: HospitalTripLaunch?
+    /// 正在结束进行中的计时并保存：期间不能再点出发，免得打开两次确认页。
+    @State private var finishing = false
     @State private var showingWhenToGo = false
     @State private var showingAgent = false
     @State private var toast: AimToastMessage?
@@ -51,9 +53,12 @@ struct LaborView: View {
         .fullScreenCover(isPresented: $showingAgent) {
             AgentView(store: agentStore) { showingAgent = false }
         }
-        .sheet(isPresented: $showingTrip) {
-            HospitalTripSheet(repository: contractions.repository, defaultReason: .contractions, contractionRecordID: nil) { saved in
-                showingTrip = false
+        .sheet(item: $trip) { launch in
+            HospitalTripSheet(
+                repository: contractions.repository, defaultReason: .contractions,
+                contractionRecordID: launch.contractionRecordID
+            ) { saved in
+                trip = nil
                 if saved { showTripSaved() }
             }
         }
@@ -149,15 +154,44 @@ struct LaborView: View {
     }
 
     private var tripButton: some View {
-        Button { showingTrip = true } label: {
-            Text("我们出发去医院了")
-                .font(.headline)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, AimMetrics.space8)
+        Button(action: startTrip) {
+            Group {
+                if finishing {
+                    HStack(spacing: AimMetrics.space8) {
+                        ProgressView()
+                        Text("正在保存…")
+                    }
+                } else {
+                    Text("我们出发去医院了")
+                }
+            }
+            .font(.headline)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, AimMetrics.space8)
         }
         .buttonStyle(.borderedProminent)
         .controlSize(.large)
+        .disabled(finishing)
         .accessibilityIdentifier("labor-hospital-trip")
+    }
+
+    /// 和计时页一样：进行中的计时先结束保存（最多等 5 秒）再打开确认页；
+    /// 刚结束不久的计时直接关联；其余不关联。点击时同步置位 `finishing`，连点只触发一次。
+    private func startTrip() {
+        guard !finishing else { return }
+        switch HospitalTripLink.decide(active: contractions.active, latest: contractions.latest, now: .now) {
+        case .finishActive:
+            finishing = true
+            Task {
+                defer { finishing = false }
+                let outcome = await contractions.finish(timeout: ContractionStore.tripSaveTimeout)
+                trip = HospitalTripLaunch(contractionRecordID: outcome?.savedRecordID)
+            }
+        case let .existing(id):
+            trip = HospitalTripLaunch(contractionRecordID: id)
+        case .none:
+            trip = HospitalTripLaunch(contractionRecordID: nil)
+        }
     }
 }
 

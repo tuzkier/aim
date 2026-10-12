@@ -142,6 +142,23 @@ final class FetalMovementModelsTests: XCTestCase {
         XCTAssertNotNil(object["contractions"])
     }
 
+    func testHospitalTripEncodesTheLinkedRecordAsALowercaseString() throws {
+        let linked = UUID()
+        let encoded = try JSONEncoder().encode(APIRecordStructuredDataDTO(recordData: .hospitalTrip(
+            HospitalTripRecordData(reason: .contractions, contractionRecordID: linked))))
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        XCTAssertEqual(object["reason"] as? String, "contractions")
+        XCTAssertEqual(object["contraction_record_id"] as? String, linked.uuidString.lowercased())
+    }
+
+    func testHospitalTripWithoutALinkedRecordOmitsTheKey() throws {
+        let encoded = try JSONEncoder().encode(APIRecordStructuredDataDTO(recordData: .hospitalTrip(
+            HospitalTripRecordData(reason: .waterBroke, contractionRecordID: nil))))
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        XCTAssertEqual(object["reason"] as? String, "water_broke")
+        XCTAssertFalse(object.keys.contains("contraction_record_id"), "没有关联时不发这个键，也不发 null")
+    }
+
     func testRecordTypeRoundTripsNewRawValues() {
         XCTAssertEqual(RecordType(rawValue: "contraction"), .contraction)
         XCTAssertEqual(RecordType(rawValue: "hospital_trip"), .hospitalTrip)

@@ -12,18 +12,13 @@ struct ContractionTimerView: View {
     @State private var confirmingFinish = false
     /// 正在结束并保存：期间不能再次结束、也不能再点出发，免得打开两次确认页。
     @State private var finishing = false
-    @State private var trip: TripLaunch?
+    @State private var trip: HospitalTripLaunch?
     @State private var lastAlertedStage: ContractionStage?
 
     init(agentStore: AgentStore, onTripSaved: @escaping () -> Void = {}, onClose: @escaping () -> Void) {
         self.agentStore = agentStore
         self.onTripSaved = onTripSaved
         self.onClose = onClose
-    }
-
-    private struct TripLaunch: Identifiable {
-        let id = UUID()
-        let contractionRecordID: UUID?
     }
 
     var body: some View {
@@ -37,7 +32,12 @@ struct ContractionTimerView: View {
                         if let weeks = store.gestationalWeeks, weeks < ContractionMath.pretermWeeks {
                             notice(LaborCopy.pretermBanner, color: .aimDanger)
                         }
-                        statusCard(status)
+                        // 过期计时：每秒在这里判断，页面一直开着也能及时出现，不靠 TimelineView 外的弹窗。
+                        if store.needsStaleDecision {
+                            staleCard
+                        } else {
+                            statusCard(status)
+                        }
                         if status?.isLongRunning == true {
                             notice(LaborCopy.longRunning, color: .aimDanger)
                         }
@@ -48,6 +48,17 @@ struct ContractionTimerView: View {
                     .padding(AimMetrics.space16)
                 }
                 .safeAreaInset(edge: .bottom) { bottomBar(status) }
+                // 放在 TimelineView 里才会每秒求值：停顿回落、早产窗口滑出这类随时间的变化也能看到。
+                .onChange(of: status?.stage) { _, stage in
+                    guard stage == .go || stage == .pretermAlert else {
+                        // 离开这两档就复位，下次再进入时还能再提醒一次。
+                        lastAlertedStage = nil
+                        return
+                    }
+                    guard stage != lastAlertedStage else { return }
+                    lastAlertedStage = stage
+                    UINotificationFeedbackGenerator().notificationOccurred(.warning)
+                }
             }
             .background(Color.aimCanvas)
             .toolbar {
@@ -60,22 +71,11 @@ struct ContractionTimerView: View {
             .navigationBarTitleDisplayMode(.inline)
         }
         .onAppear { store.resumeAfterLaunch() }
-        .onChange(of: store.status?.stage) { _, stage in
-            guard let stage, stage == .go || stage == .pretermAlert, stage != lastAlertedStage else { return }
-            lastAlertedStage = stage
-            UINotificationFeedbackGenerator().notificationOccurred(.warning)
-        }
         .confirmationDialog("结束这次计时？", isPresented: $confirmingFinish, titleVisibility: .visible) {
             Button("结束并保存") { startFinish(thenTrip: false) }
             Button("取消", role: .cancel) {}
         } message: {
             Text("正在进行的这次宫缩不计入。")
-        }
-        .alert(LaborCopy.staleTitle, isPresented: .constant(store.needsStaleDecision)) {
-            Button("保存") { startFinish(thenTrip: false) }.disabled(finishing)
-            Button("丢弃", role: .destructive) { store.discardActive() }
-        } message: {
-            Text(LaborCopy.staleMessage)
         }
         .sheet(item: $trip) { launch in
             HospitalTripSheet(
@@ -141,6 +141,43 @@ struct ContractionTimerView: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("contraction-status")
+    }
+
+    /// 上次计时超过 6 小时没保存：占住状态卡的位置，先选保存或丢弃。
+    private var staleCard: some View {
+        VStack(alignment: .leading, spacing: AimMetrics.space8) {
+            Text(LaborCopy.staleTitle)
+                .font(.title3.weight(.semibold))
+                .foregroundStyle(Color.aimTextPrimary)
+            Text(LaborCopy.staleMessage)
+                .font(.subheadline)
+                .foregroundStyle(Color.aimTextSecondary)
+            HStack(spacing: AimMetrics.space12) {
+                Button { startFinish(thenTrip: false) } label: {
+                    Text("保存").frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(finishing)
+                .accessibilityIdentifier("contraction-stale-save")
+                Button(role: .destructive) { store.discardActive() } label: {
+                    Text("丢弃").frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .disabled(finishing)
+                .accessibilityIdentifier("contraction-stale-discard")
+            }
+            .controlSize(.large)
+            .padding(.top, AimMetrics.space4)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(AimMetrics.space16)
+        .background(Color.aimWarningSoft, in: RoundedRectangle(cornerRadius: AimMetrics.radiusCard, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: AimMetrics.radiusCard, style: .continuous)
+                .stroke(Color.aimWarning, lineWidth: 1)
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("contraction-stale")
     }
 
     private func summaryLine(_ summary: ContractionSummary?) -> String {
@@ -237,7 +274,8 @@ struct ContractionTimerView: View {
 
     private func bottomBar(_ status: ContractionStatus?) -> some View {
         VStack(spacing: AimMetrics.space8) {
-            if let message = store.errorMessage {
+            // 只显示保存失败；拉历史失败与本页无关，不冒充「没保存上」。
+            if let message = store.saveError {
                 HStack {
                     Text(message).font(.subheadline).foregroundStyle(Color.aimDanger)
                     Spacer()
@@ -255,7 +293,7 @@ struct ContractionTimerView: View {
                 if !isUrgent(status) {
                     Button {
                         if store.active?.completed.isEmpty != false {
-                            trip = TripLaunch(contractionRecordID: nil)
+                            trip = HospitalTripLaunch(contractionRecordID: nil)
                         } else {
                             startFinish(thenTrip: true)
                         }
@@ -305,13 +343,15 @@ struct ContractionTimerView: View {
     /// 只由 `startFinish` 调用，进来时 `finishing` 已为真；结束时复位。
     private func finish(thenTrip: Bool) async {
         defer { finishing = false }
-        let outcome = await store.finish()
         if thenTrip {
-            trip = TripLaunch(contractionRecordID: outcome?.savedRecordID)
-        } else if outcome?.savedRecordID != nil {
-            onClose()
+            // 最多等 5 秒：超时先打开确认页、不带关联，计时留在队列里照常补存。
+            let outcome = await store.finish(timeout: ContractionStore.tripSaveTimeout)
+            trip = HospitalTripLaunch(contractionRecordID: outcome?.savedRecordID)
+            return
         }
-        // 没保存上：留在页面，errorMessage 会显示「没保存上，重试」。
+        let outcome = await store.finish()
+        if outcome?.savedRecordID != nil { onClose() }
+        // 没保存上：留在页面，saveError 会显示「没保存上，重试」。
     }
 }
 
