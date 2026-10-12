@@ -7,6 +7,7 @@ from typing import Any, ClassVar
 from uuid import UUID
 
 from aim_api.contexts.records.domain.attachment import MAX_ATTACHMENTS_PER_RECORD
+from aim_api.contexts.records.domain.contraction import contraction_summary
 from aim_api.contexts.records.domain.errors import RecordAccessDenied, RecordValidationError
 
 
@@ -19,6 +20,7 @@ class RecordType(StrEnum):
     knowledge = "knowledge"
     fetal_movement = "fetal_movement"
     memory = "memory"
+    contraction = "contraction"
 
 
 class RecordVisibility(StrEnum):
@@ -193,6 +195,40 @@ class Record:
         if "reported_less" in data and not isinstance(data["reported_less"], bool):
             raise RecordValidationError("fetal movement reported_less must be a boolean")
 
+    # 宫缩计时：一次计时最多 500 次、跨度 24 小时；单次宫缩最长 10 分钟，再长说明忘了按结束。
+    CONTRACTION_MAX_ITEMS: ClassVar[int] = 500
+    CONTRACTION_MAX_START: ClassVar[int] = 24 * 60 * 60
+    CONTRACTION_MAX_DURATION: ClassVar[int] = 10 * 60
+
+    @classmethod
+    def _validate_contraction(cls, data: dict[str, Any]) -> None:
+        # summary 由服务端算，客户端带来的直接忽略；其他字段一律不收。
+        if set(data) - {"contractions", "summary"}:
+            raise RecordValidationError("contraction records only accept contractions")
+        items = data.get("contractions")
+        if not isinstance(items, list) or not 1 <= len(items) <= cls.CONTRACTION_MAX_ITEMS:
+            raise RecordValidationError(
+                f"contractions must list 1-{cls.CONTRACTION_MAX_ITEMS} entries"
+            )
+        previous_end = 0
+        for index, item in enumerate(items):
+            if not isinstance(item, dict) or set(item) != {"start", "duration"}:
+                raise RecordValidationError("each contraction needs exactly start and duration")
+            start, duration = item["start"], item["duration"]
+            for value in (start, duration):
+                if isinstance(value, bool) or not isinstance(value, int):
+                    raise RecordValidationError("contraction start and duration must be integers")
+            if index == 0 and start != 0:
+                raise RecordValidationError("the first contraction must start at 0")
+            if not 0 <= start <= cls.CONTRACTION_MAX_START:
+                raise RecordValidationError("contraction start must be within 24 hours")
+            if not 1 <= duration <= cls.CONTRACTION_MAX_DURATION:
+                raise RecordValidationError("contraction duration must be 1-600 seconds")
+            # 上一次结束之后才能开始下一次；这同时保证了开始时刻不递减。
+            if start < previous_end:
+                raise RecordValidationError("contractions must not overlap")
+            previous_end = start + duration
+
     @classmethod
     def _validate_knowledge(cls, data: dict[str, Any], title: str | None) -> None:
         if not isinstance(title, str) or not title.strip():
@@ -326,6 +362,9 @@ class Record:
             return {"done": False, **structured_data}
         if record_type is RecordType.memory:
             return {"kind": structured_data["kind"], "text": structured_data["text"].strip()}
+        if record_type is RecordType.contraction:
+            contractions = structured_data["contractions"]
+            return {"contractions": contractions, "summary": contraction_summary(contractions)}
         return structured_data
 
     @classmethod
@@ -412,6 +451,10 @@ class Record:
 
         if record_type is RecordType.fetal_movement:
             cls._validate_fetal_movement(structured_data)
+            return
+
+        if record_type is RecordType.contraction:
+            cls._validate_contraction(structured_data)
             return
 
         raise RecordValidationError(f"unsupported record type: {record_type}")

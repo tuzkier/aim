@@ -1,0 +1,55 @@
+{
+  "_comment": "宫缩档位计算的共享测试向量。API（tests/domain/records/test_contraction.py）直接读取；iOS（Tests/ContractionModelsTests.swift）内嵌同一份拷贝，改这里要同步改那边。",
+  "vectors": [
+    {
+      "name": "只有一次",
+      "contractions": [[0, 60]],
+      "expected": {"count": 1, "last_hour_count": 1, "avg_interval_seconds": null, "avg_duration_seconds": 60, "pattern": "early"}
+    },
+    {
+      "name": "十分钟一次，还早",
+      "contractions": [[0, 40], [600, 40], [1200, 40], [1800, 40]],
+      "expected": {"count": 4, "last_hour_count": 4, "avg_interval_seconds": 600, "avg_duration_seconds": 40, "pattern": "early"}
+    },
+    {
+      "name": "最近半小时 4 次、7 分钟一次，接近",
+      "contractions": [[0, 45], [420, 45], [840, 45], [1260, 45]],
+      "expected": {"count": 4, "last_hour_count": 4, "avg_interval_seconds": 420, "avg_duration_seconds": 45, "pattern": "approaching"}
+    },
+    {
+      "name": "最近半小时 4 次、但 7 分 1 秒一次，差一点",
+      "contractions": [[0, 45], [421, 45], [842, 45], [1263, 45]],
+      "expected": {"count": 4, "last_hour_count": 4, "avg_interval_seconds": 421, "avg_duration_seconds": 45, "pattern": "early"}
+    },
+    {
+      "name": "满一小时、5 分钟一次、每次 50 秒：符合 5-1-1",
+      "contractions": [[0, 50], [300, 50], [600, 50], [900, 50], [1200, 50], [1500, 50], [1800, 50], [2100, 50], [2400, 50], [2700, 50], [3000, 50], [3300, 50]],
+      "expected": {"count": 12, "last_hour_count": 12, "avg_interval_seconds": 300, "avg_duration_seconds": 50, "pattern": "go"}
+    },
+    {
+      "name": "跨度只有 54 分 59 秒：还不算满一小时",
+      "contractions": [[0, 50], [299, 50], [599, 50], [899, 50], [1199, 50], [1499, 50], [1799, 50], [2099, 50], [2399, 50], [2699, 50], [2999, 50], [3299, 50]],
+      "expected": {"count": 12, "last_hour_count": 12, "avg_interval_seconds": 300, "avg_duration_seconds": 50, "pattern": "approaching"}
+    },
+    {
+      "name": "满一小时但平均持续 49 秒",
+      "contractions": [[0, 49], [300, 49], [600, 49], [900, 49], [1200, 49], [1500, 49], [1800, 49], [2100, 49], [2400, 49], [2700, 49], [3000, 49], [3300, 49]],
+      "expected": {"count": 12, "last_hour_count": 12, "avg_interval_seconds": 300, "avg_duration_seconds": 49, "pattern": "approaching"}
+    },
+    {
+      "name": "满一小时但 5 分 30 秒一次",
+      "contractions": [[0, 60], [330, 60], [660, 60], [990, 60], [1320, 60], [1650, 60], [1980, 60], [2310, 60], [2640, 60], [2970, 60], [3300, 60]],
+      "expected": {"count": 11, "last_hour_count": 11, "avg_interval_seconds": 330, "avg_duration_seconds": 60, "pattern": "approaching"}
+    },
+    {
+      "name": "一小时以前的宫缩不进窗口",
+      "contractions": [[0, 30], [1000, 30], [5000, 60], [5300, 60], [5600, 60], [5900, 60]],
+      "expected": {"count": 6, "last_hour_count": 4, "avg_interval_seconds": 300, "avg_duration_seconds": 60, "pattern": "approaching"}
+    },
+    {
+      "name": "平均值四舍五入",
+      "contractions": [[0, 50], [301, 51], [602, 50]],
+      "expected": {"count": 3, "last_hour_count": 3, "avg_interval_seconds": 301, "avg_duration_seconds": 50, "pattern": "early"}
+    }
+  ]
+}

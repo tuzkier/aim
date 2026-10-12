@@ -56,8 +56,8 @@ async def execute(command: UpdateRecordCommand, uow: RecordsUnitOfWork) -> Recor
     Record._validate_payload(
         record.record_type, record.structured_data, record.content, record.title
     )
+    record.structured_data = Record._with_defaults(record.record_type, record.structured_data)
     if record.record_type is RecordType.memory:
-        record.structured_data = Record._with_defaults(record.record_type, record.structured_data)
         record.title = record.structured_data["text"][:40]
     record.assert_attachment_refs_valid()
     record.updated_at = command.now or datetime.now(UTC)
