@@ -13,6 +13,7 @@ struct EncyclopediaEntryView: View {
     @State private var showingAgent = false
     @State private var countingFetalMovement = false
     @State private var timingContractions = false
+    @State private var toast: AimToastMessage?
 
     var body: some View {
         Group {
@@ -40,8 +41,11 @@ struct EncyclopediaEntryView: View {
             FetalMovementCounterView(agentStore: agentStore) { countingFetalMovement = false }
         }
         .fullScreenCover(isPresented: $timingContractions) {
-            ContractionTimerView(agentStore: agentStore) { timingContractions = false }
+            ContractionTimerView(agentStore: agentStore, onTripSaved: {
+                toast = AimToastMessage(text: LaborCopy.tripSaved, undoTitle: "", accessibilityIdentifier: "encyclopedia-trip-saved")
+            }) { timingContractions = false }
         }
+        .aimToast($toast)
     }
 
     private func load() async {

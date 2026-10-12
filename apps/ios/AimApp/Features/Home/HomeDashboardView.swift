@@ -7,6 +7,7 @@ struct HomeDashboardView: View {
     @Environment(ContractionStore.self) private var contractions
     /// 横幅点开去医院记录详情要用记录仓库与待办仓库，照资料库打开报告详情的写法取。
     @Environment(AgentDestinations.self) private var destinations: AgentDestinations?
+    @Environment(\.scenePhase) private var scenePhase
     @Bindable var store: HomeDashboardStore
     let recordStore: RecordStore
     let familyStore: FamilyStore
@@ -77,6 +78,10 @@ struct HomeDashboardView: View {
             .onReceive(NotificationCenter.default.publisher(for: .aimDataChanged)) { _ in
                 Task { await store.load() }
             }
+            // 从后台回来重新加载：家人切回 App 要看到新的去医院横幅，过期的也要消失。
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active { Task { await store.load() } }
+            }
             .toolbar(.hidden, for: .navigationBar)
             .navigationDestination(for: Int.self) { week in
                 WeekDetailView(store: store, initialWeek: week, agentStore: agentStore)
@@ -85,7 +90,11 @@ struct HomeDashboardView: View {
                 AgentView(store: agentStore) { showingAgent = false }
             }
             .fullScreenCover(isPresented: $timingContractions) {
-                ContractionTimerView(agentStore: agentStore) { timingContractions = false }
+                ContractionTimerView(agentStore: agentStore, onTripSaved: {
+                    toast = AimToastMessage(text: LaborCopy.tripSaved, undoTitle: "", accessibilityIdentifier: "home-trip-saved")
+                    // 横幅立即出现，不等广播。
+                    Task { await store.load() }
+                }) { timingContractions = false }
             }
             // 详情页里也能删除或编辑这条；关掉后重新加载，横幅才跟得上。
             .sheet(item: $openedTrip, onDismiss: { Task { await store.load() } }) { record in

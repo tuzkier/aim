@@ -115,7 +115,13 @@ private struct MainTabView: View {
             Task { await reloadRepositories() }
         }
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active { Task { await reminders.refresh(activeCount: fetalMovementStore.active?.startedAt) } }
+            guard phase == .active else { return }
+            Task { await reminders.refresh(activeCount: fetalMovementStore.active?.startedAt) }
+            // 路上断网没存上的计时，回到前台补存；宫缩中被挂起太久的先截断。未绑定时两步都不生效。
+            Task {
+                contractionStore.resumeAfterLaunch()
+                await contractionStore.saveUnsaved()
+            }
         }
         .onChange(of: fetalMovementStore.active) { _, value in
             Task { await reminders.refresh(activeCount: value?.startedAt) }
