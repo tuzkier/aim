@@ -232,6 +232,17 @@ final class LibraryStep2CatalogTests: XCTestCase {
         XCTAssertEqual(LibraryCategoryID.preparation.summary(from: snapshot).headline, "待产包 2/7")
     }
 
+    /// 首页分娩准备卡用的待产包进度：清单拉到了给「待产包 n/m」，没拉到给 nil（只显示原文案）。
+    func testPreparationProgressIsNilUntilTheChecklistLoads() {
+        XCTAssertNil(LibraryCategoryID.preparationProgress(from: LibrarySnapshot()))
+        let snapshot = LibrarySnapshot(
+            records: [checked("preparation", "documents", done: true)],
+            safetyRuleCount: 0,
+            collectionSizes: ["preparation": 7]
+        )
+        XCTAssertEqual(LibraryCategoryID.preparationProgress(from: snapshot), "待产包 1/7")
+    }
+
     func testPaperworkSummaryUsesItsOwnCollection() {
         let snapshot = LibrarySnapshot(
             records: [checked("hangzhou", "maternity-benefits-materials", done: true)],

@@ -58,13 +58,11 @@ struct HomeDashboardView: View {
                 .padding(.bottom, AimMetrics.space28)
             }
             .background(Color.aimCanvas)
-            .refreshable {
-                await store.load()
-                contractions.gestationalWeeks = store.pregnancy?.weeks
-            }
-            .task {
-                await store.load()
-                contractions.gestationalWeeks = store.pregnancy?.weeks
+            .refreshable { await store.load() }
+            .task { await store.load() }
+            // 孕周一变就同步给宫缩计时（早产提示要用）；广播触发的重载也走这里。
+            .onChange(of: store.pregnancy?.weeks, initial: true) { _, weeks in
+                contractions.gestationalWeeks = weeks
             }
             // 「欢迎回来」「已加入某某家庭」这类一次性提示：启动默认进首页，就在这里显示。
             .onAppear {

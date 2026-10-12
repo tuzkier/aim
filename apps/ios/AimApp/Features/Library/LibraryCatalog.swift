@@ -72,6 +72,13 @@ enum LibraryCategoryID: String, CaseIterable, Identifiable, Sendable {
             .sorted { $0.createdAt > $1.createdAt }
     }
 
+    /// 待产包进度，如「待产包 5/7」，取自待产准备分类的摘要；清单还没拉到时为 nil，
+    /// 调用方不必显示占位文案。首页「分娩准备」卡用它。
+    static func preparationProgress(from snapshot: LibrarySnapshot) -> String? {
+        guard (snapshot.collectionSizes["preparation"] ?? 0) > 0 else { return nil }
+        return LibraryCategoryID.preparation.summary(from: snapshot).headline
+    }
+
     func summary(from snapshot: LibrarySnapshot) -> LibrarySummary {
         // 用户自己积累的条目优先于静态基线——那才是这个分类的价值所在。
         let entries = entries(in: snapshot)

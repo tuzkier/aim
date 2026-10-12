@@ -96,6 +96,9 @@ struct LaborPrepCard: View {
                 VStack(alignment: .leading, spacing: AimMetrics.space4) {
                     Text("分娩准备").font(.headline).foregroundStyle(Color.aimTextPrimary)
                     Text("宫缩计时、什么时候去医院、待产包").font(.subheadline).foregroundStyle(Color.aimTextSecondary)
+                    if let progress = LibraryCategoryID.preparationProgress(from: libraryStore.snapshot) {
+                        Text(progress).font(.subheadline).foregroundStyle(Color.aimTextSecondary)
+                    }
                 }
                 Spacer()
                 Image(systemName: "chevron.right").foregroundStyle(Color.aimTextTertiary)
