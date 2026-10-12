@@ -110,3 +110,31 @@ test("记录引用的标题写日期加类型", () => {
   const paragraph = libraryParagraph();
   assert.ok(paragraph.includes("title made of its date and record type, such as 10月3日产检"));
 });
+
+// 宫缩段落：记录有时效、用户感受优先、早产与经产妇口径和规格一致（分娩模式整分支审查 C、F）。
+test("宫缩段落说明记录时效，且早产、经产妇口径统一", () => {
+  const start = instructions.indexOf("When the user mentions contractions");
+  const end = instructions.indexOf("For pregnancy knowledge questions");
+  assert.ok(start >= 0 && end > start, "指令里要有宫缩段落");
+  const paragraph = instructions.slice(start, end).replace(/\s+/g, " ");
+  for (const phrase of [
+    "call `get_current_time`",
+    "within the last hour or two",
+    "an older session is history",
+    "What the user feels right now always outweighs any record",
+    "One older than 24 hours, or followed by a newer contraction timing",
+    "regular at about 10 minutes apart",
+    "`first_start_seconds` and `last_start_seconds`",
+  ]) {
+    assert.ok(paragraph.includes(phrase), phrase);
+  }
+  // 未满 37 周规律宫缩前后同一个说法。
+  assert.equal(paragraph.match(/go to the hospital or call 120 now/g)?.length, 2);
+  assert.ok(!paragraph.includes("contact the hospital now whatever"));
+  // 内部接口不再返回逐次数组，指令也不该提它。
+  assert.ok(!paragraph.includes("`contractions`"));
+  assert.deepEqual(
+    instructions.slice(start, end).split("\n").filter((line) => [...line].length > 80),
+    [],
+  );
+});
