@@ -9,7 +9,8 @@ enum HospitalTrip {
         let trimmed = note.trimmingCharacters(in: .whitespacesAndNewlines)
         return RecordDraft(
             type: .hospitalTrip, occurredAt: now, visibility: .family, title: title,
-            content: trimmed.isEmpty ? nil : String(trimmed.prefix(200)),
+            // 服务端按 Unicode 码点数校验 ≤ 200，这里也按码点截断，而不是按字素簇。
+            content: trimmed.isEmpty ? nil : String(String.UnicodeScalarView(trimmed.unicodeScalars.prefix(200))),
             structuredData: .hospitalTrip(HospitalTripRecordData(reason: reason, contractionRecordID: contractionRecordID)))
     }
 
@@ -25,16 +26,14 @@ enum HospitalTrip {
             .max { $0.occurredAt < $1.occurredAt }
     }
 
-    /// 「妈妈 10:32 出发去医院了 · 规律宫缩」
+    /// 「妈妈 10:32 出发去医院了 · 规律宫缩」，有备注时为「… · 规律宫缩 · 爸爸陪着」
     static func bannerText(_ record: RecordItem, actorName: String) -> String {
         let time = record.occurredAt.formatted(date: .omitted, time: .shortened)
-        let detail: String = {
-            if let note = record.content?.trimmingCharacters(in: .whitespacesAndNewlines), !note.isEmpty { return note }
-            if case let .hospitalTrip(data) = record.structuredData { return data.reason.displayName }
-            return ""
-        }()
-        let base = "\(actorName) \(time) 出发去医院了"
-        return detail.isEmpty ? base : "\(base) · \(detail)"
+        var parts = ["\(actorName) \(time) 出发去医院了"]
+        // 原因始终要显示：家人必须看到「破水」「出血」这类信息；有备注时接在原因后面。
+        if case let .hospitalTrip(data) = record.structuredData { parts.append(data.reason.displayName) }
+        if let note = record.content?.trimmingCharacters(in: .whitespacesAndNewlines), !note.isEmpty { parts.append(note) }
+        return parts.joined(separator: " · ")
     }
 }
 

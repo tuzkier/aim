@@ -47,7 +47,20 @@ final class HospitalTripTests: XCTestCase {
         let time = record.occurredAt.formatted(date: .omitted, time: .shortened)
         XCTAssertEqual(HospitalTrip.bannerText(record, actorName: "妈妈"), "妈妈 \(time) 出发去医院了 · 破水")
         let withNote = trip(author: partner, hoursAgo: 1, note: "爸爸陪着")
-        XCTAssertTrue(HospitalTrip.bannerText(withNote, actorName: "妈妈").hasSuffix("· 爸爸陪着"))
+        XCTAssertEqual(HospitalTrip.bannerText(withNote, actorName: "妈妈"), "妈妈 \(time) 出发去医院了 · 规律宫缩 · 爸爸陪着")
+    }
+
+    /// 服务端按 Unicode 码点数校验备注 ≤ 200，客户端也必须按码点截断。
+    func testDraftNoteIsTruncatedByUnicodeScalars() {
+        let family = "👨‍👩‍👧‍👦" // 1 个字素簇，7 个码点
+        let longEmoji = String(repeating: family, count: 40)
+        let emojiContent = HospitalTrip.draft(reason: .other, note: longEmoji, contractionRecordID: nil, at: now).content
+        XCTAssertNotNil(emojiContent)
+        XCTAssertLessThanOrEqual(emojiContent?.unicodeScalars.count ?? .max, 200)
+
+        let hanzi = String(repeating: "医", count: 201)
+        let hanziContent = HospitalTrip.draft(reason: .other, note: hanzi, contractionRecordID: nil, at: now).content
+        XCTAssertEqual(hanziContent, String(repeating: "医", count: 200))
     }
 
     func testDismissalsPersist() {
