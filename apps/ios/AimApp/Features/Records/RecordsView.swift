@@ -13,6 +13,8 @@ extension RecordType {
         case .memory: "AIM 记得的事"
         case .contraction: "宫缩"
         case .hospitalTrip: "去医院"
+        case .mood: "心情"
+        case .epds: "情绪自评"
         case .unknown: "记录"
         }
     }
@@ -29,6 +31,8 @@ extension RecordType {
         case .memory: "brain"
         case .contraction: "waveform.path.ecg"
         case .hospitalTrip: "car"
+        case .mood: "face.smiling"
+        case .epds: "heart.text.clipboard"
         case .unknown: "doc"
         }
     }
@@ -66,6 +70,8 @@ extension RecordItem {
         // 两种都由分娩页生成，标题固定；去医院记录服务端固定写了标题。
         case .contraction: "宫缩计时"
         case .hospitalTrip: title?.trimmed.nilIfEmpty ?? "我们出发去医院了"
+        case let .mood(data): "今天的心情 · " + data.label
+        case .epds: "情绪自评（EPDS）"
         case .unknown: type.displayName
         }
     }
@@ -97,6 +103,8 @@ extension RecordItem {
         case let .fetalMovement(data): return FetalMovementFormat.summary(data)
         case let .contraction(data): return ContractionFormat.summary(data)
         case let .hospitalTrip(data): return data.reason.displayName
+        case let .mood(data): return data.label
+        case let .epds(data): return data.score.map { "\($0) / 30 · \(data.levelForDisplay?.title ?? "筛查结果")" } ?? "情绪自评"
         case .unknown: return "暂不支持展示这类记录"
         }
     }

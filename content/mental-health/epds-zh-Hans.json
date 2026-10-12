@@ -1,0 +1,170 @@
+{
+  "version": "epds-nsw-zh-Hans-2023-v1",
+  "title": "爱丁堡产后抑郁量表（EPDS）",
+  "instruction": "请按过去 7 天的感受选择，不只看今天。请由孕妇或产后妈妈本人填写。",
+  "sourceURL": "https://www.mhcs.health.nsw.gov.au/publications/epds",
+  "questionnaireURL": "https://www.mhcs.health.nsw.gov.au/publications/epds/chinese-simplified/@@display-file/file/Chinese%20Simplified.pdf",
+  "attribution": "© 1987 The Royal College of Psychiatrists. Cox, J.L., Holden, J.M., & Sagovsky, R. (1987). Detection of postnatal depression: Development of the 10-item Edinburgh Postnatal Depression Scale. British Journal of Psychiatry, 150, 782–786. 简体中文版来源：NSW Health。",
+  "questions": [
+    {
+      "id": 1,
+      "text": "我会笑并看到事情有趣的一面：",
+      "options": [
+        "跟以前一样多",
+        "现在没那么多了",
+        "现在肯定没那么多了",
+        "根本没有"
+      ],
+      "points": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "id": 2,
+      "text": "我盼望着能享受事物：",
+      "options": [
+        "跟我以前一样多",
+        "比以前少多了",
+        "肯定比以前少了",
+        "几乎没有"
+      ],
+      "points": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "id": 3,
+      "text": "当事情不顺利时，我没必要地责备自己：",
+      "options": [
+        "是，大多数时候",
+        "是，有时候",
+        "不经常",
+        "不，从不"
+      ],
+      "points": [
+        3,
+        2,
+        1,
+        0
+      ]
+    },
+    {
+      "id": 4,
+      "text": "我没有什么原因就焦虑或担心：",
+      "options": [
+        "不，根本不",
+        "几乎没有",
+        "是，有时候",
+        "是，很经常"
+      ],
+      "points": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "id": 5,
+      "text": "没什么理由我就觉得害怕或恐慌：",
+      "options": [
+        "是，很多时候",
+        "是，有时候",
+        "不，不多时候",
+        "不，从不"
+      ],
+      "points": [
+        3,
+        2,
+        1,
+        0
+      ]
+    },
+    {
+      "id": 6,
+      "text": "事情超出我的控制：",
+      "options": [
+        "是，大多数时候我根本无法应对",
+        "是，有时候我不像平时应对得那么好",
+        "不，大多数时候我应对得挺好",
+        "不，我和以前一样应对得好"
+      ],
+      "points": [
+        3,
+        2,
+        1,
+        0
+      ]
+    },
+    {
+      "id": 7,
+      "text": "我非常不开心以至于睡眠困难：",
+      "options": [
+        "是，大多数时候",
+        "是，有时候",
+        "不是很经常",
+        "不，根本不"
+      ],
+      "points": [
+        3,
+        2,
+        1,
+        0
+      ]
+    },
+    {
+      "id": 8,
+      "text": "我觉得伤心或悲惨：",
+      "options": [
+        "是，大多数时候",
+        "是，很经常",
+        "不是很经常",
+        "不，根本不"
+      ],
+      "points": [
+        3,
+        2,
+        1,
+        0
+      ]
+    },
+    {
+      "id": 9,
+      "text": "我非常不开心以至于我一直哭：",
+      "options": [
+        "是，大多数时候",
+        "是，很经常",
+        "仅仅偶尔",
+        "不，从不"
+      ],
+      "points": [
+        3,
+        2,
+        1,
+        0
+      ]
+    },
+    {
+      "id": 10,
+      "text": "我曾经有过伤害自己的想法：",
+      "options": [
+        "是，很经常",
+        "有时候",
+        "几乎没有",
+        "从不"
+      ],
+      "points": [
+        3,
+        2,
+        1,
+        0
+      ]
+    }
+  ]
+}

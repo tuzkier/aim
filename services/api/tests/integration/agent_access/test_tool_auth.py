@@ -1,12 +1,22 @@
 from __future__ import annotations
 
 from uuid import UUID, uuid4
+import asyncio
+import pytest
 
 from fastapi.testclient import TestClient
 
 from aim_api.bootstrap import create_app
 from aim_api.platform.auth.context import issue_session_token
 from aim_api.platform.config.settings import get_settings
+
+
+@pytest.mark.parametrize("kind", ["mood", "epds"])
+def test_agent_record_write_boundary_rejects_emotional_questionnaires_before_accessing_data(kind):
+    from aim_api.contexts.agent_access.adapters.inbound.http.router import _create_record
+    from aim_api.platform.http.errors import ForbiddenError
+    with pytest.raises(ForbiddenError, match="不能代填"):
+        asyncio.run(_create_record(None, None, {"record_type": kind}))
 
 
 def _phone(account_id: str, prefix: str = "138") -> str:

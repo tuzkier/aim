@@ -19,6 +19,7 @@ final class HomeDashboardStore {
     var members: [FamilyMember] = []
     /// 家里的去医院记录，首页横幅从中挑 24 小时内最新的一条。
     var hospitalTrips: [RecordItem] = []
+    var moods: [RecordItem] = []
 
     var pregnancyError: String?
     var tasksError: String?
@@ -44,6 +45,7 @@ final class HomeDashboardStore {
         async let activityResult = Self.capture { try await repository.fetchActivity(before: nil) }
         async let bookResult = Self.capture { try await repository.fetchWeeklyContent() }
         async let tripsResult = Self.capture { try await repository.fetchRecords(type: .hospitalTrip) }
+        async let moodsResult = Self.capture { try await repository.fetchRecords(type: .mood) }
 
         switch await pregnancyResult {
         case let .success(value): pregnancy = value; pregnancyError = nil
@@ -70,6 +72,7 @@ final class HomeDashboardStore {
         }
         // 去医院横幅拿不到不该影响别的块：失败时保留上次的结果，也不报错。
         if case let .success(snapshot) = await tripsResult { hospitalTrips = snapshot.records }
+        if case let .success(snapshot) = await moodsResult { moods = snapshot.records }
     }
 
     /// 作者撤回说错了的去医院记录：删除成功后从横幅数据里移除，并通知其他页面刷新。

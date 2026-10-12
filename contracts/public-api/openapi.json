@@ -3577,7 +3577,9 @@
           "fetal_movement",
           "memory",
           "contraction",
-          "hospital_trip"
+          "hospital_trip",
+          "mood",
+          "epds"
         ],
         "title": "RecordType"
       },

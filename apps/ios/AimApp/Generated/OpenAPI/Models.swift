@@ -254,6 +254,14 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
     let summary: ContractionSummaryDTO?
     /// 去医院记录关联的宫缩计时，小写标准 UUID 字符串。
     let contractionRecordID: String?
+    let mood: Int?
+    let tags: [String]?
+    let version: String?
+    let answers: [Int]?
+    let period: String?
+    let score: Int?
+    let item10: Int?
+    let supportLevel: String?
 
     init(
         symptoms: [String]? = nil,
@@ -289,7 +297,9 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
         text: String? = nil,
         contractions: [ContractionEntry]? = nil,
         summary: ContractionSummaryDTO? = nil,
-        contractionRecordID: String? = nil
+        contractionRecordID: String? = nil,
+        mood: Int? = nil, tags: [String]? = nil, version: String? = nil, answers: [Int]? = nil,
+        period: String? = nil, score: Int? = nil, item10: Int? = nil, supportLevel: String? = nil
     ) {
         self.symptoms = symptoms
         self.severity = severity
@@ -325,6 +335,8 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
         self.contractions = contractions
         self.summary = summary
         self.contractionRecordID = contractionRecordID
+        self.mood = mood; self.tags = tags; self.version = version; self.answers = answers
+        self.period = period; self.score = score; self.item10 = item10; self.supportLevel = supportLevel
     }
 
     enum CodingKeys: String, CodingKey {
@@ -342,10 +354,19 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
         case reportedLess = "reported_less"
         case contractions, summary
         case contractionRecordID = "contraction_record_id"
+        case mood, tags, version, answers, period, score
+        case item10 = "item_10"
+        case supportLevel = "support_level"
     }
 
     func recordData(for type: RecordType) -> RecordStructuredData {
         switch type {
+        case .mood:
+            guard let mood, (1...5).contains(mood) else { return .unknown }
+            return .mood(MoodRecordData(mood: mood, tags: tags ?? []))
+        case .epds:
+            guard let version, let answers, answers.count == 10 else { return .unknown }
+            return .epds(EPDSRecordData(version: version, answers: answers, period: EmotionalPeriod(rawValue: period ?? "manual") ?? .manual, score: score, item10: item10, supportLevel: supportLevel.flatMap(EmotionalSupportLevel.init(rawValue:))))
         case .memory:
             guard let kind, let text else { return .unknown }
             return .memory(MemoryRecordData(kind: MemoryKind(rawValue: kind) ?? .unknown, text: text))
@@ -400,6 +421,10 @@ struct APIRecordStructuredDataDTO: Codable, Sendable {
 
     init(recordData: RecordStructuredData) {
         switch recordData {
+        case let .mood(data):
+            self.init(mood: data.mood, tags: data.tags)
+        case let .epds(data):
+            self.init(version: data.version, answers: data.answers, period: data.period.rawValue)
         case let .memory(data):
             self.init(kind: data.kind.rawValue, text: data.text)
         case let .symptom(data):

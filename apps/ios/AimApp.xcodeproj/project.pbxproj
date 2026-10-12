@@ -167,6 +167,12 @@
 		A20000000000000000000172 /* Core/Notifications/ReminderCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000172 /* Core/Notifications/ReminderCenter.swift */; };
 		A20000000000000000000173 /* Features/Reminders/ReminderSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000173 /* Features/Reminders/ReminderSettingsView.swift */; };
 		A20000000000000000000174 /* Tests/ReminderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000174 /* Tests/ReminderTests.swift */; };
+		A20000000000000000000190 /* Features/EmotionalCare/EmotionalCareModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000190 /* Features/EmotionalCare/EmotionalCareModels.swift */; };
+		A20000000000000000000191 /* Features/EmotionalCare/EmotionalCareStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000191 /* Features/EmotionalCare/EmotionalCareStore.swift */; };
+		A20000000000000000000192 /* Features/EmotionalCare/EmotionalCareView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000192 /* Features/EmotionalCare/EmotionalCareView.swift */; };
+		A20000000000000000000193 /* Features/EmotionalCare/EmotionalSupportCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000193 /* Features/EmotionalCare/EmotionalSupportCard.swift */; };
+		A20000000000000000000194 /* epds-zh-Hans.json in Resources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000194 /* epds-zh-Hans.json */; };
+		A20000000000000000000195 /* Tests/EmotionalCareTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000195 /* Tests/EmotionalCareTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -353,6 +359,12 @@
 		A10000000000000000000172 /* Core/Notifications/ReminderCenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core/Notifications/ReminderCenter.swift; sourceTree = "<group>"; };
 		A10000000000000000000173 /* Features/Reminders/ReminderSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/Reminders/ReminderSettingsView.swift; sourceTree = "<group>"; };
 		A10000000000000000000174 /* Tests/ReminderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/ReminderTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000190 /* Features/EmotionalCare/EmotionalCareModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmotionalCare/EmotionalCareModels.swift; sourceTree = "<group>"; };
+		A10000000000000000000191 /* Features/EmotionalCare/EmotionalCareStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmotionalCare/EmotionalCareStore.swift; sourceTree = "<group>"; };
+		A10000000000000000000192 /* Features/EmotionalCare/EmotionalCareView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmotionalCare/EmotionalCareView.swift; sourceTree = "<group>"; };
+		A10000000000000000000193 /* Features/EmotionalCare/EmotionalSupportCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmotionalCare/EmotionalSupportCard.swift; sourceTree = "<group>"; };
+		A10000000000000000000194 /* epds-zh-Hans.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "../../content/mental-health/epds-zh-Hans.json"; sourceTree = SOURCE_ROOT; };
+		A10000000000000000000195 /* Tests/EmotionalCareTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tests/EmotionalCareTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -596,7 +608,8 @@
 		A40000000000000000000013 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
-						A10000000000000000000023 /* Resources/Assets.xcassets */,
+						A10000000000000000000194 /* epds-zh-Hans.json */,
+				A10000000000000000000023 /* Resources/Assets.xcassets */,
 				A10000000000000000000061 /* Resources/Info.plist */,
 				A10000000000000000000140 /* Resources/PrivacyInfo.xcprivacy */,
 			);
@@ -637,6 +650,7 @@
 				A10000000000000000000164 /* Tests/FetalMovementModelsTests.swift */,
 				A10000000000000000000187 /* Tests/ContractionModelsTests.swift */,
 				A10000000000000000000188 /* Tests/ContractionStoreTests.swift */,
+				A10000000000000000000195 /* Tests/EmotionalCareTests.swift */,
 				A10000000000000000000189 /* Tests/HospitalTripTests.swift */,
 				A10000000000000000000165 /* Tests/FetalMovementStoreTests.swift */,
 				A10000000000000000000166 /* Tests/AgentWebRouteTests.swift */,
@@ -731,6 +745,10 @@
 		A40000000000000000000108 /* Labor */ = {
 			isa = PBXGroup;
 			children = (
+				A10000000000000000000190 /* Features/EmotionalCare/EmotionalCareModels.swift */,
+				A10000000000000000000191 /* Features/EmotionalCare/EmotionalCareStore.swift */,
+				A10000000000000000000192 /* Features/EmotionalCare/EmotionalCareView.swift */,
+				A10000000000000000000193 /* Features/EmotionalCare/EmotionalSupportCard.swift */,
 				A10000000000000000000180 /* Features/Labor/ContractionModels.swift */,
 				A10000000000000000000181 /* Features/Labor/ContractionStore.swift */,
 				A10000000000000000000185 /* Features/Labor/HospitalTrip.swift */,
@@ -1490,7 +1508,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-						A20000000000000000000023 /* Resources/Assets.xcassets in Resources */,
+						A20000000000000000000194 /* epds-zh-Hans.json in Resources */,
+				A20000000000000000000023 /* Resources/Assets.xcassets in Resources */,
 				A20000000000000000000140 /* Resources/PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1614,6 +1633,10 @@
 				A20000000000000000000058 /* Features/Home/HomeHeader.swift in Sources */,
 				A20000000000000000000160 /* Features/FetalMovement/FetalMovementModels.swift in Sources */,
 				A20000000000000000000161 /* Features/FetalMovement/FetalMovementStore.swift in Sources */,
+				A20000000000000000000190 /* Features/EmotionalCare/EmotionalCareModels.swift in Sources */,
+				A20000000000000000000191 /* Features/EmotionalCare/EmotionalCareStore.swift in Sources */,
+				A20000000000000000000192 /* Features/EmotionalCare/EmotionalCareView.swift in Sources */,
+				A20000000000000000000193 /* Features/EmotionalCare/EmotionalSupportCard.swift in Sources */,
 				A20000000000000000000180 /* Features/Labor/ContractionModels.swift in Sources */,
 				A20000000000000000000181 /* Features/Labor/ContractionStore.swift in Sources */,
 				A20000000000000000000185 /* Features/Labor/HospitalTrip.swift in Sources */,
@@ -1664,6 +1687,7 @@
 				A20000000000000000000164 /* Tests/FetalMovementModelsTests.swift in Sources */,
 				A20000000000000000000187 /* Tests/ContractionModelsTests.swift in Sources */,
 				A20000000000000000000188 /* Tests/ContractionStoreTests.swift in Sources */,
+				A20000000000000000000195 /* Tests/EmotionalCareTests.swift in Sources */,
 				A20000000000000000000189 /* Tests/HospitalTripTests.swift in Sources */,
 				A20000000000000000000165 /* Tests/FetalMovementStoreTests.swift in Sources */,
 				A20000000000000000000166 /* Tests/AgentWebRouteTests.swift in Sources */,

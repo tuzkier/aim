@@ -11,6 +11,15 @@ const instructions = await readFile(
 
 const LIST_START = "These are emergencies:";
 
+test("情绪支持不以低分排除问题，不能由 AIM 代填或自动分享", () => {
+  const flat = instructions.replace(/\s+/g, " ");
+  assert.ok(flat.includes("without waiting for a questionnaire, a saved record, or an AI reply"));
+  assert.ok(flat.includes("A positive item_10 needs prompt professional assessment regardless of the total"));
+  assert.ok(flat.includes("never invent a score or infer answers"));
+  assert.ok(flat.includes("You cannot complete, create, change or share these records"));
+  assert.ok(flat.includes("Private emotional records stay private"));
+});
+
 function emergencyList(): string {
   const start = instructions.indexOf(LIST_START);
   assert.ok(start >= 0, "指令里要有一份急症清单");

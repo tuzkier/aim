@@ -30,6 +30,8 @@ _RECORD_TYPE_NAMES = {
     "fetal_movement": "胎动",
     "contraction": "宫缩",
     "hospital_trip": "去医院",
+    "mood": "心情",
+    "epds": "情绪自评",
 }
 
 FORMER_MEMBER = "已离开的成员"

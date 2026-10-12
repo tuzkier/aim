@@ -11,6 +11,7 @@ enum RecordType: Codable, CaseIterable, Sendable, Equatable {
     case memory
     case contraction
     case hospitalTrip
+    case mood, epds
     case unknown
 
     init(rawValue: String) {
@@ -25,6 +26,8 @@ enum RecordType: Codable, CaseIterable, Sendable, Equatable {
         case "memory": self = .memory
         case "contraction": self = .contraction
         case "hospital_trip": self = .hospitalTrip
+        case "mood": self = .mood
+        case "epds": self = .epds
         default: self = .unknown
         }
     }
@@ -41,6 +44,8 @@ enum RecordType: Codable, CaseIterable, Sendable, Equatable {
         case .memory: return "memory"
         case .contraction: return "contraction"
         case .hospitalTrip: return "hospital_trip"
+        case .mood: return "mood"
+        case .epds: return "epds"
         case .unknown: return "unknown"
         }
     }
@@ -50,7 +55,7 @@ enum RecordType: Codable, CaseIterable, Sendable, Equatable {
     }
 
     /// 能否在通用记录编辑器里修改。胎动记录由计数页生成，编辑器改不了它的计数数据。
-    var canEditInComposer: Bool { ![.fetalMovement, .memory, .contraction, .hospitalTrip].contains(self) }
+    var canEditInComposer: Bool { ![.fetalMovement, .memory, .contraction, .hospitalTrip, .mood, .epds].contains(self) }
 
     func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
@@ -268,6 +273,8 @@ enum RecordStructuredData: Equatable, Sendable {
     case memory(MemoryRecordData)
     case contraction(ContractionRecordData)
     case hospitalTrip(HospitalTripRecordData)
+    case mood(MoodRecordData)
+    case epds(EPDSRecordData)
     case note
     case unknown
 }
@@ -339,6 +346,7 @@ extension RecordItem {
     /// 任何成员都能改；仅自己可见的（以及看不懂的可见范围）只有作者能改。
     func isEditable(by accountID: UUID?) -> Bool {
         guard let accountID else { return false }
+        if type == .mood || type == .epds { return accountID == authorAccountID }
         return visibility == .family || accountID == authorAccountID
     }
 

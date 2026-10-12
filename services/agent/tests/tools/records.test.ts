@@ -84,3 +84,13 @@ test("AIM can read contraction and hospital trip records but cannot create them"
   assert.equal(createSchema.safeParse({ recordType: "contraction" }).success, false);
   assert.equal(createSchema.safeParse({ recordType: "hospital_trip" }).success, false);
 });
+
+test("AIM reads emotional records but cannot fill mood or EPDS through create_record", () => {
+  type Schema = { safeParse(value: unknown): { success: boolean } };
+  const listSchema = listRecords.inputSchema as unknown as Schema;
+  const createSchema = createRecord.inputSchema as unknown as Schema;
+  for (const type of ["mood", "epds"]) {
+    assert.equal(listSchema.safeParse({ type }).success, true);
+    assert.equal(createSchema.safeParse({ recordType: type }).success, false);
+  }
+});

@@ -465,6 +465,8 @@ def _agent_structured_data(record) -> dict[str, Any]:
     """给 AIM 的记录内容。宫缩计时的逐次数组可达 500 项，模型用不上还占上下文：
     只留服务端算好的 summary，另给首尾两次的开始秒数，便于说明计时跨了多久。"""
     data = record.structured_data
+    if record.record_type is RecordType.epds:
+        return {key: data.get(key) for key in ("version", "period", "score", "item_10", "support_level")}
     if record.record_type is not RecordType.contraction:
         return data
     contractions = data.get("contractions") or []
@@ -823,6 +825,8 @@ async def _create_checkup_report(session, context: AgentToolContext, body: dict[
 
 
 async def _create_record(session, context: AgentToolContext, body: dict[str, Any]):
+    if body.get("record_type") in ("mood", "epds"):
+        raise ForbiddenError("情绪记录与自评请由本人在原生页面填写，AIM 不能代填")
     uow = SqlAlchemyRecordsUnitOfWork(session)
     record = await create_record.execute(
         CreateRecordCommand(

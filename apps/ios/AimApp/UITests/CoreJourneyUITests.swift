@@ -613,6 +613,69 @@ final class CoreJourneyUITests: XCTestCase {
         XCTAssertFalse(app.descendants(matching: .any)["contraction-stale"].exists)
     }
 
+    func testEmotionalCareSavesPrivateMoodAndShowsHelpBeforeCompletingEPDS() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-reset-session"]
+        app.launch()
+        registerNewAccount(in: app)
+        completePregnancySetup(in: app, daysUntilDue: 20)
+        let card = app.buttons["home-emotional-care"]
+        reveal(card, in: app)
+        card.tap()
+        let mood = app.buttons["emotion-record-mood"]
+        XCTAssertTrue(mood.waitForExistence(timeout: 10))
+        mood.tap()
+        app.buttons["mood-choice-5"].tap()
+        let share = app.switches["emotion-share"]
+        reveal(share, in: app)
+        XCTAssertEqual(share.value as? String, "0", "心情默认私密")
+        app.buttons["mood-save"].tap()
+        let today = app.staticTexts["emotion-today-mood"]
+        XCTAssertTrue(today.waitForExistence(timeout: 15))
+        XCTAssertTrue(today.label.contains("很开心"))
+
+        app.buttons["emotion-start-epds"].tap()
+        let save = app.buttons["epds-save"]
+        XCTAssertTrue(save.waitForExistence(timeout: 10))
+        XCTAssertFalse(save.isEnabled, "没有填完不能保存")
+        let item10 = app.buttons["epds-10-2"]
+        reveal(item10, in: app)
+        item10.tap()
+        let continueForm = app.buttons["emotion-continue-form"]
+        XCTAssertTrue(continueForm.waitForExistence(timeout: 5), "未完成和未保存时也应立即显示支持")
+        XCTAssertTrue(app.buttons["emotion-contact-support"].exists)
+        let immediate = XCTAttachment(screenshot: app.screenshot())
+        immediate.name = "未完成问卷时的即时支持"
+        immediate.lifetime = .keepAlways
+        add(immediate)
+        continueForm.tap()
+
+        let first = app.buttons["epds-1-0"]
+        for _ in 0..<15 where !first.isHittable { app.swipeDown() }
+        let lowChoices = [0, 0, 3, 0, 3, 3, 3, 3, 3]
+        for (index, choice) in lowChoices.enumerated() {
+            let option = app.buttons["epds-\(index + 1)-\(choice)"]
+            reveal(option, in: app)
+            option.tap()
+        }
+        let result = app.staticTexts["epds-result"]
+        reveal(result, in: app)
+        XCTAssertEqual(result.label, "1 / 30", "低总分也不能掩盖第十题")
+        let epdsShare = app.switches["emotion-share"]
+        reveal(epdsShare, in: app)
+        XCTAssertEqual(epdsShare.value as? String, "0", "自评默认私密")
+        save.tap()
+        let history = app.buttons["emotion-epds-history"].firstMatch
+        XCTAssertTrue(history.waitForExistence(timeout: 15))
+        history.tap()
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS '1 / 30'")).firstMatch.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["emotion-contact-support"].exists)
+        let savedAssessment = XCTAttachment(screenshot: app.screenshot())
+        savedAssessment.name = "私密自评保存后的详情与支持"
+        savedAssessment.lifetime = .keepAlways
+        add(savedAssessment)
+    }
+
     /// 「想问医生」此前缺了最关键的一步：产检那天怎么把攒下的问题一次带走。
     /// 这条用例守住完整闭环——攒问题、生成清单、问完一次性标记。
     func testConsultationListClosesTheQuestionLoop() throws {

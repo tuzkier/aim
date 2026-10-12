@@ -27,6 +27,9 @@ struct RecordDetailView: View {
             CheckupReportView(record: record, store: store, planStore: planStore, agentStore: agentStore)
         } else if record.type == .memory {
             MemoryDetailView(record: record, store: store, agentStore: agentStore)
+        } else if (record.type == .mood || record.type == .epds), let accountID = session.accountID {
+            EmotionalRecordDetailHost(record: currentRecord, repository: store.repository, accountID: accountID, agentStore: agentStore)
+                .id("\(accountID)-\(record.id)")
         } else {
             genericDetail
         }
@@ -172,6 +175,8 @@ struct RecordDetailView: View {
                 }
             }
         case .memory:
+            EmptyView()
+        case .mood, .epds:
             EmptyView()
         case .unknown:
             Section { Text("这类记录暂不支持完整展示。") }

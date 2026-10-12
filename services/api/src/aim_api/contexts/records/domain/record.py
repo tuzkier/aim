@@ -8,6 +8,7 @@ from uuid import UUID
 
 from aim_api.contexts.records.domain.attachment import MAX_ATTACHMENTS_PER_RECORD
 from aim_api.contexts.records.domain.contraction import contraction_summary
+from aim_api.contexts.records.domain.mental_health import epds_result, validate_epds, validate_mood
 from aim_api.contexts.records.domain.errors import RecordAccessDenied, RecordValidationError
 
 
@@ -22,6 +23,8 @@ class RecordType(StrEnum):
     memory = "memory"
     contraction = "contraction"
     hospital_trip = "hospital_trip"
+    mood = "mood"
+    epds = "epds"
 
 
 class RecordVisibility(StrEnum):
@@ -90,6 +93,8 @@ class Record:
         )
 
     def assert_can_mutate(self, account_id: UUID) -> None:
+        if self.record_type in (RecordType.mood, RecordType.epds) and self.author_account_id != account_id:
+            raise RecordAccessDenied("只有本人可以修改或删除情绪记录")
         # 家庭可见的记录属于整个家庭，家里任何成员都能改（成员资格由命令层先校验）；
         # 仅自己可见的只有作者能改。
         if self.visibility is RecordVisibility.family:
@@ -394,6 +399,12 @@ class Record:
         if record_type is RecordType.contraction:
             contractions = structured_data["contractions"]
             return {"contractions": contractions, "summary": contraction_summary(contractions)}
+        if record_type is RecordType.mood:
+            return {"mood": structured_data["mood"], "tags": list(structured_data.get("tags", []))}
+        if record_type is RecordType.epds:
+            answers = list(structured_data["answers"])
+            return {"version": structured_data["version"], "answers": answers,
+                    "period": structured_data.get("period", "manual"), **epds_result(answers)}
         return structured_data
 
     @classmethod
@@ -404,6 +415,12 @@ class Record:
         content: str | None,
         title: str | None = None,
     ) -> None:
+        if record_type is RecordType.mood:
+            validate_mood(structured_data, content)
+            return
+        if record_type is RecordType.epds:
+            validate_epds(structured_data)
+            return
         if record_type is RecordType.memory:
             if set(structured_data) != {"kind", "text"}:
                 raise RecordValidationError("记忆只能包含类别和一句话")

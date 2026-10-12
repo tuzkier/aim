@@ -1,12 +1,39 @@
 from __future__ import annotations
 
 from uuid import UUID, uuid4
+import pytest
 
 from fastapi.testclient import TestClient
 
 from aim_api.bootstrap import create_app
 from aim_api.platform.auth.context import issue_session_token
 from aim_api.platform.config.settings import get_settings
+
+
+@pytest.mark.parametrize("kind,data", [
+    ("mood", {"mood": 2, "tags": ["sleep"]}),
+    ("epds", {"version": "epds-nsw-zh-Hans-2023-v1", "answers": [0, 0, 3, 0, 3, 3, 3, 3, 3, 3]}),
+])
+def test_emotional_records_are_private_and_shared_records_are_read_only_for_family(kind, data):
+    author_id, member_id = str(uuid4()), str(uuid4())
+    author_phone, member_phone = _phone(author_id), _phone(member_id, "139")
+    author_headers, member_headers = _headers(author_id, author_phone), _headers(member_id, member_phone)
+    with TestClient(create_app()) as client:
+        family_id, pregnancy_id = _create_pregnancy(client, author_id, author_phone)
+        invitation = client.post(f"/api/v1/families/{family_id}/invitations", headers=author_headers,
+                                 json={"invitee_phone": member_phone, "role": "father"})
+        accepted = client.post(f"/api/v1/family-invitations/{invitation.json()['token']}/accept", headers=member_headers)
+        assert accepted.status_code == 200
+        created = _create_record(client, pregnancy_id, author_headers, type=kind, visibility="private", structured_data=data)
+        assert created.status_code == 201, created.text
+        path = f"/api/v1/pregnancies/{pregnancy_id}/records/{created.json()['id']}"
+        assert client.get(path, headers=member_headers).status_code == 404
+        shared = client.patch(path, headers=author_headers, json={"visibility": "family"})
+        assert shared.status_code == 200, shared.text
+        assert client.get(path, headers=member_headers).status_code == 200
+        assert client.patch(path, headers=member_headers, json={"structured_data": data}).status_code == 403
+        assert client.delete(path, headers=member_headers).status_code == 403
+        assert client.delete(path, headers=author_headers).status_code == 204
 
 
 def _phone(account_id: str, prefix: str = "138") -> str:

@@ -683,7 +683,7 @@ actor BusinessRepository: BusinessRepositoryProtocol {
         case (.symptom, .symptom), (.checkup, .checkup), (.note, .note), (.memory, .memory),
              (.question, .question), (.checklist, .checklist),
              (.knowledge, .knowledge), (.fetalMovement, .fetalMovement),
-             (.contraction, .contraction), (.hospitalTrip, .hospitalTrip):
+             (.contraction, .contraction), (.hospitalTrip, .hospitalTrip), (.mood, .mood), (.epds, .epds):
             return
         default:
             throw APIError.invalidResponse

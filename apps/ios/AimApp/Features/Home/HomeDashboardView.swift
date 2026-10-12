@@ -43,6 +43,7 @@ struct HomeDashboardView: View {
                     heroCard
                     weekCard
                     todayCard
+                    emotionalCareCard
                     // 数胎动从孕 28 周开始。
                     if (store.pregnancy?.weeks ?? 0) >= 28 {
                         FetalMovementHomeCard(agentStore: agentStore)
@@ -155,6 +156,30 @@ struct HomeDashboardView: View {
                 .ignoresSafeArea()
             }
             .aimToast($toast)
+        }
+    }
+
+    @ViewBuilder private var emotionalCareCard: some View {
+        if let accountID = session.accountID {
+            NavigationLink {
+                EmotionalCareView(repository: store.repository, accountID: accountID,
+                    weeks: store.pregnancy?.weeks, dueDate: store.pregnancy?.dueDate,
+                    isMother: myself?.role == .mother, agentStore: agentStore)
+                    .id("\(accountID)-\(session.pregnancyID?.uuidString ?? "")")
+            } label: {
+                VStack(alignment: .leading, spacing: AimMetrics.space8) {
+                    Label("照顾一下心情", systemImage: "heart").font(.headline)
+                    if let today = store.moods.first(where: {
+                        $0.authorAccountID == accountID && EmotionalSchedule.calendar.isDateInToday($0.occurredAt)
+                    }) {
+                        Text("今天：\(today.displaySummary)").font(.subheadline)
+                    } else {
+                        Text("记下心情、做一次自评，或找一些支持").font(.subheadline)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading).aimCard()
+            }
+            .buttonStyle(.plain).accessibilityIdentifier("home-emotional-care")
         }
     }
 
