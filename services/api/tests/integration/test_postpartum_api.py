@@ -8,6 +8,16 @@ from aim_api.platform.business_time import beijing_today
 from aim_api.platform.config.settings import get_settings
 
 
+def test_postpartum_content_is_reachable_alongside_existing_content_routes():
+    with TestClient(create_app()) as client:
+        response = client.get("/api/v1/content/postpartum")
+        assert response.status_code == 200, response.text
+        assert response.json()["version"] == "postpartum-cn-2026-v1"
+        assert any(item["days"] == 42 for item in response.json()["care"])
+        assert client.get("/api/v1/content/weekly").status_code == 200
+        assert client.get("/api/v1/content/preparation").status_code == 200
+
+
 def test_baby_care_validates_ownership_dates_and_prevents_unsafe_birth_retraction():
     with TestClient(create_app()) as client:
         pid, headers = scope(client); path = f"/api/v1/pregnancies/{pid}"
