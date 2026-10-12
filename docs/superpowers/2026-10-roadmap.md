@@ -19,7 +19,7 @@
 | 6 | 主动提醒（本地通知版）：每日胎动、产检/待办到期、每周简报、通知偏好与免打扰、点通知跳转 | ✅ 已完成并合并本地 development（系统送达、冷启动点击与退出撤销通过） | specs/2026-10-10-ios-local-reminders-design.md、plans/2026-10-10-ios-local-reminders.md、reports/2026-10-10-ios-local-reminders-validation.md |
 | 7 | 分娩模式：宫缩计时（5-1-1）、待产包核对入口、「我们去医院了」（家庭动态 + App 内提醒） | ✅ 已完成并合并本地 development | specs/2026-10-12-labor-mode-design.md、plans/2026-10-12-labor-mode.md |
 | 8 | 情绪关照：每日心情、EPDS 自评（孕晚期、产后 2/6 周）、高分时引导求助（含 12356） | ✅ 已完成；产后 14/42 天真实日期节点 UI 通过 | specs/2026-10-12-emotional-care-design.md、plans/2026-10-12-emotional-care.md、reports/2026-10-12-emotional-care-validation.md |
-| 9 | 产后延续：记录分娩切换产后阶段、宝宝档案、喂养/尿布/睡眠记录、产后 42 天复查、疫苗与证件清单 | ✅ 开发与本地验收完成 | specs/2026-10-12-postpartum-continuity-design.md、plans/2026-10-12-postpartum-continuity.md、reports/2026-10-12-postpartum-validation.md |
+| 9 | 产后延续：记录分娩切换产后阶段、宝宝档案、喂养/尿布/睡眠记录、产后 42 天复查、疫苗与证件清单 | ✅ 已完成并合并本地 development（eb1cbfc） | specs/2026-10-12-postpartum-continuity-design.md、plans/2026-10-12-postpartum-continuity.md、reports/2026-10-12-postpartum-validation.md |
 
 ## 当前接续点（2026-10-12）
 
@@ -29,8 +29,9 @@
 - 第 7 项「分娩模式」已完成：宫缩计时与档位、早产警示、分娩页与待产包入口、「我们出发去医院了」与首页横幅，主旅程 UI 用例通过。
 - 分娩记录关联已修复：两个入口统一处理旧计时；补存与出发共用保存任务、按本地结果返回准确编号；跨作用域不返回旧关联。515 个单元测试、原主旅程与旧断点重启后的两个入口 UI 通过，见 reports/2026-10-12-labor-links-validation.md。
 - 2026-10-11 已上传 TestFlight `1.0.0（202610111650）`，基于 `56be775`，含第 6 项，不含 10 月 12 日新增分娩模式；新代码待最后统一打包。Apple 已接收，当前可安装状态需另行核对。
+- 2026-10-12 已上传新 TestFlight `1.0.0（202610121442）`，源码 `eb1cbfc`，包含分娩修复、情绪与产后。Apple 返回 Upload succeeded / processing；可安装状态未另行确认。详见 reports/2026-10-12-testflight-release.md。
 - 第 8 项已完成：默认私密、程序评分、第十题即时支持、共享只读；第 9 项已接入真实分娩日期，14/42 天产后提示与核心 UI 回归通过。
-- 第 9 项已完成开发与验收：宝宝档案、三类照护及编辑删除、阶段首页、日期修正、撤回恢复、产后安排与 AIM 工具均已验证。当前进入提交和发布收尾，详见 reports/2026-10-12-postpartum-validation.md。
+- 第 9 项已完成开发与验收：宝宝档案、三类照护及编辑删除、阶段首页、日期修正、撤回恢复、产后安排与 AIM 工具均已验证。已提交 `eb1cbfc` 并合并本地 development；新包已上传。开发收尾完成，生产部署仍等待在用手机升级。详见 reports/2026-10-12-postpartum-validation.md。
 - 继承用户最新排序要求：先做主线任务；零散小尾巴、推送与发布收尾集中到后面处理。
 
 ## 部署约束（上线前必须满足）
