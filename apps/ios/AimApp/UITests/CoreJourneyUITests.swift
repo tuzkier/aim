@@ -507,6 +507,54 @@ final class CoreJourneyUITests: XCTestCase {
         XCTAssertTrue(historyRow.waitForExistence(timeout: 15), "胎动页的历史里应当有这次的记录")
     }
 
+    /// 孕 36 周起首页有「分娩准备」：计时两次宫缩并保存，然后告诉家人出发去医院，首页出现横幅，撤回后消失。
+    func testLaborModeTimesContractionsAndAnnouncesTheHospitalTrip() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-reset-session"]
+        app.launch()
+
+        registerNewAccount(in: app)
+        // 距预产期 20 天 ≈ 孕 37 周。
+        completePregnancySetup(in: app, daysUntilDue: 20)
+
+        let laborCard = app.buttons["home-labor-card"]
+        reveal(laborCard, in: app)
+        laborCard.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["labor-page"].waitForExistence(timeout: 10))
+
+        app.buttons["labor-start-timer"].tap()
+        let toggle = app.buttons["contraction-toggle"]
+        XCTAssertTrue(toggle.waitForExistence(timeout: 10))
+        // 计时器把不到 1 秒的结束当误触、把距上次结束不到 1 秒的开始忽略，所以每步等 2 秒。
+        for _ in 0..<2 {
+            toggle.tap()          // 开始
+            sleep(2)
+            toggle.tap()          // 结束
+            sleep(2)
+        }
+        app.buttons["contraction-finish"].tap()
+        app.buttons["结束并保存"].tap()
+
+        // 保存成功后计时页关闭，回到分娩页；分娩页显示上一次的摘要。
+        let lastSummary = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH '上次 2 次'")).firstMatch
+        XCTAssertTrue(lastSummary.waitForExistence(timeout: 15), "分娩页应当显示刚保存的那次计时")
+
+        app.buttons["labor-hospital-trip"].tap()
+        let confirm = app.buttons["hospital-trip-confirm"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 10))
+        confirm.tap()
+
+        // 回首页看横幅。
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+        let banner = app.buttons["home-hospital-trip-banner"]
+        XCTAssertTrue(banner.waitForExistence(timeout: 15), "首页应当出现去医院横幅")
+
+        app.buttons["home-hospital-trip-withdraw"].tap()
+        app.buttons["撤回"].tap()
+        let gone = NSPredicate(format: "exists == false")
+        wait(for: [expectation(for: gone, evaluatedWith: banner, handler: nil)], timeout: 15)
+    }
+
     /// 「想问医生」此前缺了最关键的一步：产检那天怎么把攒下的问题一次带走。
     /// 这条用例守住完整闭环——攒问题、生成清单、问完一次性标记。
     func testConsultationListClosesTheQuestionLoop() throws {
