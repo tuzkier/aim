@@ -56,6 +56,7 @@ private struct MainTabView: View {
     @State private var fetalMovementStore = FetalMovementStore(
         dedupeInterval: ProcessInfo.processInfo.arguments.contains("-fetal-dedupe-zero")
             ? 0 : FetalMovementCounter.defaultDedupeInterval)
+    @State private var contractionStore = ContractionStore()
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -87,6 +88,7 @@ private struct MainTabView: View {
         }
         .environment(agentDestinations)
         .environment(fetalMovementStore)
+        .environment(contractionStore)
         .onAppear {
             if refreshCoalescer == nil {
                 refreshCoalescer = AgentRefreshCoalescer { kinds in await refresh(after: kinds) }
@@ -204,6 +206,16 @@ private struct MainTabView: View {
             fetalMovementStore.unbind()
             fetalMovementBound = false
         }
+        // 宫缩计时同理：断点按「账号 + 孕期」分开存，unbind() 也会清掉仓库。
+        contractionStore.repository = repository
+        let contractionBound: Bool
+        if let accountID = session.accountID, let pregnancyID = session.pregnancyID {
+            contractionStore.bind(accountID: accountID, pregnancyID: pregnancyID)
+            contractionBound = true
+        } else {
+            contractionStore.unbind()
+            contractionBound = false
+        }
         await timelineStore.load()
         await planStore.load()
         await recordStore.load()
@@ -216,6 +228,13 @@ private struct MainTabView: View {
         if fetalMovementBound {
             await fetalMovementStore.settleExpiredActive()
             await fetalMovementStore.load()
+        }
+        // 宫缩排在胎动之后：孕周要等首页加载完才有；先补存没保存上的计时，再拉历史。
+        if contractionBound {
+            contractionStore.gestationalWeeks = homeStore.pregnancy?.weeks
+            contractionStore.resumeAfterLaunch()
+            await contractionStore.saveUnsaved()
+            await contractionStore.load()
         }
         await reminders.refresh(activeCount: fetalMovementStore.active?.startedAt)
         await openReminder()
