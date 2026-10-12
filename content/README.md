@@ -54,6 +54,9 @@
 - **钙剂**：2018 指南孕中期起常规补钙 0.6–1.5 g/d，待办写的是「听医生的」，请产科医生确认措辞。
 - **过期妊娠**：`w41-admission-or-induction`「指南建议 41 周后住院引产」，各医院处理差异较大，请确认措辞。
 - **杭州政策入口**：`w25-leave-allowance`、`w37-birth-services` 提到的浙里办、杭州医保局栏目是否仍是现行名称。
+- **宫缩计时与去医院时机（2026-10-12）**：百科 `birth.when-to-go`「规律宫缩时」写了 5-1-1 参考和「生过孩子约 10 分钟一次就联系医院」；
+  App 宫缩计时页的档位与文案见 `apps/ios/AimApp/Features/Labor/LaborCopy.swift`。其中：未满 37 周 20 分钟 ≥4 次或 1 小时 ≥8 次提示早产，
+  单次宫缩超过 3 分钟提示持续剧痛立即就医。请确认与本院宣教一致。
 
 ## 孕期百科（content/encyclopedia）
 
@@ -94,3 +97,4 @@
   `body.early-bleeding-pain`（未确认宫内孕或伴腹痛的今天就联系）、`body.morning-sickness`、`diet.eating-with-nausea`、
   `body.stretch-marks`（手脚心瘙痒）、`body.edema`（单纯水肿突然加重）。这些文件仍是 `reviewed`，改动未经产品负责人复看。
 - 仍待处理：政策条目的 `link` 多为部门首页或栏目页，有条件时换成具体办事指南页。
+- **2026-10-12，分娩模式（Claude）**：`birth.when-to-go`「规律宫缩时」补 5-1-1 参考与经产妇提前出发，仍以医生交代为准。文件保持 `reviewed`，改动未经产品负责人复看。

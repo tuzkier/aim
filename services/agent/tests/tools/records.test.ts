@@ -72,3 +72,15 @@ test("AIM can read fetal movement records but cannot create them", () => {
   // 胎动只能在计数页实时产生，AIM 不得创建。
   assert.equal(createSchema.safeParse({ recordType: "fetal_movement" }).success, false);
 });
+
+test("AIM can read contraction and hospital trip records but cannot create them", () => {
+  type Schema = { safeParse(value: unknown): { success: boolean } };
+  const listSchema = listRecords.inputSchema as unknown as Schema;
+  const createSchema = createRecord.inputSchema as unknown as Schema;
+
+  assert.equal(listSchema.safeParse({ type: "contraction" }).success, true);
+  assert.equal(listSchema.safeParse({ type: "hospital_trip" }).success, true);
+  // 宫缩计时要实时按，去医院要本人确认告诉家人：AIM 都不能替用户建。
+  assert.equal(createSchema.safeParse({ recordType: "contraction" }).success, false);
+  assert.equal(createSchema.safeParse({ recordType: "hospital_trip" }).success, false);
+});
