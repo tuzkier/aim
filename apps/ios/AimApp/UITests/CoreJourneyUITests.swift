@@ -533,7 +533,9 @@ final class CoreJourneyUITests: XCTestCase {
             sleep(2)
         }
         app.buttons["contraction-finish"].tap()
-        app.buttons["结束并保存"].tap()
+        let saveAndFinish = app.buttons["结束并保存"]
+        XCTAssertTrue(saveAndFinish.waitForExistence(timeout: 5), "点「结束」后应当弹出「结束并保存」确认")
+        saveAndFinish.tap()
 
         // 保存成功后计时页关闭，回到分娩页；分娩页显示上一次的摘要。
         let lastSummary = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH '上次 2 次'")).firstMatch
@@ -544,15 +546,26 @@ final class CoreJourneyUITests: XCTestCase {
         XCTAssertTrue(confirm.waitForExistence(timeout: 10))
         confirm.tap()
 
-        // 回首页看横幅。
-        app.navigationBars.buttons.element(boundBy: 0).tap()
+        // 保存成功后确认页才关闭并弹出提示；先等到这一步，免得把保存失败误报成首页没横幅。
+        XCTAssertTrue(app.descendants(matching: .any)["labor-trip-saved"].waitForExistence(timeout: 15),
+                      "确认页没关上或保存失败：分娩页应当提示已告诉家人")
+        XCTAssertFalse(confirm.exists, "保存成功后确认页应当已关闭")
+
+        // 回首页看横幅：再点一次「首页」标签回到首页根视图。
+        let homeTab = app.tabBars.buttons["首页"]
+        XCTAssertTrue(homeTab.waitForExistence(timeout: 5))
+        homeTab.tap()
+        let laborPage = app.descendants(matching: .any)["labor-page"]
+        let notExists = NSPredicate(format: "exists == false")
+        wait(for: [expectation(for: notExists, evaluatedWith: laborPage, handler: nil)], timeout: 5)
         let banner = app.buttons["home-hospital-trip-banner"]
         XCTAssertTrue(banner.waitForExistence(timeout: 15), "首页应当出现去医院横幅")
 
         app.buttons["home-hospital-trip-withdraw"].tap()
-        app.buttons["撤回"].tap()
-        let gone = NSPredicate(format: "exists == false")
-        wait(for: [expectation(for: gone, evaluatedWith: banner, handler: nil)], timeout: 15)
+        let withdraw = app.buttons["撤回"]
+        XCTAssertTrue(withdraw.waitForExistence(timeout: 5), "点「说错了，撤回」后应当弹出撤回确认")
+        withdraw.tap()
+        wait(for: [expectation(for: notExists, evaluatedWith: banner, handler: nil)], timeout: 15)
     }
 
     /// 「想问医生」此前缺了最关键的一步：产检那天怎么把攒下的问题一次带走。
